@@ -30,7 +30,7 @@
     <string name="home_usb_advisory_text">USB в режиме передачи данных. Нажмите, чтобы выбрать «Только зарядка».</string>
     <string name="home_usb_advisory_fix">Исправить</string>
     <string name="home_whatsnew_resilient_title">Новое: устойчивая запись</string>
-    <string name="home_whatsnew_resilient_body">Если запись звонка началась, теперь она доводится до конца — даже если Android остановит фоновый процесс CallVault на середине, из-за чего запись раньше обрывалась.\n\nПо умолчанию выключено. Включить можно и позже: Настройки ▸ Надёжность.</string>
+    <string name="home_whatsnew_resilient_body">Делает запись звонков более устойчивой к прерываниям.\n\nAndroid может остановить фоновый процесс CallVault в любой момент. Когда эта опция включена, уже идущая запись от этого не страдает.\n\nПо умолчанию выключено — включить можно и позже: Настройки ▸ Надёжность.</string>
     <string name="home_whatsnew_resilient_cta">Включить</string>
-    <string name="home_whatsnew_resilient_enabled">Устойчивая запись включена. Теперь звонки записываются до конца, даже если фоновый процесс остановится на середине.</string>
+    <string name="home_whatsnew_resilient_enabled">Устойчивая запись включена. Уже идущая запись не пострадает, если Android остановит фоновый процесс CallVault.</string>
 </resources>

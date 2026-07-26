@@ -30,7 +30,7 @@
     <string name="home_usb_advisory_text">USB ist auf einen Datenmodus eingestellt. Tippe, um „Nur Laden“ zu wählen.</string>
     <string name="home_usb_advisory_fix">Beheben</string>
     <string name="home_whatsnew_resilient_title">Neu: Robuste Aufnahme</string>
-    <string name="home_whatsnew_resilient_body">Sobald eine Aufnahme begonnen hat, wird sie jetzt auch beendet — selbst wenn Android CallVaults Hintergrunddienst mittendrin stoppt, was die Aufnahme bisher abgeschnitten hat.\n\nStandardmäßig ausgeschaltet. Du kannst sie auch später unter Einstellungen ▸ Zuverlässigkeit aktivieren.</string>
+    <string name="home_whatsnew_resilient_body">Macht die Anrufaufnahme widerstandsfähiger gegen Unterbrechungen.\n\nAndroid kann CallVaults Hintergrunddienst jederzeit stoppen. Wenn dies aktiviert ist, bleibt eine bereits laufende Aufnahme davon unberührt.\n\nStandardmäßig ausgeschaltet — du kannst sie auch später unter Einstellungen ▸ Zuverlässigkeit aktivieren.</string>
     <string name="home_whatsnew_resilient_cta">Aktivieren</string>
-    <string name="home_whatsnew_resilient_enabled">Robuste Aufnahme ist aktiv. Deine Anrufe werden jetzt bis zum Ende aufgenommen, auch wenn der Hintergrunddienst zwischendurch gestoppt wird.</string>
+    <string name="home_whatsnew_resilient_enabled">Robuste Aufnahme ist aktiv. Eine bereits laufende Aufnahme bleibt unberührt, wenn Android CallVaults Hintergrunddienst stoppt.</string>
 </resources>

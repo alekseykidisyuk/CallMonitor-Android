@@ -31,7 +31,8 @@ You pair **once**; after that it's hands-free.
 |:---:|---|
 | 🎙️ | Records **both sides** of incoming & outgoing calls (incl. Bluetooth / headset) |
 | 📶 | **Offline recording (opt-in)** — record calls even with **no Wi-Fi network**, for calls on the road (off by default; opens a local, RSA-gated debugging port when enabled) |
-| 🛡️ | **Resilient recording (opt-in)** — once a call starts recording it **finishes**, even if Android stops the background helper part-way through (off by default) |
+| 🔓 | **Keeps recording when the screen locks** — on many phones that otherwise stop a recording mid-call, fixed from inside the app in one tap |
+| 🛡️ | **Resilient recording (opt-in)** — makes recording **resistant to interruptions**: a recording already in progress is unaffected if Android stops the background helper mid-call (off by default) |
 | 🤖 | **Automatic** recording with per-call rules — ignore anonymous, cross-country, or specific contacts |
 | ☁️ | Save to **device, a cloud folder, or both**, with optional **scheduled sync** (immediate / daily / weekly) |
 | 🧹 | **Retention / auto-delete** — remove recordings after a chosen age, separately for device & cloud, swept daily at a time you pick (your local time zone) |
@@ -48,6 +49,12 @@ After a one-time pairing, CallVault runs a **persistent privileged daemon** — 
 
 - **Wireless Debugging is fully automatic and transient.** CallVault turns it on only long enough to (re)launch the daemon, then turns it back off. You never toggle it manually after the first pair.
 - Call audio is captured by the daemon through a **direct `AudioRecord` path** and muxed into a file you own (via the Storage Access Framework) — on the device and/or a cloud folder you pick through the system file picker. `scrcpy-server` is launched only as a fallback, when the direct path can't handle the chosen source or codec on your device.
+
+### Keeping a recording alive when the screen locks
+
+On many phones (OnePlus, Xiaomi, Samsung…), locking the screen during a call renegotiates the USB connection, which restarts the system's ADB daemon and takes the recorder down with it — mid-call.
+
+The fix is to set the phone's **Default USB Configuration** to **"Charging only"**, and CallVault can do that for you: the setup wizard offers it, **Settings ▸ Reliability** has it, and if USB is on a data mode the Home screen and the recorder notification show a "locking the screen may stop recording — tap to fix" prompt. The trade-off is that plugging into a PC then defaults to charging, so pick *File transfer* manually when you actually want to move files.
 
 ### Resilient recording (opt-in)
 
@@ -89,12 +96,14 @@ It doesn't change how a recording *starts* — the daemon is still needed for th
 2. **Open CallVault** and accept the disclaimer.
 3. On the **Permissions** screen, grant **Notifications**, then tap **Pair**. CallVault opens the Wireless-debugging screen and waits — when you flip the toggle on, pairing starts automatically.
 4. Tap **"Pair device with pairing code"**, and type the 6-digit code into CallVault's notification. After a few seconds you'll get **"Paired ✓"** — tap it to return.
-5. Grant the remaining permissions, then complete the **Setup Wizard**: where to save recordings, sync schedule, auto-record, audio quality, and file-name format.
+5. Grant the remaining permissions, then complete the **Setup Wizard**: where to save recordings, upload schedule (if you picked a cloud folder), auto-record rules, **reliability** (the screen-lock fix and off-Wi-Fi recording), audio quality, and file-name format.
 
 **Day-to-day:** the **Home** screen shows app status and your recordings — tap one to play, expand a *Device + Drive* recording to play/delete each copy, and filter by source/direction/contact/date. Settings is one tap away.
 
 > [!TIP]
 > On OEMs that aggressively kill background apps (OnePlus/OxygenOS, Xiaomi, etc.), allow CallVault in **Auto-launch / Startup Manager** and exclude it from **battery optimization** so it records reliably and starts after a reboot. See [dontkillmyapp.com](https://dontkillmyapp.com/).
+>
+> If a recording ever stops when you lock the screen, set USB to **"Charging only"** — see [above](#keeping-a-recording-alive-when-the-screen-locks). Turning on **Resilient recording** additionally protects a call that is already being recorded.
 
 ## Building from source
 

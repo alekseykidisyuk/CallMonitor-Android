@@ -5,7 +5,7 @@ All notable changes to CallVault are documented here. The format is based on
 
 ## [1.4.6] — 2026-07-26
 
-The headline: **a call that starts recording now finishes recording** — opt in under Settings → Reliability.
+The headline: **recording is now resistant to the background helper being stopped mid-call** — opt in under Settings → Reliability.
 
 ### Added
 - **Resilient recording (opt-in).** Until now, the background helper held the microphone and did the

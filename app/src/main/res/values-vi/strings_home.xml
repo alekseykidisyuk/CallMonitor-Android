@@ -30,7 +30,7 @@
     <string name="home_usb_advisory_text">USB đang ở chế độ dữ liệu. Nhấn để đặt Chỉ sạc.</string>
     <string name="home_usb_advisory_fix">Sửa</string>
     <string name="home_whatsnew_resilient_title">Mới: Ghi âm bền bỉ</string>
-    <string name="home_whatsnew_resilient_body">Một khi cuộc gọi đã bắt đầu được ghi, giờ đây nó sẽ ghi trọn vẹn — kể cả khi Android dừng tiến trình nền của CallVault giữa chừng, điều trước đây làm bản ghi bị cắt ngang.\n\nMặc định tắt. Bạn cũng có thể bật sau trong Cài đặt ▸ Độ tin cậy.</string>
+    <string name="home_whatsnew_resilient_body">Giúp việc ghi âm cuộc gọi chống chịu tốt hơn với các gián đoạn.\n\nAndroid có thể dừng tiến trình nền của CallVault bất cứ lúc nào. Khi bật tùy chọn này, bản ghi đang diễn ra sẽ không còn bị ảnh hưởng khi điều đó xảy ra.\n\nMặc định tắt — bạn cũng có thể bật sau trong Cài đặt ▸ Độ tin cậy.</string>
     <string name="home_whatsnew_resilient_cta">Bật</string>
-    <string name="home_whatsnew_resilient_enabled">Ghi âm bền bỉ đang bật. Các cuộc gọi của bạn sẽ được ghi đến hết, kể cả khi tiến trình nền bị dừng giữa chừng.</string>
+    <string name="home_whatsnew_resilient_enabled">Ghi âm bền bỉ đang bật. Bản ghi đang diễn ra sẽ không bị ảnh hưởng nếu Android dừng tiến trình nền của CallVault.</string>
 </resources>
