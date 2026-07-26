@@ -46,28 +46,36 @@ is why `SECTION_EXPERIMENTAL` is still the string `"reliability"` after that ren
 
 ---
 
-## 🔵 Switch Wireless debugging off again for "Record without Wi-Fi" users
+## 🟡 Switch Wireless debugging off again — implemented, UNVERIFIED on device
 
-Since 1.4.9 Wireless debugging stays on whenever USB debugging is off, because turning it off restarts
-`adbd` and kills the daemon. That is correct but blunt: it means most users keep a debugging switch on.
+**Route 2 is closed, permanently.** Making the daemon outlive an `adbd` restart is not possible without
+root: Android's init kills the service's POSIX process group **and** its cgroup on stop, explicitly so a
+process cannot escape via `setsid()`. Shizuku dies exactly the same way
+([#311](https://github.com/RikkaApps/Shizuku/issues/311)) — this is not a technique someone else has
+solved and we simply missed. Do not spend time here again.
 
-**What was wrong before:** 1.4.8 treated an armed loopback listener as a second transport. It is not —
-`service.adb.tcp.port` is a persisted *setting*, so disabling Wireless debugging restarts `adbd`
-anyway, the daemon dies with it, and the listener only returns ~12 s later, by which point the launcher
-has given up and re-enabled Wireless debugging. Measured on a Galaxy S24 FE: daemon died 57 ms after
-the disable, and the churn loop returned exactly as before.
+**Route 1 is implemented** (`RecorderServerLauncher.dropWirelessDebuggingBeforeLaunch`): stop trying to
+survive the restart, and stop provoking one while the daemon is alive.
 
-**The shape that should work:** stop disabling Wireless debugging *after* launching the daemon, and do
-it *before* instead —
+```
+old:  connect → launch daemon → disable WD  → adbd restarts → daemon dies
+new:  connect → arm loopback  → disable WD  → adbd restarts → wait for listener → launch daemon
+```
 
-1. bootstrap over Wireless debugging, arm the loopback listener
-2. switch Wireless debugging off, and **wait for the loopback to come back** (allow ~15 s; Samsung took
-   over 12) rather than treating the gap as a failed connection and re-enabling
-3. launch the daemon over the loopback — it now survives, because nothing toggles afterwards
+The `adb tcpip` listener keeps `adbd` reachable with no network and no Wireless debugging — the same
+workaround Shizuku users apply by hand
+([#864](https://github.com/RikkaApps/Shizuku/issues/864)) — and it is a persisted property, so once
+Wireless debugging is off and the listener is back, nothing restarts `adbd` again and the daemon lives.
 
-Fall back to leaving Wireless debugging on if the listener never returns. The launcher currently does
-`launch → applyWdPolicy`; this reverses that for the loopback case only. Needs on-device verification
-with USB debugging **off**, since that is what hid the bug twice.
+Only runs with "Record without Wi-Fi" on. Waits up to **20 s** for the listener (measured at over 12 s
+on a Galaxy S24 FE — the old 6 s budget is exactly what made it give up and re-enable Wireless
+debugging, restarting the loop). If the listener never returns, Wireless debugging goes back on and
+everything proceeds as in 1.4.9: a daemon with Wireless debugging on beats no daemon.
+
+**NOT YET VERIFIED ON HARDWARE.** Test build `1.5.0-wdoff1` (versionCode 10561). It must be tested with
+**USB debugging OFF** and "Record without Wi-Fi" **ON** — USB debugging masks this entire class of bug
+and has already hidden it twice. Pass = Wireless debugging ends up **off**, status reaches ready, zero
+`Daemon binder died`, and a VoIP call arms (`policy armed`, not `policy refused`).
 
 ---
 
