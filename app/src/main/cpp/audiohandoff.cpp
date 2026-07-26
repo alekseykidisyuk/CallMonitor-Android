@@ -249,10 +249,46 @@ Java_com_baba_callvault_services_recording_handoff_AudioHandoffNative_nativeDrai
     const int CYCLE_US = 5000;                // 5 ms — keep ring occupancy tiny (<< the ring's ms)
     const int cyclesPerSec = 1000000 / CYCLE_US; // 200
     const long maxCycles = static_cast<long>(maxSeconds) * cyclesPerSec;
+
+    // ---- Liveness of the handed-off track ------------------------------------------------------
+    // We hold the cblk but NOT an AudioRecord object — that lives in the daemon, which by design may
+    // be dead. AudioRecord::restoreRecord_l (the silent rebuild after an invalidation) is therefore
+    // unreachable to us, and EVENT_NEW_IAUDIORECORD is never dispatched on the record path. So when
+    // AudioFlinger invalidates the track we get NO exception, NO callback and NO dead binder — the
+    // ring simply freezes and the recording truncates silently.
+    //
+    // Two independent detectors, both diagnostic: they end the drain cleanly (flush + EOF, so the
+    // container still finalises) and say WHY in the log, instead of spinning to maxSeconds.
+    auto *flagsPtr = reinterpret_cast<volatile int32_t *>(w + 44);  // audio_track_cblk_t::mFlags
+    // Offsets cross-check against the empirically pinned geometry: mFlags(44), mState(45) sit
+    // immediately before the union whose first member mFront is the verified word 46.
+    const int32_t CBLK_INVALID_FLAG = 0x04;   // AudioTrackShared.h: "invalidated by AudioFlinger"
+    // The server writes continuously while capturing — even a SILENCED track advances mRear at full
+    // rate (silencing memsets the buffer, it does not stop the stream). So a rear that stops moving
+    // means the stream itself is gone, not that the call went quiet. Generous, to never cut a healthy
+    // recording short over a transient HAL hiccup.
+    const int STALL_LIMIT_CYCLES = 10 * cyclesPerSec;
+    uint32_t stallRear = lastFront;
+    long stallSinceCycle = 0;
     LOGI("drainToPipe: start frameCount=%u P2=%u dataOff=%d frameSize=%d guard=%u maxSec=%d cycle=%dus (decoupled)", fc, p2, dataOff, fsz, guard, maxSeconds, CYCLE_US);
     for (long i = 0; i < maxCycles; i++) {
         if (stop && __atomic_load_n(stop, __ATOMIC_ACQUIRE) != 0) { LOGI("drainToPipe: stop requested at t~%lds", i / cyclesPerSec); break; }
         uint32_t rear = __atomic_load_n(rearPtr, __ATOMIC_ACQUIRE);  // acquire: data reads see server's release
+
+        // Definitive: AudioFlinger has torn the track down (input preempted at maxOpenCount, route
+        // close, audioserver restart). Nothing in this process can rebuild it — stop and report.
+        if (__atomic_load_n(flagsPtr, __ATOMIC_RELAXED) & CBLK_INVALID_FLAG) {
+            LOGI("drainToPipe: TRACK INVALIDATED by AudioFlinger (CBLK_INVALID) at t~%lds after %ld bytes "
+                 "— recording ends here", i / cyclesPerSec, totalBytes);
+            break;
+        }
+        // Belt-and-braces: the stream stopped without the flag being set for us to see.
+        if (rear != stallRear) { stallRear = rear; stallSinceCycle = i; }
+        else if (i - stallSinceCycle > STALL_LIMIT_CYCLES) {
+            LOGI("drainToPipe: RING STALLED %ds at rear=%u after %ld bytes (capture stopped upstream) "
+                 "— recording ends here", (int) ((i - stallSinceCycle) / cyclesPerSec), rear, totalBytes);
+            break;
+        }
         uint32_t safeRear = (rear - lastFront > guard) ? rear - guard : lastFront; // hold back freshest
         uint32_t avail = safeRear - lastFront;     // unsigned wrap-safe frame count
         if (avail > fc) avail = fc;                // clamp on overrun (drop stale, resync below)
