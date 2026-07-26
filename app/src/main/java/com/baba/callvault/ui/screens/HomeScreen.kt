@@ -91,6 +91,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.baba.callvault.ui.common.VoipAppIcons
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.Groups
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.recordings.RecordingDirection
@@ -990,6 +993,7 @@ private fun RecordingRow(
             // hint but keep playback state attached to the active sub-copy if one is playing.
             PlayDisc(
                 direction = item.direction,
+                voipApp = item.voipApp,
                 isActive = !isBoth && isRowActive,
                 playback = playback
             )
@@ -1230,6 +1234,7 @@ private fun CopySubEntry(
 @Composable
 private fun PlayDisc(
     direction: RecordingDirection?,
+    voipApp: String?,
     isActive: Boolean,
     playback: RecordingPlaybackController.PlaybackState
 ) {
@@ -1259,7 +1264,44 @@ private fun PlayDisc(
                 )
             }
         }
-        DirectionBadge(direction)
+        // A VoIP recording has no direction (there is no call-log entry behind it), so the same corner
+        // slot carries the app it came from instead — the two can never collide.
+        if (direction == null && voipApp != null) VoipAppBadge(voipApp) else DirectionBadge(direction)
+    }
+}
+
+/**
+ * Corner badge showing which app a VoIP recording came from, using that app's OWN installed icon —
+ * so no messenger's trademarked logo is bundled with CallVault. Falls back to a neutral glyph when the
+ * app can't be resolved (uninstalled since, or a label we can't match).
+ */
+@Composable
+private fun BoxScope.VoipAppBadge(appLabel: String) {
+    val context = LocalContext.current
+    val icon = remember(appLabel) { VoipAppIcons.iconFor(context, appLabel) }
+    Box(
+        modifier = Modifier
+            .size(18.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(2.dp)
+            .align(Alignment.BottomEnd),
+        contentAlignment = Alignment.Center
+    ) {
+        if (icon != null) {
+            Image(
+                bitmap = icon,
+                contentDescription = appLabel,
+                modifier = Modifier.size(13.dp).clip(CircleShape)
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Filled.Groups,
+                contentDescription = appLabel,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(11.dp)
+            )
+        }
     }
 }
 
