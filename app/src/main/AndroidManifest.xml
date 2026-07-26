@@ -42,6 +42,23 @@
     <!-- Android 11+ Onwards () -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!--
+      Package visibility (Android 11+). Without this an app sees almost no other packages, so the VoIP
+      recording badge could never resolve the calling app's icon and always fell back to a generic
+      glyph.
+
+      Scoped to apps that have a launcher entry rather than requesting QUERY_ALL_PACKAGES, which is far
+      broader than needed and is exactly the kind of permission a call recorder should not be asking
+      for. This grants no ability to read anything from those apps — only to see that they exist and
+      load their public label and icon.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".CallVaultApplication"
         android:allowBackup="false"
