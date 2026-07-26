@@ -100,6 +100,13 @@ interface IRecorderService {
      */
     boolean voipFarPartyHeard();
 
+    /**
+     * Best-effort contact name for the VoIP call in progress, taken from the ongoing-call notification,
+     * or null. Only the daemon can read notifications without asking the user for notification access,
+     * so the lookup lives there. A nicety for filenames — never depend on it.
+     */
+    String voipCallerName();
+
     /** Releases the daemon's held handoff AudioRecord (frees the capture input). Idempotent. */
     void stopHandoff();
 }

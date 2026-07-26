@@ -268,6 +268,11 @@ object RecorderServer {
             return ok
         }
 
+        override fun voipCallerName(): String? =
+            runCatching { VoipCallerName.resolve() }
+                .onFailure { AppLogger.d(TAG, "voipCallerName failed: ${it.message}") }
+                .getOrNull()
+
         override fun voipFarPartyHeard(): Boolean = lastVoipSession?.farPartyHeard ?: false
 
         override fun disarmVoipCapture() {

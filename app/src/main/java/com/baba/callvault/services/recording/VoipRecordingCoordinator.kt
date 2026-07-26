@@ -68,7 +68,11 @@ object VoipRecordingCoordinator {
         val codec = runCatching { ScrcpyAudioCodec.fromKey(prefs.getAudioCodec()) }
             .getOrDefault(ScrcpyAudioCodec.OPUS)
         val bitRate = prefs.getAudioBitRate().takeIf { it > 0 } ?: codec.defaultBitRate
-        val fileName = buildFileName(codec)
+        // Best-effort; a null name just means the recording is named by time alone.
+        val caller = runCatching { service.voipCallerName() }
+            .onFailure { AppLogger.d(TAG, "caller name lookup failed: ${it.message}") }
+            .getOrNull()
+        val fileName = buildFileName(codec, caller)
 
         val saf = SafHelper.createAudioFile(context, folderUri, fileName, codec.mimeType)
         if (saf == null) {
@@ -149,8 +153,9 @@ object VoipRecordingCoordinator {
      * `<timestamp>_voip.<ext>` — no number and no contact, because a VoIP call provides neither. The
      * `voip` marker keeps these distinguishable from carrier recordings at a glance and in sorting.
      */
-    private fun buildFileName(codec: ScrcpyAudioCodec): String {
+    private fun buildFileName(codec: ScrcpyAudioCodec, caller: String?): String {
         val stamp = SimpleDateFormat("yyyyMMdd_HHmmss.SSSZ", Locale.CANADA).format(Date())
-        return "${stamp}_voip${codec.containerExtension}"   // containerExtension already has the dot
+        val who = caller?.takeIf { it.isNotBlank() }?.let { "_$it" } ?: ""
+        return "${stamp}_voip$who${codec.containerExtension}"   // containerExtension already has the dot
     }
 }
