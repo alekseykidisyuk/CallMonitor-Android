@@ -165,6 +165,8 @@
     <string name="folder_cloud_warning">⚠ 此录音文件夹位于云端，用于录音并不可靠。请选择设备本地的文件夹。</string>
     <string name="settings_offline_recording_label">离线录音（无 Wi-Fi）</string>
     <string name="settings_offline_recording_desc">即使没有 Wi-Fi 网络也能录制通话。</string>
+    <string name="settings_handoff_persist_label">弹性录音</string>
+    <string name="settings_handoff_persist_description">即使后台助手在通话中被终止（例如锁定屏幕时），也能继续录音。实验性功能。</string>
     <string name="settings_usb_default_label">解锁时的 USB 模式</string>
     <string name="settings_usb_default_hint">“仅充电”可在通话中锁屏时保持录音不中断。其他模式允许 USB 传输数据，但在锁定手机时可能中断录音。</string>
     <string name="settings_usb_default_applying">正在应用…</string>

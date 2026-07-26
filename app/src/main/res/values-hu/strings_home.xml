@@ -29,4 +29,8 @@
     <string name="home_usb_advisory_title">A rögzítés leállhat a képernyő zárolásakor</string>
     <string name="home_usb_advisory_text">Az USB adatmódban van. Koppints a Csak töltés beállításához.</string>
     <string name="home_usb_advisory_fix">Javítás</string>
+    <string name="home_whatsnew_resilient_title">Új: Ellenálló rögzítés</string>
+    <string name="home_whatsnew_resilient_body">Ellenállóbbá teszi a hívásrögzítést a megszakításokkal szemben.\n\nAz Android bármikor leállíthatja a CallVault háttérfolyamatát. Ha ez be van kapcsolva, a már folyamatban lévő felvételt ez többé nem érinti.\n\nAlapértelmezés szerint kikapcsolva — később is bekapcsolhatod: Beállítások ▸ Megbízhatóság.</string>
+    <string name="home_whatsnew_resilient_cta">Bekapcsolom</string>
+    <string name="home_whatsnew_resilient_enabled">Az ellenálló rögzítés be van kapcsolva. A már folyamatban lévő felvételt nem érinti, ha az Android leállítja a CallVault háttérfolyamatát.</string>
 </resources>

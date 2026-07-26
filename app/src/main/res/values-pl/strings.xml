@@ -165,6 +165,8 @@
     <string name="folder_cloud_warning">⚠ Ten folder nagrań znajduje się w chmurze, co jest zawodne przy nagrywaniu. Wybierz folder na urządzeniu.</string>
     <string name="settings_offline_recording_label">Nagrywanie offline (bez Wi-Fi)</string>
     <string name="settings_offline_recording_desc">Nagrywaj połączenia nawet wtedy, gdy nie ma sieci Wi-Fi.</string>
+    <string name="settings_handoff_persist_label">Odporne nagrywanie</string>
+    <string name="settings_handoff_persist_description">Kontynuuje nagrywanie nawet wtedy, gdy pomocniczy proces w tle zostanie zamknięty w trakcie połączenia (np. po zablokowaniu ekranu). Eksperymentalne.</string>
     <string name="settings_usb_default_label">USB po odblokowaniu</string>
     <string name="settings_usb_default_hint">„Tylko ładowanie“ utrzymuje nagrywanie, gdy zablokujesz ekran podczas rozmowy. Inne tryby pozwalają na przesyłanie danych przez USB, ale mogą przerwać nagrywanie po zablokowaniu telefonu.</string>
     <string name="settings_usb_default_applying">Stosowanie…</string>

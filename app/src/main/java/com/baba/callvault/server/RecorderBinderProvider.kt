@@ -12,9 +12,11 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
+import android.os.Binder
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Process
+import com.baba.callvault.services.recording.handoff.HandoffReceiver
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -50,12 +52,36 @@ class RecorderBinderProvider : ContentProvider() {
      * unmarshals against the framework classloader and returns null (the classic Shizuku gotcha).
      */
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle {
-        if (method != METHOD_SEND_BINDER || extras == null) {
-            AppLogger.w(TAG, "Provider.call ignored method='$method' (extras null=${extras == null})")
-            return Bundle()
+        if (extras == null) { AppLogger.w(TAG, "Provider.call ignored method='$method' (null extras)"); return Bundle() }
+        when (method) {
+            METHOD_SEND_BINDER -> handleSendBinder(extras)
+            METHOD_SEND_HANDOFF -> handleSendHandoff(extras)
+            else -> AppLogger.w(TAG, "Provider.call ignored method='$method'")
         }
-        handleSendBinder(extras)
         return Bundle()
+    }
+
+    /** Resilient recording (Option B): receive the daemon-extracted IAudioRecord IBinder (+ cblk fd) and
+     * hand it to the app-side capture controller, which holds the binder (keep-alive) + reads the ring. */
+    private fun handleSendHandoff(extras: Bundle) {
+        // Only the privileged shell-uid daemon (or system) may deliver a handoff: onReceived feeds the
+        // cblk fd + geometry into native mmap/drain code, so an untrusted 3rd-party app must never reach
+        // it. A rejected caller simply means no handoff arrives → the engine falls back to daemon mode.
+        val callingUid = Binder.getCallingUid()
+        if (callingUid != Process.SHELL_UID && callingUid != Process.SYSTEM_UID && callingUid != Process.myUid()) {
+            AppLogger.w(TAG, "sendHandoff rejected: untrusted caller uid=$callingUid")
+            return
+        }
+        extras.classLoader = BinderContainer::class.java.classLoader
+        @Suppress("DEPRECATION")
+        val binder: IBinder? = extras.getParcelable<BinderContainer>(EXTRA_BINDER)?.binder
+        @Suppress("DEPRECATION")
+        val cblk = extras.getParcelable<android.os.ParcelFileDescriptor>(EXTRA_CBLK_FD)
+        val frameCount = extras.getInt(EXTRA_FRAME_COUNT, 0)
+        val sampleRate = extras.getInt(EXTRA_SAMPLE_RATE, 16000)
+        val channels = extras.getInt(EXTRA_CHANNELS, 1)
+        if (binder == null) { AppLogger.e(TAG, "sendHandoff: IAudioRecord binder null"); return }
+        HandoffReceiver.onReceived(binder, cblk, frameCount, sampleRate, channels)
     }
 
     /** Mirrors `ShizukuProvider.handleSendBinder`: read the container, store + link-to-death the binder. */
@@ -116,7 +142,20 @@ class RecorderBinderProvider : ContentProvider() {
         /** Mirrors ShizukuProvider.METHOD_SEND_BINDER. */
         const val METHOD_SEND_BINDER = "sendBinder"
 
+        /** Delivery of a handed-off capture (IAudioRecord binder + cblk fd); see HandoffReceiver. */
+        const val METHOD_SEND_HANDOFF = "sendHandoff"
+
         /** Bundle key for the [BinderContainer]; analogous to ShizukuProvider.EXTRA_BINDER. */
         const val EXTRA_BINDER = "com.baba.callvault.recorder.extra.BINDER"
+
+        /** Bundle key for the cblk ParcelFileDescriptor. */
+        const val EXTRA_CBLK_FD = "com.baba.callvault.recorder.extra.CBLK_FD"
+
+        /** Bundle key for the authoritative ring frame count (AudioRecord.bufferSizeInFrames). */
+        const val EXTRA_FRAME_COUNT = "com.baba.callvault.recorder.extra.FRAME_COUNT"
+
+        /** Capture format keys, so the app-side drain + encoder match the daemon's AudioRecord. */
+        const val EXTRA_SAMPLE_RATE = "com.baba.callvault.recorder.extra.SAMPLE_RATE"
+        const val EXTRA_CHANNELS = "com.baba.callvault.recorder.extra.CHANNELS"
     }
 }

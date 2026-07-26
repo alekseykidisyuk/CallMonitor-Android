@@ -165,6 +165,8 @@
     <string name="folder_cloud_warning">⚠ Ez a rögzítési mappa a felhőben van, ami megbízhatatlan a rögzítéshez. Válasszon egy eszközön lévő mappát.</string>
     <string name="settings_offline_recording_label">Offline rögzítés (Wi-Fi nélkül)</string>
     <string name="settings_offline_recording_desc">Hívások rögzítése akkor is, ha nincs Wi-Fi hálózat.</string>
+    <string name="settings_handoff_persist_label">Ellenálló rögzítés</string>
+    <string name="settings_handoff_persist_description">A rögzítés akkor is folytatódik, ha a háttérsegéd hívás közben leáll (pl. amikor lezárja a képernyőt). Kísérleti.</string>
     <string name="settings_usb_default_label">USB a képernyő feloldásakor</string>
     <string name="settings_usb_default_hint">A „Csak töltés“ életben tartja a rögzítést, ha hívás közben zárolod a képernyőt. A többi mód engedi az USB-adatátvitelt, de megszakíthatja a rögzítést a telefon zárolásakor.</string>
     <string name="settings_usb_default_applying">Alkalmazás…</string>

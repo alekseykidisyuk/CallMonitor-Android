@@ -39,6 +39,9 @@ internal object BinderDelivery {
     /** Mirrors ShizukuProvider.METHOD_SEND_BINDER. */
     private const val METHOD_SEND_BINDER = "sendBinder"
 
+    /** Delivery of a handed-off capture (IAudioRecord binder + cblk fd). */
+    private const val METHOD_SEND_HANDOFF = "sendHandoff"
+
     /** Single user (user 0) on this device; mirrors Shizuku passing the resolved userId. */
     private const val USER_0 = 0
 
@@ -49,23 +52,36 @@ internal object BinderDelivery {
      *
      * @return true if either path got a non-null reply Bundle from the provider's `call`.
      */
-    fun deliverBinderToApp(binder: IBinder, authority: String): Boolean {
-        val bundle = Bundle().apply {
-            // Wrap the binder so it survives the provider hop; mirrors Shizuku's BinderContainer use.
+    fun deliverBinderToApp(binder: IBinder, authority: String): Boolean =
+        deliver(authority, METHOD_SEND_BINDER, Bundle().apply {
             putParcelable(RecorderBinderProvider.EXTRA_BINDER, BinderContainer(binder))
-        }
+        })
 
-        AppLogger.i(TAG, "Delivering binder: trying getContentProviderExternal path (authority=$authority)")
-        if (runCatching { deliverViaActivityManager(authority, bundle) }
+    /** Delivers the extracted IAudioRecord [binder] + [cblkFd] + ring [frameCount] + capture format. */
+    fun deliverHandoffToApp(
+        binder: IBinder, authority: String, cblkFd: android.os.ParcelFileDescriptor?,
+        frameCount: Int, sampleRate: Int, channelCount: Int,
+    ): Boolean =
+        deliver(authority, METHOD_SEND_HANDOFF, Bundle().apply {
+            putParcelable(RecorderBinderProvider.EXTRA_BINDER, BinderContainer(binder))
+            if (cblkFd != null) putParcelable(RecorderBinderProvider.EXTRA_CBLK_FD, cblkFd)
+            putInt(RecorderBinderProvider.EXTRA_FRAME_COUNT, frameCount)
+            putInt(RecorderBinderProvider.EXTRA_SAMPLE_RATE, sampleRate)
+            putInt(RecorderBinderProvider.EXTRA_CHANNELS, channelCount)
+        })
+
+    private fun deliver(authority: String, method: String, bundle: Bundle): Boolean {
+        AppLogger.i(TAG, "Delivering ($method): trying getContentProviderExternal path (authority=$authority)")
+        if (runCatching { deliverViaActivityManager(authority, bundle, method) }
                 .onFailure { AppLogger.w(TAG, "getContentProviderExternal path failed: ${it.message}", it) }
                 .getOrDefault(false)
         ) {
-            AppLogger.i(TAG, "Binder delivered via getContentProviderExternal")
+            AppLogger.i(TAG, "Delivered ($method) via getContentProviderExternal")
             return true
         }
 
         AppLogger.i(TAG, "Falling back to system-context ContentResolver path")
-        return runCatching { deliverViaSystemContext(authority, bundle) }
+        return runCatching { deliverViaSystemContext(authority, bundle, method) }
             .onFailure { AppLogger.e(TAG, "system-context path failed: ${it.message}", it) }
             .getOrDefault(false)
     }
@@ -78,7 +94,7 @@ internal object BinderDelivery {
      *  4. provider.call(<attribution per SDK>, authority, "sendBinder", null, bundle)
      *  5. finally am.removeContentProviderExternal(authority, /*token*/ null)
      */
-    private fun deliverViaActivityManager(authority: String, bundle: Bundle): Boolean {
+    private fun deliverViaActivityManager(authority: String, bundle: Bundle, method: String): Boolean {
         // 1. IActivityManager via public-but-grey ActivityManager.getService().
         val am = Class.forName("android.app.ActivityManager")
             .getMethod("getService")
@@ -100,7 +116,7 @@ internal object BinderDelivery {
                 ?: throw IllegalStateException("ContentProviderHolder.provider is null")
 
             // 4. provider.call(...) — version matrix from Shizuku's IContentProviderCompat.
-            val reply = callProvider(provider, authority, METHOD_SEND_BINDER, bundle)
+            val reply = callProvider(provider, authority, method, bundle)
             AppLogger.i(TAG, "getContentProviderExternal call reply=$reply (null=${reply == null})")
             return reply != null
         } finally {
@@ -165,7 +181,7 @@ internal object BinderDelivery {
      *   ctx.getContentResolver().call(Uri "content://<authority>", "sendBinder", null, bundle)
      * Reflection used for the two hidden ActivityThread methods; the rest is public API.
      */
-    private fun deliverViaSystemContext(authority: String, bundle: Bundle): Boolean {
+    private fun deliverViaSystemContext(authority: String, bundle: Bundle, method: String): Boolean {
         val activityThreadClass = Class.forName("android.app.ActivityThread")
         val at = activityThreadClass.getMethod("systemMain").invoke(null)
             ?: throw IllegalStateException("ActivityThread.systemMain() returned null")
@@ -173,7 +189,7 @@ internal object BinderDelivery {
             ?: throw IllegalStateException("getSystemContext() returned null")
 
         val uri = android.net.Uri.parse("content://$authority")
-        val reply = context.contentResolver.call(uri, METHOD_SEND_BINDER, null, bundle)
+        val reply = context.contentResolver.call(uri, method, null, bundle)
         AppLogger.i(TAG, "system-context call reply=$reply (null=${reply == null})")
         return reply != null
     }

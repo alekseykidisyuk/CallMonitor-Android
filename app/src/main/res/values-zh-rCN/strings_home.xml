@@ -29,4 +29,8 @@
     <string name="home_usb_advisory_title">锁屏时录音可能中断</string>
     <string name="home_usb_advisory_text">USB 处于数据模式。点按设为仅充电。</string>
     <string name="home_usb_advisory_fix">修复</string>
+    <string name="home_whatsnew_resilient_title">新功能：弹性录音</string>
+    <string name="home_whatsnew_resilient_body">让通话录音更能抵御中断。\n\nAndroid 可能随时停止 CallVault 的后台进程。开启后，已在进行中的录音不再受此影响。\n\n默认关闭——你也可以稍后在“设置 ▸ 可靠性”中开启。</string>
+    <string name="home_whatsnew_resilient_cta">开启</string>
+    <string name="home_whatsnew_resilient_enabled">弹性录音已开启。若 Android 停止 CallVault 的后台进程，已在进行中的录音不再受影响。</string>
 </resources>

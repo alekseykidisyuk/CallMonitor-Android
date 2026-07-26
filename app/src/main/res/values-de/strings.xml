@@ -165,6 +165,8 @@
     <string name="folder_cloud_warning">⚠ Dieser Aufnahmeordner liegt in der Cloud, was für die Aufnahme unzuverlässig ist. Wählen Sie einen Ordner auf dem Gerät.</string>
     <string name="settings_offline_recording_label">Offline-Aufnahme (ohne Wi-Fi)</string>
     <string name="settings_offline_recording_desc">Anrufe auch dann aufnehmen, wenn kein Wi-Fi-Netzwerk verfügbar ist.</string>
+    <string name="settings_handoff_persist_label">Robuste Aufnahme</string>
+    <string name="settings_handoff_persist_description">Aufnahme fortsetzen, selbst wenn der Hintergrunddienst während des Anrufs beendet wird (z. B. beim Sperren des Bildschirms). Experimentell.</string>
     <string name="settings_usb_default_label">USB beim Entsperren</string>
     <string name="settings_usb_default_hint">„Nur Laden“ hält die Aufnahme am Leben, wenn du während eines Anrufs den Bildschirm sperrst. Andere Modi erlauben Datenübertragung per USB, können aber eine Aufnahme beim Sperren unterbrechen.</string>
     <string name="settings_usb_default_applying">Wird angewendet…</string>

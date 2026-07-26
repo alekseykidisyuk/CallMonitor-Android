@@ -98,6 +98,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.WifiOff
 import com.baba.callvault.ui.common.OfflineDialogMode
@@ -1015,7 +1016,34 @@ private fun ReliabilitySection(expanded: Boolean, onToggle: () -> Unit) {
         OfflineRecordingToggle()
         SettingsDivider()
         UsbDefaultConfigRow()
+        SettingsDivider()
+        HandoffPersistToggle()
     }
+}
+
+/**
+ * Opt-in "Resilient recording" toggle (audio-capture handoff, Option B). Default OFF — the recording
+ * path is byte-identical to daemon mode. When ON (and the source is handoff-compatible) the daemon hands
+ * its live capture to the always-alive app, so a recording keeps going and finalises even if the
+ * background helper (daemon) is killed mid-call (e.g. screen-lock restarts adbd). A plain preference with
+ * no arming side effects, so — unlike the offline toggle — it writes straight from the switch.
+ */
+@Composable
+private fun HandoffPersistToggle() {
+    val context = LocalContext.current
+    val prefs = remember { AppPreferences(context) }
+    var enabled by remember { mutableStateOf(prefs.isHandoffPersistEnabled()) }
+
+    SettingsToggleRow(
+        icon = Icons.Filled.Shield,
+        label = stringResource(R.string.settings_handoff_persist_label),
+        description = stringResource(R.string.settings_handoff_persist_description),
+        checked = enabled,
+        onCheckedChange = { turnOn ->
+            enabled = turnOn
+            prefs.setHandoffPersistEnabled(turnOn)
+        },
+    )
 }
 
 /**

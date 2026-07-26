@@ -92,6 +92,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.baba.callvault.R
+import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.recordings.RecordingDirection
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingSource
@@ -165,15 +166,18 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        if (uiState.showWhatsNew) {
-            WhatsNewDialog(
-                onDismiss = {
-                    // Persist "seen" so the one-time off-Wi-Fi intro never reappears on later updates,
-                    // and clear the small "updated" banner too.
-                    viewModel.markWhatsNewSeen()
-                    viewModel.dismissUpdatedBanner()
-                },
-            )
+        uiState.whatsNew?.let { note ->
+            // Persist "seen" so this one-time feature intro never reappears on later updates, and clear
+            // the small "updated" banner too.
+            val dismiss = {
+                viewModel.markWhatsNewSeen(note)
+                viewModel.dismissUpdatedBanner()
+            }
+            when (note) {
+                HomeViewModel.WhatsNewNote.OFF_WIFI -> WhatsNewDialog(onDismiss = dismiss)
+                HomeViewModel.WhatsNewNote.RESILIENT_RECORDING ->
+                    ResilientRecordingWhatsNewDialog(onDismiss = dismiss)
+            }
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -317,6 +321,45 @@ private fun WhatsNewDialog(onDismiss: () -> Unit) {
             onClose = { showOfflineDialog = false },
         )
     }
+}
+
+/**
+ * Post-update "What's new" note introducing **Resilient recording**, with a one-tap opt-in.
+ *
+ * The feature is off by default and lives in Settings ▸ Reliability, so without this note almost
+ * nobody would find it. Enabling is a plain preference write with no side effects (unlike off-Wi-Fi,
+ * which opens a port and needs a security warning), so the CTA turns it on directly and then just
+ * confirms in place.
+ */
+@Composable
+private fun ResilientRecordingWhatsNewDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val prefs = remember { AppPreferences(context) }
+    var enabled by remember { mutableStateOf(prefs.isHandoffPersistEnabled()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.home_whatsnew_resilient_title)) },
+        text = {
+            Text(
+                if (enabled) stringResource(R.string.home_whatsnew_resilient_enabled)
+                else stringResource(R.string.home_whatsnew_resilient_body)
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_ok)) }
+        },
+        dismissButton = {
+            if (!enabled) {
+                TextButton(onClick = {
+                    prefs.setHandoffPersistEnabled(true)
+                    enabled = true
+                }) {
+                    Text(stringResource(R.string.home_whatsnew_resilient_cta))
+                }
+            }
+        },
+    )
 }
 
 /**

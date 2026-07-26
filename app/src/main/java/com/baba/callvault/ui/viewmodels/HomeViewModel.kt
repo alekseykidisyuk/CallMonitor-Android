@@ -97,6 +97,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     enum class DirectionFilter { ALL, INCOMING, OUTGOING }
 
     /**
+     * A one-time, post-update introduction to a feature the user may not know exists.
+     *
+     * Deliberately per-feature rather than per-release: these features are opt-in and easy to miss in
+     * Settings, so the note exists to surface them once — not to narrate every release.
+     */
+    enum class WhatsNewNote { OFF_WIFI, RESILIENT_RECORDING }
+
+    /**
      * Aggregate UI state for Home.
      *
      * Four independent filter facets — [sourceFilter], [directionFilter], [contactFilter] and
@@ -127,8 +135,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val updateProgressPercent: Int = -1,
         /** Version name to show a dismissable "updated successfully" banner for, or null. */
         val updatedToVersion: String? = null,
-        /** Whether to show the one-time "What's new: off-Wi-Fi" intro modal (updated AND not seen yet). */
-        val showWhatsNew: Boolean = false,
+        /** The one-time feature-intro note to show after an update, or null when there is none due. */
+        val whatsNew: WhatsNewNote? = null,
         /** True when the USB default is a data mode → locking the screen mid-call can stop recording. */
         val usbScreenLockRisk: Boolean = false,
         /** True while the one-tap "set USB to Charging only" fix is running. */
@@ -294,13 +302,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Marks the one-time "What's new: off-Wi-Fi" intro modal as seen so it never reappears on later
-     * updates. Persists the flag; the small "updated successfully" banner is dismissed separately.
+     * Marks [note] as seen so it never reappears on later updates. Persists the flag; the small
+     * "updated successfully" banner is dismissed separately.
+     *
+     * Another note may still be due (a user who skipped a release can have more than one unseen), so
+     * this re-selects rather than simply clearing.
      */
-    fun markWhatsNewSeen() {
-        preferences.setSeenOffWifiWhatsNew(true)
-        _uiState.update { it.copy(showWhatsNew = false) }
+    fun markWhatsNewSeen(note: WhatsNewNote) {
+        when (note) {
+            WhatsNewNote.OFF_WIFI -> preferences.setSeenOffWifiWhatsNew(true)
+            WhatsNewNote.RESILIENT_RECORDING -> preferences.setSeenResilientWhatsNew(true)
+        }
+        _uiState.update { it.copy(whatsNew = pendingWhatsNew(it.updatedToVersion)) }
     }
+
+    /** The feature-intro note due after an update, or null when none is pending. */
+    private fun pendingWhatsNew(updatedToVersion: String?): WhatsNewNote? = selectWhatsNew(
+        justUpdated = updatedToVersion != null,
+        seenResilient = preferences.hasSeenResilientWhatsNew(),
+        seenOffWifi = preferences.hasSeenOffWifiWhatsNew(),
+    )
 
     /**
      * Recomputes the [HomeStatus] (synchronous, cheap) and reloads the recordings list off the main
@@ -315,9 +336,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 isLoading = true,
                 availableUpdateTag = preferences.getAvailableUpdateTag(),
                 updatedToVersion = updatedTo,
-                // The off-Wi-Fi "What's new" is a ONE-TIME feature intro: show it only after an update
-                // AND only until it's been seen once, so it never recurs on every later release.
-                showWhatsNew = updatedTo != null && !preferences.hasSeenOffWifiWhatsNew(),
+                // ONE-TIME feature intros: shown only after an update, and only until each has been
+                // seen once, so they never recur on every later release.
+                whatsNew = pendingWhatsNew(updatedTo),
                 // Advisory when the USB default is a data mode (cheap cached read; never blocks/forces ADB).
                 usbScreenLockRisk = UsbDefaultConfig.isScreenLockRisk(appContext)
             )
@@ -503,5 +524,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         preferences.unregisterChangeListener(prefsListener)
         playbackController.release()
         super.onCleared()
+    }
+
+    companion object {
+        /**
+         * Picks the feature-intro note to show, newest feature first, or null when none is due.
+         *
+         * Notes appear only right after an update, and each feature has its OWN seen-flag rather than
+         * a single "last version seen". That way someone who skips several releases still meets every
+         * feature they missed — one per update — instead of only the most recent one.
+         */
+        fun selectWhatsNew(
+            justUpdated: Boolean,
+            seenResilient: Boolean,
+            seenOffWifi: Boolean,
+        ): WhatsNewNote? = when {
+            !justUpdated -> null
+            !seenResilient -> WhatsNewNote.RESILIENT_RECORDING
+            !seenOffWifi -> WhatsNewNote.OFF_WIFI
+            else -> null
+        }
     }
 }

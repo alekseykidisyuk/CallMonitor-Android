@@ -165,6 +165,8 @@
     <string name="folder_cloud_warning">⚠ Thư mục ghi âm này nằm trên đám mây, vốn không đáng tin cậy cho việc ghi âm. Hãy chọn một thư mục trên thiết bị.</string>
     <string name="settings_offline_recording_label">Ghi âm ngoại tuyến (không có Wi-Fi)</string>
     <string name="settings_offline_recording_desc">Ghi âm cuộc gọi ngay cả khi không có mạng Wi-Fi.</string>
+    <string name="settings_handoff_persist_label">Ghi âm bền bỉ</string>
+    <string name="settings_handoff_persist_description">Tiếp tục ghi âm ngay cả khi tiến trình trợ giúp nền bị tắt giữa cuộc gọi (ví dụ khi bạn khóa màn hình). Thử nghiệm.</string>
     <string name="settings_usb_default_label">USB khi mở khóa màn hình</string>
     <string name="settings_usb_default_hint">"Chỉ sạc" giữ cho bản ghi tiếp tục nếu bạn khóa màn hình khi đang gọi. Các chế độ khác cho phép truyền dữ liệu qua USB nhưng có thể làm gián đoạn bản ghi khi bạn khóa máy.</string>
     <string name="settings_usb_default_applying">Đang áp dụng…</string>

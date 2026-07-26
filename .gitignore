@@ -16,3 +16,7 @@ docs/superpowers/
 
 # App signing keystore — the release identity; keep local, back up separately, NEVER commit.
 /signing/
+
+# Native (CMake/NDK) build cache
+.cxx/
+app/.cxx/

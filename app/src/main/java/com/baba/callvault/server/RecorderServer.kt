@@ -15,6 +15,8 @@ import android.os.Process
 import androidx.annotation.Keep
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioSource
+import com.baba.callvault.services.recording.handoff.AudioHandoffNative
+import com.baba.callvault.services.recording.handoff.HandoffSource
 import com.baba.callvault.utils.AppLogger
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -229,6 +231,34 @@ object RecorderServer {
             stopRecording()
             // Give the worker a beat to finish the teardown post before we exit the process.
             workerHandler.post { exitProcess(0) }
+        }
+
+        // "Resilient recording" (Option B): create the privileged AudioRecord for the requested source,
+        // extract the IAudioRecord + cblk, and DELIVER them to the app. Runs on the binder thread so the
+        // synchronous push completes (app is capturing) before this returns true. Fast (create+extract).
+        override fun startHandoff(source: String?, sampleRate: Int, channels: Int): Boolean {
+            if (source == null) { AppLogger.e(TAG, "startHandoff: null source"); return false }
+            AppLogger.i(TAG, "startHandoff source=$source rate=$sampleRate channels=$channels")
+            // Loaded lazily (not at daemon boot): a user who never enables Resilient recording should
+            // not pay for the dlopen, and daemon boot is on the critical path of a call that is already
+            // ringing. Idempotent, and cheap once loaded.
+            if (!AudioHandoffNative.ensureLoadedFromApk(apkPath)) {
+                AppLogger.e(TAG, "startHandoff: libaudiohandoff.so unavailable in the daemon")
+                return false
+            }
+            return runCatching {
+                HandoffSource.deliverToApp(
+                    RecorderBinderProvider.AUTHORITY, source, sampleRate, channels
+                )
+            }.onFailure { AppLogger.w(TAG, "startHandoff error: ${it.message}") }.getOrDefault(false)
+        }
+
+        // Releases the daemon's held handoff AudioRecord (the app owns capture after the handoff; this
+        // just frees the daemon's now-unneeded input so the next call can create a fresh one).
+        override fun stopHandoff() {
+            AppLogger.i(TAG, "stopHandoff requested")
+            runCatching { HandoffSource.releaseHeld() }
+                .onFailure { AppLogger.w(TAG, "stopHandoff error: ${it.message}") }
         }
     }
 }
