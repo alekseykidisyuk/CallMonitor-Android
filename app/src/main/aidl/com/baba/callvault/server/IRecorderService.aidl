@@ -101,17 +101,14 @@ interface IRecorderService {
     boolean voipFarPartyHeard();
 
     /**
-     * Best-effort contact name for the VoIP call in progress, taken from the ongoing-call notification,
-     * or null. Only the daemon can read notifications without asking the user for notification access,
-     * so the lookup lives there. A nicety for filenames — never depend on it.
+     * Best-effort identity of the VoIP call in progress, as {package, callerName} — either may be null.
+     *
+     * Returned TOGETHER and read from a single notification record on purpose: fetching them separately
+     * allowed a title from one notification to be paired with a package from another, which is how a
+     * Telegram call was once labelled as WhatsApp. The package is not resolved to a display name here
+     * because that needs a Context the daemon must not obtain.
      */
-    String voipCallerName();
-
-    /**
-     * Package of the app whose VoIP call is in progress (e.g. "com.whatsapp"), or null. Returned as a
-     * package because resolving a display name needs a Context, which the daemon cannot safely obtain.
-     */
-    String voipCallerPackage();
+    String[] voipCallInfo();
 
     /** Releases the daemon's held handoff AudioRecord (frees the capture input). Idempotent. */
     void stopHandoff();

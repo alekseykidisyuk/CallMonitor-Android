@@ -11,20 +11,18 @@ package com.baba.callvault.server
 import com.baba.callvault.utils.AppLogger
 
 /**
- * Best-effort "who is this VoIP call with?", for naming recordings.
+ * Best-effort "which app, and who with?" for naming a VoIP recording.
  *
  * A VoIP call leaves no call-log entry and exposes no phone number, and the apps' own call histories
- * live in their private data directories, which are unreadable even to the shell user. What IS readable
- * is the ongoing-call notification every one of these apps posts, whose title is normally the contact.
+ * live in private data directories unreadable even to the shell user. What IS readable is the
+ * ongoing-call notification these apps post, which identifies the app and often the contact.
  *
- * Deliberately done from the DAEMON: it already runs as shell and can read notifications, so this needs
- * no new user-facing permission. The alternative — a `NotificationListenerService` in the app — would
- * give structured data but requires the user to grant access to EVERY notification on the device, which
- * is far too much to ask of a call recorder for a nicety like a filename.
+ * Done from the DAEMON, which already runs as shell and can read notifications, so this needs no new
+ * user-facing permission. A `NotificationListenerService` in the app would give structured data but
+ * requires access to EVERY notification on the device — far too much to ask for a nicer filename.
  *
- * Treated as a nicety throughout: this is text scraping, formats vary by app and locale and can change
- * with any update, so every failure path simply returns null and the recording is named by time alone.
- * Nothing depends on it.
+ * A nicety throughout: it is text scraping, formats vary by app, locale and version, so every failure
+ * path returns null and the recording falls back to being named by time alone. Nothing depends on it.
  */
 internal object VoipCallerName {
     private const val TAG = "CV:VoipName"
@@ -35,47 +33,73 @@ internal object VoipCallerName {
     /** Notification categories the platform defines for calls; apps tag ongoing calls with these. */
     private val CALL_CATEGORIES = listOf("category=call", "category=CATEGORY_CALL")
 
-    /** Characters that are unsafe or annoying in a filename, plus anything non-printable. */
+    /** Characters unsafe or annoying in a filename, plus anything non-printable. */
     private val UNSAFE = Regex("""[/\\:*?"<>|\p{Cntrl}]""")
 
-    /**
-     * The contact name from an ongoing call notification, or null when nothing usable is found.
-     * Blocking (spawns `dumpsys`), so call it off the critical path — it runs once per call.
-     */
-    fun resolve(): String? = runCatching {
-        val dump = readNotificationDump() ?: return null
-        val name = extractFromDump(dump)
-        if (name == null) AppLogger.d(TAG, "No caller name found in the call notification")
-        else AppLogger.i(TAG, "VoIP caller name resolved")   // the name itself is not logged
-        name
-    }.onFailure { AppLogger.d(TAG, "Caller-name lookup failed: ${it.message}") }.getOrNull()
+    private val PKG_REGEX = Regex("""pkg=([A-Za-z0-9_.]+)""")
+    private val TITLE_REGEX = Regex("""android\.title=String \((.+?)\)""")
+
+    /** What a single ongoing-call notification tells us. */
+    data class CallInfo(val packageName: String?, val callerName: String?)
 
     /**
-     * Package of the app whose call is in progress (e.g. `com.whatsapp`), or null.
+     * Reads the ongoing-call notification once and returns both facts together.
      *
-     * Returned as a PACKAGE, not a display name: turning one into the other needs a PackageManager and
-     * therefore a Context, and obtaining a Context in this process breaks the attribution the capture
-     * depends on (see [VoipAudioPolicy]). The app resolves the label and the icon.
+     * Deliberately ONE dump and ONE record: reading the package and the title separately let them come
+     * from different notifications entirely — which is exactly how a Telegram call was once attributed
+     * to WhatsApp, because a stale WhatsApp record supplied the package.
+     *
+     * Blocking (spawns `dumpsys`), so keep it off the critical path — it runs once per call.
      */
-    fun resolvePackage(): String? = runCatching {
-        val dump = readNotificationDump() ?: return null
-        extractPackageFromDump(dump)
-    }.onFailure { AppLogger.d(TAG, "Caller-package lookup failed: ${it.message}") }.getOrNull()
+    fun resolve(): CallInfo = runCatching {
+        val dump = readNotificationDump() ?: return CallInfo(null, null)
+        extractFromDump(dump)
+    }.onFailure { AppLogger.d(TAG, "Call-info lookup failed: ${it.message}") }
+        .getOrDefault(CallInfo(null, null))
 
-    /** Package of the first call-tagged notification record. Split out so it can be tested offline. */
-    internal fun extractPackageFromDump(dump: String): String? {
-        val lines = dump.lines()
-        val pkgRegex = Regex("""pkg=([A-Za-z0-9_.]+)""")
-        for ((i, line) in lines.withIndex()) {
-            if (CALL_CATEGORIES.none { line.contains(it, ignoreCase = true) }) continue
-            // The record header carries pkg= and precedes the category line, so look BACK as well.
-            for (j in i downTo maxOf(0, i - BLOCK_LOOKAHEAD)) {
-                val m = pkgRegex.find(lines[j]) ?: continue
-                return m.groupValues[1].takeIf { it.contains('.') }
+    /**
+     * Finds the first notification tagged as a call and reads the package and title from THAT record.
+     * Split from the I/O so the parsing can be exercised without a device.
+     */
+    internal fun extractFromDump(dump: String): CallInfo {
+        // Records begin with "NotificationRecord(", so slicing on that keeps every field with its owner.
+        val records = dump.split("NotificationRecord(")
+        for (record in records) {
+            if (CALL_CATEGORIES.none { record.contains(it, ignoreCase = true) }) continue
+            val pkg = PKG_REGEX.find(record)?.groupValues?.get(1)?.takeIf { it.contains('.') }
+            val rawTitle = TITLE_REGEX.find(record)?.groupValues?.get(1)
+            val name = rawTitle?.let { sanitize(it, pkg) }
+            if (pkg != null || name != null) {
+                AppLogger.i(TAG, "VoIP call info resolved (pkg=$pkg, name=${if (name != null) "yes" else "no"})")
+                return CallInfo(pkg, name)   // the name itself is never logged
             }
         }
-        return null
+        return CallInfo(null, null)
     }
+
+    /**
+     * Trims a title to something usable as a filename, or null.
+     *
+     * Rejects titles that merely restate the app — Telegram's ongoing-call notification is titled
+     * "Ongoing Telegram call" rather than naming the contact, and "Ongoing Telegram call" in a filename
+     * is worse than no name at all. WhatsApp, by contrast, puts the person there.
+     */
+    private fun sanitize(raw: String, packageName: String?): String? {
+        val cleaned = UNSAFE.replace(raw, "").trim().trimEnd('.')
+        if (cleaned.isEmpty()) return null
+
+        // "org.telegram.messenger" -> "telegram"; a title containing it is describing the app, not a person.
+        val appToken = packageName?.split('.')
+            ?.filter { it.length > 3 && it !in GENERIC_PACKAGE_PARTS }
+            ?.maxByOrNull { it.length }
+        if (appToken != null && cleaned.contains(appToken, ignoreCase = true)) {
+            AppLogger.d(TAG, "Ignoring notification title that just names the app")
+            return null
+        }
+        return if (cleaned.length > MAX_NAME_LENGTH) cleaned.take(MAX_NAME_LENGTH).trim() else cleaned
+    }
+
+    private val GENERIC_PACKAGE_PARTS = setOf("com", "org", "net", "android", "messenger", "app", "mobile")
 
     private fun readNotificationDump(): String? {
         val proc = ProcessBuilder("sh", "-c", "dumpsys notification --noredact")
@@ -88,34 +112,4 @@ internal object VoipCallerName {
             runCatching { proc.destroy() }
         }
     }
-
-    /**
-     * Finds the title of a notification tagged as a call. Split out from the I/O so the parsing can be
-     * exercised without a device.
-     */
-    internal fun extractFromDump(dump: String): String? {
-        val lines = dump.lines()
-        val titleRegex = Regex("""android\.title=String \((.+?)\)""")
-        // Walk forward from each call-tagged record; its title follows within the same block.
-        for ((i, line) in lines.withIndex()) {
-            if (CALL_CATEGORIES.none { line.contains(it, ignoreCase = true) }) continue
-            for (j in i until minOf(i + BLOCK_LOOKAHEAD, lines.size)) {
-                val m = titleRegex.find(lines[j]) ?: continue
-                return sanitize(m.groupValues[1])
-            }
-        }
-        return null
-    }
-
-    /** Trims to something safe and sensible for a filename, or null if nothing usable remains. */
-    private fun sanitize(raw: String): String? {
-        val cleaned = UNSAFE.replace(raw, "").trim().trimEnd('.')
-        if (cleaned.isEmpty()) return null
-        // A title that is just a number, or obviously a status line rather than a person, is no better
-        // than no name at all.
-        if (cleaned.length > MAX_NAME_LENGTH) return cleaned.take(MAX_NAME_LENGTH).trim()
-        return cleaned
-    }
-
-    private const val BLOCK_LOOKAHEAD = 40
 }

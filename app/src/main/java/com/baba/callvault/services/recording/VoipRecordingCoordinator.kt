@@ -69,13 +69,12 @@ object VoipRecordingCoordinator {
             .getOrDefault(ScrcpyAudioCodec.OPUS)
         val bitRate = prefs.getAudioBitRate().takeIf { it > 0 } ?: codec.defaultBitRate
         // Best-effort; a null name just means the recording is named by time alone.
-        val caller = runCatching { service.voipCallerName() }
-            .onFailure { AppLogger.d(TAG, "caller name lookup failed: ${it.message}") }
+        // One lookup for both, so the app and the caller always come from the SAME notification.
+        val info = runCatching { service.voipCallInfo() }
+            .onFailure { AppLogger.d(TAG, "call-info lookup failed: ${it.message}") }
             .getOrNull()
-        // The daemon can only report a package (it has no Context); turn it into something readable.
-        val appLabel = runCatching { service.voipCallerPackage()?.let { appLabelFor(context, it) } }
-            .onFailure { AppLogger.d(TAG, "caller package lookup failed: ${it.message}") }
-            .getOrNull()
+        val appLabel = info?.getOrNull(0)?.let { appLabelFor(context, it) }
+        val caller = info?.getOrNull(1)
         val fileName = buildFileName(codec, appLabel, caller)
 
         val saf = SafHelper.createAudioFile(context, folderUri, fileName, codec.mimeType)
