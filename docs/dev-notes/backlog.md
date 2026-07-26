@@ -46,6 +46,52 @@ is why `SECTION_EXPERIMENTAL` is still the string `"reliability"` after that ren
 
 ---
 
+## 🔵 "Test my setup" — prove the whole path works, before it matters
+
+**Why.** This app fails *silently*, and the failure is discovered after the call you needed. Every
+recovery mechanism shipped so far (screen-lock USB fix, resilient recording, fast daemon recovery)
+reduces the chance of a failure without ever telling the user whether their setup works **right now**.
+Every naming bug in the VoIP feature was found by making real phone calls, because there is no other
+way to exercise the path.
+
+**What.** One action that runs the real pipeline end to end and reports which step failed:
+
+1. ADB connection alive (and how long it took — this is where the ~75 s stall would show).
+2. Daemon reachable, binder responsive.
+3. Capture starts on the configured audio source.
+4. Encoder produces non-silent frames.
+5. File is created in the chosen SAF folder, catalogued, and appears in the list.
+6. Clean teardown, and the test file removed.
+
+Report per step, with the failing step named in plain language and a link to the setting that fixes it.
+
+**Notes.** Do not fake it end-to-end: a test that stubs any step will pass while the real path is
+broken, which is worse than no test. The daemon already exposes what is needed; a `VOICE_CALL` source
+cannot be exercised outside a call, so the test should use `MIC` and say so, or capture briefly from
+the configured source and report "could not verify without a live call" rather than implying more than
+it checked. Reuse `voipFarPartyHeard`'s honesty pattern — report what was actually observed.
+
+---
+
+## 🔵 Per-app VoIP support, checked at runtime
+
+**Why.** Settings currently says VoIP recording is experimental and "some apps block recording, and
+this cannot be known until a call is under way". Half of that is now avoidable: whether an app opts out
+of capture is readable **before** a call, from the audio flags its playback carries.
+
+**What.** A per-app list under Settings ▸ Experimental ▸ VoIP calls — installed calling apps with a
+real status each: verified working, not yet tried, or blocks capture. Turns a vague warning into a
+fact, and tells the user *which* of their apps will work rather than leaving them to discover it.
+
+**Notes.** The distinction that matters: `FLAG_NO_MEDIA_PROJECTION` (0x800) is bypassable by this
+route and is what WhatsApp, Telegram and Signal all set; `FLAG_NO_SYSTEM_CAPTURE` (0x1000,
+`ALLOW_CAPTURE_BY_NONE`) is checked before any permission and is **not** bypassable. Reading the flag
+requires an active playback track, so it cannot be sampled at rest for an app that is not in a call —
+expect "not yet tried" to be a real state, and record the observed result after each call instead of
+promising a prediction. Feeds the README's tested-devices table.
+
+---
+
 ## 🔵 `AdbShell.ensureConnected` is unbounded on the recording-start path
 
 **Why.** It can block for ~75 s while a recording is trying to start. 1.4.6 capped one such read at
