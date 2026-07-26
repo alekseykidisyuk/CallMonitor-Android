@@ -116,11 +116,15 @@ val extractLibphonenumberMetadata = tasks.register<ExtractMetadataTask>("extract
     into(outputDir)
 }
 
-// In-repo source of truth for the app version. CI overrides these via -PversionName / -PversionCode
-// (versionCode = the CI run number), but local builds and the in-app "About" version use these
-// defaults — so BUMP versionName here every release to match the CHANGELOG and the version dispatched
-// to the build workflow.
-val ciVersionCode = providers.gradleProperty("versionCode").map { it.toIntOrNull() }.orElse(10441)
+// In-repo source of truth for the app version. Releases are built LOCALLY from these defaults (the
+// signing key that existing installs can update over lives on the maintainer's machine, not in CI),
+// so `./gradlew :app:assembleRelease` with no -P flags must produce exactly the shipped artifact.
+//
+// BUMP BOTH every release: versionName to match the CHANGELOG, and versionCode strictly upwards.
+// Android refuses to install a lower versionCode over a higher one, and uninstalling to get around
+// that would destroy the device's ADB pairing — so a versionCode that goes backwards is not a
+// cosmetic mistake, it strands that device on the old build.
+val ciVersionCode = providers.gradleProperty("versionCode").map { it.toIntOrNull() }.orElse(10518)
 val ciVersionName = providers.gradleProperty("versionName").orElse("1.4.6")
 val ciBuildNumber = providers.gradleProperty("ciBuildNumber").orElse("Local")
 
