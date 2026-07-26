@@ -125,41 +125,118 @@ and confirm **real audio rather than silence**. Everything else is understood. C
 RMS floor — **never** by checking whether the ring advances, because a silenced track advances frames,
 timestamps and the ring at full rate while delivering zeros.
 
-## Track B — VoIP call capture (WhatsApp / Signal / Telegram / etc.)
+## Track B — VoIP call capture
 
-### Grounding — do NOT re-derive the known dead ends
+**Status (2026-07-26): DOWNLINK PROVEN ON-DEVICE, non-root.** The far party of a WhatsApp call was
+captured as shell uid 2000 on the OnePlus 12 / Android 16, at 48 kHz stereo, with call audio still
+audible to the user. Uplink is not yet tested. Working probe:
+`docs/dev-notes/spike-tools/VoipProbe.java`.
 
-Prior feasibility work (`voip-recording-feasibility` memory, 2026-07-22) concluded, for **non-root** VoIP both-sides capture:
-- **Bluetooth SCO/HFP software proxy** — doesn't get the downlink (that source is mic/uplink only); `startBluetoothSco` deprecated/no-op on A16. Dead.
-- **AI acoustic reconstruction** (denoise earpiece bleed) — fatal physics (earpiece bleed is below the mic noise floor except on speakerphone); denoisers *remove* the faint remote voice. Dead.
-- **Only honest cheap path evaluated then:** "records **speakerphone** VoIP acoustically + light denoise," marketed truthfully — after confirming mic-concurrency isn't blocked.
+### What works — the dynamic Audio Policy path
 
-### The angle that was NOT evaluated: our privileged daemon + output/playback capture
+NOT `AudioPlaybackCapture` (needs MediaProjection consent) and NOT `REMOTE_SUBMIX`. The mechanism is a
+**dynamic audio policy**: register an `AudioMix` whose `AudioMixingRule` matches playback with
+`USAGE_VOICE_COMMUNICATION`, routed `ROUTE_FLAG_LOOP_BACK_RENDER`, then read
+`AudioPolicy.createAudioRecordSink(mix)`.
 
-We already ship (debug-only) two **downlink** capture sources via the shell-uid scrcpy path, which a normal app can't use the same way:
-- **`OUTPUT`** → `REMOTE_SUBMIX` — the final mixed audio rendered to the speaker (`ScrcpyAudioSource.kt:104-117`).
-- **`PLAYBACK`** → `AudioPlaybackCapture` API — other apps' audio output, *respecting `allowAudioPlaybackCapture` opt-out* (`ScrcpyAudioSource.kt:120-133`).
+```
+AudioMixingRule: MIX_ROLE_PLAYERS + RULE_MATCH_ATTRIBUTE_USAGE(USAGE_VOICE_COMMUNICATION)
+AudioMix:        ROUTE_FLAG_LOOP_BACK_RENDER, format 48 kHz stereo (OUT channel mask!)
+register:        AudioManager.registerAudioPolicyStatic(policy)   // static, needs no Context
+read:            policy.createAudioRecordSink(mix)                // an ordinary AudioRecord
+```
 
-Both capture the **remote VoIP party's rendered voice (downlink)**. Combined with an uplink source we already support — `VOICE_COMMUNICATION` (`DirectAudioRecorderSession.kt:267`, tuned for VoIP with AEC/AGC) or plain MIC — that is **both directions, captured digitally (not acoustically)**. The prior analysis dismissed non-acoustic VoIP for *normal apps*; it never evaluated the **privileged daemon + REMOTE_SUBMIX** specifically.
+### Measured result (real WhatsApp call)
 
-### Investigation questions (in order)
+| Window | Level | Meaning |
+|---|---|---|
+| before the call | **−91.0 dB** | digital silence (true floor) |
+| ringing | −16.3 dB | ring tone captured |
+| **far party speaking** | **−19.6 dB mean, 0.0 dB peak** | **downlink captured** |
+| user speaking | −58.6 dB | not captured — uplink is a separate stream |
+| after hang-up | −87.3 dB | silence |
 
-1. **Uplink mic-concurrency first (20 min, cheapest kill-switch).** Start a `VOICE_COMMUNICATION` capture in the daemon while a WhatsApp/Signal call owns the mic — does Android silence/deny our track (A10+ concurrency rules)? If silenced, the uplink half is blocked and the rest is moot. *(This is the "test this FIRST" from the VoIP memory.)*
-2. **Does daemon-side `OUTPUT`/REMOTE_SUBMIX capture the VoIP remote party during a live call?** VoIP audio routes with usage `VOICE_COMMUNICATION`, which is often *excluded* from submix/capture even for privileged capture. Empirically test whether the shell/scrcpy submix actually contains the far-end voice, or silence.
-3. **Does `PLAYBACK`/`AudioPlaybackCapture` capture it, or is VoIP audio non-capturable?** `VOICE_COMMUNICATION`-usage playback is capture-exempt for normal MediaProjection clients and apps can set `allowAudioPlaybackCapture=false`. Does the daemon's privileged context bypass either? Test per-app (Signal is stricter than WhatsApp, likely).
-4. **Separation quality** — do we get clean L/R directions (like `VOICE_CALL` stereo — proven independent in the handoff work) or only a downmixed blob? Downlink-only + mic gives two streams we control; submix gives one mixed stream (includes our own mic echo).
+The **39 dB gap** between the far party's window and the user's own is what proves this is a digital
+tap and not acoustic bleed: a microphone would have made the user — inches away — the LOUDEST thing in
+the file. Instead they are the quietest.
 
-### If a working path exists
+### ⚠️ THE ORDERING RULE — the thing that actually blocks people
 
-Downlink via `OUTPUT` or `PLAYBACK` + uplink via `VOICE_COMMUNICATION` (not silenced) → **VoIP both-sides becomes viable non-acoustically**, using capture sources already in the codebase, gated behind the same daemon we already run for cellular. This would be a genuinely new capability, not a rehash of the dead BT/AI paths.
+**The policy must be registered BEFORE the call's audio track is created.** Android fixes a track's
+output routing (including which secondary mixes it feeds) at track-creation time; registering mid-call
+leaves the already-running call audio permanently unattached to the mix.
 
-### Caveats to keep honest
+First attempt, registered mid-call: 28 s of noise floor (peaks 0-2, ≈ −120 dB), then a burst only when
+a NEW stream started. Second attempt, registered first: ringing and the far party captured cleanly.
+Same code, same call type — only the ordering differed. Production must arm the policy on call
+detection, before audio starts.
 
-- **Per-app opt-outs and usage exemptions** may make it work for some apps and not others → must be surfaced honestly per app, never "records all VoIP."
-- **Ties into Track A:** a held `OUTPUT`/`PLAYBACK` track could be pre-created and held the same way — a daemon-free VoIP capture once the track exists.
-- Legal/consent framing for VoIP is stricter than cellular in many jurisdictions.
+### Four obstacles, all solved (do not re-derive)
 
----
+1. **`Looper.prepareMainLooper()` is required** or the app_process is killed outright.
+2. **The mix format takes OUT channel masks** (`CHANNEL_OUT_STEREO`), not IN —
+   `createAudioRecordSink` converts them itself via `inChannelMaskFromOutChannelMask`. Passing IN masks
+   yields an uninitialised `AudioRecord`.
+3. **Do NOT call `ActivityThread.systemMain()`.** It sets the process attribution to packageName
+   `android` while the uid is 2000, and AudioFlinger rejects the mismatch:
+   `EX_SECURITY … createFromTrustedUidNoPackage: invalid attr`. A trusted uid with NO package is
+   exactly what the native validator accepts. Neither a `ContextWrapper` overriding `getPackageName`
+   nor `createPackageContext("com.android.shell")` fixes it — the attribution is process-global.
+4. **Register with `AudioManager.registerAudioPolicyStatic(policy)`** and build the policy with a
+   **null Context** (`getAttributionSource(null)` → `myAttributionSource()`). This is what avoids
+   needing a Context at all, and therefore avoids (3).
+
+### Quality: 48 kHz stereo, not the 16 kHz mono everyone else uses
+
+Every published example caps at 16 kHz mono. That cap comes from
+`AudioMix.canBeUsedForPrivilegedMediaCapture()`, which is only checked when
+`allowPrivilegedPlaybackCapture(true)` is set — and that flag is **not needed** on the voice-comm path,
+whose gate is the `CAPTURE_VOICE_COMMUNICATION_OUTPUT` permission. Drop the flag and 48 kHz stereo
+registers fine. True fidelity is still bounded by the call codec, but nothing is artificially capped.
+
+### REMOTE_SUBMIX is DEAD for this — measured, not theorised
+
+Capturing `REMOTE_SUBMIX` **reroutes** playback instead of duplicating it: device audio goes silent.
+Confirmed on-device (music went quiet during capture, restored after). `ROUTE_FLAG_LOOP_BACK` makes the
+mix the *primary* output; only `LOOP_BACK_RENDER` keeps the normal output and adds a secondary tap —
+verified on-device (music kept playing throughout). This is why every previous attempt at VoIP capture
+via submix was correctly abandoned as unusable.
+
+### Permissions (all verified granted on the OnePlus 12 / A16)
+
+`CAPTURE_VOICE_COMMUNICATION_OUTPUT` (the real gate), `MODIFY_AUDIO_ROUTING`, `CAPTURE_AUDIO_OUTPUT`,
+`CAPTURE_MEDIA_OUTPUT`, `CALL_AUDIO_INTERCEPTION`, `MANAGE_AUDIO_POLICY`. Note the builder's
+`.voiceCommunicationCaptureAllowed(true)` is **advisory only** — `AudioService.isPolicyRegisterAllowed`
+overwrites it from the permission check.
+
+### No prior art — non-root, this appears to be first
+
+Surveyed BCR, ShizuCallRecorder, cally, ACR/ACR Phone, Cube ACR, Boldbeast, Skvalex, Truecaller,
+Automatic Call Recorder, Shizuku, LSPosed/Magisk modules. None capture VoIP downlink. scrcpy ships
+playback capture but matches **only `USAGE_MEDIA`** (and calls `voiceCommunicationCaptureAllowed` after
+`build()`, making it a no-op), so it never captures calls; its maintainer reported he could not capture
+call audio, and the voice-comm PR (#6906) is open and unreviewed. The one working VoIP implementation,
+**Mufanc/Friston-3**, is a **root** Magisk module that patches `audioserver`'s
+`AudioPolicyService::setAppState_l` to stop its client being silenced.
+
+**Why we may not need that patch:** shell uid 2000 satisfies `isServiceUid(uid) → uid < AID_APP_START`,
+so `UidPolicy::getUidState()` returns `PROCESS_STATE_TOP` permanently — which is precisely the state
+Friston-3 patches the binary to fake. What they need root for, we appear to get from being shell.
+
+### Open — what is NOT proven
+
+1. **Uplink.** We have the far party, not the user. A concurrent mic capture is needed, and unlike the
+   downlink tap it IS subject to concurrent-capture arbitration — it may silence the VoIP app, which
+   would be disqualifying (you cannot record a call by breaking it).
+2. **Combining** the two streams into one recording (sync, drift, channel layout).
+3. **Other apps.** Only WhatsApp, one call. WhatsApp sets `flags=0x800`
+   (`FLAG_NO_MEDIA_PROJECTION`, bypassable). An app setting `ALLOW_CAPTURE_BY_NONE`
+   (`FLAG_NO_SYSTEM_CAPTURE = 0x1000`) is blocked unbypassably — Signal must be tested.
+4. **Carrier VoWiFi / VoLTE is out of reach by this route** and always will be: carrier downlink is a
+   hardware telephony bridge (`AUDIO_DEVICE_IN_TELEPHONY_RX`), not a software `AudioTrack`, so no
+   PLAYERS mix can match it. The originating ShizuCallRecorder complaint (Wi-Fi calling) is NOT solved
+   by this.
+5. Registering mid-call may cause a brief audible glitch as tracks are re-evaluated.
 
 ## Track C — Toward a native install (kill the Developer-Options / Wireless-Debugging / USB ceremony)
 
