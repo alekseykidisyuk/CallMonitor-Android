@@ -3,6 +3,43 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.4.7] — 2026-07-26
+
+The headline: **CallVault can now record calls made inside apps** — WhatsApp, Signal, Telegram — both
+sides of the conversation. Opt in under Settings → Experimental → VoIP calls.
+
+### Added
+- **VoIP call recording (opt-in, experimental).** Until now CallVault only recorded carrier phone
+  calls; a call placed inside a messaging app could not be captured at all without root. It now can be,
+  and it records **both sides** — the other person as well as you — as a normal recording that appears
+  in the list and plays like any other.
+  - **Off by default.** Enable under **Settings → Experimental → VoIP calls**. Turning it on asks you
+    to confirm first: recording app calls is more tightly regulated than recording phone calls, and in
+    many places every participant has to agree beforehand.
+  - Verified working with **WhatsApp, Signal and Telegram**. It is genuinely experimental — an app can
+    block recording, and that cannot be known until a call is under way. If only your side was
+    captured, CallVault tells you so rather than leaving you to discover it later.
+  - Recordings are named `…_voip-<App>[_<contact>]` and show the **calling app's icon** in the list.
+  - Carrier Wi-Fi calling (VoWiFi/VoLTE) is **not** covered by this — it works differently and is out
+    of reach by this route.
+- **The "What's new" note now covers the last three releases**, each labelled with its version, instead
+  of introducing one feature and leaving the rest unmentioned. It scrolls, and appears once per update.
+
+### Fixed
+- **VoIP recordings could be attributed to the wrong app.** A Telegram call was labelled as WhatsApp,
+  and later as Google, because the app was identified by scanning notifications. The app is now taken
+  from the audio stream being recorded, which cannot belong to anyone else.
+- **Contact names were missing for some apps.** Telegram publishes the contact in a different field
+  from WhatsApp, so its calls came out unnamed.
+- **Calls with no contact name showed no app icon** — a Signal call saved as `…_voip_Signal` was read
+  as a call with someone *named* "Signal", losing the app badge.
+
+### Note
+- Contact names for app calls come from the calling app's own call notification, which is the only
+  place Android exposes them. If notifications are turned off for that app, its recordings are saved
+  correctly but without a name — Settings now says so.
+- The VoIP feature's text is currently English-only.
+
 ## [1.4.6] — 2026-07-26
 
 The headline: **recording is now resistant to the background helper being stopped mid-call** — opt in under Settings → Reliability.

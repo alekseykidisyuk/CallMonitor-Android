@@ -8,59 +8,69 @@
 
 package com.baba.callvault.ui.viewmodels
 
-import com.baba.callvault.ui.viewmodels.HomeViewModel.WhatsNewNote
-import com.baba.callvault.ui.viewmodels.HomeViewModel.Companion.selectWhatsNew
+import com.baba.callvault.ui.common.ReleaseHighlights
+import com.baba.callvault.ui.viewmodels.HomeViewModel.Companion.isWhatsNewDue
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Covers which one-time feature note is shown after an update.
+ * Covers when the post-update release note appears.
  *
- * The rules that matter: a note never appears outside an update, each note appears at most once, and
- * someone who skipped a release still meets the feature they missed rather than having it swallowed by
- * the newer one.
+ * The rule that matters is that it is not a nag: it shows once for a version, right after that version
+ * is installed, and never again on later launches of the same build. Keyed on the version it was last
+ * shown for, so a new release brings it back without anyone having to add a new preference.
  */
 class WhatsNewSelectionTest {
 
     @Test
-    fun `shows nothing when the app was not just updated`() {
-        assertNull(selectWhatsNew(justUpdated = false, seenResilient = false, seenOffWifi = false))
+    fun `not shown when no update just landed`() {
+        assertFalse(isWhatsNewDue(justUpdated = false, currentVersion = "1.4.7", seenForVersion = null))
     }
 
     @Test
-    fun `shows the newest unseen feature first`() {
-        // The common case: an existing user who already met off-Wi-Fi updates into this release.
-        assertEquals(
-            WhatsNewNote.RESILIENT_RECORDING,
-            selectWhatsNew(justUpdated = true, seenResilient = false, seenOffWifi = true),
-        )
+    fun `shown after an update when never seen`() {
+        assertTrue(isWhatsNewDue(justUpdated = true, currentVersion = "1.4.7", seenForVersion = null))
     }
 
     @Test
-    fun `still shows an older feature the user skipped past`() {
-        // Someone who saw the resilient note but never the off-Wi-Fi one must not lose it.
-        assertEquals(
-            WhatsNewNote.OFF_WIFI,
-            selectWhatsNew(justUpdated = true, seenResilient = true, seenOffWifi = false),
-        )
+    fun `not shown again once seen for this version`() {
+        assertFalse(isWhatsNewDue(justUpdated = true, currentVersion = "1.4.7", seenForVersion = "1.4.7"))
     }
 
     @Test
-    fun `shows one note at a time when several are unseen`() {
-        // Arrange: a user updating across both releases at once.
-        val first = selectWhatsNew(justUpdated = true, seenResilient = false, seenOffWifi = false)
-
-        // Assert: the newest comes first; the other is still pending for the next update.
-        assertEquals(WhatsNewNote.RESILIENT_RECORDING, first)
-        assertEquals(
-            WhatsNewNote.OFF_WIFI,
-            selectWhatsNew(justUpdated = true, seenResilient = true, seenOffWifi = false),
-        )
+    fun `shown again for the next version`() {
+        assertTrue(isWhatsNewDue(justUpdated = true, currentVersion = "1.4.8", seenForVersion = "1.4.7"))
     }
 
     @Test
-    fun `shows nothing once every note has been seen`() {
-        assertNull(selectWhatsNew(justUpdated = true, seenResilient = true, seenOffWifi = true))
+    fun `still not shown outside an update even when the seen version is older`() {
+        assertFalse(isWhatsNewDue(justUpdated = false, currentVersion = "1.4.8", seenForVersion = "1.4.7"))
+    }
+}
+
+/** Covers the note's content, which is hand-maintained alongside the changelog. */
+class ReleaseHighlightsTest {
+
+    @Test
+    fun `shows no more releases than it promises to`() {
+        assertTrue(ReleaseHighlights.recent().size <= ReleaseHighlights.MAX_SHOWN)
+    }
+
+    @Test
+    fun `lists the newest release first`() {
+        assertEquals("1.4.7", ReleaseHighlights.recent().first().version)
+    }
+
+    @Test
+    fun `labels every entry with a version`() {
+        assertTrue(ReleaseHighlights.recent().all { it.version.isNotBlank() })
+    }
+
+    @Test
+    fun `lists no release twice`() {
+        val versions = ReleaseHighlights.recent().map { it.version }
+        assertEquals(versions.size, versions.distinct().size)
     }
 }

@@ -41,6 +41,17 @@
     <string name="home_whatsnew_resilient_body">Makes call recording more resistant to interruptions.\n\nAndroid can stop CallVault\'s background helper at any time. With this on, a recording already in progress is no longer affected when that happens.\n\nOff by default — you can also turn it on later in Settings ▸ Reliability.</string>
     <string name="home_whatsnew_resilient_cta">Turn it on</string>
     <string name="home_whatsnew_resilient_enabled">Resilient recording is on. A recording already in progress is no longer affected if Android stops CallVault\'s background helper.</string>
+
+    <!-- Post-update note: one entry per release, newest first. Keep in sync with CHANGELOG.md. -->
+    <string name="home_whatsnew_settings_cta">Open Settings</string>
+    <string name="whatsnew_147_title">Record app calls</string>
+    <string name="whatsnew_147_body">CallVault can now record calls made inside apps like WhatsApp, Signal and Telegram — both sides of the conversation, not just your own voice. Recordings show which app the call was made in, and the contact\'s name when the app provides it.\n\nExperimental: it works with some apps and not others, and an app can block recording at any time in an update.</string>
+    <string name="whatsnew_147_where">Settings ▸ Experimental ▸ VoIP calls</string>
+    <string name="whatsnew_146_title">Resilient recording</string>
+    <string name="whatsnew_146_body">Android can stop CallVault\'s background helper at any time, which used to cut a recording short and leave you with half a call. With this on, a recording already under way carries on to the end regardless.</string>
+    <string name="whatsnew_146_where">Settings ▸ Experimental ▸ Resilience</string>
+    <string name="whatsnew_145_title">Keep recording when the screen locks</string>
+    <string name="whatsnew_145_body">On many phones, locking the screen during a call was stopping the recorder mid-call. That is fixed, and CallVault now warns you if your phone\'s USB setting is the one causing it.</string>
     <string name="offline_recording_on">Off-Wi-Fi recording is on.</string>
     <string name="offline_recording_disabling">Turning off off-Wi-Fi recording…</string>
 </resources>

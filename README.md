@@ -30,6 +30,7 @@ You pair **once**; after that it's hands-free.
 | | Feature |
 |:---:|---|
 | 🎙️ | Records **both sides** of incoming & outgoing calls (incl. Bluetooth / headset) |
+| 💬 | **App calls (opt-in, experimental)** — records calls made inside **WhatsApp, Signal and Telegram**, both sides, with the calling app's icon on each recording (off by default; not carrier Wi-Fi calling) |
 | 📶 | **Offline recording (opt-in)** — record calls even with **no Wi-Fi network**, for calls on the road (off by default; opens a local, RSA-gated debugging port when enabled) |
 | 🔓 | **Keeps recording when the screen locks** — on many phones that otherwise stop a recording mid-call, fixed from inside the app in one tap |
 | 🛡️ | **Resilient recording (opt-in)** — makes recording **resistant to interruptions**: a recording already in progress is unaffected if Android stops the background helper mid-call (off by default) |
@@ -54,7 +55,7 @@ After a one-time pairing, CallVault runs a **persistent privileged daemon** — 
 
 On many phones (OnePlus, Xiaomi, Samsung…), locking the screen during a call renegotiates the USB connection, which restarts the system's ADB daemon and takes the recorder down with it — mid-call.
 
-The fix is to set the phone's **Default USB Configuration** to **"Charging only"**, and CallVault can do that for you: the setup wizard offers it, **Settings ▸ Reliability** has it, and if USB is on a data mode the Home screen and the recorder notification show a "locking the screen may stop recording — tap to fix" prompt. The trade-off is that plugging into a PC then defaults to charging, so pick *File transfer* manually when you actually want to move files.
+The fix is to set the phone's **Default USB Configuration** to **"Charging only"**, and CallVault can do that for you: the setup wizard offers it, **Settings ▸ Experimental** has it, and if USB is on a data mode the Home screen and the recorder notification show a "locking the screen may stop recording — tap to fix" prompt. The trade-off is that plugging into a PC then defaults to charging, so pick *File transfer* manually when you actually want to move files.
 
 ### Resilient recording (opt-in)
 
@@ -62,7 +63,31 @@ Normally the daemon holds the microphone and encodes for the whole call, so if A
 
 With **Resilient recording** on, the daemon only *creates* the capture and then **hands it to the app**, which holds it and does the encoding itself. Because the app is the one Android keeps alive, the daemon can die at any point mid-call and the recording simply carries on to the end.
 
-It doesn't change how a recording *starts* — the daemon is still needed for that — so it's a completeness guarantee, not a replacement for the setup above. Off by default; enable under **Settings ▸ Reliability**.
+It doesn't change how a recording *starts* — the daemon is still needed for that — so it's a completeness guarantee, not a replacement for the setup above. Off by default; enable under **Settings ▸ Experimental**.
+
+### Recording app calls (opt-in, experimental)
+
+Calls placed inside WhatsApp, Signal or Telegram are not phone calls, so the usual capture cannot see
+them. CallVault handles them a different way: the privileged helper registers an **audio policy** that
+*duplicates* the call's incoming audio into a private mix — the other party keeps hearing you and you
+keep hearing them, nothing is diverted — and pairs it with the microphone for your own side. The two
+are written into a single recording, one side per channel.
+
+This is a genuinely new capability: the only other working approach we know of needs **root**.
+
+Off by default; enable under **Settings ▸ Experimental ▸ VoIP calls**, which asks you to confirm first.
+Recording app calls is more tightly regulated than recording phone calls, and in many places every
+participant must agree beforehand.
+
+Honest limits:
+
+- **Verified on WhatsApp, Signal and Telegram**, on one device and one Android version. An app can
+  refuse to be captured, and that only becomes apparent once a call is under way — if only your side
+  was recorded, CallVault says so.
+- **Carrier Wi-Fi calling (VoWiFi / VoLTE) is not covered.** Its audio never becomes a normal playback
+  stream, so this route cannot reach it.
+- **Contact names come from the calling app's own call notification** — the only place Android exposes
+  them. An app that isn't allowed to post notifications produces correctly recorded but unnamed files.
 
 ## Requirements
 

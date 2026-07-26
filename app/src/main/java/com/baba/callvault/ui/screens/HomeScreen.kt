@@ -25,6 +25,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.baba.callvault.ui.common.ReleaseHighlight
+import com.baba.callvault.ui.common.ReleaseHighlights
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -169,18 +174,14 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        uiState.whatsNew?.let { note ->
-            // Persist "seen" so this one-time feature intro never reappears on later updates, and clear
-            // the small "updated" banner too.
+        if (uiState.showWhatsNew) {
+            // Persist the version so the note never reappears for this build, and clear the small
+            // "updated" banner too.
             val dismiss = {
-                viewModel.markWhatsNewSeen(note)
+                viewModel.markWhatsNewSeen()
                 viewModel.dismissUpdatedBanner()
             }
-            when (note) {
-                HomeViewModel.WhatsNewNote.OFF_WIFI -> WhatsNewDialog(onDismiss = dismiss)
-                HomeViewModel.WhatsNewNote.RESILIENT_RECORDING ->
-                    ResilientRecordingWhatsNewDialog(onDismiss = dismiss)
-            }
+            WhatsNewDialog(onDismiss = dismiss, onOpenSettings = { dismiss(); onOpenSettings() })
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -294,75 +295,69 @@ fun HomeScreen(
 }
 
 /**
- * Post-update "What's new" note — plain-language highlights of the release, with a one-tap opt-in to
- * enable off-Wi-Fi (loopback) recording behind the same security warning as the Settings toggle.
- * [onDismiss] closes the note AND clears the updated-banner so it doesn't reappear.
+ * Post-update "What's new" note: the last few releases, newest first, each labelled with its version.
+ *
+ * Per-release rather than per-feature. Updates are not always taken one at a time, and the previous
+ * design showed a single feature and let the rest go unmentioned. The list scrolls because three
+ * releases of plain-language notes do not fit a dialog on a small screen, and a dialog that clips its
+ * own content silently hides the newest thing it is meant to announce.
  */
 @Composable
-private fun WhatsNewDialog(onDismiss: () -> Unit) {
-    var showOfflineDialog by remember { mutableStateOf(false) }
-
+private fun WhatsNewDialog(onDismiss: () -> Unit, onOpenSettings: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.home_whatsnew_title)) },
-        text = { Text(stringResource(R.string.home_whatsnew_body)) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 380.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
+                ReleaseHighlights.recent().forEach { release -> ReleaseNote(release) }
+            }
+        },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_ok)) }
         },
         dismissButton = {
-            TextButton(onClick = { showOfflineDialog = true }) {
-                Text(stringResource(R.string.home_whatsnew_offline_cta))
+            TextButton(onClick = onOpenSettings) {
+                Text(stringResource(R.string.home_whatsnew_settings_cta))
             }
         },
     )
-    if (showOfflineDialog) {
-        // Shared enable flow: security warning → live spinner → "it's on" (auto-closes). The What's New
-        // note stays open behind it, so the user lands back on it and taps OK to dismiss.
-        OfflineRecordingDialog(
-            mode = OfflineDialogMode.ENABLE,
-            onResult = { },
-            onClose = { showOfflineDialog = false },
-        )
-    }
 }
 
-/**
- * Post-update "What's new" note introducing **Resilient recording**, with a one-tap opt-in.
- *
- * The feature is off by default and lives in Settings ▸ Reliability, so without this note almost
- * nobody would find it. Enabling is a plain preference write with no side effects (unlike off-Wi-Fi,
- * which opens a port and needs a security warning), so the CTA turns it on directly and then just
- * confirms in place.
- */
+/** One release in the note: version chip, headline, plain-language body, and where to switch it on. */
 @Composable
-private fun ResilientRecordingWhatsNewDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val prefs = remember { AppPreferences(context) }
-    var enabled by remember { mutableStateOf(prefs.isHandoffPersistEnabled()) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.home_whatsnew_resilient_title)) },
-        text = {
+private fun ReleaseNote(release: ReleaseHighlight) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                if (enabled) stringResource(R.string.home_whatsnew_resilient_enabled)
-                else stringResource(R.string.home_whatsnew_resilient_body)
+                text = release.version,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
             )
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_ok)) }
-        },
-        dismissButton = {
-            if (!enabled) {
-                TextButton(onClick = {
-                    prefs.setHandoffPersistEnabled(true)
-                    enabled = true
-                }) {
-                    Text(stringResource(R.string.home_whatsnew_resilient_cta))
-                }
-            }
-        },
-    )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(release.title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Text(
+            text = stringResource(release.body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        release.whereToFind?.let {
+            Text(
+                text = stringResource(it),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 /**

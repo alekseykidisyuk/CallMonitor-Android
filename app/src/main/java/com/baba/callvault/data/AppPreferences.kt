@@ -184,8 +184,7 @@ class AppPreferences(context: Context) {
         UPDATE_INSTALL_ARMED("update_install_armed"),
         LAST_SEEN_VERSION_CODE("last_seen_version_code"),
         UPDATE_SUCCESS_BANNER_VERSION("update_success_banner_version"),
-        WHATS_NEW_OFFWIFI_SEEN("whats_new_offwifi_seen"),
-        WHATS_NEW_RESILIENT_SEEN("whats_new_resilient_seen"),
+        WHATS_NEW_SEEN_VERSION("whats_new_seen_version"),
         USB_DEFAULT_MODE("usb_default_mode"),
         UPDATE_SOURCE_OVERRIDE_URL("update_source_override_url"),
 
@@ -405,20 +404,14 @@ class AppPreferences(context: Context) {
     fun setUpdateSuccessBannerVersion(version: String?) = setString(Key.UPDATE_SUCCESS_BANNER_VERSION, version)
 
     /**
-     * Whether the one-time "What's new: off-Wi-Fi recording" intro modal has already been shown. Set
-     * true the first time it is dismissed so it never reappears on later updates — the note is a
-     * one-time feature introduction, not a per-release changelog.
+     * The app version the post-update release note was last shown for, or null if never.
+     *
+     * A version rather than a per-feature boolean: the note now lists the last few releases together,
+     * so it should return once for each new version and then stay away. The previous design needed a
+     * brand-new preference for every feature introduced, which does not scale.
      */
-    fun hasSeenOffWifiWhatsNew() = getBoolean(Key.WHATS_NEW_OFFWIFI_SEEN, false)
-    fun setSeenOffWifiWhatsNew(seen: Boolean) = setBoolean(Key.WHATS_NEW_OFFWIFI_SEEN, seen)
-
-    /**
-     * Whether the one-time "What's new: Resilient recording" intro modal has already been shown. Same
-     * contract as [hasSeenOffWifiWhatsNew]: a per-FEATURE introduction shown once, never a per-release
-     * changelog — so each feature keeps its own flag and nobody who skipped a release loses its note.
-     */
-    fun hasSeenResilientWhatsNew() = getBoolean(Key.WHATS_NEW_RESILIENT_SEEN, false)
-    fun setSeenResilientWhatsNew(seen: Boolean) = setBoolean(Key.WHATS_NEW_RESILIENT_SEEN, seen)
+    fun getWhatsNewSeenVersion() = getString(Key.WHATS_NEW_SEEN_VERSION)
+    fun setWhatsNewSeenVersion(version: String?) = setString(Key.WHATS_NEW_SEEN_VERSION, version)
 
     /** Cached name of the last-read [com.baba.callvault.integrations.adb.UsbDefaultMode], or null. */
     fun getUsbDefaultMode() = getString(Key.USB_DEFAULT_MODE)
