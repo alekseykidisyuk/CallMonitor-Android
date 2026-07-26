@@ -51,7 +51,17 @@ object RecorderConnection {
     fun onBinderReceived(service: IRecorderService) {
         this.service = service
         AppLogger.i(TAG, "RecorderConnection received daemon binder")
+        // The VoIP capture policy lives in the daemon process, so a relaunch loses it. Re-arm on every
+        // fresh binder — it must be registered BEFORE a call starts, and there is no later chance.
+        onDaemonReady?.invoke()
     }
+
+    /**
+     * Invoked whenever a fresh daemon binder arrives, for state the daemon cannot keep across a
+     * relaunch. Set once at app start; runs on a binder thread, so implementations must not block.
+     */
+    @Volatile
+    var onDaemonReady: (() -> Unit)? = null
 
     /**
      * Optional hook fired (in addition to clearing [service]) the instant the daemon binder dies, so a

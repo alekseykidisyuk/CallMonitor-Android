@@ -46,6 +46,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
+import com.baba.callvault.services.recording.VoipCaptureController
+import androidx.compose.runtime.rememberCoroutineScope
 import com.baba.callvault.R
 import com.baba.callvault.system.PersistentFolderPickerContract
 import com.baba.callvault.system.copyToClipboard
@@ -1026,6 +1028,17 @@ private fun ExperimentalSection(expanded: Boolean, onToggle: () -> Unit) {
     }
 }
 
+/** One-line status under a settings row (arming progress, or why something is unavailable). */
+@Composable
+private fun SettingsHint(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 6.dp)
+    )
+}
+
 /** Small label separating groups of related rows inside one collapsible section. */
 @Composable
 private fun SettingsSubHeader(text: String) {
@@ -1048,9 +1061,27 @@ private fun SettingsSubHeader(text: String) {
 @Composable
 private fun VoipRecordingToggle() {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
     var enabled by remember { mutableStateOf(prefs.isVoipRecordingEnabled()) }
     var showWarning by remember { mutableStateOf(false) }
+    var arming by remember { mutableStateOf(false) }
+    var unavailable by remember { mutableStateOf(false) }
+
+    // Arming touches the daemon (and may launch it), so never on the main thread. The policy has to be
+    // registered before any VoIP call starts, which is why this happens on the toggle rather than when
+    // a call begins.
+    fun applyPreference(turnOn: Boolean) {
+        enabled = turnOn
+        prefs.setVoipRecordingEnabled(turnOn)
+        unavailable = false
+        scope.launch {
+            arming = turnOn
+            val ok = withContext(Dispatchers.IO) { VoipCaptureController.sync(context) }
+            arming = false
+            if (turnOn && !ok) unavailable = true
+        }
+    }
 
     SettingsToggleRow(
         icon = Icons.Filled.Groups,
@@ -1058,14 +1089,15 @@ private fun VoipRecordingToggle() {
         description = stringResource(R.string.settings_voip_recording_description),
         checked = enabled,
         onCheckedChange = { turnOn ->
-            if (turnOn) {
-                showWarning = true          // confirm before enabling; never before turning OFF
-            } else {
-                enabled = false
-                prefs.setVoipRecordingEnabled(false)
-            }
+            if (turnOn) showWarning = true  // confirm before enabling; never before turning OFF
+            else applyPreference(false)
         },
     )
+    if (arming) {
+        SettingsHint(stringResource(R.string.voip_recording_arming))
+    } else if (unavailable) {
+        SettingsHint(stringResource(R.string.voip_recording_unavailable))
+    }
 
     if (showWarning) {
         AlertDialog(
@@ -1074,9 +1106,8 @@ private fun VoipRecordingToggle() {
             text = { Text(stringResource(R.string.voip_recording_warning_message)) },
             confirmButton = {
                 TextButton(onClick = {
-                    enabled = true
-                    prefs.setVoipRecordingEnabled(true)
                     showWarning = false
+                    applyPreference(true)
                 }) { Text(stringResource(R.string.voip_recording_warning_continue)) }
             },
             dismissButton = {

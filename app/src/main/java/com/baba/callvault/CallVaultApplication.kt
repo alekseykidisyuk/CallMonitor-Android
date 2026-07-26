@@ -14,6 +14,8 @@ import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.services.debug.DebugNotificationHelper
 import com.baba.callvault.system.storage.RetentionScheduler
 import com.baba.callvault.system.updates.UpdateScheduler
+import com.baba.callvault.server.RecorderConnection
+import com.baba.callvault.services.recording.VoipCaptureController
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -41,6 +43,18 @@ class CallVaultApplication : Application() {
         runCatching {
             getSystemService(android.app.NotificationManager::class.java)?.apply {
                 cancel(LEGACY_READINESS_NOTIF_ID); cancel(LEGACY_LAUNCH_NOTIF_ID)
+            }
+        }
+
+        // The VoIP capture policy lives in the daemon and dies with it, and it must be armed BEFORE a
+        // call starts — there is no arming it once a call is under way. Re-arm on every fresh daemon
+        // binder. Off the binder thread: arming is a blocking IPC.
+        RecorderConnection.onDaemonReady = {
+            if (AppPreferences(applicationContext).isVoipRecordingEnabled()) {
+                Thread {
+                    runCatching { VoipCaptureController.sync(applicationContext) }
+                        .onFailure { AppLogger.w(TAG, "VoIP re-arm failed: ${it.message}") }
+                }.apply { isDaemon = true; name = "cv-voip-rearm" }.start()
             }
         }
 
