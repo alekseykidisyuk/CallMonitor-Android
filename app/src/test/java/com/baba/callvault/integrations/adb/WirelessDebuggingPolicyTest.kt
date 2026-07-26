@@ -27,15 +27,9 @@ import org.junit.Test
 class WirelessDebuggingPolicyTest {
 
     @Test
-    fun `loopback keeps adbd alive, so wireless debugging can be switched off`() {
-        assertEquals(
-            WirelessDebuggingPlan.DROP_LOOPBACK_KEEPS_ADBD,
-            WirelessDebuggingPolicy.plan(isUsbDebuggingEnabled = false, isLoopbackArmed = true),
-        )
-    }
-
-    @Test
     fun `usb debugging keeps adbd alive, so wireless debugging can be switched off`() {
+        // The only combination ever PROVEN on-device: toggling Wireless debugging on and off left
+        // adbd's pid unchanged and the daemon alive.
         assertEquals(
             WirelessDebuggingPlan.DROP_USB_KEEPS_ADBD,
             WirelessDebuggingPolicy.plan(isUsbDebuggingEnabled = true, isLoopbackArmed = false),
@@ -43,8 +37,19 @@ class WirelessDebuggingPolicyTest {
     }
 
     @Test
+    fun `an armed loopback is NOT enough to switch wireless debugging off`() {
+        // The regression this file exists for. Assuming loopback was a live transport shipped in 1.4.8
+        // and the churn came straight back: with loopback armed and USB debugging off, disabling
+        // Wireless debugging still restarted adbd and killed the daemon 57 ms later. The tcp port is a
+        // persisted setting, not a transport.
+        assertEquals(
+            WirelessDebuggingPlan.KEEP_ONLY_TRANSPORT,
+            WirelessDebuggingPolicy.plan(isUsbDebuggingEnabled = false, isLoopbackArmed = true),
+        )
+    }
+
+    @Test
     fun `with neither transport, wireless debugging must stay on`() {
-        // The regression under test: switching it off here kills the daemon it was just used to launch.
         assertEquals(
             WirelessDebuggingPlan.KEEP_ONLY_TRANSPORT,
             WirelessDebuggingPolicy.plan(isUsbDebuggingEnabled = false, isLoopbackArmed = false),
@@ -52,10 +57,9 @@ class WirelessDebuggingPolicyTest {
     }
 
     @Test
-    fun `loopback is preferred when both transports are available`() {
-        // Loopback is the one CallVault can rely on away from a computer; USB debugging is incidental.
+    fun `loopback does not change the answer when usb debugging is on`() {
         assertEquals(
-            WirelessDebuggingPlan.DROP_LOOPBACK_KEEPS_ADBD,
+            WirelessDebuggingPlan.DROP_USB_KEEPS_ADBD,
             WirelessDebuggingPolicy.plan(isUsbDebuggingEnabled = true, isLoopbackArmed = true),
         )
     }
@@ -64,9 +68,6 @@ class WirelessDebuggingPolicyTest {
     fun `the user is told only when wireless debugging has to stay on`() {
         assertTrue(
             WirelessDebuggingPolicy.mustKeepWirelessDebugging(WirelessDebuggingPlan.KEEP_ONLY_TRANSPORT)
-        )
-        assertFalse(
-            WirelessDebuggingPolicy.mustKeepWirelessDebugging(WirelessDebuggingPlan.DROP_LOOPBACK_KEEPS_ADBD)
         )
         assertFalse(
             WirelessDebuggingPolicy.mustKeepWirelessDebugging(WirelessDebuggingPlan.DROP_USB_KEEPS_ADBD)
@@ -80,6 +81,7 @@ class WirelessDebuggingPolicyTest {
             listOf(true, false).map { loopback -> WirelessDebuggingPolicy.plan(usb, loopback) }
         }
         assertEquals(4, plans.size)
-        assertEquals(1, plans.count { it == WirelessDebuggingPlan.KEEP_ONLY_TRANSPORT })
+        // Only the two USB-enabled combinations may drop Wireless debugging.
+        assertEquals(2, plans.count { it == WirelessDebuggingPlan.KEEP_ONLY_TRANSPORT })
     }
 }

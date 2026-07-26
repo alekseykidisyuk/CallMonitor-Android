@@ -24,15 +24,12 @@ package com.baba.callvault.integrations.adb
  * branch here was a real device behaviour rather than a guess.
  */
 enum class WirelessDebuggingPlan {
-    /** Another transport (USB debugging) keeps `adbd` alive — safe to switch Wireless debugging off. */
+    /** USB debugging keeps `adbd` alive — safe to switch Wireless debugging off. */
     DROP_USB_KEEPS_ADBD,
 
-    /** The loopback listener keeps `adbd` alive — safe to switch Wireless debugging off. */
-    DROP_LOOPBACK_KEEPS_ADBD,
-
     /**
-     * Wireless debugging is the only transport, so it must stay on for the daemon to survive. The user
-     * is told, and pointed at the two settings that would let it be switched off.
+     * Wireless debugging must stay on for the daemon to survive. The user is told, and pointed at the
+     * setting that would let it be switched off.
      */
     KEEP_ONLY_TRANSPORT,
 }
@@ -42,11 +39,22 @@ object WirelessDebuggingPolicy {
     /**
      * Decides what to do with Wireless debugging now that the daemon is connected.
      *
-     * Loopback is preferred in the reported reason when both are available: it is the one CallVault can
-     * rely on when the user is away from a computer, whereas USB debugging is incidental.
+     * **An armed loopback listener does NOT count.** That was assumed once and it was wrong: measured on
+     * a Galaxy S24 FE running 1.4.8, with the loopback armed and USB debugging off, disabling Wireless
+     * debugging still killed the daemon 57 ms later and the loop returned. `service.adb.tcp.port` is a
+     * persisted *setting*, not a live transport — turning Wireless debugging off restarts `adbd` anyway,
+     * the daemon dies with it, and the loopback only comes back ~12 s later, by which point the launcher
+     * has given up and re-enabled Wireless debugging.
+     *
+     * Only USB debugging was ever actually proven to hold `adbd` up (toggling Wireless debugging on and
+     * off left `adbd`'s pid unchanged and the daemon alive). The earlier belief that loopback did the
+     * same came from a test run while USB debugging happened to be on — USB was doing the work.
+     *
+     * Restoring "Wireless debugging off" for loopback users needs a different shape: switch it off
+     * BEFORE launching the daemon, wait for the loopback to return, and launch over that. See
+     * `docs/dev-notes/backlog.md`.
      */
     fun plan(isUsbDebuggingEnabled: Boolean, isLoopbackArmed: Boolean): WirelessDebuggingPlan = when {
-        isLoopbackArmed -> WirelessDebuggingPlan.DROP_LOOPBACK_KEEPS_ADBD
         isUsbDebuggingEnabled -> WirelessDebuggingPlan.DROP_USB_KEEPS_ADBD
         else -> WirelessDebuggingPlan.KEEP_ONLY_TRANSPORT
     }

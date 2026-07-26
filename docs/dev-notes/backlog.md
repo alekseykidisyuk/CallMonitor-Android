@@ -46,6 +46,31 @@ is why `SECTION_EXPERIMENTAL` is still the string `"reliability"` after that ren
 
 ---
 
+## 🔵 Switch Wireless debugging off again for "Record without Wi-Fi" users
+
+Since 1.4.9 Wireless debugging stays on whenever USB debugging is off, because turning it off restarts
+`adbd` and kills the daemon. That is correct but blunt: it means most users keep a debugging switch on.
+
+**What was wrong before:** 1.4.8 treated an armed loopback listener as a second transport. It is not —
+`service.adb.tcp.port` is a persisted *setting*, so disabling Wireless debugging restarts `adbd`
+anyway, the daemon dies with it, and the listener only returns ~12 s later, by which point the launcher
+has given up and re-enabled Wireless debugging. Measured on a Galaxy S24 FE: daemon died 57 ms after
+the disable, and the churn loop returned exactly as before.
+
+**The shape that should work:** stop disabling Wireless debugging *after* launching the daemon, and do
+it *before* instead —
+
+1. bootstrap over Wireless debugging, arm the loopback listener
+2. switch Wireless debugging off, and **wait for the loopback to come back** (allow ~15 s; Samsung took
+   over 12) rather than treating the gap as a failed connection and re-enabling
+3. launch the daemon over the loopback — it now survives, because nothing toggles afterwards
+
+Fall back to leaving Wireless debugging on if the listener never returns. The launcher currently does
+`launch → applyWdPolicy`; this reverses that for the loopback case only. Needs on-device verification
+with USB debugging **off**, since that is what hid the bug twice.
+
+---
+
 ## 🔵 Control over what gets recorded
 
 Three related asks, all about the user deciding rather than the rules deciding:

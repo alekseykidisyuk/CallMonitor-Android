@@ -110,10 +110,11 @@ Two behaviours differ between manufacturers and shaped the code, both found on a
 OnePlus had happily hidden them:
 
 - **`adbd` stops when its last transport is removed.** CallVault's helper is a child of an `adbd`
-  shell, so switching Wireless debugging off while it is the *only* transport takes the helper down
-  with it. CallVault therefore leaves Wireless debugging on in that case and says so in its
-  notification. Turning on **Record without Wi-Fi** (Settings ▸ Experimental), or enabling USB
-  debugging, gives `adbd` a second transport and lets CallVault switch Wireless debugging off again.
+  shell, so switching Wireless debugging off takes the helper down with it. CallVault therefore leaves
+  Wireless debugging on while the helper is running, and says so in its notification. Only **USB
+  debugging** currently keeps `adbd` alive independently — with it enabled, CallVault switches Wireless
+  debugging off again. ("Record without Wi-Fi" does *not* help here: its listener is a saved setting
+  rather than a live connection, so it only returns *after* `adbd` restarts.)
 - **The audio "mode owner" can be the system rather than the calling app.** On One UI a WhatsApp call
   reports uid 1000 (`system`), so an app label taken from it is wrong — it produced recordings named
   after Samsung's *Device maintenance*. Platform uids are now rejected and the app's own audio track is

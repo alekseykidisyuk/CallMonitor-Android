@@ -3,6 +3,21 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.4.9] — 2026-07-26
+
+### Fixed
+- **The start-up loop from 1.4.8 could still happen** if you had "Record without Wi-Fi" switched on and
+  USB debugging off. 1.4.8 assumed that option kept Android's debugging service alive so Wireless
+  debugging could be switched off safely. It does not — the option saves a setting rather than holding
+  a live connection, so switching Wireless debugging off still restarted the service and stopped
+  CallVault's helper, and the loop returned. CallVault now keeps Wireless debugging on unless USB
+  debugging is enabled, which is the only thing measured to hold the service open.
+
+### Note
+- This means most people will see Wireless debugging stay on while CallVault is ready, with the
+  notification explaining why. Switching it off again for "Record without Wi-Fi" users needs a
+  different approach and is being worked on.
+
 ## [1.4.8] — 2026-07-26
 
 The headline: **CallVault now becomes ready reliably on phones where Wireless debugging is the only
