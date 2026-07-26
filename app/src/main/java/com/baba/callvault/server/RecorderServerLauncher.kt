@@ -105,6 +105,13 @@ object RecorderServerLauncher {
     private const val SHELL_READY_TIMEOUT_MS = 6_000L
 
     /**
+     * Hard bound on the opportunistic USB-default refresh in [applyWdPolicy]. Generous for a local
+     * `dumpsys` (normally milliseconds) but small enough that a wedged ADB stream cannot delay the start
+     * of a recording — an unbounded read there loses the entire call.
+     */
+    private const val USB_REFRESH_TIMEOUT_MS = 1_500L
+
+    /**
      * Ensures the privileged recorder daemon is running and its binder is available in
      * [RecorderConnection]. Call OFF the main thread (does ADB network I/O and polls/sleeps).
      *
@@ -201,13 +208,36 @@ object RecorderServerLauncher {
      */
     private fun applyWdPolicy(context: Context) {
         // We still hold the ADB shell here (before WD is turned off) — opportunistically refresh the
-        // USB-default cache that drives the "locking the screen may stop recording" warning. Never forces
-        // a connection (no-op when the shell isn't up), so it adds no churn and only a fast dumpsys read.
-        runCatching { UsbDefaultConfig.readIfConnected(context) }
+        // USB-default cache that drives the "locking the screen may stop recording" warning.
+        //
+        // MUST be bounded: this runs on the critical path of STARTING A RECORDING. The dumpsys read is
+        // normally instant (or fails fast with "Stream closed"), but over a half-dead ADB connection the
+        // stream read BLOCKS INDEFINITELY — which silently hangs `startPipeline` and loses the whole call
+        // (observed repeatedly on-device: the log stops right here and the output file stays 0 bytes).
+        // The refresh is opportunistic, so a timeout simply means the cached value stays stale.
+        refreshUsbDefaultBounded(context)
         if (AdbShell.disableWirelessDebugging(context)) {
             AppLogger.i(TAG, "Wireless debugging disabled (daemon connected; commands flow over binder)")
         } else {
             AppLogger.w(TAG, "Could not disable Wireless debugging (missing WRITE_SECURE_SETTINGS?)")
+        }
+    }
+
+    /**
+     * Runs the opportunistic USB-default refresh with a hard time bound so it can never stall a recording.
+     *
+     * The read is done on a throwaway daemon thread and joined for at most [USB_REFRESH_TIMEOUT_MS]; if
+     * the underlying ADB stream is wedged the thread is simply abandoned (it unblocks whenever the stream
+     * finally errors) and we carry on with a stale cached value. Correctness of the recording never
+     * depends on this value — it only drives an advisory UI warning.
+     */
+    private fun refreshUsbDefaultBounded(context: Context) {
+        val worker = Thread { runCatching { UsbDefaultConfig.readIfConnected(context) } }
+            .apply { isDaemon = true; name = "cv-usbdefault-refresh" }
+        worker.start()
+        runCatching { worker.join(USB_REFRESH_TIMEOUT_MS) }
+        if (worker.isAlive) {
+            AppLogger.w(TAG, "USB-default refresh still blocked after ${USB_REFRESH_TIMEOUT_MS}ms; continuing (stale value)")
         }
     }
 
