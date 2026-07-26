@@ -5,11 +5,11 @@ All notable changes to CallVault are documented here. The format is based on
 
 ## [1.4.7] — 2026-07-26
 
-The headline: **CallVault can now record calls made inside apps** — WhatsApp, Signal, Telegram — both
+The headline: **CallVault can now record app calls (VoIP)** — WhatsApp, Signal, Telegram — both
 sides of the conversation. Opt in under Settings → Experimental → VoIP calls.
 
 ### Added
-- **VoIP call recording (opt-in, experimental).** Until now CallVault only recorded carrier phone
+- **Recording app calls — VoIP (opt-in, experimental).** Until now CallVault only recorded carrier phone
   calls; a call placed inside a messaging app could not be captured at all without root. It now can be,
   and it records **both sides** — the other person as well as you — as a normal recording that appears
   in the list and plays like any other.

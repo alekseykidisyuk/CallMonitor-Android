@@ -30,7 +30,7 @@ You pair **once**; after that it's hands-free.
 | | Feature |
 |:---:|---|
 | 🎙️ | Records **both sides** of incoming & outgoing calls (incl. Bluetooth / headset) |
-| 💬 | **App calls (opt-in, experimental)** — records calls made inside **WhatsApp, Signal and Telegram**, both sides, with the calling app's icon on each recording (off by default; not carrier Wi-Fi calling) |
+| 💬 | **Recording app calls — VoIP (opt-in, experimental)** — records calls made inside **WhatsApp, Signal and Telegram**, both sides, with the calling app's icon on each recording (off by default; not carrier Wi-Fi calling) |
 | 📶 | **Offline recording (opt-in)** — record calls even with **no Wi-Fi network**, for calls on the road (off by default; opens a local, RSA-gated debugging port when enabled) |
 | 🔓 | **Keeps recording when the screen locks** — on many phones that otherwise stop a recording mid-call, fixed from inside the app in one tap |
 | 🛡️ | **Resilient recording (opt-in)** — makes recording **resistant to interruptions**: a recording already in progress is unaffected if Android stops the background helper mid-call (off by default) |
@@ -65,7 +65,7 @@ With **Resilient recording** on, the daemon only *creates* the capture and then 
 
 It doesn't change how a recording *starts* — the daemon is still needed for that — so it's a completeness guarantee, not a replacement for the setup above. Off by default; enable under **Settings ▸ Experimental**.
 
-### Recording app calls (opt-in, experimental)
+### Recording app calls — VoIP (opt-in, experimental)
 
 Calls placed inside WhatsApp, Signal or Telegram are not phone calls, so the usual capture cannot see
 them. CallVault handles them a different way: the privileged helper registers an **audio policy** that
@@ -81,13 +81,27 @@ participant must agree beforehand.
 
 Honest limits:
 
-- **Verified on WhatsApp, Signal and Telegram**, on one device and one Android version. An app can
-  refuse to be captured, and that only becomes apparent once a call is under way — if only your side
-  was recorded, CallVault says so.
+- **Verified on one device and one Android version so far** — see the table below. An app can refuse to
+  be captured, and that only becomes apparent once a call is under way; if only your side was recorded,
+  CallVault says so.
 - **Carrier Wi-Fi calling (VoWiFi / VoLTE) is not covered.** Its audio never becomes a normal playback
   stream, so this route cannot reach it.
 - **Contact names come from the calling app's own call notification** — the only place Android exposes
   them. An app that isn't allowed to post notifications produces correctly recorded but unnamed files.
+
+#### VoIP compatibility — tested devices
+
+VoIP capture depends on the device's audio stack and on each app's own settings, so it can differ
+between phones and can change when a calling app updates. This table records what has actually been
+tested rather than what is assumed to work.
+
+| Device | Android | OS build | Apps verified | Result | Reported by |
+|---|---|---|---|---|---|
+| OnePlus 12 (CPH2581) | 16 (API 36) | OxygenOS 16.0.8 (`CPH2581_16.0.8.300`, patch 2026-06-01) | WhatsApp 2.26.27.85 · Telegram 12.9.1 · Signal 8.19.2 | ✅ Both sides recorded on all three | maintainer |
+
+**Please add yours.** If you try VoIP recording, open an issue with your device, Android version, OS
+build, the calling app and its version, and whether both sides were captured — including failures,
+which are just as useful. A "no" entry saves the next person the experiment.
 
 ## Requirements
 

@@ -44,7 +44,7 @@
 
     <!-- Post-update note: one entry per release, newest first. Keep in sync with CHANGELOG.md. -->
     <string name="home_whatsnew_settings_cta">Open Settings</string>
-    <string name="whatsnew_147_title">Record app calls</string>
+    <string name="whatsnew_147_title">Record app calls (VoIP)</string>
     <string name="whatsnew_147_body">CallVault can now record calls made inside apps like WhatsApp, Signal and Telegram — both sides of the conversation, not just your own voice. Recordings show which app the call was made in, and the contact\'s name when the app provides it.\n\nExperimental: it works with some apps and not others, and an app can block recording at any time in an update.</string>
     <string name="whatsnew_147_where">Settings ▸ Experimental ▸ VoIP calls</string>
     <string name="whatsnew_146_title">Resilient recording</string>
