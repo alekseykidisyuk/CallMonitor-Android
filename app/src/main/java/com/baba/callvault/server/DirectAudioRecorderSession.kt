@@ -15,11 +15,12 @@ import android.media.MediaCodecInfo
 import android.media.MediaCodecList
 import android.media.MediaFormat
 import android.media.MediaMuxer
-import android.media.MediaRecorder
 import android.os.ParcelFileDescriptor
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioSource
+import com.baba.callvault.integrations.scrcpy.androidAudioSource
 import com.baba.callvault.utils.AppLogger
+import com.baba.callvault.utils.PcmDownmix
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -63,7 +64,7 @@ internal class DirectAudioRecorderSession(
     }
 
     private fun startInternal() {
-        val androidSource = androidSourceFor(source)
+        val androidSource = source.androidAudioSource
             ?: throw UnsupportedOperationException("source ${source.cliKey} is not a mic-type source")
         val mime = encoderMimeFor(codec)
 
@@ -126,7 +127,7 @@ internal class DirectAudioRecorderSession(
             if (read <= 0) continue
 
             // Feed MONO to the encoder: downmix a stereo capture (average L+R), or pass a mono capture through.
-            val (buf, len) = if (downmix) mono to downmixStereoToMono(pcm, read, mono) else pcm to read
+            val (buf, len) = if (downmix) mono to PcmDownmix.stereoToMono(pcm, read, mono) else pcm to read
 
             val inIdx = enc.dequeueInputBuffer(DEQUEUE_TIMEOUT_US)
             if (inIdx >= 0) {
@@ -202,25 +203,6 @@ internal class DirectAudioRecorderSession(
         audioRecord = null; encoder = null; muxer = null
     }
 
-    /**
-     * Downmixes interleaved stereo PCM-16 (little-endian) into mono by averaging each L/R pair. Returns
-     * the number of mono bytes written to [dst] (= [srcLen] / 2). Averaging (not summing) avoids clipping.
-     */
-    private fun downmixStereoToMono(src: ByteArray, srcLen: Int, dst: ByteArray): Int {
-        var di = 0
-        var si = 0
-        while (si + 3 < srcLen) {
-            val l = (src[si].toInt() and 0xFF or (src[si + 1].toInt() shl 8)).toShort().toInt()
-            val r = (src[si + 2].toInt() and 0xFF or (src[si + 3].toInt() shl 8)).toShort().toInt()
-            val m = (l + r) / 2
-            dst[di] = (m and 0xFF).toByte()
-            dst[di + 1] = ((m shr 8) and 0xFF).toByte()
-            di += 2
-            si += 4
-        }
-        return di
-    }
-
     private fun openAudioRecord(androidSource: Int): Pair<AudioRecord, Int> {
         for (channelMask in intArrayOf(AudioFormat.CHANNEL_IN_STEREO, AudioFormat.CHANNEL_IN_MONO)) {
             val channels = if (channelMask == AudioFormat.CHANNEL_IN_STEREO) 2 else 1
@@ -257,18 +239,8 @@ internal class DirectAudioRecorderSession(
          * the codec's MIME. Otherwise [RecorderServer] uses the scrcpy fallback.
          */
         fun supports(source: ScrcpyAudioSource, codec: ScrcpyAudioCodec): Boolean {
-            if (androidSourceFor(source) == null) return false
+            if (source.androidAudioSource == null) return false
             return runCatching { hasEncoder(encoderMimeFor(codec)) }.getOrDefault(false)
-        }
-
-        /** Maps our scrcpy `audio_source` cliKey to an Android [MediaRecorder.AudioSource]; null = needs scrcpy. */
-        private fun androidSourceFor(source: ScrcpyAudioSource): Int? = when (source.cliKey) {
-            "voice-call" -> MediaRecorder.AudioSource.VOICE_CALL
-            "mic-voice-communication" -> MediaRecorder.AudioSource.VOICE_COMMUNICATION
-            "mic" -> MediaRecorder.AudioSource.MIC
-            "mic-voice-recognition" -> MediaRecorder.AudioSource.VOICE_RECOGNITION
-            "mic-voice-performance" -> MediaRecorder.AudioSource.VOICE_PERFORMANCE
-            else -> null // "output"/playback-capture etc. — not a plain AudioRecord source
         }
 
         private fun encoderMimeFor(codec: ScrcpyAudioCodec): String = when (codec) {
