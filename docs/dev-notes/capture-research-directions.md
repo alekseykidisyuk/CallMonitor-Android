@@ -10,49 +10,120 @@ Companion to `spike-audio-handoff.md` (which proved **Option B** — the app can
 
 ## Track A — Pre-created idle capture track (persistence via a permanently-held handoff)
 
+**Status (2026-07-26): RESEARCHED, ON HOLD. One experiment away from a decision.** The go/no-go
+question was settled empirically on-device; the blocker then moved somewhere nobody expected. Read
+this before re-opening — most of the original open risks are now closed, and the two that matter are
+not the ones this section originally worried about.
+
 ### The idea
 
-Option B proved the app can *hold* a live capture track after the daemon dies. Track A asks: what if the app holds the track **from before the call even starts** — created once by a briefly-alive daemon (post-boot / post-onboarding), handed off, then kept indefinitely? If an idle `VOICE_CALL` track simply begins yielding audio when a call becomes active, **no daemon is needed at call start at all.** The daemon collapses from a per-call requirement to a once-per-boot "track factory."
+Option B proved the app can *hold* a live capture track after the daemon dies. Track A asks: what if
+the app holds the track **from before the call even starts** — created once by a briefly-alive daemon,
+handed off, then kept indefinitely? If an idle `VOICE_CALL` track simply begins yielding audio when a
+call becomes active, **no daemon is needed at call start at all**, and the daemon collapses from a
+per-call requirement to a once-per-boot "track factory".
 
-### Code investigation — what a working Track A would replace
+### What a working Track A would replace
 
-Grounded in the current bootstrap + recording paths:
+| Today's machinery | Track A effect |
+|---|---|
+| `ensureServerRunning` at ring (`RecordingForegroundService`) and at record start (`AudioRecordingEngine`) | gone at call time — the app already holds the track |
+| `DaemonKeepAliveService` (persistent FGS + 60 s watchdog) | collapses to "create once per boot" |
+| Cold start (`ensureServerRunning` budgets 24 s; `AdbShell.ensureConnected` can still hang ~75 s) | gone except the single post-boot creation |
+| WD enable/disable churn — the primary self-inflicted daemon killer | minimised to once per boot |
+| Loopback off-Wi-Fi opt-in and its `0.0.0.0` listener | **reduced, NOT retired** — see "the payoff is smaller than it first looked" |
 
-| Today's machinery | Why it exists | Track A effect |
+### VERIFIED — creation with no call active WORKS
+
+Probed on the OnePlus 12 / A16 with a shell-uid `AudioRecord(VOICE_CALL)` and no call in progress:
+creation **succeeds**, routes to `AUDIO_DEVICE_IN_TELEPHONY_RX`, is reported `silenced:false`, and
+survived 240 s / ~1875 reads untouched. Input availability is a static `attachedDevices` property of
+the device's `audio_policy_configuration.xml`, not something gated on telephony state.
+
+So the question this section was originally gated on — "can you even pre-create it?" — is answered YES.
+
+### VERIFIED — but the pre-created stream is SILENT for the whole call
+
+The blocker is the vendor HAL, not the framework. `voice_check_and_set_incall_rec_usecase()` runs
+**once per `start_input_stream()`**. A stream started before the call is pinned to
+`USECASE_AUDIO_RECORD_AFE_PROXY` and stays there — so it keeps delivering silence for the entire call,
+while looking perfectly healthy from every angle the app can see.
+
+**Candidate fix, UNTESTED:** `stop()` then `start()` on the existing track at call-connect, forcing
+RecordThread standby → HAL restart → use-case re-evaluation. This preserves the whole point of Track A
+because **permission is checked at creation, not at start** — so the app can do it with no daemon and
+no ADB.
+
+### VERIFIED — risks that are now CLOSED
+
+- **No idle timeout, no reaper.** `RecordThread` standbys purely on `mActiveTracks.size() == 0`; there
+  is no aging mechanism for record tracks anywhere in AudioFlinger. A held track is not timed out.
+- **Entering a call does not invalidate inputs.** `AudioPolicyManager::setPhoneState` touches outputs
+  only — no `closeInput`, no `updateInputRouting`.
+- **Shell UID is immune to proc-state silencing.** `isServiceUid(uid) → uid < AID_APP_START` makes
+  `UidPolicy::getUidState()` return `PROCESS_STATE_TOP` permanently for uid 2000. This is why the
+  ~60 s-after-screen-lock silencing that several open-source projects report does not apply to us.
+  Confirmed on-device that `com.android.shell` also holds `CAPTURE_AUDIO_OUTPUT`, which clears the
+  separate in-call gate.
+- **It does not fight other apps.** `AUDIO_SOURCE_VOICE_CALL` is a *virtual source*
+  (`AudioPolicyService::isVirtualSource`), which excludes it from the concurrent-capture arbitration
+  entirely: it can neither silence nor be silenced by the user's voice recorder, Assistant, camera,
+  WhatsApp or VoIP. Those all keep working, and so does the tap.
+
+### VERIFIED — the risks that actually matter now
+
+**1. Eviction.** The protection rule in `getInputForDevice()` is `active && !IDLE`. So:
+
+| Hold strategy | Preemption | Idle cost |
 |---|---|---|
-| `RecorderServerLauncher.ensureServerRunning` at ring/standby (`RecordingForegroundService.kt:248`) and at record start (`AudioRecordingEngine.kt:340`) | launch/confirm the daemon so it can create the track when a call fires | **gone at call time** — the app already holds the track; it just starts draining its cblk |
-| `DaemonKeepAliveService` — persistent FGS + 60s watchdog + immediate relaunch | its own docstring: keep the daemon *"WARM … so a call is captured instantly instead of paying a cold-start that outlasts a short call"* | **collapses** to "create the track once per boot, re-create only if the held track is lost" — no per-call warmth needed |
-| Cold-start latency (first call after reboot/reap missed — see `post-reboot-daemon-coldstart-latency` memory) | daemon launches lazily, slower than a short call's first seconds | **gone**, except the single post-boot creation |
-| **Loopback / classic-tcpip off-WiFi opt-in** (`AdbShell.connectLoopback`/`armLoopbackIfNeeded`, `OFFLINE_RECORDING_ENABLED`, `LOOPBACK_ADB_PORT`) | the only way to (re)launch the daemon at call time without WiFi, since WD is WiFi-only | **potentially RETIRED** — see below |
-| WD-enable churn (`AdbShell.enableWirelessDebugging`) — memory's *primary* self-inflicted daemon killer | re-enabled transiently on every launch/relaunch | **minimized to once-per-boot** (one create), so the adbd-restart churn that kills daemons all but disappears |
+| held **started** | protected (shell uid is permanently TOP) | permanent `PARTIAL_WAKE_LOCK "AudioIn"` — the device never deep-sleeps — plus a 24/7 mic indicator attributed to **"Shell"**, not CallVault |
+| held **stopped** | vulnerable — any app opening the same profile closes it | free: HAL standby, no wakelock, no indicator |
 
-### The headline payoff: off-WiFi **without** loopback
+On this device the trade-off is sharp: `dumpsys media.audio_policy` shows `Telephony Rx` sharing an
+input profile with the built-in/back/headset/SCO mics at `maxOpenCount: 2`, and `VOICE_CALL` has
+**source priority 0, the lowest there is** — so it is first to be closed when that profile fills.
 
-Off-WiFi recording today needs loopback *only because* the daemon must be (re)launched at call time and WD dies off-WiFi. But if the app is **already holding a live capture track** created earlier while on WiFi, then **no ADB is needed at call time at all** — the call records straight from the held cblk. A track created once on WiFi and held across the WiFi→cellular transition means **off-WiFi calls record with no loopback, no `0.0.0.0` open port.**
+Given the HAL finding forces a stop/start at call-connect anyway, **stopped** is probably the right
+choice: it avoids the wakelock and the indicator, and the start you must do anyway re-arms the
+use-case. The cost is accepting eviction, which requires detection.
 
-That would resolve the loopback security tradeoff outright (the `adb tcpip` listener binds all interfaces and can't be loopback-bound without root — see `loopback-tcpip-offwifi` memory). Track A is the one path that makes off-WiFi *free and safe* instead of a warned opt-in.
+**2. Blind failure.** A holder of a bare binder + cblk cannot self-heal: `restoreRecord_l` is
+client-side logic inside the `AudioRecord` object, which lives in the daemon, and
+`EVENT_NEW_IAUDIORECORD` is never dispatched on the record path. Mitigated in the shipped code by the
+`CBLK_INVALID` + stalled-ring detectors in `nativeDrainToPipe`, which make the death visible rather
+than silent — but they cannot recover it.
 
-### What still needs the daemon (honest limit)
+### The payoff is smaller than this section originally claimed
 
-**CREATE, once per boot.** `service.adb.tcp.port` and any tcpip state clear on reboot, and a fresh capture track is needed after a reboot anyway. So the model is **"daemon + ADB once per boot"** (a single create+handoff at BootReceiver / first connectivity), not "daemon never." The bootstrap doesn't vanish — it de-escalates from per-call to per-boot.
+The original text said Track A could **retire** loopback. It cannot. The held track can be evicted, and
+re-creating it needs the daemon and therefore ADB — off Wi-Fi, that means loopback. The honest claim is
+that the ADB path becomes a **rarely-used recovery mechanism instead of a per-call dependency**. Still
+a large win; not a deletion.
 
-### Open risks — must validate before betting on it
+### No prior art — anywhere
 
-1. **Idle silencing over hours** — the appop/UID-state monitor may zero-fill (or the RecordThread may STANDBY) a track whose creator uid (shell) is gone and that has no active reader for a long time. This is the M3e silencing risk, but stretched from seconds to hours. **The decisive unknown.**
-2. **Does `VOICE_CALL` gate on an active call at CREATE or only at data-time?** If `getInputForAttr` refuses to *create* a `VOICE_CALL` input when no call is active, you can't pre-create it — you'd have to create at call start (defeating the point), OR hold a different source and switch. Needs a direct probe.
-3. **Multi-hour track validity** — does the `IAudioRecord`+cblk survive doze, audio-policy reconfig, and audio route changes (BT/speaker/wired) for hours, and resume cleanly when a call starts?
-4. **Battery** — cost of an always-open capture track.
-5. **Reboot re-arm** — needs one connectivity moment post-boot to re-create; a persisted "held" flag can't be trusted across reboot (detect real state by probing the held cblk).
+Surveyed BCR, ShizuCallRecorder, cally, Ever Call Recorder, ACR/ACR Phone, Cube ACR, Boldbeast,
+Skvalex, Truecaller, Automatic Call Recorder, Shizuku itself, and LSPosed/Magisk modules: **not one
+pre-arms a capture track.** The field solves "no privileged work at call time" either by making the
+*permission* permanent (root/Magisk/Xposed) or by keeping a *process* warm (Shizuku-class).
+ShizuCallRecorder's `ACTION_STANDBY` at RINGING is the closest, and it starts a *process*.
 
-### Cheap first probe (no productionization)
+The only real precedent in any category is **WebRTC/LiveKit `prewarmRecording()`**, which starts an
+`AudioRecord` early and hands the already-running instance to the consumer — Option B's pattern, but
+within one process and seconds ahead, never across a process boundary or across calls. Their caveat
+transfers: prewarming freezes format and effects at arm time, before the call's route is known.
 
-On the main device: daemon creates a `VOICE_CALL` `AudioRecord` with **no call active**, hands off to the app, app holds it idle **10–30 min through screen-off/doze**, then place a real call and check whether the held track produces real audio **without re-touching the daemon**. Green here = risks 1–3 mostly cleared; then measure battery (risk 4).
+No XDA thread, GitHub issue or writeup describes anyone holding a capture track across sessions. The
+absence is real, not a gap in searching. **You would be first — with nobody's scar tissue to learn
+from.**
 
-### Decision gate
+### The one experiment that decides it
 
-If the probe shows a held `VOICE_CALL` track goes silent or invalid over idle → Track A is dead, fall back to Option B's SUSTAIN-only win (keep WD/loopback/keep-alive as today). If it survives → this is a *bigger* architectural win than Option B alone: it retires per-call bootstrap, cold-start, and the loopback security surface in one move.
-
----
+Hold a pre-created `VOICE_CALL` track across a real call-connect, `stop()`/`start()` it at off-hook,
+and confirm **real audio rather than silence**. Everything else is understood. Check with
+`AudioRecordingConfiguration.isClientSilenced()` (API 30+, registered before `startRecording`) plus an
+RMS floor — **never** by checking whether the ring advances, because a silenced track advances frames,
+timestamps and the ring at full rate while delivering zeros.
 
 ## Track B — VoIP call capture (WhatsApp / Signal / Telegram / etc.)
 

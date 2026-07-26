@@ -492,6 +492,26 @@ Build config that is **required, not scaffolding**: `ndkVersion`, `ndk { abiFilt
 — the daemon has no classloader library-search path, so the `.so` must exist as an extracted file for it
 to `System.load` by absolute path.
 
+### Known limitation: the app cannot heal an invalidated track
+
+The app holds the control block and the binder, but NOT an `AudioRecord` object — that lives in the
+daemon, which by design may be dead. `AudioRecord::restoreRecord_l`, the silent rebuild AudioFlinger
+expects a client to perform after an invalidation, is therefore unreachable, and
+`EVENT_NEW_IAUDIORECORD` is never dispatched on the record path. When the track is torn down the app
+gets no exception, no callback and no dead binder: the ring simply freezes.
+
+`nativeDrainToPipe` therefore watches for it directly — `CBLK_INVALID` in the control block's flags
+word (offset 44, cross-checked against the empirically pinned `mFront`=46), plus a rear cursor that
+stops moving for 10 s as a layout-independent backstop. Note a *silenced* track still advances the
+ring at full rate, so ring progress alone proves nothing.
+
+These are **diagnostic**: they end the drain cleanly so the container finalises and log why, instead
+of spinning until the call ends and truncating the recording with no explanation. They cannot recover
+the capture. Known triggers are uncommon — input preemption at `maxOpenCount`, audioserver restart,
+and route changes that close the input. Switching a live call from speaker to a **Bluetooth** headset
+was tested on-device with the feature on and did NOT trigger it; BT SCO connect is the classic
+`checkCloseInputs()` path, so that is meaningful evidence.
+
 ### What was removed
 
 All the milestone probes: the ashmem FIFO (`spikeStartFifoProbe` + `nativeCreateFifo`/`nativeReadFifo`),
