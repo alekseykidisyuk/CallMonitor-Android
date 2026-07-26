@@ -44,6 +44,8 @@
 
     <!-- Post-update note: one entry per release, newest first. Keep in sync with CHANGELOG.md. -->
     <string name="home_whatsnew_settings_cta">Open Settings</string>
+    <string name="whatsnew_148_title">More reliable start-up</string>
+    <string name="whatsnew_148_body">On some phones CallVault could keep switching Wireless debugging on and off without ever becoming ready to record. That is fixed. Where Wireless debugging is the only way in, CallVault now leaves it on and tells you which setting would let it be switched off again.\n\nAlso fixed: an app call could report a failure even though it recorded fine, and could be labelled with the wrong app.</string>
     <string name="whatsnew_147_title">Record app calls (VoIP)</string>
     <string name="whatsnew_147_body">CallVault can now record calls made inside apps like WhatsApp, Signal and Telegram — both sides of the conversation, not just your own voice. Recordings show which app the call was made in, and the contact\'s name when the app provides it.\n\nExperimental: it works with some apps and not others, and an app can block recording at any time in an update.</string>
     <string name="whatsnew_147_where">Settings ▸ Experimental ▸ VoIP calls</string>

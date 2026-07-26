@@ -12,6 +12,7 @@ import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
@@ -129,6 +130,26 @@ class RecordingForegroundService : Service() {
     private val hasSession: Boolean
         get() = currentState is RecordingServiceState.Active
 
+    /**
+     * Whether the VoIP recorder already owns this call, so the carrier path must stand down.
+     *
+     * **Deliberately inert unless VoIP recording is switched on.** A carrier recording that is wrongly
+     * suppressed is a lost call — far worse than a spurious error notification — so a user who has not
+     * enabled the VoIP feature keeps exactly today's behaviour, whatever their phone reports.
+     *
+     * With the feature on, two signals are accepted: our own VoIP recorder already running, and the
+     * audio mode being `MODE_IN_COMMUNICATION`. The mode is the same discriminator the VoIP detector
+     * itself uses (carrier calls are `MODE_IN_CALL`), and it covers the race where the telephony state
+     * arrives before the VoIP recording has started — measured at ~230 ms on One UI.
+     */
+    private fun isVoipCallInProgress(): Boolean {
+        if (!AppPreferences(this).isVoipRecordingEnabled()) return false
+        if (VoipRecordingCoordinator.isRecording) return true
+        return runCatching {
+            getSystemService(AudioManager::class.java)?.mode == AudioManager.MODE_IN_COMMUNICATION
+        }.getOrDefault(false)
+    }
+
     /** True only if the pipeline is actively reading and capturing audio. */
     private val isCurrentlyRecording: Boolean
         get() = (currentState as? RecordingServiceState.Active)?.engine?.let { e ->
@@ -195,6 +216,19 @@ class RecordingForegroundService : Service() {
                     AppLogger.w(TAG, "Start request ignored. A session is already on-going.")
                     return START_NOT_STICKY
                 }
+
+                // A VoIP call can raise the TELEPHONY state too, so this carrier path is asked to record
+                // a call the VoIP path is already recording. Seen on One UI: a WhatsApp call reported
+                // OFFHOOK, this service created a second file (named from the CALL LOG, so with an
+                // unrelated contact's name), the daemon refused with "already recording", and the empty
+                // file became an error notification — while the VoIP recording itself was perfectly fine.
+                // Checked here rather than at OFFHOOK because the telephony state arrives ~230 ms BEFORE
+                // the VoIP call is detected, so there is nothing to see yet at that point.
+                if (isVoipCallInProgress()) {
+                    AppLogger.i(TAG, "Start request ignored: VoIP call, already handled by the VoIP recorder")
+                    return START_NOT_STICKY
+                }
+
 
                 // At this point, we should already have the metadata from the intents, if it's missing, there's a logic error to be fixed.
                 if (currentMeta == null) {

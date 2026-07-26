@@ -98,7 +98,7 @@ tested rather than what is assumed to work.
 | Device | Android | OS build | Apps verified | Result | Reported by |
 |---|---|---|---|---|---|
 | OnePlus 12 (CPH2581) | 16 (API 36) | OxygenOS 16.0.8 (`CPH2581_16.0.8.300`, patch 2026-06-01) | WhatsApp 2.26.27.85 · Telegram 12.9.1 · Signal 8.19.2 | ✅ Both sides recorded on all three | maintainer |
-| Samsung Galaxy S24 FE (SM-S721B) | 16 (API 36) | One UI 8.5 (`BP4A.251205.006.S721BXXSCDZF3`, patch 2026-06-05) | WhatsApp 2.26.28.77 | ✅ Both sides recorded | maintainer |
+| Samsung Galaxy S24 FE (SM-S721B) | 16 (API 36) | One UI 8.5 (`BP4A.251205.006.S721BXXSCDZF3`, patch 2026-06-05) | WhatsApp 2.26.28.77 | ✅ Both sides recorded, app + contact named correctly (carrier calls also verified) | maintainer |
 
 **Please add yours.** If you try VoIP recording, open an issue with your device, Android version, OS
 build, the calling app and its version, and whether both sides were captured — including failures,
@@ -118,6 +118,14 @@ OnePlus had happily hidden them:
   reports uid 1000 (`system`), so an app label taken from it is wrong — it produced recordings named
   after Samsung's *Device maintenance*. Platform uids are now rejected and the app's own audio track is
   used instead.
+- **An app call can raise the phone's telephony state.** On One UI a WhatsApp call reports `OFFHOOK`,
+  so the carrier recorder also tried to record it — producing an empty second file (named from the call
+  log, so with an unrelated contact's name) and an error notification, while the VoIP recording itself
+  was perfectly fine. The carrier path now stands down when the VoIP recorder owns the call.
+- **Resilient recording is not confirmed working on One UI.** Its audio handoff is rejected on this
+  device (`geometry doesn't fit ashmem`). It fails *safely* — CallVault falls back to the normal path
+  and the call is still recorded — but the extra protection it offers is not active there. Under
+  investigation; see `docs/dev-notes/backlog.md`.
 
 ## Requirements
 
@@ -159,6 +167,40 @@ OnePlus had happily hidden them:
 > On OEMs that aggressively kill background apps (OnePlus/OxygenOS, Xiaomi, etc.), allow CallVault in **Auto-launch / Startup Manager** and exclude it from **battery optimization** so it records reliably and starts after a reboot. See [dontkillmyapp.com](https://dontkillmyapp.com/).
 >
 > If a recording ever stops when you lock the screen, set USB to **"Charging only"** — see [above](#keeping-a-recording-alive-when-the-screen-locks). Turning on **Resilient recording** additionally protects a call that is already being recorded.
+
+## Roadmap
+
+Planned, in rough priority order. Nothing here is promised by a date, and anything marked *investigating*
+may turn out not to be possible — this is what is actually being worked on, not a wish list.
+
+**Control over what gets recorded**
+
+- **Manual VoIP recording** — start and stop an app call's recording yourself, instead of it always
+  being automatic.
+- **Choose when to record** — decide per call rather than by rule alone, including a prompt at the start
+  of a call for people who want to make that decision each time.
+- **Turn cellular recording off independently** — today the automatic rules cover carrier calls; VoIP is
+  a separate opt-in. Someone who only wants app calls recorded should be able to say so.
+
+**Reliability and honesty about it**
+
+- **"Test my setup"** — one action that runs the whole pipeline and reports which step fails. This app
+  fails silently, and the failure is usually discovered after the call that mattered.
+- **Per-app VoIP support** — show which of your installed calling apps actually work, instead of a
+  blanket "experimental, may not work".
+- **Resilient recording on One UI** *(investigating)* — the audio handoff is rejected on Samsung; it
+  falls back safely, but the protection is inactive there.
+- **Faster, bounded startup** — one ADB call on the recording path is still unbounded and can stall.
+
+**Smaller things already agreed**
+
+- A manual **"Check for updates"** button — a release published just after you opened the app is
+  currently unreachable for up to six hours.
+- A **General** settings section grouping Visual settings, Experimental and Updates.
+- Translations for the VoIP feature (it is English-only today).
+- Protection against losing the ADB pairing — uninstalling wipes it with no recovery path.
+
+Engineering detail for each of these lives in [`docs/dev-notes/backlog.md`](docs/dev-notes/backlog.md).
 
 ## Building from source
 

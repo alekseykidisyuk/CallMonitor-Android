@@ -46,6 +46,45 @@ is why `SECTION_EXPERIMENTAL` is still the string `"reliability"` after that ren
 
 ---
 
+## 🔵 Control over what gets recorded
+
+Three related asks, all about the user deciding rather than the rules deciding:
+
+- **Manual VoIP recording** — start/stop an app call's recording by hand. The plumbing exists
+  (`VoipRecordingCoordinator.start/stop`); what's missing is a control surface and a mode where the
+  detector arms but does not auto-start.
+- **Choose when to record** — per-call rather than by rule, including a prompt at call start. The
+  carrier path already has a standby notification with a "Record" action
+  (`ACTION_MANUAL_START`) — that pattern extends to VoIP rather than needing a new one.
+- **Turn cellular recording off independently.** Today carrier recording is governed by the automatic
+  rules and VoIP is a separate opt-in; there is no way to say "app calls only". Careful: this is not
+  the same as the existing per-contact ignore rules, and it must not silently disable recording for
+  someone who expected it — default on, and state clearly what it does.
+
+---
+
+## 🔵 Resilient recording is rejected on One UI *(investigating)*
+
+The audio handoff fails on a Galaxy S24 FE:
+
+```
+handoff rejected: geometry doesn't fit ashmem (dataOff=232 wrapFrames=8192 frameSize=4 > 20480)
+```
+
+It fails **safely** — the receiver rejects the geometry rather than reading past the mapping, and the
+recording falls back to the normal daemon path, so calls are still captured. But the resilience the
+feature exists to provide is inactive on that device, and the README says so rather than implying it
+works everywhere.
+
+The numbers say the ring buffer is larger than the shared memory the daemon handed over
+(8192 frames × 4 bytes + 232 > 20480), so either the frame count reported by the daemon is not the one
+backing the mapping on this device, or One UI sizes the cblk region differently. Start by logging the
+actual ashmem size next to the computed geometry on both devices and comparing — the OnePlus numbers
+are known-good, so the difference should be obvious. See `spike-audio-handoff.md` for the ring layout
+(`DATA_OFF=232`, `mFront`/`mRear` word offsets) that this arithmetic comes from.
+
+---
+
 ## 🔵 "Test my setup" — prove the whole path works, before it matters
 
 **Why.** This app fails *silently*, and the failure is discovered after the call you needed. Every

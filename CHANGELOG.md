@@ -3,6 +3,34 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.4.8] — 2026-07-26
+
+The headline: **CallVault now becomes ready reliably on phones where Wireless debugging is the only
+way in** — found on a Samsung, and it turned out to affect the app everywhere, just invisibly.
+
+### Fixed
+- **CallVault could sit flipping Wireless debugging on and off without ever becoming ready.** Android's
+  debugging service shuts down when its last connection is removed, and CallVault's background helper
+  runs inside it — so switching Wireless debugging off right after starting the helper killed the
+  helper, which restarted it, which switched it off again. On a Galaxy S24 FE this looped six times
+  over two minutes and app-call recording could not arm at all. CallVault now leaves Wireless debugging
+  on when it is the only way in, and says so in its notification, pointing at the two settings
+  ("Record without Wi-Fi", or USB debugging) that let it be switched off again.
+- **An app call could produce a failure notification even though it recorded perfectly.** On Samsung a
+  WhatsApp call also raises the phone's call state, so CallVault started a *second*, carrier-style
+  recording for the same call. That one captured nothing, was saved under an unrelated contact's name
+  taken from the call log, and its empty file raised an error — while the real recording was fine. The
+  carrier path now stands down when an app call is already being recorded.
+- **App calls could be labelled with the wrong app entirely.** On Samsung a WhatsApp call reports the
+  system as the owner of the audio, so recordings were named after *Device maintenance* and shown with
+  its battery icon. CallVault now ignores the system and uses the calling app's own audio.
+
+### Note
+- **Resilient recording is not confirmed working on One UI.** Its audio handoff is rejected on that
+  device. It fails safely — the call is still recorded through the normal path — but the extra
+  protection is not active there. Under investigation.
+- The README now carries a **tested-devices table** and a short **roadmap**.
+
 ## [1.4.7] — 2026-07-26
 
 The headline: **CallVault can now record app calls (VoIP)** — WhatsApp, Signal, Telegram — both

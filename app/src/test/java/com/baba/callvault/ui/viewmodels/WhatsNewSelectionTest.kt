@@ -60,7 +60,7 @@ class ReleaseHighlightsTest {
 
     @Test
     fun `lists the newest release first`() {
-        assertEquals("1.4.7", ReleaseHighlights.recent().first().version)
+        assertEquals("1.4.8", ReleaseHighlights.recent().first().version)
     }
 
     @Test
