@@ -263,4 +263,6 @@
     <string name="voip_recording_warning_title">¿Grabar llamadas VoIP?</string>
     <string name="voip_recording_warning_message">Grabar llamadas de apps está regulado de forma más estricta que grabar llamadas telefónicas, y en muchos lugares todos los participantes deben dar su consentimiento antes. Asegúrate de que te está permitido.\n\nEsto es experimental: funciona con unas apps y con otras no, y una app puede bloquear la grabación en cualquier actualización.</string>
     <string name="voip_recording_warning_continue">Entendido, activar</string>
+    <string name="notif_voip_recording_title">Grabando llamada VoIP</string>
+    <string name="notif_voip_recording_text">CallVault está grabando una llamada de una app.</string>
 </resources>

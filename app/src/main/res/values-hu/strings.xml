@@ -263,4 +263,6 @@
     <string name="voip_recording_warning_title">Rögzíted a VoIP-hívásokat?</string>
     <string name="voip_recording_warning_message">Az alkalmazásokban zajló hívások rögzítését szigorúbb szabályok kötik, mint a telefonhívásokét, és sok helyen minden résztvevő előzetes hozzájárulása szükséges. Győződj meg róla, hogy jogosult vagy rá.\n\nEz kísérleti funkció: egyes alkalmazásokkal működik, másokkal nem, és egy frissítés bármikor letilthatja a rögzítést.</string>
     <string name="voip_recording_warning_continue">Értem, bekapcsolom</string>
+    <string name="notif_voip_recording_title">VoIP-hívás rögzítése</string>
+    <string name="notif_voip_recording_text">A CallVault éppen egy alkalmazáshívást rögzít.</string>
 </resources>

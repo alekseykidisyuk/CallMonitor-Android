@@ -14,6 +14,11 @@ import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.system.storage.SafHelper
+import com.baba.callvault.data.recordings.RecordingCatalog
+import com.baba.callvault.system.storage.StorageRouter
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.baba.callvault.utils.AppLogger
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -34,7 +39,11 @@ object VoipRecordingCoordinator {
     private const val TAG = "CV:VoipRec"
 
     @Volatile private var recording = false
+
+    /** True while a VoIP recording is running, so the UI can say so. */
+    val isRecording: Boolean get() = recording
     @Volatile private var pending: SafHelper.SafResult? = null
+    @Volatile private var codecMime: String = "audio/ogg"
 
     /** Starts a VoIP recording. No-op when the feature is off, already recording, or unavailable. */
     @Synchronized
@@ -81,6 +90,7 @@ object VoipRecordingCoordinator {
 
         recording = true
         pending = saf
+        codecMime = codec.mimeType
         AppLogger.i(TAG, "VoIP recording started -> $fileName")
     }
 
@@ -104,6 +114,20 @@ object VoipRecordingCoordinator {
             AppLogger.i(TAG, "VoIP staged copy ${if (copied) "ok" else "FAILED"} -> ${saf.uri}")
             runCatching { staging.delete() }
         }
+        // The Home list reads CallVault's own catalog, not the folder — a file that is never recorded
+        // here exists on disk but is invisible in the app. The carrier path does this from
+        // RecordingForegroundService, which the VoIP path deliberately does not go through.
+        if (saf != null) {
+            val name = saf.displayName.substringAfterLast('/')
+            CoroutineScope(Dispatchers.IO).launch {
+                runCatching {
+                    val size = SafHelper.fileSize(context, saf.uri)
+                    RecordingCatalog.recordLocal(context, name, saf.uri, size, System.currentTimeMillis())
+                    AppLogger.i(TAG, "VoIP recording catalogued: $name ($size bytes)")
+                    StorageRouter.route(context, saf.uri, name, codecMime)
+                }.onFailure { AppLogger.e(TAG, "Cataloguing the VoIP recording failed: ${it.message}", it) }
+            }
+        }
         AppLogger.i(TAG, "VoIP recording stopped (${saf?.uri})")
     }
 
@@ -113,6 +137,6 @@ object VoipRecordingCoordinator {
      */
     private fun buildFileName(codec: ScrcpyAudioCodec): String {
         val stamp = SimpleDateFormat("yyyyMMdd_HHmmss.SSSZ", Locale.CANADA).format(Date())
-        return "${stamp}_voip.${codec.containerExtension}"
+        return "${stamp}_voip${codec.containerExtension}"   // containerExtension already has the dot
     }
 }

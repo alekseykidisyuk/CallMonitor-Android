@@ -135,6 +135,8 @@
     <string name="voip_recording_warning_message">Recording app calls is more tightly regulated than recording phone calls, and in many places every participant must agree first. Please make sure you are allowed to.\n\nThis is experimental: it works with some apps and not others, and an app can block recording at any time in an update.</string>
     <string name="voip_recording_warning_continue">I understand, turn it on</string>
     <string name="voip_recording_arming">Preparing VoIP recording…</string>
+    <string name="notif_voip_recording_title">Recording VoIP call</string>
+    <string name="notif_voip_recording_text">CallVault is recording an app call.</string>
     <string name="voip_recording_unavailable">Couldn\'t enable on this device — VoIP recording isn\'t available here.</string>
     <string name="settings_section_debug">Debug</string>
     <string name="settings_section_security">Security</string>

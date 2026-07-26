@@ -9,70 +9,91 @@
 package com.baba.callvault.services.recording
 
 import android.content.Context
-import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.AudioPlaybackConfiguration
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.utils.AppLogger
+import java.util.concurrent.Executor
 
 /**
  * Notices VoIP calls starting and ending.
  *
- * There is no `PHONE_STATE` broadcast for WhatsApp/Signal/Telegram, so instead we watch for a playback
- * stream tagged `USAGE_VOICE_COMMUNICATION` — the far party's voice — appearing while the device is in
- * `MODE_IN_COMMUNICATION`. Both conditions together are what distinguishes a call from, say, a voice
- * message being played back.
+ * There is no `PHONE_STATE` broadcast for WhatsApp/Signal/Telegram, so the signal used here is the
+ * **audio mode**: a VoIP app puts the device into `MODE_IN_COMMUNICATION` for the duration of a call.
+ * Carrier calls use `MODE_IN_CALL` instead, so the two paths cannot collide.
  *
- * This can run late without harm. The capture policy is armed when the feature is switched on (see
- * [VoipCaptureController]), and only the POLICY has to predate the call — the sink can be created on a
- * call already in progress. So detection is free to use ordinary public APIs rather than race the app.
+ * The mode is deliberately the only thing inspected. An earlier version keyed off the
+ * `USAGE_VOICE_COMMUNICATION` usage on [AudioPlaybackConfiguration]s, which does not work from an
+ * ordinary app: the framework hands out **anonymised** playback configurations to callers without
+ * `MODIFY_AUDIO_ROUTING` (only the shell-uid daemon holds that), so the real usage is never visible and
+ * detection silently never fired. `AudioManager.getMode()` needs no permission and is not redacted.
  *
- * Hosted by [DaemonKeepAliveService], which is already a permanent foreground service, so this adds no
- * new background component and no second notification. VoIP detection therefore has exactly the same
- * lifetime as the rest of the recorder: if the app is alive enough to record a carrier call, it is
- * alive enough to record a VoIP one.
+ * Detection is free to run late. The capture policy is armed when the feature is switched on (see
+ * [VoipCaptureController]) and only the POLICY must predate the call — the sink can be created on a
+ * call already in progress.
+ *
+ * Hosted by [DaemonKeepAliveService], already a permanent foreground service, so this costs no extra
+ * process and no second notification, and VoIP gets the same lifetime as carrier recording.
  */
 class VoipCallDetector(private val context: Context) {
 
     private val audioManager = context.getSystemService(AudioManager::class.java)
     private val handler = Handler(Looper.getMainLooper())
+    private val executor = Executor { handler.post(it) }
     private var registered = false
 
-    /** True while we believe a VoIP call is up, so repeat callbacks don't restart the recording. */
+    /** True while we believe a VoIP call is up, so repeat signals don't restart the recording. */
     private var callActive = false
 
+    /** Set while a recording is running, so the host can reflect it in its notification. */
+    @Volatile
+    var isRecording: Boolean = false
+        private set
+
+    /** Notified when [isRecording] changes, so the keep-alive notification can show the state. */
+    var onRecordingStateChanged: (() -> Unit)? = null
+
+    private val modeListener = AudioManager.OnModeChangedListener { mode -> evaluate(mode) }
+
     /**
-     * A call's players flicker as routes change (earpiece → speaker → Bluetooth), so a disappearance is
-     * only treated as "call ended" once it has persisted. Otherwise a route change would end the
-     * recording mid-conversation.
+     * Secondary trigger for API 30, where [AudioManager.OnModeChangedListener] does not exist. The
+     * configurations themselves are ignored (they are anonymised for us) — this only says "something
+     * about playback changed, go re-read the mode".
      */
+    private val playbackTrigger = object : AudioManager.AudioPlaybackCallback() {
+        override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>) {
+            evaluate(audioManager?.mode ?: AudioManager.MODE_NORMAL)
+        }
+    }
+
+    /** A call's mode can wobble briefly on route changes, so ending is debounced. */
     private val endCallRunnable = Runnable {
         if (callActive) {
             callActive = false
             AppLogger.i(TAG, "VoIP call ended")
             runCatching { VoipRecordingCoordinator.onCallEnded(context) }
                 .onFailure { AppLogger.w(TAG, "VoIP stop failed: ${it.message}") }
+            isRecording = false
+            onRecordingStateChanged?.invoke()
         }
     }
 
-    private val callback = object : AudioManager.AudioPlaybackCallback() {
-        override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>) {
-            val voiceActive = configs.any {
-                it.audioAttributes.usage == AudioAttributes.USAGE_VOICE_COMMUNICATION
-            } && audioManager?.mode == AudioManager.MODE_IN_COMMUNICATION
-
-            if (voiceActive && !callActive) {
-                handler.removeCallbacks(endCallRunnable)
-                callActive = true
-                AppLogger.i(TAG, "VoIP call detected")
-                runCatching { VoipRecordingCoordinator.onCallStarted(context) }
-                    .onFailure { AppLogger.w(TAG, "VoIP start failed: ${it.message}") }
-            } else if (!voiceActive && callActive) {
-                handler.removeCallbacks(endCallRunnable)
-                handler.postDelayed(endCallRunnable, END_DEBOUNCE_MS)
-            }
+    private fun evaluate(mode: Int) {
+        val inVoipCall = mode == AudioManager.MODE_IN_COMMUNICATION
+        if (inVoipCall && !callActive) {
+            handler.removeCallbacks(endCallRunnable)
+            callActive = true
+            AppLogger.i(TAG, "VoIP call detected (mode=IN_COMMUNICATION)")
+            runCatching { VoipRecordingCoordinator.onCallStarted(context) }
+                .onFailure { AppLogger.w(TAG, "VoIP start failed: ${it.message}") }
+            isRecording = VoipRecordingCoordinator.isRecording
+            onRecordingStateChanged?.invoke()
+        } else if (!inVoipCall && callActive) {
+            handler.removeCallbacks(endCallRunnable)
+            handler.postDelayed(endCallRunnable, END_DEBOUNCE_MS)
         }
     }
 
@@ -81,10 +102,16 @@ class VoipCallDetector(private val context: Context) {
         if (registered || audioManager == null) return
         if (!AppPreferences(context).isVoipRecordingEnabled()) return
         runCatching {
-            audioManager.registerAudioPlaybackCallback(callback, handler)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                audioManager.addOnModeChangedListener(executor, modeListener)
+            }
+            // Registered on every version: on API 30 it is the only trigger, and above it is a cheap
+            // backstop in case a mode change is ever missed.
+            audioManager.registerAudioPlaybackCallback(playbackTrigger, handler)
             registered = true
             AppLogger.i(TAG, "VoIP call detection active")
-        }.onFailure { AppLogger.w(TAG, "Could not register playback callback: ${it.message}") }
+            evaluate(audioManager.mode)   // a call may already be in progress
+        }.onFailure { AppLogger.w(TAG, "Could not start VoIP detection: ${it.message}") }
     }
 
     /** Stops watching and ends any in-flight recording. Idempotent. */
@@ -92,7 +119,12 @@ class VoipCallDetector(private val context: Context) {
         handler.removeCallbacks(endCallRunnable)
         if (callActive) endCallRunnable.run()
         if (!registered || audioManager == null) return
-        runCatching { audioManager.unregisterAudioPlaybackCallback(callback) }
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                audioManager.removeOnModeChangedListener(modeListener)
+            }
+            audioManager.unregisterAudioPlaybackCallback(playbackTrigger)
+        }
         registered = false
         AppLogger.i(TAG, "VoIP call detection stopped")
     }

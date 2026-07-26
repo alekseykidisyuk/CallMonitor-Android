@@ -263,4 +263,6 @@
     <string name="voip_recording_warning_title">Nagrywać połączenia VoIP?</string>
     <string name="voip_recording_warning_message">Nagrywanie rozmów w aplikacjach jest regulowane surowiej niż nagrywanie połączeń telefonicznych, a w wielu miejscach wszyscy uczestnicy muszą wcześniej wyrazić zgodę. Upewnij się, że masz do tego prawo.\n\nTa funkcja jest eksperymentalna: z niektórymi aplikacjami działa, z innymi nie, a aktualizacja aplikacji może w każdej chwili zablokować nagrywanie.</string>
     <string name="voip_recording_warning_continue">Rozumiem, włącz</string>
+    <string name="notif_voip_recording_title">Nagrywanie połączenia VoIP</string>
+    <string name="notif_voip_recording_text">CallVault nagrywa rozmowę w aplikacji.</string>
 </resources>

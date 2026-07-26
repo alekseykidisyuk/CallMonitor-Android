@@ -263,4 +263,6 @@
     <string name="voip_recording_warning_title">VoIP-Anrufe aufnehmen?</string>
     <string name="voip_recording_warning_message">Das Aufnehmen von App-Anrufen ist strenger geregelt als das Aufnehmen von Telefonaten, und vielerorts müssen alle Beteiligten vorher zustimmen. Bitte stelle sicher, dass du das darfst.\n\nDies ist experimentell: Es funktioniert mit manchen Apps und mit anderen nicht, und eine App kann die Aufnahme mit einem Update jederzeit blockieren.</string>
     <string name="voip_recording_warning_continue">Verstanden, aktivieren</string>
+    <string name="notif_voip_recording_title">Aufnahme eines App-Anrufs</string>
+    <string name="notif_voip_recording_text">CallVault nimmt gerade einen App-Anruf auf.</string>
 </resources>

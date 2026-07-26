@@ -49,7 +49,13 @@ import com.baba.callvault.utils.AppLogger
 class DaemonKeepAliveService : Service() {
 
     private val watchdogHandler = Handler(Looper.getMainLooper())
-    private val voipDetector by lazy { VoipCallDetector(applicationContext) }
+    private val voipDetector by lazy {
+        VoipCallDetector(applicationContext).apply {
+            // Reuse the permanent keep-alive notification to show that a VoIP call is being recorded,
+            // rather than adding a second one. Without this the user has no sign it is working.
+            onRecordingStateChanged = { updateNotification(RecorderConnection.isConnected) }
+        }
+    }
     private var lastReady: Boolean? = null
 
     @Volatile private var rewarming = false
@@ -181,11 +187,20 @@ class DaemonKeepAliveService : Service() {
     }
 
     private fun buildNotification(ready: Boolean): Notification {
-        val baseText = getString(if (ready) R.string.notif_readiness_ready_text else R.string.notif_readiness_starting_text)
+        val voipRecording = runCatching { voipDetector.isRecording }.getOrDefault(false)
+        val baseText = when {
+            voipRecording -> getString(R.string.notif_voip_recording_text)
+            ready -> getString(R.string.notif_readiness_ready_text)
+            else -> getString(R.string.notif_readiness_starting_text)
+        }
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle(
-                getString(if (ready) R.string.notif_readiness_ready_title else R.string.notif_readiness_starting_title),
+                when {
+                    voipRecording -> getString(R.string.notif_voip_recording_title)
+                    ready -> getString(R.string.notif_readiness_ready_title)
+                    else -> getString(R.string.notif_readiness_starting_title)
+                },
             )
             .setContentText(baseText)
             .setOngoing(true)

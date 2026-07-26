@@ -263,4 +263,6 @@
     <string name="voip_recording_warning_title">Записывать звонки VoIP?</string>
     <string name="voip_recording_warning_message">Запись звонков в приложениях регулируется строже, чем запись телефонных разговоров, и во многих странах требуется предварительное согласие всех участников. Убедитесь, что вам это разрешено.\n\nЭто экспериментальная функция: с одними приложениями она работает, с другими нет, а обновление приложения может в любой момент заблокировать запись.</string>
     <string name="voip_recording_warning_continue">Понятно, включить</string>
+    <string name="notif_voip_recording_title">Запись звонка VoIP</string>
+    <string name="notif_voip_recording_text">CallVault записывает звонок в приложении.</string>
 </resources>

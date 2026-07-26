@@ -263,4 +263,6 @@
     <string name="voip_recording_warning_title">Registrare le chiamate VoIP?</string>
     <string name="voip_recording_warning_message">Registrare le chiamate nelle app è regolamentato in modo più severo rispetto alle chiamate telefoniche e in molti luoghi tutti i partecipanti devono acconsentire prima. Assicurati di esserne autorizzato.\n\nQuesta funzione è sperimentale: con alcune app funziona e con altre no, e un\'app può bloccare la registrazione con un aggiornamento.</string>
     <string name="voip_recording_warning_continue">Ho capito, attiva</string>
+    <string name="notif_voip_recording_title">Registrazione chiamata VoIP</string>
+    <string name="notif_voip_recording_text">CallVault sta registrando una chiamata di un\'app.</string>
 </resources>

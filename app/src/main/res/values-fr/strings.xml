@@ -263,4 +263,6 @@
     <string name="voip_recording_warning_title">Enregistrer les appels VoIP ?</string>
     <string name="voip_recording_warning_message">L\'enregistrement des appels dans les applis est plus strictement encadré que celui des appels téléphoniques, et dans de nombreux pays chaque participant doit donner son accord au préalable. Assurez-vous d\'y être autorisé.\n\nCeci est expérimental : cela fonctionne avec certaines applis et pas avec d\'autres, et une appli peut bloquer l\'enregistrement lors d\'une mise à jour.</string>
     <string name="voip_recording_warning_continue">J\'ai compris, activer</string>
+    <string name="notif_voip_recording_title">Enregistrement d\'un appel VoIP</string>
+    <string name="notif_voip_recording_text">CallVault enregistre un appel dans une appli.</string>
 </resources>
