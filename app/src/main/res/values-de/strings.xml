@@ -255,4 +255,12 @@
     <string name="settings_section_updates">Updates</string>
     <string name="settings_update_check_label">Nach Updates suchen</string>
     <string name="settings_update_check_description">Einmal täglich auf GitHub nach einer neuen Version suchen.</string>
+    <string name="settings_section_experimental">Experimentell</string>
+    <string name="settings_subsection_resilience">Robustheit</string>
+    <string name="settings_subsection_voip">VoIP-Anrufe</string>
+    <string name="settings_voip_recording_label">VoIP-Anrufe aufnehmen</string>
+    <string name="settings_voip_recording_description">Nimmt auch Anrufe in Apps wie WhatsApp, Signal und Telegram auf. Experimentell — manche Apps blockieren die Aufnahme, und das lässt sich erst während eines Anrufs feststellen.</string>
+    <string name="voip_recording_warning_title">VoIP-Anrufe aufnehmen?</string>
+    <string name="voip_recording_warning_message">Das Aufnehmen von App-Anrufen ist strenger geregelt als das Aufnehmen von Telefonaten, und vielerorts müssen alle Beteiligten vorher zustimmen. Bitte stelle sicher, dass du das darfst.\n\nDies ist experimentell: Es funktioniert mit manchen Apps und mit anderen nicht, und eine App kann die Aufnahme mit einem Update jederzeit blockieren.</string>
+    <string name="voip_recording_warning_continue">Verstanden, aktivieren</string>
 </resources>

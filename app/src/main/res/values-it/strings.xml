@@ -255,4 +255,12 @@
     <string name="settings_section_updates">Aggiornamenti</string>
     <string name="settings_update_check_label">Cerca aggiornamenti</string>
     <string name="settings_update_check_description">Una volta al giorno, cerca una nuova versione su GitHub.</string>
+    <string name="settings_section_experimental">Sperimentale</string>
+    <string name="settings_subsection_resilience">Resilienza</string>
+    <string name="settings_subsection_voip">Chiamate VoIP</string>
+    <string name="settings_voip_recording_label">Registra le chiamate VoIP</string>
+    <string name="settings_voip_recording_description">Registra anche le chiamate fatte in app come WhatsApp, Signal e Telegram. Sperimentale: alcune app bloccano la registrazione, e non è possibile saperlo prima che la chiamata sia in corso.</string>
+    <string name="voip_recording_warning_title">Registrare le chiamate VoIP?</string>
+    <string name="voip_recording_warning_message">Registrare le chiamate nelle app è regolamentato in modo più severo rispetto alle chiamate telefoniche e in molti luoghi tutti i partecipanti devono acconsentire prima. Assicurati di esserne autorizzato.\n\nQuesta funzione è sperimentale: con alcune app funziona e con altre no, e un\'app può bloccare la registrazione con un aggiornamento.</string>
+    <string name="voip_recording_warning_continue">Ho capito, attiva</string>
 </resources>

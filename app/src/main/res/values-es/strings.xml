@@ -255,4 +255,12 @@
     <string name="settings_section_updates">Actualizaciones</string>
     <string name="settings_update_check_label">Buscar actualizaciones</string>
     <string name="settings_update_check_description">Una vez al día, busca una nueva versión en GitHub.</string>
+    <string name="settings_section_experimental">Experimental</string>
+    <string name="settings_subsection_resilience">Resistencia</string>
+    <string name="settings_subsection_voip">Llamadas VoIP</string>
+    <string name="settings_voip_recording_label">Grabar llamadas VoIP</string>
+    <string name="settings_voip_recording_description">Graba también las llamadas hechas en apps como WhatsApp, Signal y Telegram. Experimental: algunas apps bloquean la grabación, y no se sabe hasta que la llamada está en curso.</string>
+    <string name="voip_recording_warning_title">¿Grabar llamadas VoIP?</string>
+    <string name="voip_recording_warning_message">Grabar llamadas de apps está regulado de forma más estricta que grabar llamadas telefónicas, y en muchos lugares todos los participantes deben dar su consentimiento antes. Asegúrate de que te está permitido.\n\nEsto es experimental: funciona con unas apps y con otras no, y una app puede bloquear la grabación en cualquier actualización.</string>
+    <string name="voip_recording_warning_continue">Entendido, activar</string>
 </resources>

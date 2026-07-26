@@ -255,4 +255,12 @@
     <string name="settings_section_updates">Обновления</string>
     <string name="settings_update_check_label">Проверять обновления</string>
     <string name="settings_update_check_description">Раз в день проверяет наличие новой версии на GitHub.</string>
+    <string name="settings_section_experimental">Экспериментальное</string>
+    <string name="settings_subsection_resilience">Устойчивость</string>
+    <string name="settings_subsection_voip">Звонки VoIP</string>
+    <string name="settings_voip_recording_label">Записывать звонки VoIP</string>
+    <string name="settings_voip_recording_description">Записывает и звонки в приложениях вроде WhatsApp, Signal и Telegram. Экспериментально: некоторые приложения блокируют запись, и узнать об этом можно только во время звонка.</string>
+    <string name="voip_recording_warning_title">Записывать звонки VoIP?</string>
+    <string name="voip_recording_warning_message">Запись звонков в приложениях регулируется строже, чем запись телефонных разговоров, и во многих странах требуется предварительное согласие всех участников. Убедитесь, что вам это разрешено.\n\nЭто экспериментальная функция: с одними приложениями она работает, с другими нет, а обновление приложения может в любой момент заблокировать запись.</string>
+    <string name="voip_recording_warning_continue">Понятно, включить</string>
 </resources>

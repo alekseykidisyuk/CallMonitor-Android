@@ -255,4 +255,12 @@
     <string name="settings_section_updates">Frissítések</string>
     <string name="settings_update_check_label">Frissítések keresése</string>
     <string name="settings_update_check_description">Naponta egyszer új verziót keres a GitHubon.</string>
+    <string name="settings_section_experimental">Kísérleti</string>
+    <string name="settings_subsection_resilience">Ellenállóság</string>
+    <string name="settings_subsection_voip">VoIP-hívások</string>
+    <string name="settings_voip_recording_label">VoIP-hívások rögzítése</string>
+    <string name="settings_voip_recording_description">A WhatsApp, Signal, Telegram és hasonló alkalmazásokban indított hívásokat is rögzíti. Kísérleti — egyes alkalmazások letiltják a rögzítést, és ez csak hívás közben derül ki.</string>
+    <string name="voip_recording_warning_title">Rögzíted a VoIP-hívásokat?</string>
+    <string name="voip_recording_warning_message">Az alkalmazásokban zajló hívások rögzítését szigorúbb szabályok kötik, mint a telefonhívásokét, és sok helyen minden résztvevő előzetes hozzájárulása szükséges. Győződj meg róla, hogy jogosult vagy rá.\n\nEz kísérleti funkció: egyes alkalmazásokkal működik, másokkal nem, és egy frissítés bármikor letilthatja a rögzítést.</string>
+    <string name="voip_recording_warning_continue">Értem, bekapcsolom</string>
 </resources>

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.ColorLens
@@ -300,9 +301,9 @@ fun SettingsContent(
                 )
             }
             item {
-                ReliabilitySection(
-                    expanded = openSection == SECTION_RELIABILITY,
-                    onToggle = { onToggleSection(SECTION_RELIABILITY) }
+                ExperimentalSection(
+                    expanded = openSection == SECTION_EXPERIMENTAL,
+                    onToggle = { onToggleSection(SECTION_EXPERIMENTAL) }
                 )
             }
             // Debug section: always visible so anyone can enable logging and share logs to report an issue.
@@ -391,7 +392,7 @@ private const val SECTION_STORAGE = "storage"
 private const val SECTION_RETENTION = "retention"
 private const val SECTION_AUDIO = "audio"
 private const val SECTION_VISUAL = "visual"
-private const val SECTION_RELIABILITY = "reliability"
+private const val SECTION_EXPERIMENTAL = "reliability"   // key kept so a user's open-section state survives the rename
 private const val SECTION_BUG_REPORT = "bug_report"
 private const val SECTION_UPDATES = "updates"
 private const val SECTION_ABOUT = "about"
@@ -1011,13 +1012,79 @@ private fun BugReportSection(
  * mid-call. Grouped together so users have one place to make recording robust.
  */
 @Composable
-private fun ReliabilitySection(expanded: Boolean, onToggle: () -> Unit) {
-    SettingsSection(title = stringResource(R.string.settings_section_reliability), expanded = expanded, onToggle = onToggle) {
+private fun ExperimentalSection(expanded: Boolean, onToggle: () -> Unit) {
+    SettingsSection(title = stringResource(R.string.settings_section_experimental), expanded = expanded, onToggle = onToggle) {
+        SettingsSubHeader(stringResource(R.string.settings_subsection_resilience))
+        HandoffPersistToggle()
+        SettingsDivider()
         OfflineRecordingToggle()
         SettingsDivider()
         UsbDefaultConfigRow()
-        SettingsDivider()
-        HandoffPersistToggle()
+
+        SettingsSubHeader(stringResource(R.string.settings_subsection_voip))
+        VoipRecordingToggle()
+    }
+}
+
+/** Small label separating groups of related rows inside one collapsible section. */
+@Composable
+private fun SettingsSubHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 4.dp, top = 14.dp, bottom = 2.dp)
+    )
+}
+
+/**
+ * Opt-in "Record VoIP calls" toggle (experimental).
+ *
+ * Unlike the other opt-ins this one carries a confirmation, for two reasons that are not the app's to
+ * decide for the user: consent law for VoIP recording is stricter than for carrier calls in many
+ * places, and support is per-app — an app that opts out of capture cannot be recorded at all, and we
+ * can only tell once a call is under way.
+ */
+@Composable
+private fun VoipRecordingToggle() {
+    val context = LocalContext.current
+    val prefs = remember { AppPreferences(context) }
+    var enabled by remember { mutableStateOf(prefs.isVoipRecordingEnabled()) }
+    var showWarning by remember { mutableStateOf(false) }
+
+    SettingsToggleRow(
+        icon = Icons.Filled.Groups,
+        label = stringResource(R.string.settings_voip_recording_label),
+        description = stringResource(R.string.settings_voip_recording_description),
+        checked = enabled,
+        onCheckedChange = { turnOn ->
+            if (turnOn) {
+                showWarning = true          // confirm before enabling; never before turning OFF
+            } else {
+                enabled = false
+                prefs.setVoipRecordingEnabled(false)
+            }
+        },
+    )
+
+    if (showWarning) {
+        AlertDialog(
+            onDismissRequest = { showWarning = false },
+            title = { Text(stringResource(R.string.voip_recording_warning_title)) },
+            text = { Text(stringResource(R.string.voip_recording_warning_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    enabled = true
+                    prefs.setVoipRecordingEnabled(true)
+                    showWarning = false
+                }) { Text(stringResource(R.string.voip_recording_warning_continue)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWarning = false }) {
+                    Text(stringResource(R.string.general_cancel))
+                }
+            },
+        )
     }
 }
 

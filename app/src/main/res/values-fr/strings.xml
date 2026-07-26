@@ -255,4 +255,12 @@
     <string name="settings_section_updates">Mises à jour</string>
     <string name="settings_update_check_label">Rechercher des mises à jour</string>
     <string name="settings_update_check_description">Une fois par jour, recherche une nouvelle version sur GitHub.</string>
+    <string name="settings_section_experimental">Expérimental</string>
+    <string name="settings_subsection_resilience">Résilience</string>
+    <string name="settings_subsection_voip">Appels VoIP</string>
+    <string name="settings_voip_recording_label">Enregistrer les appels VoIP</string>
+    <string name="settings_voip_recording_description">Enregistre aussi les appels passés dans des applis comme WhatsApp, Signal et Telegram. Expérimental : certaines applis bloquent l\'enregistrement, et cela ne se sait qu\'une fois l\'appel en cours.</string>
+    <string name="voip_recording_warning_title">Enregistrer les appels VoIP ?</string>
+    <string name="voip_recording_warning_message">L\'enregistrement des appels dans les applis est plus strictement encadré que celui des appels téléphoniques, et dans de nombreux pays chaque participant doit donner son accord au préalable. Assurez-vous d\'y être autorisé.\n\nCeci est expérimental : cela fonctionne avec certaines applis et pas avec d\'autres, et une appli peut bloquer l\'enregistrement lors d\'une mise à jour.</string>
+    <string name="voip_recording_warning_continue">J\'ai compris, activer</string>
 </resources>

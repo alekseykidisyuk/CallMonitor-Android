@@ -126,6 +126,14 @@
     <string name="settings_section_visual">Visual settings</string>
     <string name="settings_section_audio">Audio configuration</string>
     <string name="settings_section_reliability">Reliability</string>
+    <string name="settings_section_experimental">Experimental</string>
+    <string name="settings_subsection_resilience">Resilience</string>
+    <string name="settings_subsection_voip">VoIP calls</string>
+    <string name="settings_voip_recording_label">Record VoIP calls</string>
+    <string name="settings_voip_recording_description">Also record calls made in apps like WhatsApp, Signal and Telegram. Experimental — some apps block recording, and this cannot be known until a call is under way.</string>
+    <string name="voip_recording_warning_title">Record VoIP calls?</string>
+    <string name="voip_recording_warning_message">Recording app calls is more tightly regulated than recording phone calls, and in many places every participant must agree first. Please make sure you are allowed to.\n\nThis is experimental: it works with some apps and not others, and an app can block recording at any time in an update.</string>
+    <string name="voip_recording_warning_continue">I understand, turn it on</string>
     <string name="settings_section_debug">Debug</string>
     <string name="settings_section_security">Security</string>
     <string name="settings_section_recorder_server">Recorder service</string>

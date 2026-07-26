@@ -123,6 +123,7 @@ class AppPreferences(context: Context) {
         // the source is handoff-compatible, the daemon hands its live AudioRecord to the app, which reads
         // the ring + encodes — so a recording SURVIVES the daemon being killed mid-call.
         const val HANDOFF_PERSIST_ENABLED = false
+        const val VOIP_RECORDING_ENABLED = false
 
         // --- Audio/Scrcpy Quality ---
         val AUDIO_SOURCE = ScrcpyAudioSource.VOICE_CALL.cliKey
@@ -192,6 +193,7 @@ class AppPreferences(context: Context) {
         PERSISTENT_SERVER_ENABLED("persistent_server_enabled"),
         WD_DISABLE_WHEN_IDLE("wd_disable_when_idle"),
         HANDOFF_PERSIST_ENABLED("handoff_persist_enabled"),
+        VOIP_RECORDING_ENABLED("voip_recording_enabled"),
         
         // --- Automation ---
         AUTO_RECORD_INCOMING("auto_record_incoming"),
@@ -444,6 +446,14 @@ class AppPreferences(context: Context) {
 
     /** Sets the "turn Wireless debugging off when the daemon is connected" policy. */
     fun setWdDisableWhenIdle(enabled: Boolean) = setBoolean(Key.WD_DISABLE_WHEN_IDLE, enabled)
+
+    /**
+     * Whether to record VoIP calls (WhatsApp/Signal/Telegram/…) as well as carrier calls. EXPERIMENTAL
+     * and off by default: consent law for VoIP is stricter in many jurisdictions, and an app that opts
+     * out of audio capture cannot be recorded at all.
+     */
+    fun isVoipRecordingEnabled() = getBoolean(Key.VOIP_RECORDING_ENABLED, DefaultsValue.VOIP_RECORDING_ENABLED)
+    fun setVoipRecordingEnabled(enabled: Boolean) = setBoolean(Key.VOIP_RECORDING_ENABLED, enabled)
 
     /**
      * Whether "Resilient recording" (the audio-capture handoff, Option B) is enabled. Default false =

@@ -255,4 +255,12 @@
     <string name="settings_section_updates">更新</string>
     <string name="settings_update_check_label">检查更新</string>
     <string name="settings_update_check_description">每天在 GitHub 上检查一次新版本。</string>
+    <string name="settings_section_experimental">实验性功能</string>
+    <string name="settings_subsection_resilience">弹性</string>
+    <string name="settings_subsection_voip">VoIP 通话</string>
+    <string name="settings_voip_recording_label">录制 VoIP 通话</string>
+    <string name="settings_voip_recording_description">同时录制在 WhatsApp、Signal、Telegram 等应用中进行的通话。实验性功能——部分应用会阻止录音，而这只有在通话进行时才能得知。</string>
+    <string name="voip_recording_warning_title">录制 VoIP 通话？</string>
+    <string name="voip_recording_warning_message">录制应用内通话所受的法律约束比录制电话通话更严格，许多地区要求所有参与者事先同意。请确认你有权这样做。\n\n这是实验性功能：对部分应用有效，对另一些无效，应用也可能在任何一次更新中阻止录音。</string>
+    <string name="voip_recording_warning_continue">我明白，开启</string>
 </resources>

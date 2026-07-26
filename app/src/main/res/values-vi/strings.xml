@@ -255,4 +255,12 @@
     <string name="settings_section_updates">Cập nhật</string>
     <string name="settings_update_check_label">Kiểm tra bản cập nhật</string>
     <string name="settings_update_check_description">Mỗi ngày một lần, tìm phiên bản mới trên GitHub.</string>
+    <string name="settings_section_experimental">Thử nghiệm</string>
+    <string name="settings_subsection_resilience">Độ bền bỉ</string>
+    <string name="settings_subsection_voip">Cuộc gọi VoIP</string>
+    <string name="settings_voip_recording_label">Ghi âm cuộc gọi VoIP</string>
+    <string name="settings_voip_recording_description">Ghi âm cả những cuộc gọi thực hiện trong các ứng dụng như WhatsApp, Signal và Telegram. Thử nghiệm — một số ứng dụng chặn việc ghi âm, và chỉ khi cuộc gọi đang diễn ra mới biết được.</string>
+    <string name="voip_recording_warning_title">Ghi âm cuộc gọi VoIP?</string>
+    <string name="voip_recording_warning_message">Việc ghi âm cuộc gọi trong ứng dụng được quản lý chặt chẽ hơn so với cuộc gọi điện thoại, và ở nhiều nơi tất cả những người tham gia phải đồng ý trước. Hãy chắc chắn rằng bạn được phép.\n\nĐây là tính năng thử nghiệm: hoạt động với một số ứng dụng và không hoạt động với số khác, và một bản cập nhật có thể chặn việc ghi âm bất cứ lúc nào.</string>
+    <string name="voip_recording_warning_continue">Đã hiểu, bật lên</string>
 </resources>
