@@ -165,6 +165,8 @@
     <string name="folder_cloud_warning">⚠ Эта папка для записей находится в облаке, что ненадёжно для записи. Выберите папку на устройстве.</string>
     <string name="settings_offline_recording_label">Запись без сети (без Wi-Fi)</string>
     <string name="settings_offline_recording_desc">Записывать звонки даже при отсутствии сети Wi-Fi.</string>
+    <string name="settings_handoff_persist_label">Устойчивая запись</string>
+    <string name="settings_handoff_persist_description">Продолжает запись, даже если фоновый помощник завершается во время звонка (например, при блокировке экрана). Экспериментально.</string>
     <string name="settings_usb_default_label">USB при разблокировке</string>
     <string name="settings_usb_default_hint">«Только зарядка» сохраняет запись, если вы блокируете экран во время звонка. Другие режимы позволяют передавать данные по USB, но могут прервать запись при блокировке телефона.</string>
     <string name="settings_usb_default_applying">Применение…</string>

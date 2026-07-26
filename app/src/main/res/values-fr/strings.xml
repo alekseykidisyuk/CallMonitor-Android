@@ -170,6 +170,8 @@
     <string name="folder_cloud_warning">⚠ Ce dossier d\'enregistrement se trouve dans le cloud, ce qui n\'est pas fiable pour la capture. Choisissez un dossier sur l\'appareil.</string>
     <string name="settings_offline_recording_label">Enregistrement hors ligne (sans Wi-Fi)</string>
     <string name="settings_offline_recording_desc">Enregistrer les appels même en l\'absence de réseau Wi-Fi.</string>
+    <string name="settings_handoff_persist_label">Enregistrement résilient</string>
+    <string name="settings_handoff_persist_description">Poursuit l\'enregistrement même si le service d\'arrière-plan est arrêté pendant l\'appel (par ex. lorsque vous verrouillez l\'écran). Expérimental.</string>
     <string name="settings_usb_default_label">USB au déverrouillage</string>
     <string name="settings_usb_default_hint">« Charge uniquement » maintient l\'enregistrement actif si tu verrouilles l\'écran pendant un appel. Les autres modes permettent le transfert de données en USB mais peuvent interrompre un enregistrement au verrouillage.</string>
     <string name="settings_usb_default_applying">Application…</string>

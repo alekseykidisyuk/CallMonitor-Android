@@ -26,6 +26,8 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyClient
 import com.baba.callvault.integrations.scrcpy.ScrcpyLauncher
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.server.RecorderServerLauncher
+import com.baba.callvault.services.recording.handoff.HandoffReceiver
+import com.baba.callvault.services.recording.handoff.HandoffSource
 import com.baba.callvault.system.storage.SafHelper
 import com.baba.callvault.integrations.scrcpy.ServerExtractor
 import com.baba.callvault.utils.AppLogger
@@ -54,6 +56,9 @@ class AudioRecordingEngine {
 
         /** How often the daemon-mode liveness watch re-checks that the daemon's binder is alive. */
         private const val DAEMON_LIVENESS_POLL_MS = 2000L
+
+        /** Capture rate for the resilient-recording (handoff) path — matches DirectAudioRecorderSession. */
+        private const val HANDOFF_SAMPLE_RATE = 48000
     }
 
     /**
@@ -159,6 +164,19 @@ class AudioRecordingEngine {
         private set
 
     /**
+     * Whether this session records via the resilient-recording (audio-handoff, Option B) path: the app
+     * holds the live capture + encodes locally, so the recording survives the daemon dying mid-call. Set
+     * true once the handoff establishes; like [daemonRecording] there is no local pipe-read job, so
+     * `isCurrentlyRecording` must consult this. Mutually exclusive with [daemonMode].
+     */
+    @Volatile
+    var handoffRecording: Boolean = false
+        private set
+
+    /** True when [startPipeline] chose the handoff path; drives the [release] teardown branch. */
+    private var handoffMode: Boolean = false
+
+    /**
      * Fired at most once per session when the liveness watch finds the daemon's binder dead while a
      * daemon-mode recording is supposed to be live (observed when Developer options is off: the
      * daemon dies within ~200ms of Wireless debugging being turned off, so `startRecording` is
@@ -244,6 +262,20 @@ class AudioRecordingEngine {
         currentRecordingUri = safResult.uri
         outputPfd = safResult.descriptor
         stagingFile = safResult.stagingFile
+
+        // Resilient recording (Option B) opt-in: when ENABLED and the source can be captured via a Java
+        // AudioRecord (voice-call/mic/voice-communication/…), use the handoff pipeline — the daemon hands
+        // its live capture to the app, which reads the ring + encodes, so a recording SURVIVES the daemon
+        // dying mid-call. Anything else (pref off, or output/playback sources) falls through to the
+        // unchanged daemon path below. When the pref is OFF this branch is skipped entirely, so the
+        // default recording path is byte-identical to before.
+        if (preferences.isHandoffPersistEnabled() && HandoffSource.supportsHandoff(audioSourceEnum.cliKey) &&
+            startHandoffPipeline(context, audioSourceEnum, codecEnum, bitRate, isCancelled)
+        ) {
+            handoffMode = true
+            currentCodecEnum = codecEnum
+            return
+        }
 
         // CallVault ALWAYS records via the persistent privileged daemon — it is the app's core
         // mechanism, not an option. Hand the SAF output fd to the daemon and let IT own scrcpy + muxing
@@ -369,6 +401,85 @@ class AudioRecordingEngine {
     }
 
     /**
+     * Resilient-recording pipeline (Option B): ensure the daemon is up, register the app-side output
+     * target ([outputPfd] + the user's codec), then ask the daemon to create the privileged AudioRecord
+     * and hand its live `IAudioRecord` + cblk to the app. The app (via [HandoffReceiver]) reads the ring
+     * and encodes into [outputPfd] — so the daemon may then die WITHOUT stopping the recording.
+     *
+     * The push delivery runs synchronously inside `startHandoff`, so by the time it returns the app has
+     * received the handoff; [HandoffReceiver.isLive] confirms capture actually started.
+     *
+     * @return true if the handoff established (capture is live); false → the caller falls back to the
+     *         daemon path so a call is never lost. Never throws except the pre-start cancellation.
+     */
+    private fun startHandoffPipeline(
+        context: Service,
+        audioSourceEnum: ScrcpyAudioSource,
+        codecEnum: ScrcpyAudioCodec,
+        bitRate: Int,
+        isCancelled: () -> Boolean
+    ): Boolean {
+        AppLogger.i(TAG, "Ensuring recorder daemon is running (handoff)")
+        val t0 = System.currentTimeMillis()
+        val connected = RecorderServerLauncher.ensureServerRunning(context)
+        AppLogger.i(TAG, "Handoff: ensureServerRunning=$connected in ${System.currentTimeMillis() - t0}ms")
+        // Same cold-start abort as the daemon path: if the call ended while the daemon was coming up,
+        // abort before creating any capture so the mic never turns on after the call (stuck-mic bug).
+        if (isCancelled()) {
+            AppLogger.w(TAG, "Call ended before the daemon was ready; aborting handoff start")
+            runCatching { outputPfd?.close() }
+            stagingFile?.let { runCatching { it.delete() } }
+            stagingFile = null
+            throw CancellationException("Recording aborted before start (call ended during daemon cold-start)")
+        }
+        val service = RecorderConnection.service
+        if (!connected || service == null) {
+            AppLogger.w(TAG, "Handoff: recorder daemon unavailable (connected=$connected, service=${service != null})")
+            return false
+        }
+        val outFd = outputPfd?.fileDescriptor
+            ?: run { AppLogger.w(TAG, "Handoff: no output fd; falling back"); return false }
+
+        // voice-call is captured STEREO (uplink L / downlink R) then downmixed to mono; mono sources stay
+        // mono. The app always outputs a single mono track (matches prod), so downmixToMono is always on
+        // (a no-op for already-mono capture).
+        val preferredChannels = if (audioSourceEnum == ScrcpyAudioSource.VOICE_CALL) 2 else 1
+        HandoffReceiver.begin(
+            HandoffReceiver.Target(
+                outputFd = outFd,
+                mime = codecEnum.mimeType,
+                muxerFormat = codecEnum.outputFormat,
+                bitRate = bitRate,
+                downmixToMono = true,
+            )
+        )
+        AppLogger.i(TAG, "Handoff: calling daemon startHandoff(${audioSourceEnum.cliKey}, $HANDOFF_SAMPLE_RATE, $preferredChannels)")
+        val t1 = System.currentTimeMillis()
+        val delivered = try {
+            service.startHandoff(audioSourceEnum.cliKey, HANDOFF_SAMPLE_RATE, preferredChannels)
+                .also { AppLogger.i(TAG, "Handoff: startHandoff returned $it in ${System.currentTimeMillis() - t1}ms") }
+        } catch (e: Exception) {
+            // The daemon can die AFTER it has already pushed the handoff and the app started capturing,
+            // but BEFORE this reply returns (DeadObjectException) — precisely the scenario this feature
+            // exists to survive. So the binder reply is NOT authoritative; HandoffReceiver.isLive is.
+            AppLogger.w(TAG, "Handoff: startHandoff reply failed (${e.message}); checking isLive")
+            false
+        }
+        // isLive is the single source of truth: if the app-side capture actually started, the recording
+        // is live regardless of whether the binder reply made it back. Never abort or fall back in that
+        // case — doing so would orphan the running capture AND hand the same fd to a second (daemon) writer.
+        if (HandoffReceiver.isLive) {
+            handoffRecording = true
+            AppLogger.i(TAG, "Handoff established (delivered=$delivered); app now owns capture (survives daemon death)")
+            return true
+        }
+        AppLogger.w(TAG, "Handoff did not establish (delivered=$delivered); releasing + falling back to daemon path")
+        HandoffReceiver.abort()
+        runCatching { service.stopHandoff() }
+        return false
+    }
+
+    /**
      * Safely releases all held resources in the correct order.
      * Everything is wrapped in runCatching to ignore any exceptions and continue the cleanup.
      *
@@ -388,6 +499,21 @@ class AudioRecordingEngine {
     fun release() {
         AppLogger.i(TAG, "Releasing session resources and recording pipeline...")
         livenessHandler.removeCallbacks(livenessWatch)
+
+        if (handoffMode) {
+            // Resilient-recording teardown: stop() flips the drain flag and BLOCKS until the app-side
+            // encoder finalises the container trailer into outputPfd; only then close our fd handle. Then
+            // best-effort ask the daemon to release its held track (ignored if the daemon already died —
+            // which is exactly the case this path exists to survive).
+            runCatching { HandoffReceiver.stop() }
+                .onFailure { AppLogger.w(TAG, "Handoff stop error during release: ${it.message}") }
+            runCatching { RecorderConnection.service?.stopHandoff() }
+                .onFailure { AppLogger.w(TAG, "Daemon stopHandoff failed during release: ${it.message}") }
+            runCatching { outputPfd?.close() }
+            handoffRecording = false
+            finalizeStagingIfNeeded()
+            return
+        }
 
         if (daemonMode) {
             // Ask the daemon to stop + finalise the container, then close our local fd handle. The local

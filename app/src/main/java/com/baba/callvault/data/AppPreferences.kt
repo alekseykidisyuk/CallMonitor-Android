@@ -118,6 +118,12 @@ class AppPreferences(context: Context) {
         // re-enable it only transiently to (re)launch the daemon — the persistent-server payoff.
         const val WD_DISABLE_WHEN_IDLE = false
 
+        // --- Resilient recording (audio-capture handoff, Option B) ---
+        // OFF by default: the recording path is byte-identical to the daemon-mode default. When true and
+        // the source is handoff-compatible, the daemon hands its live AudioRecord to the app, which reads
+        // the ring + encodes — so a recording SURVIVES the daemon being killed mid-call.
+        const val HANDOFF_PERSIST_ENABLED = false
+
         // --- Audio/Scrcpy Quality ---
         val AUDIO_SOURCE = ScrcpyAudioSource.VOICE_CALL.cliKey
         val AUDIO_CODEC = ScrcpyAudioCodec.OPUS.cliKey
@@ -178,12 +184,14 @@ class AppPreferences(context: Context) {
         LAST_SEEN_VERSION_CODE("last_seen_version_code"),
         UPDATE_SUCCESS_BANNER_VERSION("update_success_banner_version"),
         WHATS_NEW_OFFWIFI_SEEN("whats_new_offwifi_seen"),
+        WHATS_NEW_RESILIENT_SEEN("whats_new_resilient_seen"),
         USB_DEFAULT_MODE("usb_default_mode"),
         UPDATE_SOURCE_OVERRIDE_URL("update_source_override_url"),
 
         // --- Persistent recorder server (CallVault Plan 5) ---
         PERSISTENT_SERVER_ENABLED("persistent_server_enabled"),
         WD_DISABLE_WHEN_IDLE("wd_disable_when_idle"),
+        HANDOFF_PERSIST_ENABLED("handoff_persist_enabled"),
         
         // --- Automation ---
         AUTO_RECORD_INCOMING("auto_record_incoming"),
@@ -402,6 +410,14 @@ class AppPreferences(context: Context) {
     fun hasSeenOffWifiWhatsNew() = getBoolean(Key.WHATS_NEW_OFFWIFI_SEEN, false)
     fun setSeenOffWifiWhatsNew(seen: Boolean) = setBoolean(Key.WHATS_NEW_OFFWIFI_SEEN, seen)
 
+    /**
+     * Whether the one-time "What's new: Resilient recording" intro modal has already been shown. Same
+     * contract as [hasSeenOffWifiWhatsNew]: a per-FEATURE introduction shown once, never a per-release
+     * changelog — so each feature keeps its own flag and nobody who skipped a release loses its note.
+     */
+    fun hasSeenResilientWhatsNew() = getBoolean(Key.WHATS_NEW_RESILIENT_SEEN, false)
+    fun setSeenResilientWhatsNew(seen: Boolean) = setBoolean(Key.WHATS_NEW_RESILIENT_SEEN, seen)
+
     /** Cached name of the last-read [com.baba.callvault.integrations.adb.UsbDefaultMode], or null. */
     fun getUsbDefaultMode() = getString(Key.USB_DEFAULT_MODE)
     fun setUsbDefaultMode(mode: String?) = setString(Key.USB_DEFAULT_MODE, mode)
@@ -428,6 +444,16 @@ class AppPreferences(context: Context) {
 
     /** Sets the "turn Wireless debugging off when the daemon is connected" policy. */
     fun setWdDisableWhenIdle(enabled: Boolean) = setBoolean(Key.WD_DISABLE_WHEN_IDLE, enabled)
+
+    /**
+     * Whether "Resilient recording" (the audio-capture handoff, Option B) is enabled. Default false =
+     * the recording path is byte-identical to daemon mode. When true and the source is handoff-compatible,
+     * the app holds the live capture and a recording survives the daemon dying mid-call.
+     */
+    fun isHandoffPersistEnabled() = getBoolean(Key.HANDOFF_PERSIST_ENABLED, DefaultsValue.HANDOFF_PERSIST_ENABLED)
+
+    /** Sets whether the resilient-recording (audio-handoff) path is enabled. */
+    fun setHandoffPersistEnabled(enabled: Boolean) = setBoolean(Key.HANDOFF_PERSIST_ENABLED, enabled)
 
     // -------- Storage & General --------
 

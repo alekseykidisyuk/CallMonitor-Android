@@ -165,6 +165,8 @@
     <string name="folder_cloud_warning">⚠ Esta carpeta de grabación está en la nube, lo que no es fiable para la captura. Elige una carpeta en el dispositivo.</string>
     <string name="settings_offline_recording_label">Grabación sin conexión (sin Wi-Fi)</string>
     <string name="settings_offline_recording_desc">Graba llamadas incluso cuando no hay red Wi-Fi.</string>
+    <string name="settings_handoff_persist_label">Grabación resistente</string>
+    <string name="settings_handoff_persist_description">Mantiene la grabación en curso aunque el proceso auxiliar en segundo plano se cierre durante la llamada (p. ej. al bloquear la pantalla). Experimental.</string>
     <string name="settings_usb_default_label">USB al desbloquear</string>
     <string name="settings_usb_default_hint">"Solo carga" mantiene la grabación activa si bloqueas la pantalla durante una llamada. Los otros modos permiten transferir datos por USB, pero pueden interrumpir una grabación al bloquear el teléfono.</string>
     <string name="settings_usb_default_applying">Aplicando…</string>

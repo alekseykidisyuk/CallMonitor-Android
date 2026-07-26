@@ -157,6 +157,8 @@
     <!-- Offline recording (loopback) opt-in + security warning -->
     <string name="settings_offline_recording_label">Offline recording (no Wi-Fi)</string>
     <string name="settings_offline_recording_desc">Record calls even when there is no Wi-Fi network.</string>
+    <string name="settings_handoff_persist_label">Resilient recording</string>
+    <string name="settings_handoff_persist_description">Keep a recording going even if the background helper is killed mid-call (e.g. when you lock the screen). Experimental.</string>
     <string name="settings_usb_default_label">USB when screen unlocks</string>
     <string name="settings_usb_default_hint">"Charging only" keeps recording alive if you lock the screen during a call. Other modes let USB transfer data but can interrupt a recording when you lock the phone.</string>
     <string name="settings_usb_default_applying">Applying…</string>

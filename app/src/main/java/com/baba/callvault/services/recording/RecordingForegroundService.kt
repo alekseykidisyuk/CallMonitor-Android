@@ -132,9 +132,9 @@ class RecordingForegroundService : Service() {
     /** True only if the pipeline is actively reading and capturing audio. */
     private val isCurrentlyRecording: Boolean
         get() = (currentState as? RecordingServiceState.Active)?.engine?.let { e ->
-            // Local mode: the pipe-read job reflects liveness. Daemon mode: there is no local job, so
-            // consult the daemon-recording flag instead (else this is always false while the daemon records).
-            e.audioPipeReadJob?.isActive == true || e.daemonRecording
+            // Local mode: the pipe-read job reflects liveness. Daemon mode / resilient handoff mode: there
+            // is no local job, so consult the mode flags instead (else this is always false while recording).
+            e.audioPipeReadJob?.isActive == true || e.daemonRecording || e.handoffRecording
         } == true
 
     // ── Service lifecycle ──────────────────────────────────────────────────────────────
