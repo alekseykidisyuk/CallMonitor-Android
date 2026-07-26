@@ -13,6 +13,7 @@ import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
+import com.baba.callvault.server.IRecorderService
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.system.storage.SafHelper
 import com.baba.callvault.data.recordings.RecordingCatalog
@@ -38,6 +39,9 @@ import java.util.Locale
  */
 object VoipRecordingCoordinator {
     private const val TAG = "CV:VoipRec"
+
+    /** Mirrors `VoipAppIdentity.UID_UNKNOWN`, which lives in the daemon-side package. */
+    private const val UID_UNKNOWN = -1
 
     @Volatile private var recording = false
 
@@ -68,13 +72,16 @@ object VoipRecordingCoordinator {
         val codec = runCatching { ScrcpyAudioCodec.fromKey(prefs.getAudioCodec()) }
             .getOrDefault(ScrcpyAudioCodec.OPUS)
         val bitRate = prefs.getAudioBitRate().takeIf { it > 0 } ?: codec.defaultBitRate
-        // Best-effort; a null name just means the recording is named by time alone.
-        // One lookup for both, so the app and the caller always come from the SAME notification.
-        val info = runCatching { service.voipCallInfo() }
-            .onFailure { AppLogger.d(TAG, "call-info lookup failed: ${it.message}") }
-            .getOrNull()
-        val appLabel = info?.getOrNull(0)?.let { appLabelFor(context, it) }
-        val caller = info?.getOrNull(1)
+        // Best-effort; a missing app or name just drops out of the filename.
+        // The app comes from the audio stream we are about to record, so it cannot be the wrong app;
+        // the caller is then looked up scoped to THAT package, never across all notifications.
+        val callPackage = resolveCallPackage(context, service)
+        val appLabel = callPackage?.let { appLabelFor(context, it) }
+        val caller = callPackage?.let {
+            runCatching { service.voipCallerName(it) }
+                .onFailure { AppLogger.d(TAG, "caller lookup failed: ${it.message}") }
+                .getOrNull()
+        }
         val fileName = buildFileName(codec, appLabel, caller)
 
         val saf = SafHelper.createAudioFile(context, folderUri, fileName, codec.mimeType)
@@ -163,9 +170,37 @@ object VoipRecordingCoordinator {
      */
     private fun buildFileName(codec: ScrcpyAudioCodec, appLabel: String?, caller: String?): String {
         val stamp = SimpleDateFormat("yyyyMMdd_HHmmss.SSSZ", Locale.CANADA).format(Date())
-        val app = appLabel?.takeIf { it.isNotBlank() }?.let { "_${sanitiseForFileName(it)}" } ?: ""
+        // The app hangs off the marker ("_voip-Signal") rather than sitting in its own underscore slot.
+        // With both in underscore slots, a call with an app but no caller was indistinguishable from one
+        // with a caller but no app, and Signal calls lost their app badge because of it.
+        val app = appLabel?.takeIf { it.isNotBlank() }?.let { "-${sanitiseForFileName(it)}" } ?: ""
         val who = caller?.takeIf { it.isNotBlank() }?.let { "_$it" } ?: ""
         return "${stamp}_voip$app$who${codec.containerExtension}"   // containerExtension has the dot
+    }
+
+    /**
+     * The package on the call, from the uid that owns the call's audio track.
+     *
+     * `getPackagesForUid` rather than string matching on a dump: it is the framework's own answer, and
+     * it stays correct for shared uids and for work profiles, where the uid encodes the user id.
+     * Several packages can share a uid, in which case the launchable one is the app the user is in.
+     */
+    private fun resolveCallPackage(context: Context, service: IRecorderService): String? {
+        val uid = runCatching { service.voipCallAppUid() }
+            .onFailure { AppLogger.d(TAG, "call-uid lookup failed: ${it.message}") }
+            .getOrDefault(UID_UNKNOWN)
+        if (uid == UID_UNKNOWN) {
+            AppLogger.d(TAG, "No VoIP call audio owner found; naming by time alone")
+            return null
+        }
+
+        val pm = context.packageManager
+        val packages = runCatching { pm.getPackagesForUid(uid) }.getOrNull()?.toList().orEmpty()
+        if (packages.isEmpty()) {
+            AppLogger.d(TAG, "uid $uid resolved to no visible package")
+            return null
+        }
+        return packages.firstOrNull { pm.getLaunchIntentForPackage(it) != null } ?: packages.first()
     }
 
     /** The app's user-visible name, e.g. "com.whatsapp" -> "WhatsApp"; falls back to the package. */

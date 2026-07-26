@@ -101,14 +101,24 @@ interface IRecorderService {
     boolean voipFarPartyHeard();
 
     /**
-     * Best-effort identity of the VoIP call in progress, as {package, callerName} — either may be null.
+     * The uid of the app whose VoIP call is in progress, or -1 if it cannot be determined.
      *
-     * Returned TOGETHER and read from a single notification record on purpose: fetching them separately
-     * allowed a title from one notification to be paired with a package from another, which is how a
-     * Telegram call was once labelled as WhatsApp. The package is not resolved to a display name here
-     * because that needs a Context the daemon must not obtain.
+     * Read from the audio system — the owner of the `USAGE_VOICE_COMMUNICATION` playback track, which
+     * is the very stream being recorded — so it cannot name the wrong app. Only the daemon can ask:
+     * playback configurations are anonymised for callers without MODIFY_AUDIO_ROUTING.
+     *
+     * A uid rather than a package because the daemon holds no Context; the app maps it with
+     * PackageManager, which handles shared uids and work profiles correctly.
      */
-    String[] voipCallInfo();
+    int voipCallAppUid();
+
+    /**
+     * Best-effort name of the person on the call, from the given package's ongoing notification.
+     *
+     * Scoped to the package resolved from {@link #voipCallAppUid} so a name can never be paired with
+     * the wrong app. Null whenever the app does not publish one.
+     */
+    String voipCallerName(String packageName);
 
     /** Releases the daemon's held handoff AudioRecord (frees the capture input). Idempotent. */
     void stopHandoff();

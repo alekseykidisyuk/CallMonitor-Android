@@ -13,94 +13,109 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * Covers parsing of the ongoing-call notification used to label VoIP recordings.
+ * Covers reading the contact's name off an app's ongoing-call notification.
  *
- * Two real failures drive most of these. A Telegram call was labelled "WhatsApp" because the package
- * and the title were read from different notification records; and its caller came out as "Ongoing
- * Telegram call", the notification's status line rather than a person. Both are pinned here.
+ * Three real on-device failures drive these. A Telegram call was labelled "WhatsApp", then "Google",
+ * because the lookup searched ALL notifications for one tagged `category=call` — and Telegram's call
+ * notification sets no category at all, so an unrelated app's notification won. And the contact was
+ * read only from `android.title`, which for Telegram holds the status line "Ongoing Telegram call"
+ * while the person's name sits in `android.text`.
  *
- * The overriding rule is the failure mode: anything unexpected must yield null so the recording is
- * named by time alone, never a wrong name.
+ * The overriding rule is the failure mode: anything unexpected yields null so the recording is named
+ * by time alone, never with a wrong name.
  */
 class VoipCallerNameTest {
 
-    private fun record(pkg: String, title: String, isCall: Boolean = true) = """
-        NotificationRecord(0x01: pkg=$pkg user=UserHandle{0} id=1 tag=null
-          ${if (isCall) "category=call" else "category=msg"}
+    /** Shaped after a real `dumpsys notification --noredact` record. */
+    private fun record(
+        pkg: String,
+        title: String,
+        text: String = "tap to return to the call",
+        ongoing: Boolean = true,
+        category: String? = null,
+    ) = """
+        NotificationRecord(0x01: pkg=$pkg user=UserHandle{0} id=201 tag=null
+          Notification(channel=Other flags=${if (ongoing) "ONGOING_EVENT|NO_CLEAR|FOREGROUND_SERVICE" else "0"})
+          ${category?.let { "category=$it" } ?: ""}
           extras={
                 android.title=String ($title)
-                android.text=String (tap to return to the call)
+                android.text=String ($text)
           }
     """.trimIndent()
 
     @Test
-    fun `reads the package and caller from a call notification`() {
-        val info = VoipCallerName.extractFromDump(record("com.whatsapp", "Feroza"))
-        assertEquals("com.whatsapp", info.packageName)
-        assertEquals("Feroza", info.callerName)
+    fun `reads the caller from the title when the app puts it there`() {
+        // WhatsApp's shape: the person is the title.
+        val name = VoipCallerName.extractFromDump(record("com.whatsapp", "Feroza"), "com.whatsapp")
+        assertEquals("Feroza", name)
     }
 
     @Test
-    fun `takes both facts from the SAME record when several apps have notifications`() {
-        // The regression: a stale WhatsApp notification supplied the package for a Telegram call.
-        val dump = record("com.whatsapp", "Feroza", isCall = false) + "\n" +
-            record("org.telegram.messenger", "Alex")
-
-        val info = VoipCallerName.extractFromDump(dump)
-
-        assertEquals("org.telegram.messenger", info.packageName)
-        assertEquals("Alex", info.callerName)
+    fun `falls back to the text when the title only restates the app`() {
+        // Telegram's shape, verified on-device: title is a status line, android.text is the person.
+        val dump = record("org.telegram.messenger", "Ongoing Telegram call", text = "Feroza")
+        assertEquals("Feroza", VoipCallerName.extractFromDump(dump, "org.telegram.messenger"))
     }
 
     @Test
-    fun `rejects a title that just restates the app`() {
-        // Telegram titles its ongoing call "Ongoing Telegram call" rather than naming the contact;
-        // that string in a filename is worse than no name at all.
-        val info = VoipCallerName.extractFromDump(
-            record("org.telegram.messenger", "Ongoing Telegram call")
-        )
-        assertEquals("org.telegram.messenger", info.packageName)
-        assertNull(info.callerName)
+    fun `finds a call notification that carries no category at all`() {
+        // The regression: Telegram sets no category, so a category=call filter never matched it.
+        val dump = record("org.telegram.messenger", "Ongoing Telegram call", text = "Alex")
+        assertEquals("Alex", VoipCallerName.extractFromDump(dump, "org.telegram.messenger"))
     }
 
     @Test
-    fun `keeps a real name even when the app also posts one`() {
-        assertEquals("Dana Liza", VoipCallerName.extractFromDump(record("com.whatsapp", "Dana Liza")).callerName)
+    fun `ignores other apps' notifications entirely`() {
+        // The regression that produced "_voip_Google.ogg": another app's notification won the race.
+        val dump = record("com.google.android.googlequicksearchbox", "Weather", category = "call") +
+            "\n" + record("org.telegram.messenger", "Ongoing Telegram call", text = "Alex")
+
+        assertEquals("Alex", VoipCallerName.extractFromDump(dump, "org.telegram.messenger"))
+        assertNull(VoipCallerName.extractFromDump(dump, "com.whatsapp"))
     }
 
     @Test
-    fun `ignores notifications that are not calls`() {
-        val info = VoipCallerName.extractFromDump(record("com.android.vending", "Uploaded 1 item", isCall = false))
-        assertNull(info.packageName)
-        assertNull(info.callerName)
+    fun `ignores the app's own non-ongoing notifications`() {
+        // A chat message from the same app must not be mistaken for the call.
+        val dump = record("org.telegram.messenger", "Bob", text = "see you at 5", ongoing = false)
+        assertNull(VoipCallerName.extractFromDump(dump, "org.telegram.messenger"))
+    }
+
+    @Test
+    fun `returns null when neither field names a person`() {
+        val dump = record("org.telegram.messenger", "Ongoing Telegram call", text = "Telegram")
+        assertNull(VoipCallerName.extractFromDump(dump, "org.telegram.messenger"))
     }
 
     @Test
     fun `strips characters that would break a filename`() {
-        assertEquals("AaBb", VoipCallerName.extractFromDump(record("com.whatsapp", "A/a:B*b")).callerName)
+        assertEquals("AaBb", VoipCallerName.extractFromDump(record("com.whatsapp", "A/a:B*b"), "com.whatsapp"))
     }
 
     @Test
     fun `keeps non-latin names intact`() {
-        assertEquals("גבריאל", VoipCallerName.extractFromDump(record("com.whatsapp", "גבריאל")).callerName)
+        assertEquals("גבריאל", VoipCallerName.extractFromDump(record("com.whatsapp", "גבריאל"), "com.whatsapp"))
     }
 
     @Test
-    fun `truncates an absurdly long title`() {
-        val info = VoipCallerName.extractFromDump(record("com.whatsapp", "N".repeat(200)))
-        assertEquals(40, info.callerName?.length)
+    fun `truncates an absurdly long name`() {
+        val name = VoipCallerName.extractFromDump(record("com.whatsapp", "N".repeat(200)), "com.whatsapp")
+        assertEquals(40, name?.length)
     }
 
     @Test
-    fun `returns the package even when the title is unusable`() {
-        val info = VoipCallerName.extractFromDump(record("com.whatsapp", "///"))
-        assertEquals("com.whatsapp", info.packageName)
-        assertNull(info.callerName)
+    fun `falls through to the text when the title is only unusable characters`() {
+        assertEquals("Dana", VoipCallerName.extractFromDump(record("com.whatsapp", "///", text = "Dana"), "com.whatsapp"))
     }
 
     @Test
-    fun `returns nothing for empty or junk input rather than throwing`() {
-        assertNull(VoipCallerName.extractFromDump("").packageName)
-        assertNull(VoipCallerName.extractFromDump("not a dump at all").callerName)
+    fun `returns null for empty or junk input rather than throwing`() {
+        assertNull(VoipCallerName.extractFromDump("", "com.whatsapp"))
+        assertNull(VoipCallerName.extractFromDump("not a dump at all", "com.whatsapp"))
+    }
+
+    @Test
+    fun `returns null when the package is unknown`() {
+        assertNull(VoipCallerName.extractFromDump(record("com.whatsapp", "Feroza"), ""))
     }
 }

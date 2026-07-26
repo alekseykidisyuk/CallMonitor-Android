@@ -268,12 +268,15 @@ object RecorderServer {
             return ok
         }
 
-        override fun voipCallInfo(): Array<String?> =
-            runCatching {
-                val info = VoipCallerName.resolve()
-                arrayOf(info.packageName, info.callerName)
-            }.onFailure { AppLogger.d(TAG, "voipCallInfo failed: ${it.message}") }
-                .getOrDefault(arrayOf(null, null))
+        override fun voipCallAppUid(): Int =
+            runCatching { VoipAppIdentity.currentVoiceCommUid() }
+                .onFailure { AppLogger.d(TAG, "voipCallAppUid failed: ${it.message}") }
+                .getOrDefault(VoipAppIdentity.UID_UNKNOWN)
+
+        override fun voipCallerName(packageName: String?): String? =
+            runCatching { packageName?.let { VoipCallerName.resolve(it) } }
+                .onFailure { AppLogger.d(TAG, "voipCallerName failed: ${it.message}") }
+                .getOrNull()
 
         override fun voipFarPartyHeard(): Boolean = lastVoipSession?.farPartyHeard ?: false
 

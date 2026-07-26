@@ -310,18 +310,69 @@ adding a second one — which doubles as the field diagnostic for whether detect
 Verified on-device: clean teardown at hang-up (mode returns to NORMAL, zero open output fds), correct
 duration, and the recording appears and plays in the app.
 
+### Identifying WHICH app is on the call — from audio, never from notifications
+
+Scanning notifications for one tagged `category=call` is **wrong and was replaced**. It produced two
+separate field bugs: a Telegram call filed under WhatsApp, then the same call filed under **Google**.
+Both because the search ranged over every app's notifications and took the first match.
+
+The correct source is the audio system itself. The app is identified from the uid on the
+`USAGE_VOICE_COMMUNICATION` stream — *the very stream this feature records* — so it cannot name the
+wrong app. `VoipAppIdentity` tries three sources, strongest first:
+
+1. `IAudioService.getActivePlaybackConfigurations()` → `getClientUid()` (structured, via reflection).
+2. **`mAudioModeOwner` from `dumpsys audio`** — the app that requested `MODE_IN_COMMUNICATION`.
+3. The started `USAGE_VOICE_COMMUNICATION` player line in the same dump.
+
+**Source 2 is not redundant — it is load-bearing.** Measured on-device: during a Telegram call the
+playback track did **not yet exist** when the mode changed (`modeOwner=10304 player=-1`), while during
+a Signal call it did (`binder=10414`). Detection fires on the mode change, so the mode owner is the
+only source guaranteed to be present at that instant. The lookup also retries for up to 1.2 s.
+
+Only the daemon can do this: `getActivePlaybackConfigurations` is **anonymised** for callers without
+`MODIFY_AUDIO_ROUTING`. The daemon returns a **uid**, not a package — it holds no `Context`, and
+`PackageManager.getPackagesForUid` on the app side handles shared uids and work profiles correctly.
+
+### The contact's name — notification only, and that is a real boundary
+
+For *who* was on the call there genuinely is no privileged source, confirmed by elimination on-device
+during live calls: Telecom lists **no call** (these apps register no connection), there is no media
+session, and the app's own call history is in a private data dir unreadable without root. The
+ongoing-call notification is the only place the system holds the name.
+
+Consequences, all hit for real:
+
+- **Read `android.title` AND `android.text`.** WhatsApp puts the person in the title; **Telegram puts
+  the status line "Ongoing Telegram call" in the title and the person in `android.text`.** Reject a
+  candidate that merely restates the app, then fall through to the next.
+- **Do not filter on `category`.** Telegram's call notification sets **no category at all**. Scoping to
+  the already-known package makes that filter unnecessary; `ONGOING_EVENT` separates a call from a chat.
+- **An app denied `POST_NOTIFICATIONS` yields a correct but nameless recording.** Diagnosed on Signal:
+  `POST_NOTIFICATIONS granted=false` → no record to read. Granting it made the name appear immediately.
+  This is surfaced in Settings so it does not read as a CallVault bug.
+
+### Filename grammar — `{date}_voip-{App}[_{caller}]`
+
+The app rides on the marker, not in its own underscore slot. With both in underscore slots a call with
+an app and no caller (`_voip_Signal`) is indistinguishable from a caller with no app, and Signal calls
+silently lost their app badge because the lone token was read as the contact. Legacy `_voip_{App}_{caller}`
+names are still parsed for files already on disk. Pinned by `VoipFileNameParsingTest`.
+
+`<queries>` (LAUNCHER) is **required** or `getPackagesForUid`/`getApplicationIcon` see nothing and every
+badge falls back to a generic glyph. Badges use the **installed app's own icon**, never bundled artwork.
+
 ### Open — what is NOT proven
 
-1. **WhatsApp only, one device, a handful of calls.** Signal is stricter and may set
-   `ALLOW_CAPTURE_BY_NONE` (`FLAG_NO_SYSTEM_CAPTURE = 0x1000`), which is checked before any permission
-   and is unbypassable. Test per app and surface support honestly per app — never "records all VoIP".
-   WhatsApp sets only `flags=0x800` (`FLAG_NO_MEDIA_PROJECTION`), which this path bypasses.
-2. **Carrier VoWiFi / VoLTE is out of reach by this route and always will be** — carrier downlink is a
+1. **Carrier VoWiFi / VoLTE is out of reach by this route and always will be** — carrier downlink is a
    hardware telephony bridge (`AUDIO_DEVICE_IN_TELEPHONY_RX`), not a software `AudioTrack`, so no
    PLAYERS mix can match it. The originating ShizuCallRecorder complaint (Wi-Fi calling) is NOT solved.
-3. **Nothing is wired into the app.** These are probes on `spike/voip-audiopolicy`.
-4. Registering mid-call may cause a brief audible glitch as tracks are re-evaluated.
-5. Long-call drift beyond 40 s is unmeasured, though the chunk-pairing muxer degrades safely.
+2. **One device, one Android version.** WhatsApp, Telegram and Signal are all verified working and all
+   set only `flags=0x800` (`FLAG_NO_MEDIA_PROJECTION`, bypassable) — none sets the unbypassable
+   `FLAG_NO_SYSTEM_CAPTURE = 0x1000`. Still check the flag per app at runtime rather than promising
+   "records all VoIP".
+3. Registering mid-call may cause a brief audible glitch as tracks are re-evaluated.
+4. Long-call drift beyond 40 s is unmeasured, though the chunk-pairing muxer degrades safely.
+5. VoIP user-facing strings are English-only (no locale files yet).
 
 ## Track C — Toward a native install (kill the Developer-Options / Wireless-Debugging / USB ceremony)
 

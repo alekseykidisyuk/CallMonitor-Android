@@ -380,9 +380,12 @@ object RecordingsRepository {
     /** Filename marker for a VoIP recording (see VoipRecordingCoordinator). */
     private const val VOIP_TOKEN = "voip"
 
+    /** The same marker carrying the app, as "voip-WhatsApp"; keeps the app out of the caller's slot. */
+    private const val VOIP_APP_PREFIX = "$VOIP_TOKEN-"
+
     // -------- Best-effort name parsing
 
-    private data class ParsedName(
+    internal data class ParsedName(
         val direction: RecordingDirection?,
         val displayDate: String?,
         val number: String?,
@@ -399,7 +402,7 @@ object RecordingsRepository {
      * (joined) is the date, everything after it is the number. If the layout doesn't match, all
      * fields are null and the UI shows the raw name.
      */
-    private fun parseName(displayName: String): ParsedName {
+    internal fun parseName(displayName: String): ParsedName {
         val base = displayName.substringBeforeLast('.')
         val parts = base.split('_')
 
@@ -407,20 +410,32 @@ object RecordingsRepository {
         // there is no number and no reliable direction — but there IS often a name from the call
         // notification. Without this branch the whole raw filename is shown, which is far too long to
         // read in the list.
-        val voipIndex = parts.indexOfFirst { it == VOIP_TOKEN }
+        val voipIndex = parts.indexOfFirst { it == VOIP_TOKEN || it.startsWith(VOIP_APP_PREFIX) }
         if (voipIndex > 0) {
             val rawDate = parts.subList(0, voipIndex).joinToString("_")
             val extras = parts.subList(voipIndex + 1, parts.size)
-            // "{date}_voip[_{App}][_{caller}]". The app label is written without underscores, so with
-            // two or more tokens the first is the app and the rest is the caller. With exactly one we
-            // cannot tell them apart, and showing it as the caller is the more useful reading: when it
-            // really is the app name that is still informative, whereas losing a contact name is not.
-            val voipApp = extras.getOrNull(0)?.takeIf { extras.size >= 2 }
-            val caller = when {
-                extras.isEmpty() -> null
-                extras.size == 1 -> extras[0]
-                else -> extras.drop(1).joinToString("_")
-            }?.ifBlank { null }
+            val marker = parts[voipIndex]
+
+            // Current grammar is "{date}_voip-{App}[_{caller}]": the app rides on the marker itself, so
+            // an app with no caller ("_voip-Signal") can never be misread as a caller with no app.
+            // That ambiguity was real — a Signal call showed no app badge because its lone token was
+            // taken for the contact's name.
+            val voipApp: String?
+            val caller: String?
+            if (marker.startsWith(VOIP_APP_PREFIX)) {
+                voipApp = marker.removePrefix(VOIP_APP_PREFIX).ifBlank { null }
+                caller = extras.joinToString("_").ifBlank { null }
+            } else {
+                // Legacy "{date}_voip[_{App}][_{caller}]", still on disk from earlier builds. The two
+                // cannot be told apart with a single token; reading it as the caller loses a badge,
+                // whereas the reverse would put a stranger's name where the app belongs.
+                voipApp = extras.getOrNull(0)?.takeIf { extras.size >= 2 }
+                caller = when {
+                    extras.isEmpty() -> null
+                    extras.size == 1 -> extras[0]
+                    else -> extras.drop(1).joinToString("_")
+                }?.ifBlank { null }
+            }
             return ParsedName(
                 direction = null,
                 displayDate = formatDate(rawDate),

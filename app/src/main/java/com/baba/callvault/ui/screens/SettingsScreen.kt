@@ -1101,6 +1101,11 @@ private fun VoipRecordingToggle() {
         SettingsHint(stringResource(R.string.voip_recording_arming))
     } else if (unavailable) {
         SettingsHint(stringResource(R.string.voip_recording_unavailable))
+    } else if (enabled) {
+        // A calling app's ongoing-call notification is the only place the system holds the contact's
+        // name, so an app denied notification permission produces correct but nameless recordings.
+        // Worth saying out loud: it looks like a bug in CallVault and is not one.
+        SettingsHint(stringResource(R.string.voip_recording_names_hint))
     }
 
     if (showWarning) {
