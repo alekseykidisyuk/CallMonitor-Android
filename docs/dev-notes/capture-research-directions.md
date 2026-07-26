@@ -127,10 +127,11 @@ timestamps and the ring at full rate while delivering zeros.
 
 ## Track B — VoIP call capture
 
-**Status (2026-07-26): DOWNLINK PROVEN ON-DEVICE, non-root.** The far party of a WhatsApp call was
-captured as shell uid 2000 on the OnePlus 12 / Android 16, at 48 kHz stereo, with call audio still
-audible to the user. Uplink is not yet tested. Working probe:
-`docs/dev-notes/spike-tools/VoipProbe.java`.
+**Status (2026-07-26): SOLVED ON-DEVICE, BOTH DIRECTIONS, NON-ROOT.** A complete two-sided WhatsApp
+call was recorded as shell uid 2000 on the OnePlus 12 / Android 16 — far party and near party, in one
+Opus file, at 48 kHz, with neither side of the call disturbed. Working probes:
+`spike-tools/VoipProbe.java` (downlink), `VoipUplinkProbe.java` (source comparison),
+`VoipCallRecorder.java` (the complete recorder).
 
 ### What works — the dynamic Audio Policy path
 
@@ -223,20 +224,70 @@ call audio, and the voice-comm PR (#6906) is open and unreviewed. The one workin
 so `UidPolicy::getUidState()` returns `PROCESS_STATE_TOP` permanently — which is precisely the state
 Friston-3 patches the binary to fake. What they need root for, we appear to get from being shell.
 
+### UPLINK — solved: the SOURCE is the whole trick
+
+The near side cannot be captured with `VOICE_COMMUNICATION`: it is **zero-filled for the entire call**,
+because a record client that cannot bypass the in-call policy is silenced —
+
+```cpp
+!(isInCall && !canCaptureCall) && !(isInCommunication && !canCaptureCommunication)
+```
+
+WhatsApp puts the device in `MODE_IN_COMMUNICATION`, and `VOICE_COMMUNICATION` is the very source the
+VoIP app itself is using, so we lose that contest. Note this is a *different* mechanism from the one
+protecting the downlink: `USAGE_VOICE_COMMUNICATION` **playback** capture is a virtual source and sits
+outside arbitration entirely; microphone capture does not.
+
+**Plain `MIC` is not silenced.** Measured during one live call, downlink running throughout as a live
+control:
+
+| Uplink variant | Result |
+|---|---|
+| `VOICE_COMMUNICATION` plain | SILENCED (rms 0.0) |
+| **`MIC` plain** | **AUDIO — rms 1372, peak 11384** |
+| `VOICE_COMMUNICATION` + `setForCallRedirection()` | SILENCED (rms 0.0) |
+| **`MIC` + `setForCallRedirection()`** | **AUDIO — rms 1595, peak 11793** |
+| shell-package attribution via the private ctor | CREATE FAILED |
+
+Call redirection made no difference either way — the source alone decides it. `CALL_AUDIO_INTERCEPTION`
+is therefore not needed for this.
+
+### The complete recording
+
+`VoipCallRecorder.java` runs both and writes ONE interleaved stereo stream, **LEFT = near, RIGHT =
+far** — the same channel layout the shipped `VOICE_CALL` path already produces, so `HandoffEncoder`
+consumes it unchanged.
+
+Measured on a real 40 s WhatsApp call:
+
+| | LEFT (near mic) | RIGHT (far party) |
+|---|---|---|
+| far party talking (5–17 s) | −35.6 dB | **−20.8 dB** |
+| near party talking (21–32 s) | **−18.6 dB** | **−81.9 dB** |
+
+The **−81.9 dB** is the proof: while only the near party spoke, the far channel was at digital silence.
+These are two independent digital streams, not one microphone hearing the room. The −35.6 dB on the
+near channel during far-party speech is earpiece bleed, ~15 dB below their real level and harmless
+after downmix.
+
+**Sync needs no correction.** Two free-running `AudioRecord`s stayed aligned for 40 s with **0 of 2000
+chunks silence-filled**. The muxer pairs one 20 ms chunk from each and substitutes silence for whichever
+side has nothing ready, so a stalled or silenced side costs its own channel and never the timeline.
+
+**Neither side of the call was disturbed** — confirmed by both participants across three test calls.
+
 ### Open — what is NOT proven
 
-1. **Uplink.** We have the far party, not the user. A concurrent mic capture is needed, and unlike the
-   downlink tap it IS subject to concurrent-capture arbitration — it may silence the VoIP app, which
-   would be disqualifying (you cannot record a call by breaking it).
-2. **Combining** the two streams into one recording (sync, drift, channel layout).
-3. **Other apps.** Only WhatsApp, one call. WhatsApp sets `flags=0x800`
-   (`FLAG_NO_MEDIA_PROJECTION`, bypassable). An app setting `ALLOW_CAPTURE_BY_NONE`
-   (`FLAG_NO_SYSTEM_CAPTURE = 0x1000`) is blocked unbypassably — Signal must be tested.
-4. **Carrier VoWiFi / VoLTE is out of reach by this route** and always will be: carrier downlink is a
+1. **WhatsApp only, one device, a handful of calls.** Signal is stricter and may set
+   `ALLOW_CAPTURE_BY_NONE` (`FLAG_NO_SYSTEM_CAPTURE = 0x1000`), which is checked before any permission
+   and is unbypassable. Test per app and surface support honestly per app — never "records all VoIP".
+   WhatsApp sets only `flags=0x800` (`FLAG_NO_MEDIA_PROJECTION`), which this path bypasses.
+2. **Carrier VoWiFi / VoLTE is out of reach by this route and always will be** — carrier downlink is a
    hardware telephony bridge (`AUDIO_DEVICE_IN_TELEPHONY_RX`), not a software `AudioTrack`, so no
-   PLAYERS mix can match it. The originating ShizuCallRecorder complaint (Wi-Fi calling) is NOT solved
-   by this.
-5. Registering mid-call may cause a brief audible glitch as tracks are re-evaluated.
+   PLAYERS mix can match it. The originating ShizuCallRecorder complaint (Wi-Fi calling) is NOT solved.
+3. **Nothing is wired into the app.** These are probes on `spike/voip-audiopolicy`.
+4. Registering mid-call may cause a brief audible glitch as tracks are re-evaluated.
+5. Long-call drift beyond 40 s is unmeasured, though the chunk-pairing muxer degrades safely.
 
 ## Track C — Toward a native install (kill the Developer-Options / Wireless-Debugging / USB ceremony)
 
