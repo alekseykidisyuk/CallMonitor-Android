@@ -31,6 +31,7 @@ You pair **once**; after that it's hands-free.
 |:---:|---|
 | 🎙️ | Records **both sides** of incoming & outgoing calls (incl. Bluetooth / headset) |
 | 📶 | **Offline recording (opt-in)** — record calls even with **no Wi-Fi network**, for calls on the road (off by default; opens a local, RSA-gated debugging port when enabled) |
+| 🛡️ | **Resilient recording (opt-in)** — once a call starts recording it **finishes**, even if Android stops the background helper part-way through (off by default) |
 | 🤖 | **Automatic** recording with per-call rules — ignore anonymous, cross-country, or specific contacts |
 | ☁️ | Save to **device, a cloud folder, or both**, with optional **scheduled sync** (immediate / daily / weekly) |
 | 🧹 | **Retention / auto-delete** — remove recordings after a chosen age, separately for device & cloud, swept daily at a time you pick (your local time zone) |
@@ -46,11 +47,20 @@ You pair **once**; after that it's hands-free.
 After a one-time pairing, CallVault runs a **persistent privileged daemon** — a detached `app_process` under the shell user, in the spirit of Shizuku — that **survives Wireless Debugging being turned off**. Recording commands then flow to it over **binder IPC**, so no ADB connection is needed at record time.
 
 - **Wireless Debugging is fully automatic and transient.** CallVault turns it on only long enough to (re)launch the daemon, then turns it back off. You never toggle it manually after the first pair.
-- Call audio is captured via scrcpy and muxed into a file you own (via the Storage Access Framework) — on the device and/or a cloud folder you pick through the system file picker.
+- Call audio is captured by the daemon through a **direct `AudioRecord` path** and muxed into a file you own (via the Storage Access Framework) — on the device and/or a cloud folder you pick through the system file picker. `scrcpy-server` is launched only as a fallback, when the direct path can't handle the chosen source or codec on your device.
+
+### Resilient recording (opt-in)
+
+Normally the daemon holds the microphone and encodes for the whole call, so if Android stops it part-way through — locking the screen can do this on some OEMs — the recording stops with it.
+
+With **Resilient recording** on, the daemon only *creates* the capture and then **hands it to the app**, which holds it and does the encoding itself. Because the app is the one Android keeps alive, the daemon can die at any point mid-call and the recording simply carries on to the end.
+
+It doesn't change how a recording *starts* — the daemon is still needed for that — so it's a completeness guarantee, not a replacement for the setup above. Off by default; enable under **Settings ▸ Reliability**.
 
 ## Requirements
 
 - **Android 11 or newer** (best on Android 12+; on Android 11 the screen must be unlocked during a call).
+- **A 64-bit ARM device (`arm64-v8a`)** — which is effectively every phone shipping Android 11+. The APK carries a native library for that ABI only, so it will not install on 32-bit-only or x86 devices.
 - **Wireless Debugging** available in Developer Options.
 - **Developer options must stay enabled.** If you turn Developer options off later (or an OS update
   resets it), the recorder can't run and calls come out empty — the Home screen will show a red
@@ -94,7 +104,9 @@ This is a standard single-module Android project at the repo root. See [BUILDING
 ./gradlew :app:assembleDebug   # → app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Requires JDK 17 and the Android SDK. CallVault is **reflection-heavy** (hidden APIs, the daemon is launched by class name) — a minified release build will break it unless minification is disabled.
+Requires JDK 17, the Android SDK, and — since CallVault now builds a small native library for Resilient recording — the **NDK and CMake** (`sdkmanager "ndk;27.2.12479018" "cmake;3.22.1"`).
+
+CallVault is **reflection-heavy** (hidden APIs, the daemon is launched by class name) — a minified release build will break it, so minification stays off.
 
 ## Credits & attribution
 
@@ -102,7 +114,7 @@ CallVault is a modified fork of **[ShizuCallRecorder](https://github.com/kitsume
 
 Built on the work of:
 - [ShizuCallRecorder](https://github.com/kitsumed/ShizuCallRecorder) — the upstream project this is forked from
-- [scrcpy](https://github.com/genymobile/scrcpy) — the audio-capture server
+- [scrcpy](https://github.com/genymobile/scrcpy) — the fallback audio-capture server
 - [libadb-android](https://github.com/MuntashirAkon/libadb-android) — the embedded ADB client
 
 ## License

@@ -3,6 +3,34 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.4.6] — 2026-07-26
+
+The headline: **a call that starts recording now finishes recording** — opt in under Settings → Reliability.
+
+### Added
+- **Resilient recording (opt-in).** Until now, the background helper held the microphone and did the
+  encoding for the whole call — so if Android stopped it part-way through, the recording stopped with
+  it and you were left with a half-length file. With this on, the helper only *starts* the capture and
+  then hands it to CallVault itself, which keeps it and does the encoding. The helper can then be
+  killed at any point mid-call and the recording simply carries on to the end.
+  - **Off by default**, and turning it off restores exactly the previous behaviour. Enable it under
+    **Settings → Reliability**, or from the one-time note shown after updating.
+  - It doesn't change how a recording *starts*, so it complements the "Charging only" USB fix from
+    1.4.5 rather than replacing it.
+
+### Fixed
+- **A call could occasionally not record at all.** When starting a recording, CallVault read a USB
+  setting over its ADB connection with no time limit. Normally that is instant, but if the connection
+  had gone half-dead the read never returned, and the recording never started — leaving an empty file.
+  It is now capped at 1.5 seconds and falls back to the last known value. This affected every
+  recording, not just the new opt-in.
+- **The "Voice performance" audio source now uses the fast direct path.** It was matched against a
+  source name that doesn't exist, so it silently fell back to the slower scrcpy path.
+
+### Note
+- CallVault now ships a small native library and therefore requires a **64-bit ARM device**
+  (`arm64-v8a`) — effectively every phone running Android 11 or newer.
+
 ## [1.4.5] — 2026-07-24
 
 The headline: **recording no longer stops if you lock the screen during a call** — on phones where it did.

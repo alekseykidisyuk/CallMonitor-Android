@@ -121,7 +121,7 @@ val extractLibphonenumberMetadata = tasks.register<ExtractMetadataTask>("extract
 // defaults — so BUMP versionName here every release to match the CHANGELOG and the version dispatched
 // to the build workflow.
 val ciVersionCode = providers.gradleProperty("versionCode").map { it.toIntOrNull() }.orElse(10441)
-val ciVersionName = providers.gradleProperty("versionName").orElse("1.4.5")
+val ciVersionName = providers.gradleProperty("versionName").orElse("1.4.6")
 val ciBuildNumber = providers.gradleProperty("ciBuildNumber").orElse("Local")
 
 android {
