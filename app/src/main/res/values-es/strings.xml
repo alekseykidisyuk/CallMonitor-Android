@@ -265,4 +265,5 @@
     <string name="voip_recording_warning_continue">Entendido, activar</string>
     <string name="notif_voip_recording_title">Grabando llamada VoIP</string>
     <string name="notif_voip_recording_text">CallVault está grabando una llamada de una app.</string>
+    <string name="voip_one_sided_warning">De esa llamada solo se grabó tu lado: la otra app no permite capturar el audio de sus llamadas.</string>
 </resources>

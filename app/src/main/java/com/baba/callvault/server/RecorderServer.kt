@@ -60,6 +60,9 @@ object RecorderServer {
     /** The active session, owned by the worker thread; null between recordings. */
     @Volatile private var session: RecordingSession? = null
 
+    /** Last VoIP session, kept only so the app can ask afterwards whether the far party was audible. */
+    @Volatile private var lastVoipSession: VoipCaptureSession? = null
+
     /** The daemon's own APK path (launch arg), used to (re)extract scrcpy if it goes missing. */
     @Volatile private var apkPath: String = ""
 
@@ -265,6 +268,8 @@ object RecorderServer {
             return ok
         }
 
+        override fun voipFarPartyHeard(): Boolean = lastVoipSession?.farPartyHeard ?: false
+
         override fun disarmVoipCapture() {
             AppLogger.i(TAG, "disarmVoipCapture requested")
             runCatching { VoipAudioPolicy.disarm() }
@@ -298,7 +303,7 @@ object RecorderServer {
             // Heavy setup off the binder thread, matching startRecording.
             workerHandler.post {
                 val active = runCatching {
-                    VoipCaptureSession(codecEnum, bitRate, outFd).also { it.start() }
+                    VoipCaptureSession(codecEnum, bitRate, outFd).also { it.start(); lastVoipSession = it }
                 }.onFailure { AppLogger.e(TAG, "startVoipRecording failed: ${it.message}", it) }.getOrNull()
                 if (active != null) {
                     session = active

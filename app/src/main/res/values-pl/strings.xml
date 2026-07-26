@@ -265,4 +265,5 @@
     <string name="voip_recording_warning_continue">Rozumiem, włącz</string>
     <string name="notif_voip_recording_title">Nagrywanie połączenia VoIP</string>
     <string name="notif_voip_recording_text">CallVault nagrywa rozmowę w aplikacji.</string>
+    <string name="voip_one_sided_warning">Z tej rozmowy nagrano tylko twoją stronę — druga aplikacja nie pozwala na przechwytywanie dźwięku swoich połączeń.</string>
 </resources>

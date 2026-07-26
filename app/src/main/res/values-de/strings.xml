@@ -265,4 +265,5 @@
     <string name="voip_recording_warning_continue">Verstanden, aktivieren</string>
     <string name="notif_voip_recording_title">Aufnahme eines App-Anrufs</string>
     <string name="notif_voip_recording_text">CallVault nimmt gerade einen App-Anruf auf.</string>
+    <string name="voip_one_sided_warning">Von diesem App-Anruf wurde nur deine Seite aufgenommen — die andere App erlaubt es nicht, ihr Gesprächsaudio aufzuzeichnen.</string>
 </resources>

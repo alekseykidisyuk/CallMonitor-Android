@@ -54,6 +54,22 @@ internal class VoipCaptureSession(
 ) : RecordingSession {
 
     private val stopRequested = AtomicBoolean(false)
+
+    /**
+     * Whether the FAR party was ever actually audible.
+     *
+     * An app can opt out of being captured (`ALLOW_CAPTURE_BY_NONE` sets a flag checked before any
+     * permission and bypassable by nothing), and some OEM builds simply do not attach the call to our
+     * mix. Both look identical from here: the mix delivers perfect digital silence while the near side
+     * records normally — so the user would get a one-sided recording with no explanation.
+     *
+     * Reading the app's capture policy directly is not available to us: it needs an AudioManager, which
+     * needs a Context, and obtaining one in this process poisons the attribution the capture depends on
+     * (see VoipAudioPolicy). So judge the OUTCOME instead — which also catches the OEM cases a policy
+     * read would miss.
+     */
+    @Volatile var farPartyHeard: Boolean = false
+        private set
     @Volatile private var farRecord: AudioRecord? = null
     @Volatile private var nearRecord: AudioRecord? = null
     @Volatile private var encoder: MediaCodec? = null
@@ -142,11 +158,18 @@ internal class VoipCaptureSession(
                 val n = qNear.poll(CHUNK_WAIT_MS, TimeUnit.MILLISECONDS) ?: silence.also { substituted++ }
                 val f = qFar.poll(CHUNK_WAIT_MS, TimeUnit.MILLISECONDS) ?: silence
                 var o = 0
+                var farPeak = 0
                 for (i in 0 until CHUNK_BYTES step 2) {
                     stereo[o] = n[i]; stereo[o + 1] = n[i + 1]          // L = near
                     stereo[o + 2] = f[i]; stereo[o + 3] = f[i + 1]      // R = far
+                    val fs = ((f[i].toInt() and 0xFF) or (f[i + 1].toInt() shl 8)).toShort().toInt()
+                    val fa = if (fs < 0) -fs else fs
+                    if (fa > farPeak) farPeak = fa
                     o += 4
                 }
+                // A silenced mix is EXACTLY zero, so any real signal clears the threshold easily; the
+                // margin only guards against dither.
+                if (!farPartyHeard && farPeak > FAR_SILENCE_THRESHOLD) farPartyHeard = true
                 // Mono for the encoder, so the whole bitrate goes to one channel — the same reasoning
                 // as the carrier path, where encoding stereo starved the far party.
                 val len = PcmDownmix.stereoToMono(stereo, stereo.size, mono)
@@ -166,7 +189,10 @@ internal class VoipCaptureSession(
             val inIdx = enc.dequeueInputBuffer(END_OF_STREAM_TIMEOUT_US)
             if (inIdx >= 0) enc.queueInputBuffer(inIdx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
             drainEncoder(enc, mux, info, muxerStarted, drainToEos = true)
-            AppLogger.i(TAG, "VoIP capture finished: ${totalFrames / SAMPLE_RATE}s, $substituted silence-filled chunks")
+            AppLogger.i(TAG, "VoIP capture finished: ${totalFrames / SAMPLE_RATE}s, $substituted silence-filled chunks, farPartyHeard=$farPartyHeard")
+            if (!farPartyHeard) {
+                AppLogger.w(TAG, "Far party was never audible — this app blocks capture, or the OEM did not attach the call to our mix")
+            }
         } finally {
             readers.forEach { it.interrupt() }
         }
@@ -252,6 +278,7 @@ internal class VoipCaptureSession(
         private const val DEQUEUE_TIMEOUT_US = 10_000L
         private const val END_OF_STREAM_TIMEOUT_US = 100_000L
         private const val STOP_JOIN_MS = 3_000L
+        private const val FAR_SILENCE_THRESHOLD = 100
 
         /** True if this device can encode the chosen codec; the policy tap is checked when arming. */
         fun supports(codec: ScrcpyAudioCodec): Boolean = runCatching {

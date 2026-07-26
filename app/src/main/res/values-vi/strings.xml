@@ -265,4 +265,5 @@
     <string name="voip_recording_warning_continue">Đã hiểu, bật lên</string>
     <string name="notif_voip_recording_title">Đang ghi âm cuộc gọi VoIP</string>
     <string name="notif_voip_recording_text">CallVault đang ghi âm một cuộc gọi trong ứng dụng.</string>
+    <string name="voip_one_sided_warning">Chỉ có phía bạn được ghi trong cuộc gọi đó — ứng dụng kia không cho phép ghi âm thanh cuộc gọi của nó.</string>
 </resources>

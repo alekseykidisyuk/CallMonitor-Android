@@ -91,6 +91,15 @@ interface IRecorderService {
      */
     boolean startVoipRecording(String codec, int bitRate, in ParcelFileDescriptor outFd);
 
+    /**
+     * Whether the far party was ever audible in the last VoIP recording.
+     *
+     * False means the app opted out of capture, or this OEM build did not attach the call to our mix —
+     * indistinguishable from here, and in both cases the user gets a one-sided recording. Queried after
+     * stopping so the app can say so rather than leaving them to discover it later.
+     */
+    boolean voipFarPartyHeard();
+
     /** Releases the daemon's held handoff AudioRecord (frees the capture input). Idempotent. */
     void stopHandoff();
 }

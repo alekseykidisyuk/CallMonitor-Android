@@ -265,4 +265,5 @@
     <string name="voip_recording_warning_continue">Értem, bekapcsolom</string>
     <string name="notif_voip_recording_title">VoIP-hívás rögzítése</string>
     <string name="notif_voip_recording_text">A CallVault éppen egy alkalmazáshívást rögzít.</string>
+    <string name="voip_one_sided_warning">Abból az alkalmazáshívásból csak a te oldalad rögzült — a másik alkalmazás nem engedi a hívás hangjának rögzítését.</string>
 </resources>

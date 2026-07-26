@@ -265,4 +265,5 @@
     <string name="voip_recording_warning_continue">Понятно, включить</string>
     <string name="notif_voip_recording_title">Запись звонка VoIP</string>
     <string name="notif_voip_recording_text">CallVault записывает звонок в приложении.</string>
+    <string name="voip_one_sided_warning">Из этого звонка записана только ваша сторона — другое приложение не разрешает захват звука своих звонков.</string>
 </resources>

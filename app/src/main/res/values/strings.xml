@@ -137,6 +137,7 @@
     <string name="voip_recording_arming">Preparing VoIP recording…</string>
     <string name="notif_voip_recording_title">Recording VoIP call</string>
     <string name="notif_voip_recording_text">CallVault is recording an app call.</string>
+    <string name="voip_one_sided_warning">Only your side of that app call was recorded — the other app does not allow its call audio to be captured.</string>
     <string name="voip_recording_unavailable">Couldn\'t enable on this device — VoIP recording isn\'t available here.</string>
     <string name="settings_section_debug">Debug</string>
     <string name="settings_section_security">Security</string>

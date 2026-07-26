@@ -10,6 +10,7 @@ package com.baba.callvault.services.recording
 
 import android.content.Context
 import androidx.documentfile.provider.DocumentFile
+import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.server.RecorderConnection
@@ -103,6 +104,19 @@ object VoipRecordingCoordinator {
         pending = null
         runCatching { RecorderConnection.service?.stopRecording() }
             .onFailure { AppLogger.w(TAG, "stopRecording failed: ${it.message}") }
+
+        // A recording where the far party was never audible is one-sided. Say so now rather than let it
+        // be discovered weeks later — the app may have opted out of capture, or this OEM build may not
+        // attach calls to our mix; from here the two are indistinguishable.
+        val farHeard = runCatching { RecorderConnection.service?.voipFarPartyHeard() == true }
+            .getOrDefault(true)   // on error assume fine; never cry wolf
+        if (!farHeard) {
+            AppLogger.w(TAG, "VoIP recording captured only your side — the other app blocks capture")
+            runCatching {
+                RecordingNotificationHelper(context)
+                    .showErrorNotification(context.getString(R.string.voip_one_sided_warning))
+            }.onFailure { AppLogger.w(TAG, "Could not warn about the one-sided recording: ${it.message}") }
+        }
 
         // Providers that cannot hand out a seekable rw fd (Downloads, SD card, some cloud/OEM
         // providers) get a private staging file instead; without this copy the SAF entry stays empty.

@@ -265,4 +265,5 @@
     <string name="voip_recording_warning_continue">J\'ai compris, activer</string>
     <string name="notif_voip_recording_title">Enregistrement d\'un appel VoIP</string>
     <string name="notif_voip_recording_text">CallVault enregistre un appel dans une appli.</string>
+    <string name="voip_one_sided_warning">Seule votre voix a été enregistrée pour cet appel — l\'autre application n\'autorise pas la capture de l\'audio de ses appels.</string>
 </resources>

@@ -265,4 +265,5 @@
     <string name="voip_recording_warning_continue">我明白，开启</string>
     <string name="notif_voip_recording_title">正在录制 VoIP 通话</string>
     <string name="notif_voip_recording_text">CallVault 正在录制一通应用内通话。</string>
+    <string name="voip_one_sided_warning">那通应用内通话只录到了你这一方——对方应用不允许捕获其通话音频。</string>
 </resources>
