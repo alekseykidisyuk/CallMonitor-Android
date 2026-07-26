@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
+import com.baba.callvault.services.recording.DaemonKeepAliveService
 import com.baba.callvault.services.recording.VoipCaptureController
 import androidx.compose.runtime.rememberCoroutineScope
 import com.baba.callvault.R
@@ -1078,6 +1079,9 @@ private fun VoipRecordingToggle() {
         scope.launch {
             arming = turnOn
             val ok = withContext(Dispatchers.IO) { VoipCaptureController.sync(context) }
+            // Restart the keep-alive service so its detector picks up the new preference (it hosts
+            // VoIP detection, so the feature is only live once it has re-synced).
+            runCatching { DaemonKeepAliveService.start(context) }
             arming = false
             if (turnOn && !ok) unavailable = true
         }

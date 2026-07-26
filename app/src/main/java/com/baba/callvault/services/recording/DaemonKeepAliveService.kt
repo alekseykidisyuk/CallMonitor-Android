@@ -49,6 +49,7 @@ import com.baba.callvault.utils.AppLogger
 class DaemonKeepAliveService : Service() {
 
     private val watchdogHandler = Handler(Looper.getMainLooper())
+    private val voipDetector by lazy { VoipCallDetector(applicationContext) }
     private var lastReady: Boolean? = null
 
     @Volatile private var rewarming = false
@@ -107,6 +108,11 @@ class DaemonKeepAliveService : Service() {
         // Recover the INSTANT the daemon dies (binder linkToDeath) — don't wait for the next poll.
         // On a real incoming call this is what races (and hopefully beats) the call after a long idle.
         RecorderConnection.onDeath = { onDaemonDiedImmediate() }
+        // VoIP detection lives here rather than in its own component: this service is already a
+        // permanent foreground presence, so watching for VoIP calls costs no extra process and no
+        // second notification, and VoIP gets exactly the same lifetime as carrier recording.
+        voipDetector.sync()
+
         // Kick the watchdog now (first tick warms the daemon immediately if it's cold).
         lastReady = null
         watchdogHandler.removeCallbacks(watchdog)
@@ -198,6 +204,7 @@ class DaemonKeepAliveService : Service() {
     }
 
     override fun onDestroy() {
+        runCatching { voipDetector.stop() }
         watchdogHandler.removeCallbacks(watchdog)
         RecorderConnection.onDeath = null
         super.onDestroy()
