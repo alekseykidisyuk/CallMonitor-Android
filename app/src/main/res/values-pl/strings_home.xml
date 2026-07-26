@@ -29,4 +29,8 @@
     <string name="home_usb_advisory_title">Nagrywanie może się zatrzymać po zablokowaniu</string>
     <string name="home_usb_advisory_text">USB jest w trybie danych. Dotknij, aby ustawić Tylko ładowanie.</string>
     <string name="home_usb_advisory_fix">Napraw</string>
+    <string name="home_whatsnew_resilient_title">Nowość: odporne nagrywanie</string>
+    <string name="home_whatsnew_resilient_body">Gdy nagrywanie rozmowy już się zacznie, teraz zostanie dokończone — nawet jeśli Android zatrzyma w trakcie proces działający w tle, co wcześniej ucinało nagranie.\n\nDomyślnie wyłączone. Możesz je włączyć również później w Ustawieniach ▸ Niezawodność.</string>
+    <string name="home_whatsnew_resilient_cta">Włącz</string>
+    <string name="home_whatsnew_resilient_enabled">Odporne nagrywanie jest włączone. Twoje rozmowy będą teraz nagrywane do końca, nawet jeśli proces w tle zostanie zatrzymany w trakcie.</string>
 </resources>

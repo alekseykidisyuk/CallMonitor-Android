@@ -29,4 +29,8 @@
     <string name="home_usb_advisory_title">La grabación puede detenerse al bloquear</string>
     <string name="home_usb_advisory_text">USB está en un modo de datos. Toca para ponerlo en Solo carga.</string>
     <string name="home_usb_advisory_fix">Corregir</string>
+    <string name="home_whatsnew_resilient_title">Novedad: Grabación resistente</string>
+    <string name="home_whatsnew_resilient_body">Una vez que una llamada empieza a grabarse, ahora termina — incluso si Android detiene a mitad el proceso en segundo plano de CallVault, lo que antes cortaba la grabación.\n\nEstá desactivada por defecto. También puedes activarla más tarde en Ajustes ▸ Fiabilidad.</string>
+    <string name="home_whatsnew_resilient_cta">Activar</string>
+    <string name="home_whatsnew_resilient_enabled">La grabación resistente está activada. Tus llamadas se grabarán hasta el final, aunque el proceso en segundo plano se detenga a mitad.</string>
 </resources>

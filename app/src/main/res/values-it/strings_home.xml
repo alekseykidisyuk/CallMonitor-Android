@@ -29,4 +29,8 @@
     <string name="home_usb_advisory_title">La registrazione può fermarsi al blocco</string>
     <string name="home_usb_advisory_text">L\'USB è in modalità dati. Tocca per impostare Solo ricarica.</string>
     <string name="home_usb_advisory_fix">Correggi</string>
+    <string name="home_whatsnew_resilient_title">Novità: registrazione resiliente</string>
+    <string name="home_whatsnew_resilient_body">Una volta che una chiamata inizia a essere registrata, ora arriva fino in fondo — anche se Android interrompe a metà il processo in background di CallVault, cosa che prima troncava la registrazione.\n\nÈ disattivata per impostazione predefinita. Puoi attivarla anche in seguito da Impostazioni ▸ Affidabilità.</string>
+    <string name="home_whatsnew_resilient_cta">Attiva</string>
+    <string name="home_whatsnew_resilient_enabled">La registrazione resiliente è attiva. Le tue chiamate verranno registrate fino alla fine, anche se il processo in background viene interrotto a metà.</string>
 </resources>

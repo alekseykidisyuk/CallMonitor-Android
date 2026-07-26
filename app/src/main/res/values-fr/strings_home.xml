@@ -29,4 +29,8 @@
     <string name="home_usb_advisory_title">L\'enregistrement peut s\'arrêter au verrouillage</string>
     <string name="home_usb_advisory_text">L\'USB est en mode données. Appuie pour choisir Charge uniquement.</string>
     <string name="home_usb_advisory_fix">Corriger</string>
+    <string name="home_whatsnew_resilient_title">Nouveau : enregistrement résilient</string>
+    <string name="home_whatsnew_resilient_body">Une fois qu\'un appel commence à être enregistré, il va désormais jusqu\'au bout — même si Android arrête en cours de route le service d\'arrière-plan de CallVault, ce qui coupait l\'enregistrement auparavant.\n\nDésactivé par défaut. Vous pouvez aussi l\'activer plus tard dans Paramètres ▸ Fiabilité.</string>
+    <string name="home_whatsnew_resilient_cta">Activer</string>
+    <string name="home_whatsnew_resilient_enabled">L\'enregistrement résilient est activé. Vos appels seront enregistrés jusqu\'au bout, même si le service d\'arrière-plan est arrêté en cours de route.</string>
 </resources>

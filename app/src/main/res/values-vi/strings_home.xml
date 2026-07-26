@@ -29,4 +29,8 @@
     <string name="home_usb_advisory_title">Ghi âm có thể dừng khi khóa màn hình</string>
     <string name="home_usb_advisory_text">USB đang ở chế độ dữ liệu. Nhấn để đặt Chỉ sạc.</string>
     <string name="home_usb_advisory_fix">Sửa</string>
+    <string name="home_whatsnew_resilient_title">Mới: Ghi âm bền bỉ</string>
+    <string name="home_whatsnew_resilient_body">Một khi cuộc gọi đã bắt đầu được ghi, giờ đây nó sẽ ghi trọn vẹn — kể cả khi Android dừng tiến trình nền của CallVault giữa chừng, điều trước đây làm bản ghi bị cắt ngang.\n\nMặc định tắt. Bạn cũng có thể bật sau trong Cài đặt ▸ Độ tin cậy.</string>
+    <string name="home_whatsnew_resilient_cta">Bật</string>
+    <string name="home_whatsnew_resilient_enabled">Ghi âm bền bỉ đang bật. Các cuộc gọi của bạn sẽ được ghi đến hết, kể cả khi tiến trình nền bị dừng giữa chừng.</string>
 </resources>
