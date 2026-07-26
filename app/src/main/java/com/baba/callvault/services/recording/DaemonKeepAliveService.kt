@@ -25,7 +25,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
+import com.baba.callvault.integrations.adb.WirelessDebuggingPolicy
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.utils.AppLogger
@@ -214,6 +216,16 @@ class DaemonKeepAliveService : Service() {
             val warning = getString(R.string.notif_usb_lock_warning)
             builder.setContentText(warning)
                 .setStyle(NotificationCompat.BigTextStyle().bigText("$baseText\n$warning"))
+            return builder.build()
+        }
+
+        // Wireless debugging has to stay on when it is adbd's ONLY transport, because switching it off
+        // would stop adbd and take the daemon with it. Say so rather than leaving the user to notice that
+        // a debugging switch they did not turn on is staying on — and name the two settings that free it.
+        if (ready && WirelessDebuggingPolicy.mustKeepWirelessDebugging(AdbShell.wirelessDebuggingPlan(this))) {
+            val notice = getString(R.string.notif_wd_required)
+            builder.setContentText(notice)
+                .setStyle(NotificationCompat.BigTextStyle().bigText("$baseText\n$notice"))
         }
         return builder.build()
     }

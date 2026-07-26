@@ -9,6 +9,8 @@
 package com.baba.callvault.server
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -94,6 +96,40 @@ class VoipAppIdentityTest {
             musicPlaying,
         ).joinToString("\n")
         assertEquals(10304, VoipAppIdentity.parseModeOwnerUid(dump))
+    }
+
+    @Test
+    fun `ignores the platform when it owns communication mode`() {
+        // Real One UI output during a WhatsApp call: the SYSTEM owns the mode, not the app. Resolving
+        // uid 1000 produced a recording named after Samsung's "Device maintenance", battery icon and all.
+        val line = "  mAudioModeOwner: AudioModeInfo: mMode=MODE_IN_COMMUNICATION, mPid=1371, mUid=1000"
+        assertEquals(VoipAppIdentity.UID_UNKNOWN, VoipAppIdentity.parseModeOwnerUid(line))
+    }
+
+    @Test
+    fun `falls through to the app's own playback track when the platform owns the mode`() {
+        // The combination that must work on One UI: reject the system mode owner, take the real app.
+        val dump = listOf(
+            "  mAudioModeOwner: AudioModeInfo: mMode=MODE_IN_COMMUNICATION, mPid=1371, mUid=1000",
+            telegramCall,
+        ).joinToString("\n")
+        assertEquals(VoipAppIdentity.UID_UNKNOWN, VoipAppIdentity.parseModeOwnerUid(dump))
+        assertEquals(10304, VoipAppIdentity.parseVoiceCommUid(dump))
+    }
+
+    @Test
+    fun `ignores a platform-owned playback track`() {
+        val systemTrack = telegramCall.replace("u/pid:10304/12153", "u/pid:1000/1371")
+        assertEquals(VoipAppIdentity.UID_UNKNOWN, VoipAppIdentity.parseVoiceCommUid(systemTrack))
+    }
+
+    @Test
+    fun `treats only installed-app uids as callers`() {
+        assertTrue(VoipAppIdentity.isAppUid(10000))
+        assertTrue(VoipAppIdentity.isAppUid(10304))
+        assertFalse("uid 1000 is the platform", VoipAppIdentity.isAppUid(1000))
+        assertFalse("shell is not a calling app", VoipAppIdentity.isAppUid(2000))
+        assertFalse("root is not a calling app", VoipAppIdentity.isAppUid(0))
     }
 
     @Test

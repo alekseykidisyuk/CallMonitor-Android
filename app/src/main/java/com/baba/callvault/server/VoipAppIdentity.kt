@@ -39,6 +39,23 @@ internal object VoipAppIdentity {
     /** `AudioAttributes.USAGE_VOICE_COMMUNICATION`. */
     private const val USAGE_VOICE_COMMUNICATION = 2
 
+    /**
+     * `AID_APP_START` — the first uid Android assigns to an installed app. Everything below it is the
+     * platform (uid 1000 is `system`).
+     */
+    private const val APP_UID_START = 10_000
+
+    /**
+     * Whether [uid] could be a calling app at all.
+     *
+     * A VoIP call is always placed by a user-installed app, so a platform uid is never the answer — it
+     * means this source is reporting the framework rather than the caller. On One UI the audio mode
+     * owner during a WhatsApp call is uid 1000, which resolved to Samsung's "Device maintenance" and
+     * put its battery icon on the recording. Rejecting these lets the next source answer instead, and
+     * a recording named by time alone beats one named after the wrong app.
+     */
+    internal fun isAppUid(uid: Int): Boolean = uid >= APP_UID_START
+
     private const val DUMP_TIMEOUT_MS = 1_500L
 
     /** Total time to keep looking before giving up, and the gap between attempts. */
@@ -64,7 +81,7 @@ internal object VoipAppIdentity {
             attempt++
             val uid = resolveOnce()
             if (uid != UID_UNKNOWN) {
-                AppLogger.i(TAG, "VoIP app uid $uid (attempt $attempt)")
+                AppLogger.i(TAG, "VoIP app resolved to uid $uid on attempt $attempt")
                 return uid
             }
             if (System.currentTimeMillis() >= deadline) {
@@ -119,7 +136,11 @@ internal object VoipAppIdentity {
             if (usageOf(config) != USAGE_VOICE_COMMUNICATION) continue
             if (!isActive(config)) continue
             val uid = config.javaClass.getMethod("getClientUid").invoke(config) as? Int ?: continue
-            AppLogger.i(TAG, "VoIP call audio owned by uid $uid")
+            if (!isAppUid(uid)) {
+                AppLogger.d(TAG, "Ignoring platform uid $uid from playback configuration")
+                continue
+            }
+            AppLogger.i(TAG, "VoIP app uid $uid (playback configuration)")
             return uid
         }
         return UID_UNKNOWN
@@ -151,7 +172,8 @@ internal object VoipAppIdentity {
             if (!line.contains("usage=USAGE_VOICE_COMMUNICATION")) continue
             if (!line.contains("state:started")) continue
             val uid = UID_REGEX.find(line)?.groupValues?.get(1)?.toIntOrNull() ?: continue
-            AppLogger.i(TAG, "VoIP call audio owned by uid $uid (via dump)")
+            if (!isAppUid(uid)) continue
+            AppLogger.i(TAG, "VoIP app uid $uid (playback track in dump)")
             return uid
         }
         return UID_UNKNOWN
@@ -173,7 +195,9 @@ internal object VoipAppIdentity {
             if (!line.contains("mAudioModeOwner")) continue
             if (!line.contains("mMode=MODE_IN_COMMUNICATION")) continue
             val uid = MODE_OWNER_UID_REGEX.find(line)?.groupValues?.get(1)?.toIntOrNull() ?: continue
-            if (uid <= 0) continue   // mUid=0 is the "nobody owns the mode" placeholder
+            // mUid=0 is the "nobody owns the mode" placeholder; a platform uid means the framework owns
+            // the mode rather than the calling app, which is the normal case on One UI.
+            if (!isAppUid(uid)) continue
             return uid
         }
         return UID_UNKNOWN

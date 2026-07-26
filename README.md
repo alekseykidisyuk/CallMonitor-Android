@@ -98,10 +98,26 @@ tested rather than what is assumed to work.
 | Device | Android | OS build | Apps verified | Result | Reported by |
 |---|---|---|---|---|---|
 | OnePlus 12 (CPH2581) | 16 (API 36) | OxygenOS 16.0.8 (`CPH2581_16.0.8.300`, patch 2026-06-01) | WhatsApp 2.26.27.85 · Telegram 12.9.1 · Signal 8.19.2 | ✅ Both sides recorded on all three | maintainer |
+| Samsung Galaxy S24 FE (SM-S721B) | 16 (API 36) | One UI 8.5 (`BP4A.251205.006.S721BXXSCDZF3`, patch 2026-06-05) | WhatsApp 2.26.28.77 | ✅ Both sides recorded | maintainer |
 
 **Please add yours.** If you try VoIP recording, open an issue with your device, Android version, OS
 build, the calling app and its version, and whether both sides were captured — including failures,
 which are just as useful. A "no" entry saves the next person the experiment.
+
+#### Device differences worth knowing
+
+Two behaviours differ between manufacturers and shaped the code, both found on a Samsung after a
+OnePlus had happily hidden them:
+
+- **`adbd` stops when its last transport is removed.** CallVault's helper is a child of an `adbd`
+  shell, so switching Wireless debugging off while it is the *only* transport takes the helper down
+  with it. CallVault therefore leaves Wireless debugging on in that case and says so in its
+  notification. Turning on **Record without Wi-Fi** (Settings ▸ Experimental), or enabling USB
+  debugging, gives `adbd` a second transport and lets CallVault switch Wireless debugging off again.
+- **The audio "mode owner" can be the system rather than the calling app.** On One UI a WhatsApp call
+  reports uid 1000 (`system`), so an app label taken from it is wrong — it produced recordings named
+  after Samsung's *Device maintenance*. Platform uids are now rejected and the app's own audio track is
+  used instead.
 
 ## Requirements
 

@@ -115,7 +115,26 @@ object AdbShell {
      * reboot clears it), so "armed but connect refused" means adbd is mid-restart and the port will come
      * back — worth waiting for instead of re-arming via Wireless Debugging.
      */
-    private fun isLoopbackArmed(context: Context): Boolean =
+    /**
+     * What to do with Wireless debugging now that the daemon is up — see [WirelessDebuggingPolicy].
+     *
+     * Reads the two things that keep `adbd` alive independently of Wireless debugging: USB debugging,
+     * and our own loopback listener.
+     */
+    fun wirelessDebuggingPlan(context: Context): WirelessDebuggingPlan = WirelessDebuggingPolicy.plan(
+        isUsbDebuggingEnabled = isUsbDebuggingEnabled(context),
+        isLoopbackArmed = isLoopbackArmed(context),
+    )
+
+    /**
+     * Whether USB debugging is enabled. It keeps `adbd` running whether or not a cable is attached, so
+     * it counts as a transport for the purposes of [wirelessDebuggingPlan].
+     */
+    fun isUsbDebuggingEnabled(context: Context): Boolean = runCatching {
+        android.provider.Settings.Global.getInt(context.contentResolver, "adb_enabled", 0) == 1
+    }.getOrDefault(false)
+
+    internal fun isLoopbackArmed(context: Context): Boolean =
         getSystemProperty("service.adb.tcp.port") == AppPreferences(context).getLoopbackAdbPort().toString()
 
     /** Reads a system property via the hidden `SystemProperties.get` (reflection; public SDK-safe). */
