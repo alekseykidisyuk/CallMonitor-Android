@@ -40,15 +40,16 @@ You pair **once**; after that it's hands-free.
 | ▶️ | In-app **recordings list** with playback, **contact-name** resolution, source badges, and filters |
 | 🗂️ | Filter recordings by **source, direction, contact, or date**; play & delete each copy individually |
 | 🎚️ | **Opus** or **AAC** at your chosen bitrate; [BCR](https://github.com/chenxiaolong/BCR)-compatible file names |
-| 🔒 | **No root, no Shizuku, no PC** — everything runs on-device, Wireless Debugging is automatic & transient |
+| 🔒 | **No root, no Shizuku, no PC** — everything runs on-device; Wireless Debugging is set up automatically and stays on while CallVault is ready ([why](#how-it-works)) |
 | ⬆️ | **In-app updates** — CallVault notices new GitHub releases and installs them on a tap (signature-pinned, resumable download); never auto-installs |
 | 🎨 | Clean, modern UI — no telemetry, no ads, no nonsense |
 
 ## How it works
 
-After a one-time pairing, CallVault runs a **persistent privileged daemon** — a detached `app_process` under the shell user, in the spirit of Shizuku — that **survives Wireless Debugging being turned off**. Recording commands then flow to it over **binder IPC**, so no ADB connection is needed at record time.
+After a one-time pairing, CallVault runs a **persistent privileged daemon** — a detached `app_process` under the shell user, in the spirit of Shizuku. Recording commands flow to it over **binder IPC**, so no ADB connection is needed at record time.
 
-- **Wireless Debugging is fully automatic and transient.** CallVault turns it on only long enough to (re)launch the daemon, then turns it back off. You never toggle it manually after the first pair.
+- **Wireless Debugging stays on while CallVault is ready.** Android shuts `adbd` down when its last connection is removed, and the daemon runs inside it — so switching Wireless Debugging off stops the daemon too. Measured on both a OnePlus 12 and a Galaxy S24 FE. Enabling **USB debugging** gives `adbd` a second connection and CallVault then switches Wireless Debugging off by itself. You never toggle anything manually after the first pair.
+  > Earlier versions of this README said the daemon *survived* Wireless Debugging being turned off, and CallVault tried to turn it off on that basis. That was wrong on every device tested, and it caused a start-up loop; since 1.4.9 CallVault does not try. Getting back to "off" without USB debugging is on the [roadmap](#roadmap).
 - Call audio is captured by the daemon through a **direct `AudioRecord` path** and muxed into a file you own (via the Storage Access Framework) — on the device and/or a cloud folder you pick through the system file picker. `scrcpy-server` is launched only as a fallback, when the direct path can't handle the chosen source or codec on your device.
 
 ### Keeping a recording alive when the screen locks
@@ -182,6 +183,19 @@ may turn out not to be possible — this is what is actually being worked on, no
   of a call for people who want to make that decision each time.
 - **Turn cellular recording off independently** — today the automatic rules cover carrier calls; VoIP is
   a separate opt-in. Someone who only wants app calls recorded should be able to say so.
+
+**Getting Wireless Debugging back off**
+
+Since 1.4.9 it stays on while CallVault is ready, because switching it off stops the helper. Three
+routes, roughly in order of how promising they look:
+
+- **Hand the helper over to a connection that outlives the switch** — start it over the loopback
+  listener *after* Wireless Debugging is already off, instead of before. Needs "Record without Wi-Fi".
+- **Make the helper genuinely outlive `adbd`** — Shizuku's server appears to manage this, so the
+  technique is worth comparing against ours. This would fix it for everyone, with no extra settings.
+- **Shizuku support** — let people who already run Shizuku use it instead of CallVault's own setup, as
+  [requested](https://github.com/RikkaApps/Shizuku). Optional, alongside the built-in method, not
+  replacing it.
 
 **Reliability and honesty about it**
 
