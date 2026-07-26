@@ -276,6 +276,39 @@ side has nothing ready, so a stalled or silenced side costs its own channel and 
 
 **Neither side of the call was disturbed** — confirmed by both participants across three test calls.
 
+### SHIPPED (behind the Experimental opt-in) — how it is wired
+
+Working end-to-end in the app as of 2026-07-26: a WhatsApp call is detected, recorded both directions,
+finalised, listed in the app and plays back correctly.
+
+| Piece | Role |
+|---|---|
+| `server/VoipAudioPolicy` | arms/disarms the loopback mix (daemon-side; needs the shell permissions) |
+| `server/VoipCaptureSession` | far sink + `MIC` → stereo → mono → codec → SAF fd; implements `RecordingSession` |
+| `services/recording/VoipCaptureController` | arms on toggle **and on every daemon restart** |
+| `services/recording/VoipCallDetector` | detects calls; hosted by `DaemonKeepAliveService` |
+| `services/recording/VoipRecordingCoordinator` | creates the file, drives the daemon, catalogues the result |
+
+**Detect on the AUDIO MODE, not on playback attributes.** The obvious approach — watching for a
+`USAGE_VOICE_COMMUNICATION` playback config — CANNOT work from the app: the framework hands out
+**anonymised** `AudioPlaybackConfiguration`s to any caller without `MODIFY_AUDIO_ROUTING`, which only
+the shell daemon holds. The usage is never visible, so the condition never becomes true, on any device.
+Use `AudioManager.getMode() == MODE_IN_COMMUNICATION`: no permission, not redacted, and carrier calls
+use `MODE_IN_CALL` so the two paths cannot collide. End-detection is debounced ~1.5 s because the mode
+wobbles on route changes.
+
+**The Home list is catalog-backed, not a folder scan.** A recording written straight into the SAF
+folder exists on disk and is invisible in the app. `RecordingCatalog.recordLocal` (+ `StorageRouter`)
+must be called explicitly — the carrier path gets this from `RecordingForegroundService`, which the
+VoIP path deliberately does not use.
+
+**Feedback:** the VoIP path does not run `RecordingForegroundService`, so it has no notification of its
+own. `DaemonKeepAliveService`'s permanent notification switches to "Recording VoIP call" instead of
+adding a second one — which doubles as the field diagnostic for whether detection fired.
+
+Verified on-device: clean teardown at hang-up (mode returns to NORMAL, zero open output fds), correct
+duration, and the recording appears and plays in the app.
+
 ### Open — what is NOT proven
 
 1. **WhatsApp only, one device, a handful of calls.** Signal is stricter and may set
