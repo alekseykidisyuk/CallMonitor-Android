@@ -253,6 +253,64 @@ object RecorderServer {
             }.onFailure { AppLogger.w(TAG, "startHandoff error: ${it.message}") }.getOrDefault(false)
         }
 
+        // ---- VoIP capture (experimental) -------------------------------------------------------
+
+        // Arms the loopback policy. Must happen BEFORE a VoIP call's audio track exists, so the app
+        // calls this when the feature is switched on (and on daemon start), never at call time.
+        override fun armVoipCapture(): Boolean {
+            val ok = runCatching { VoipAudioPolicy.arm() }
+                .onFailure { AppLogger.w(TAG, "armVoipCapture error: ${it.message}") }
+                .getOrDefault(false)
+            AppLogger.i(TAG, "armVoipCapture -> $ok")
+            return ok
+        }
+
+        override fun disarmVoipCapture() {
+            AppLogger.i(TAG, "disarmVoipCapture requested")
+            runCatching { VoipAudioPolicy.disarm() }
+                .onFailure { AppLogger.w(TAG, "disarmVoipCapture error: ${it.message}") }
+        }
+
+        override fun startVoipRecording(codec: String?, bitRate: Int, outFd: ParcelFileDescriptor?): Boolean {
+            if (outFd == null || codec == null) {
+                AppLogger.e(TAG, "startVoipRecording: null arg (codec=$codec fd=${outFd != null})")
+                return false
+            }
+            if (!VoipAudioPolicy.isArmed) {
+                // Arming now would not help this call: routing was fixed when its track was created.
+                AppLogger.e(TAG, "startVoipRecording refused: policy was not armed before the call")
+                runCatching { outFd.close() }
+                return false
+            }
+            if (!recordingActive.compareAndSet(false, true)) {
+                AppLogger.w(TAG, "startVoipRecording ignored: already recording")
+                runCatching { outFd.close() }
+                return false
+            }
+            val codecEnum = runCatching { ScrcpyAudioCodec.fromKey(codec) }.getOrNull()
+            if (codecEnum == null) {
+                AppLogger.e(TAG, "startVoipRecording: bad codec key $codec")
+                recordingActive.set(false)
+                runCatching { outFd.close() }
+                return false
+            }
+            AppLogger.i(TAG, "startVoipRecording codec=$codec bitRate=$bitRate")
+            // Heavy setup off the binder thread, matching startRecording.
+            workerHandler.post {
+                val active = runCatching {
+                    VoipCaptureSession(codecEnum, bitRate, outFd).also { it.start() }
+                }.onFailure { AppLogger.e(TAG, "startVoipRecording failed: ${it.message}", it) }.getOrNull()
+                if (active != null) {
+                    session = active
+                } else {
+                    runCatching { outFd.close() }
+                    session = null
+                    recordingActive.set(false)
+                }
+            }
+            return true
+        }
+
         // Releases the daemon's held handoff AudioRecord (the app owns capture after the handoff; this
         // just frees the daemon's now-unneeded input so the next call can create a fresh one).
         override fun stopHandoff() {

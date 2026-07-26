@@ -66,6 +66,31 @@ interface IRecorderService {
      */
     boolean startHandoff(String source, int sampleRate, int channels);
 
+    /**
+     * Arms the VoIP capture policy (a loopback-render AudioMix on USAGE_VOICE_COMMUNICATION playback).
+     *
+     * MUST be called BEFORE a VoIP call's audio track is created — Android fixes a track's routing at
+     * creation, so arming mid-call leaves the call permanently unattached and the recording silent.
+     * Arm when the feature is switched on, not when a call starts. Idempotent, and free while idle:
+     * an armed policy holds no wakelock and no active record track.
+     *
+     * @return true if the policy is registered (false when the device does not permit it, most often
+     *         a missing CAPTURE_VOICE_COMMUNICATION_OUTPUT on the shell package).
+     */
+    boolean armVoipCapture();
+
+    /** Unregisters the VoIP capture policy. Idempotent. */
+    void disarmVoipCapture();
+
+    /**
+     * Records a VoIP call, both directions, into [outFd]: the far party from the armed policy's
+     * loopback sink and the near party from the microphone, mixed to mono with the chosen codec.
+     * Requires [armVoipCapture] to have been called before the call began. Stop with stopRecording().
+     *
+     * @return true if capture started.
+     */
+    boolean startVoipRecording(String codec, int bitRate, in ParcelFileDescriptor outFd);
+
     /** Releases the daemon's held handoff AudioRecord (frees the capture input). Idempotent. */
     void stopHandoff();
 }
