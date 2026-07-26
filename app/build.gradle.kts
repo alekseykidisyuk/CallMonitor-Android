@@ -128,12 +128,19 @@ android {
     namespace = "com.baba.callvault"
     compileSdk = 36
 
+    // Required for libaudiohandoff.so, the native half of "Resilient recording".
+    ndkVersion = "27.2.12479018"
+
     defaultConfig {
         applicationId = "com.baba.callvault"
         minSdk = 30
         targetSdk = 36
         versionCode = ciVersionCode.get()
         versionName = ciVersionName.get()
+
+        // arm64 only. Every device this app can run on (minSdk 30, and the ADB-over-binder daemon it
+        // depends on) is arm64, and shipping one ABI keeps the APK small.
+        ndk { abiFilters += "arm64-v8a" }
 
         buildConfigField("String", "CI_BUILD_NUMBER", "\"${ciBuildNumber.get()}\"")
 
@@ -202,17 +209,29 @@ android {
         sourceCompatibility =  JavaVersion.VERSION_17
         targetCompatibility =  JavaVersion.VERSION_17
     }
+    // Builds libaudiohandoff.so (see src/main/cpp).
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+
     buildFeatures {
         compose = true
-        // Re-enabled for CallVault Plan 5 Task 0c: the binder command-channel spike needs the
-        // generated AIDL stubs (IPersistDebugService, BinderContainer) shared between the app and the
-        // app_process daemon. THROWAWAY — flip back to false when persistserver/ + aidl/ are removed.
+        // Required: the app and the shell-uid app_process daemon talk over the generated AIDL stubs
+        // (IRecorderService, BinderContainer).
         aidl = true
         buildConfig = true
     }
     packaging {
         // Exclude the original metadata from libphonenumber to avoid conflicts with our extracted version. This ensures only our processed assets are included in the final APK.
         resources.excludes.add("com/google/i18n/phonenumbers/data/**")
+        // REQUIRED, do not remove: extracts native libs to nativeLibraryDir on install. The shell-uid
+        // app_process DAEMON has no app classloader library-search path, so it can only load
+        // libaudiohandoff.so from an explicit on-disk path (<apkDir>/lib/arm64/). Left uncompressed
+        // inside the APK it would not exist as a file for the daemon to load.
+        jniLibs { useLegacyPackaging = true }
     }
     androidResources {
         generateLocaleConfig = true

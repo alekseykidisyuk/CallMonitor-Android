@@ -21,8 +21,7 @@ package com.baba.callvault.server;
  * the SAF file and performs call-log lookups itself, exactly as
  * [com.baba.callvault.services.recording.AudioRecordingEngine] does today.
  *
- * Mirrors the proven spike interface [com.baba.callvault.persistserver.IPersistDebugService]
- * and Shizuku's IShizukuService command-channel pattern.
+ * Mirrors Shizuku's IShizukuService command-channel pattern.
  */
 interface IRecorderService {
 
@@ -46,4 +45,27 @@ interface IRecorderService {
 
     /** Stops any active recording and terminates the daemon process. */
     void destroy();
+
+    /**
+     * "Resilient recording" (audio-capture handoff, Option B). The daemon creates a privileged
+     * AudioRecord for [source] at [sampleRate], extracts the IAudioRecord binder + cblk ashmem fd, and
+     * DELIVERS them to the app's provider ("sendHandoff"). The app then holds its own ref (keep-alive)
+     * and reads the ring + encodes into ITS OWN output fd — so the recording SURVIVES the daemon being
+     * killed mid-call. The push delivery runs synchronously inside this call, so on a true return the
+     * app has USUALLY started capturing — but the caller must confirm via the app-side capture state
+     * (this return only reflects that the daemon delivered, not that the app-side encode actually began).
+     *
+     * @param source     scrcpy `audio_source` cliKey (must map to a real MediaRecorder.AudioSource;
+     *                   output/playback are not supported and must use startRecording instead).
+     * @param sampleRate Capture sample rate in Hz (e.g. 48000).
+     * @param channels   Preferred channel count (2 for voice-call to capture both directions, 1 for
+     *                   mono sources). The daemon may fall back to mono and reports the ACTUAL count in
+     *                   the delivery.
+     * @return true if the daemon created the track and delivered the handoff to the app (delivery only;
+     *         the app confirms live capture separately).
+     */
+    boolean startHandoff(String source, int sampleRate, int channels);
+
+    /** Releases the daemon's held handoff AudioRecord (frees the capture input). Idempotent. */
+    void stopHandoff();
 }
