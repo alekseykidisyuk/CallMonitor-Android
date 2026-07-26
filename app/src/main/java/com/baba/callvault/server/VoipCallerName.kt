@@ -50,6 +50,33 @@ internal object VoipCallerName {
         name
     }.onFailure { AppLogger.d(TAG, "Caller-name lookup failed: ${it.message}") }.getOrNull()
 
+    /**
+     * Package of the app whose call is in progress (e.g. `com.whatsapp`), or null.
+     *
+     * Returned as a PACKAGE, not a display name: turning one into the other needs a PackageManager and
+     * therefore a Context, and obtaining a Context in this process breaks the attribution the capture
+     * depends on (see [VoipAudioPolicy]). The app resolves the label and the icon.
+     */
+    fun resolvePackage(): String? = runCatching {
+        val dump = readNotificationDump() ?: return null
+        extractPackageFromDump(dump)
+    }.onFailure { AppLogger.d(TAG, "Caller-package lookup failed: ${it.message}") }.getOrNull()
+
+    /** Package of the first call-tagged notification record. Split out so it can be tested offline. */
+    internal fun extractPackageFromDump(dump: String): String? {
+        val lines = dump.lines()
+        val pkgRegex = Regex("""pkg=([A-Za-z0-9_.]+)""")
+        for ((i, line) in lines.withIndex()) {
+            if (CALL_CATEGORIES.none { line.contains(it, ignoreCase = true) }) continue
+            // The record header carries pkg= and precedes the category line, so look BACK as well.
+            for (j in i downTo maxOf(0, i - BLOCK_LOOKAHEAD)) {
+                val m = pkgRegex.find(lines[j]) ?: continue
+                return m.groupValues[1].takeIf { it.contains('.') }
+            }
+        }
+        return null
+    }
+
     private fun readNotificationDump(): String? {
         val proc = ProcessBuilder("sh", "-c", "dumpsys notification --noredact")
             .redirectErrorStream(true).start()

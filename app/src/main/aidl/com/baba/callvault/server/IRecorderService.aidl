@@ -107,6 +107,12 @@ interface IRecorderService {
      */
     String voipCallerName();
 
+    /**
+     * Package of the app whose VoIP call is in progress (e.g. "com.whatsapp"), or null. Returned as a
+     * package because resolving a display name needs a Context, which the daemon cannot safely obtain.
+     */
+    String voipCallerPackage();
+
     /** Releases the daemon's held handoff AudioRecord (frees the capture input). Idempotent. */
     void stopHandoff();
 }

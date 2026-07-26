@@ -72,7 +72,11 @@ object VoipRecordingCoordinator {
         val caller = runCatching { service.voipCallerName() }
             .onFailure { AppLogger.d(TAG, "caller name lookup failed: ${it.message}") }
             .getOrNull()
-        val fileName = buildFileName(codec, caller)
+        // The daemon can only report a package (it has no Context); turn it into something readable.
+        val appLabel = runCatching { service.voipCallerPackage()?.let { appLabelFor(context, it) } }
+            .onFailure { AppLogger.d(TAG, "caller package lookup failed: ${it.message}") }
+            .getOrNull()
+        val fileName = buildFileName(codec, appLabel, caller)
 
         val saf = SafHelper.createAudioFile(context, folderUri, fileName, codec.mimeType)
         if (saf == null) {
@@ -153,9 +157,23 @@ object VoipRecordingCoordinator {
      * `<timestamp>_voip.<ext>` — no number and no contact, because a VoIP call provides neither. The
      * `voip` marker keeps these distinguishable from carrier recordings at a glance and in sorting.
      */
-    private fun buildFileName(codec: ScrcpyAudioCodec, caller: String?): String {
+    /**
+     * `<timestamp>_voip[_<App>][_<caller>]`. Both extras are best-effort — a VoIP call provides neither
+     * a number nor a call-log entry, so an absent app or name simply drops out of the name rather than
+     * being guessed at.
+     */
+    private fun buildFileName(codec: ScrcpyAudioCodec, appLabel: String?, caller: String?): String {
         val stamp = SimpleDateFormat("yyyyMMdd_HHmmss.SSSZ", Locale.CANADA).format(Date())
+        val app = appLabel?.takeIf { it.isNotBlank() }?.let { "_${sanitiseForFileName(it)}" } ?: ""
         val who = caller?.takeIf { it.isNotBlank() }?.let { "_$it" } ?: ""
-        return "${stamp}_voip$who${codec.containerExtension}"   // containerExtension already has the dot
+        return "${stamp}_voip$app$who${codec.containerExtension}"   // containerExtension has the dot
     }
+
+    /** The app's user-visible name, e.g. "com.whatsapp" -> "WhatsApp"; falls back to the package. */
+    private fun appLabelFor(context: Context, pkg: String): String? = runCatching {
+        val pm = context.packageManager
+        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+    }.getOrNull() ?: pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
+
+    private fun sanitiseForFileName(s: String) = s.replace(Regex("""[/\\:*?"<>|_\p{Cntrl}]"""), "").trim()
 }

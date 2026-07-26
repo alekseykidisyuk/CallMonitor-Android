@@ -83,6 +83,8 @@ object RecordingsRepository {
         val number: String?,
         val source: RecordingSource = RecordingSource.LOCAL,
         val contactName: String? = null,
+        /** Non-null only for VoIP recordings: the app the call was made in, for a badge/icon. */
+        val voipApp: String? = null,
         val localUri: Uri? = null,
         val driveUri: Uri? = null,
         val localSizeBytes: Long? = null,
@@ -176,6 +178,8 @@ object RecordingsRepository {
             direction = parsed.direction,
             displayDate = parsed.displayDate,
             number = parsed.number,
+            contactName = parsed.contactName,
+            voipApp = parsed.voipApp,
             source = source,
             localUri = localUri,
             driveUri = driveUri,
@@ -367,16 +371,25 @@ object RecordingsRepository {
             lastModified = doc.lastModified().coerceAtLeast(0L),
             direction = parsed.direction,
             displayDate = parsed.displayDate,
-            number = parsed.number
+            number = parsed.number,
+            contactName = parsed.contactName,
+            voipApp = parsed.voipApp
         )
     }
+
+    /** Filename marker for a VoIP recording (see VoipRecordingCoordinator). */
+    private const val VOIP_TOKEN = "voip"
 
     // -------- Best-effort name parsing
 
     private data class ParsedName(
         val direction: RecordingDirection?,
         val displayDate: String?,
-        val number: String?
+        val number: String?,
+        /** Set only for VoIP recordings, which carry a name rather than a number. */
+        val contactName: String? = null,
+        /** The app the VoIP call was made in (e.g. "WhatsApp"), when it could be determined. */
+        val voipApp: String? = null
     )
 
     /**
@@ -389,6 +402,34 @@ object RecordingsRepository {
     private fun parseName(displayName: String): ParsedName {
         val base = displayName.substringBeforeLast('.')
         val parts = base.split('_')
+
+        // VoIP recordings use "{date}_voip[_{caller}]": there is no call-log entry behind them, so
+        // there is no number and no reliable direction — but there IS often a name from the call
+        // notification. Without this branch the whole raw filename is shown, which is far too long to
+        // read in the list.
+        val voipIndex = parts.indexOfFirst { it == VOIP_TOKEN }
+        if (voipIndex > 0) {
+            val rawDate = parts.subList(0, voipIndex).joinToString("_")
+            val extras = parts.subList(voipIndex + 1, parts.size)
+            // "{date}_voip[_{App}][_{caller}]". The app label is written without underscores, so with
+            // two or more tokens the first is the app and the rest is the caller. With exactly one we
+            // cannot tell them apart, and showing it as the caller is the more useful reading: when it
+            // really is the app name that is still informative, whereas losing a contact name is not.
+            val voipApp = extras.getOrNull(0)?.takeIf { extras.size >= 2 }
+            val caller = when {
+                extras.isEmpty() -> null
+                extras.size == 1 -> extras[0]
+                else -> extras.drop(1).joinToString("_")
+            }?.ifBlank { null }
+            return ParsedName(
+                direction = null,
+                displayDate = formatDate(rawDate),
+                number = null,
+                contactName = caller,
+                voipApp = voipApp,
+            )
+        }
+
         val dirIndex = parts.indexOfFirst { it == "in" || it == "out" }
         if (dirIndex <= 0) return ParsedName(null, null, null)
 

@@ -273,6 +273,11 @@ object RecorderServer {
                 .onFailure { AppLogger.d(TAG, "voipCallerName failed: ${it.message}") }
                 .getOrNull()
 
+        override fun voipCallerPackage(): String? =
+            runCatching { VoipCallerName.resolvePackage() }
+                .onFailure { AppLogger.d(TAG, "voipCallerPackage failed: ${it.message}") }
+                .getOrNull()
+
         override fun voipFarPartyHeard(): Boolean = lastVoipSession?.farPartyHeard ?: false
 
         override fun disarmVoipCapture() {
