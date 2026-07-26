@@ -224,6 +224,64 @@ call audio, and the voice-comm PR (#6906) is open and unreviewed. The one workin
 so `UidPolicy::getUidState()` returns `PROCESS_STATE_TOP` permanently — which is precisely the state
 Friston-3 patches the binary to fake. What they need root for, we appear to get from being shell.
 
+#### What the "records all VoIP" apps actually do (investigated 2026-07-26)
+
+Prompted by *Call Recorder: Talker ACR Plus*, which advertises recording "virtually any VoIP
+conversation" — WhatsApp, Signal, Telegram, Viber, Zoom and more. It does not do what this feature
+does, and the vendors say so themselves.
+
+**Confirmed, from the vendors' own documentation:**
+
+- **The far party is captured through the MICROPHONE, not the stream.** [Cube ACR's FAQ](https://cubeacr.app/faq.html)
+  instructs users to select **"voice recognition (software)"** on Android 10–14 — i.e.
+  `AudioSource.VOICE_RECOGNITION`, an ordinary mic source.
+- **[Boldbeast's troubleshooting page](https://www.boldbeast.com/android/call_recorder_troubleshooting.html)
+  states it outright:** without speakerphone "the other party's voice in the recording is very weak
+  almost inaudible", and turning the loudspeaker on lets the mic "record the call in both sides" —
+  adding that only **rooting** can "record calls perfectly without switching on the loudspeaker".
+- **NLL Apps (ACR Phone):** recording "may require turning on the loud speaker on others", and "might
+  be one sided on phones that do not have a Qualcomm chipset".
+- **Talker's own Play listing:** "Not all Android devices support the recording of VoIP calls", and
+  buying premium "will NOT improve the quality of recorded calls". Its developer, replying to a review:
+  **"Bluetooth has not been supported since Android 9."**
+- **Accessibility is not capturing audio** — it has no audio API. Cube ACR's FAQ says its connector
+  exists for correct **contact-name labelling**. It detects the call; a separate `AudioRecord` records.
+- **Their "VoIP recording" is the same mic path**, surfaced through `ConnectionService` so the OS treats
+  a VoIP call like a native one — with the same chipset- and speakerphone-dependent failure mode.
+- **Boldbeast's actual VoIP recorder is root-only**, shipped as a
+  [Magisk module](https://github.com/boldbeastsoft/CallRecordingFix). That is the one genuine internal
+  tap found anywhere in the survey, and it needs root — which confirms the boundary rather than
+  breaking it.
+
+**The framework fact underneath all of it:** `AudioPlaybackCapture` — the only playback-capture API a
+normal app can reach — accepts **only** `USAGE_MEDIA`, `USAGE_GAME` and `USAGE_UNKNOWN`
+([docs](https://developer.android.com/media/platform/av-capture)). VoIP audio is
+`USAGE_VOICE_COMMUNICATION`; "All other usages CAN NOT be captured." Google's own WebRTC Android
+reference hardcodes `USAGE_VOICE_COMMUNICATION` for the remote track, and Signal/WhatsApp/Telegram all
+build on that stack. **No non-root bypass of this exclusion is documented anywhere.**
+
+**The tell that separates the two approaches:** their capture breaks on **Bluetooth** and weakens
+without **speakerphone**. A digital tap cannot care about the output route. Ours was tested across
+speaker → wireless headphones mid-call with no effect, and measured the far channel at **−81.9 dB**
+(digital silence) while only the near side spoke. That is two independent digital streams, not a
+microphone hearing a room.
+
+**Inference, flagged as such:** where the mic path *does* work without speakerphone on some devices,
+the likely cause is an OEM audio HAL mixing downlink into the `MIC`/`VOICE_RECOGNITION` path. Vendors
+describe the symptom consistently (works on some phones, one-sided on others) but **none publishes the
+mechanism**, and no engineering-level source was found. Treat the causal claim as unproven; the
+concrete evidence is chipset-level (Qualcomm vs not) and policy-layer (Xiaomi ships custom
+`getRecordSilenced` logic silencing a second `VOICE_DOWNLINK` client).
+
+**Consequence for distribution:** even Talker could not put its mechanism on Google Play. Since the
+[May 2022 policy](https://www.androidpolice.com/google-ends-call-recording-apps-accessibility-services/),
+"the Accessibility API is not designed and cannot be requested for remote call audio recording", so the
+Play app is a shell and the capability lives in a **sideloaded** "Talker ACR Helper" (their
+[install guide](https://talkeracr.app/installation-guide.html) lists Galaxy Store / AppGallery / Aptoide
+/ Amazon / direct APK — explicitly not Play) requiring an accessibility grant and, on Android 13+,
+"Allow restricted settings". See [`distribution-not-play-store`] — this is corroboration, not a reason
+to revisit Play.
+
 ### UPLINK — solved: the SOURCE is the whole trick
 
 The near side cannot be captured with `VOICE_COMMUNICATION`: it is **zero-filled for the entire call**,
