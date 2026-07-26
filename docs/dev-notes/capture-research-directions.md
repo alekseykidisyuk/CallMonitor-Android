@@ -278,8 +278,9 @@ side has nothing ready, so a stalled or silenced side costs its own channel and 
 
 ### SHIPPED (behind the Experimental opt-in) — how it is wired
 
-Working end-to-end in the app as of 2026-07-26: a WhatsApp call is detected, recorded both directions,
-finalised, listed in the app and plays back correctly.
+Working end-to-end in the app as of 2026-07-26, verified through the real feature (not probes) on
+**WhatsApp, Telegram and Signal**: the call is detected, recorded both directions, finalised, listed in
+the app and plays back correctly, with clean teardown at hang-up.
 
 | Piece | Role |
 |---|---|
