@@ -6,7 +6,20 @@ the app, and simply **started** when a call begins — so a call no longer waits
 **Why it is worth doing:** a dead daemon costs an 18-second cold start, measured, which is longer than a
 short call. That is how a real outgoing call was lost on 2026-07-27.
 
-**Proven on a OnePlus 12 (2026-07-27), not assumed:**
+**WORKING end to end on a OnePlus 12, 2026-07-27.** Two consecutive calls recorded through a held
+track with the creating daemon killed and never consulted:
+
+```
+14:14:57.483  OFFHOOK
+14:14:57.824  Instant: starting the held track (no daemon involved)
+14:14:57.826  IAudioRecord.start accepted from the app
+14:14:57.827  Instant: capture live
+```
+
+**3 ms from start to live**, 344 ms from OFFHOOK (the rest is metadata and SAF file creation, which the
+old path also pays) — against an 18-second daemon cold start. Recordings verified by ear.
+
+**Proven earlier the same day, not assumed:**
 
 - A track created with no call active, held **stopped**, started at call-connect: **−6.7 dBFS**
 - The **app** may start a track the **daemon** created: accepted by AudioFlinger from an unprivileged uid
@@ -76,14 +89,11 @@ Eviction is the risk that matters: `VOICE_CALL` has **source priority 0** on thi
 input profile at `maxOpenCount: 2`, so another input client can take it. It cannot be prevented — only
 detected and recovered from.
 
-### 4. Reuse across calls — **must be measured before designing around it**
+### 4. Reuse across calls — ANSWERED: reusable
 
-Unknown: whether one held track can be `start`/`stop`/`start`ed for several calls, or whether each call
-needs a fresh one. Cheap to find out with the existing probe (arm once, measure twice across two calls).
-
-- If reusable → arm once per boot, the ideal shape.
-- If not → re-arm after every call, which still keeps the daemon off the call path, since re-arming
-  happens between calls rather than during one.
+Measured on a OnePlus 12, 2026-07-27: **two consecutive calls on the same held track**, both recorded,
+both sounding correct, with no re-arm between them. So arm once per boot — the simpler shape — and no
+re-arm-after-call logic is needed.
 
 ### 5. Surfacing it
 
