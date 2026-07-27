@@ -185,6 +185,7 @@ class AppPreferences(context: Context) {
         LAST_SEEN_VERSION_CODE("last_seen_version_code"),
         UPDATE_SUCCESS_BANNER_VERSION("update_success_banner_version"),
         WHATS_NEW_SEEN_VERSION("whats_new_seen_version"),
+        INSTANT_RECORDING_ENABLED("instant_recording_enabled"),
         USB_DEFAULT_MODE("usb_default_mode"),
         UPDATE_SOURCE_OVERRIDE_URL("update_source_override_url"),
 
@@ -445,6 +446,14 @@ class AppPreferences(context: Context) {
      * and off by default: consent law for VoIP is stricter in many jurisdictions, and an app that opts
      * out of audio capture cannot be recorded at all.
      */
+    /**
+     * "Instant recording" — hold a capture track ready so a call does not wait for the background
+     * helper. Off by default and experimental: it changes how recording STARTS, so a regression costs
+     * whole calls rather than degrading quality. Off restores the existing path exactly.
+     */
+    fun isInstantRecordingEnabled() = getBoolean(Key.INSTANT_RECORDING_ENABLED, false)
+    fun setInstantRecordingEnabled(enabled: Boolean) = setBoolean(Key.INSTANT_RECORDING_ENABLED, enabled)
+
     fun isVoipRecordingEnabled() = getBoolean(Key.VOIP_RECORDING_ENABLED, DefaultsValue.VOIP_RECORDING_ENABLED)
     fun setVoipRecordingEnabled(enabled: Boolean) = setBoolean(Key.VOIP_RECORDING_ENABLED, enabled)
 

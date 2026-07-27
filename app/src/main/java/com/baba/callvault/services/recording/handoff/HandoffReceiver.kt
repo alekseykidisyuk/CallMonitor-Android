@@ -73,6 +73,10 @@ object HandoffReceiver {
     fun onReceived(binder: IBinder?, cblkFd: ParcelFileDescriptor?, frameCount: Int, sampleRate: Int, channels: Int) {
         // A probe run borrows the delivery: it is measuring whether the app may START a handed-over
         // track, not recording anything, so the normal drain must not begin.
+        if (HeldTrackStore.isArming && binder != null) {
+            HeldTrackStore.onHandoff(binder, cblkFd, frameCount, sampleRate, channels)
+            return
+        }
         if (TrackAProbe.isArmed && binder != null) {
             TrackAProbe.onHandoff(binder, cblkFd, frameCount, sampleRate, channels)
             return
@@ -181,6 +185,28 @@ object HandoffReceiver {
      * pipe, downmixes if asked, and muxes into [Target.outputFd]. The output fd is NOT closed here — the
      * engine owns its lifecycle and closes it after [stop] (once the container trailer is written).
      */
+    /**
+     * Starts a track the app was handed **earlier** and drains it into [target].
+     *
+     * The difference from [onReceived] is timing, and it is the whole point of Track A: the track was
+     * created before the call and merely sits there, so a call starts capture immediately instead of
+     * waiting for a daemon to launch. Everything after the start — ring drain, encoder, container — is
+     * the same code the resilient path already uses.
+     *
+     * @return true once capture is live; false leaves the caller free to fall back to the daemon path.
+     */
+    fun startHeld(target: Target, binder: IBinder, cblkFdNum: Int, geometry: HandoffGeometry): Boolean {
+        begin(target)
+        if (!HeldRecordControl.start(binder)) {
+            AppLogger.w(T, "held track refused to start; falling back")
+            abort()
+            return false
+        }
+        runCatching { startCapture(target, cblkFdNum, geometry) }
+            .onFailure { AppLogger.w(T, "held capture failed to start: ${it.message}"); abort() }
+        return isLive
+    }
+
     private fun startCapture(target: Target, cblkFdNum: Int, geometry: HandoffGeometry) {
         val flag = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder())
         stopFlag = flag

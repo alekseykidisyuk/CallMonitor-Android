@@ -16,6 +16,7 @@ import com.baba.callvault.system.storage.RetentionScheduler
 import com.baba.callvault.system.updates.UpdateScheduler
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.services.recording.VoipCaptureController
+import com.baba.callvault.services.recording.handoff.HeldTrackStore
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -24,6 +25,10 @@ import com.baba.callvault.utils.AppLogger
 class CallVaultApplication : Application() {
     private companion object {
         const val TAG = "CV:CallVaultApplication"
+
+        /** Format the instant-recording track is armed with; matches the resilient path. */
+        const val INSTANT_SAMPLE_RATE = 48_000
+        const val INSTANT_CHANNELS = 2
 
         /** Old CallMonitorService notification id (pre-consolidation) — now shares 4720; cancel the stale one. */
         const val LEGACY_READINESS_NOTIF_ID = 4714
@@ -55,6 +60,15 @@ class CallVaultApplication : Application() {
                     runCatching { VoipCaptureController.sync(applicationContext) }
                         .onFailure { AppLogger.w(TAG, "VoIP re-arm failed: ${it.message}") }
                 }.apply { isDaemon = true; name = "cv-voip-rearm" }.start()
+            }
+            // Instant recording: hold a capture track ready NOW, while a daemon exists, so a call never
+            // waits for one. Arming needs the daemon; starting the held track later does not, which is
+            // exactly why it must happen here rather than when a call arrives.
+            if (AppPreferences(applicationContext).isInstantRecordingEnabled()) {
+                Thread {
+                    runCatching { HeldTrackStore.arm(INSTANT_SAMPLE_RATE, INSTANT_CHANNELS) }
+                        .onFailure { AppLogger.w(TAG, "Instant re-arm failed: ${it.message}") }
+                }.apply { isDaemon = true; name = "cv-instant-arm" }.start()
             }
         }
 
