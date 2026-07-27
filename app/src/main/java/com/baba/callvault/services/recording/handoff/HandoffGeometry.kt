@@ -39,15 +39,49 @@ data class HandoffGeometry(
      * which is exactly the periodic-gap bug this constant was introduced to fix — every 48 kHz
      * configuration has a non-power-of-two frame count.
      */
+    /**
+     * **Pass THIS to the native drain, never [frameCount].** The native side rounds whatever it is
+     * given up to the next power of two and masks positions with it, so handing it the raw reported
+     * count would reproduce the oversized ring this property exists to correct — and the read would go
+     * past the end of the mapping, which is precisely what the size check was catching.
+     * `roundup(wrapFrames) == wrapFrames`, so passing it through is safe.
+     */
     val wrapFrames: Int
         get() {
-            var p2 = 1
-            while (p2 < frameCount) p2 = p2 shl 1
-            return p2
+            // What the reported frame count implies…
+            var reported = 1
+            while (reported < frameCount) reported = reported shl 1
+
+            // …and what the mapping can actually hold. AudioFlinger allocates
+            // `roundup(frameCount) * frameSize` immediately after the control block, so the region's
+            // own size is ground truth; the reported count is not. `getBufferSizeInFrames()` returns
+            // `cblk->mBufferSizeInFrames`, a LOGICAL value the client overwrites on every attach — it
+            // is not the field that sizes the ring, and the two only agree by coincidence in stock
+            // AOSP. On a Galaxy S24 FE they diverged: 8192 reported against a 4096-frame allocation,
+            // which would have read 12 KB past the end had the size check not refused it.
+            val fits = (cblkSize - dataOff) / frameSize
+            var fitting = 1
+            while (fitting * 2 <= fits) fitting = fitting shl 1
+
+            return if (fitting < reported) fitting else reported
         }
 
+    /**
+     * Byte offset of the PCM ring within the shared region — i.e. `sizeof(audio_track_cblk_t)`.
+     *
+     * Version-dependent, and getting it wrong reads the ring misaligned rather than failing loudly:
+     * 224 bytes on Android 11, 228 on 12, 232 on 13 through 16 (derived from AOSP field-by-field and
+     * cross-checked against this device's observed `mFront`/`mRear` at 184/188). `minSdk` is 30, so
+     * hardcoding 232 was wrong on Android 11 and 12.
+     */
+    val dataOff: Int get() = when {
+        android.os.Build.VERSION.SDK_INT >= 33 -> 232
+        android.os.Build.VERSION.SDK_INT >= 31 -> 228
+        else -> 224
+    }
+
     /** Last byte of the ring, exclusive — must fit inside [cblkSize]. */
-    val ringEndOffset: Long get() = DATA_OFF + wrapFrames.toLong() * frameSize
+    val ringEndOffset: Long get() = dataOff + wrapFrames.toLong() * frameSize
 
     /**
      * Why this geometry must not be used, or null if it is safe to drain.
@@ -61,14 +95,25 @@ data class HandoffGeometry(
         sampleRate !in MIN_SAMPLE_RATE..MAX_SAMPLE_RATE -> "bad rate=$sampleRate"
         frameCount <= 0 -> "bad frameCount=$frameCount"
         cblkSize <= 0 -> "fd is not a sized ashmem region (size=$cblkSize)"
+        wrapFrames < MIN_RING_FRAMES -> "ring too small to be real (wrapFrames=$wrapFrames)"
         ringEndOffset > cblkSize ->
-            "geometry doesn't fit ashmem (dataOff=$DATA_OFF wrapFrames=$wrapFrames frameSize=$frameSize > $cblkSize)"
+            "geometry doesn't fit ashmem (dataOff=$dataOff wrapFrames=$wrapFrames frameSize=$frameSize > $cblkSize)"
         else -> null
     }
 
     companion object {
-        /** Byte offset of the audio buffer within `audio_track_cblk_t` (Android 16). */
+        /**
+         * Byte offset of the audio buffer for Android 13+ — kept for callers that need a constant.
+         * Prefer the instance [dataOff], which is correct on Android 11 and 12 as well.
+         */
         const val DATA_OFF = 232
+
+        /**
+         * Below this, the derived ring is too small to be a real capture buffer — which is what a
+         * `FAST` record track looks like, since those keep their PCM in a separate pipe and leave
+         * nothing usable after the control block.
+         */
+        private const val MIN_RING_FRAMES = 256
 
         /** Freshest frames held back each drain cycle — they may still be mid-write by the server. */
         const val GUARD_FRAMES = 32

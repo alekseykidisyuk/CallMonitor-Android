@@ -102,25 +102,35 @@ Three related asks, all about the user deciding rather than the rules deciding:
 
 ---
 
-## 🔵 Resilient recording is rejected on One UI *(investigating)*
+## 🟡 Resilient recording on One UI — cause found, fix written, UNTESTED on the device
 
-The audio handoff fails on a Galaxy S24 FE:
+**Root cause, confirmed against AOSP source rather than guessed.** The handoff sized the ring from
+`AudioRecord.getBufferSizeInFrames()`. That returns `cblk->mBufferSizeInFrames`, a **logical value the
+client rewrites on every attach** — it is *not* the field that sizes the ring. The physical ring is
+`roundup(frameCount) * frameSize`, allocated immediately after the control block by
+`AudioFlinger::TrackBase::TrackBase`. The two agree in stock AOSP only because both are seeded from the
+same `frameCount`; nothing enforces it, and on a Galaxy S24 FE they diverged — 8192 reported against a
+4096-frame allocation.
 
-```
-handoff rejected: geometry doesn't fit ashmem (dataOff=232 wrapFrames=8192 frameSize=4 > 20480)
-```
+So this was never a Samsung quirk: **we were reading the wrong quantity**, and the OnePlus happened to
+agree. Refusing the delivery was correct — trusting the report would have read 12 KB past the end.
 
-It fails **safely** — the receiver rejects the geometry rather than reading past the mapping, and the
-recording falls back to the normal daemon path, so calls are still captured. But the resilience the
-feature exists to provide is inactive on that device, and the README says so rather than implying it
-works everywhere.
+**Fix:** derive the ring from the mapping, which is ground truth on every device —
+`wrapFrames = min(roundup(reported), largest power of two fitting in (ashmemSize - dataOff) / frameSize)`.
+Self-correcting, no device table, cannot over-read by construction.
 
-The numbers say the ring buffer is larger than the shared memory the daemon handed over
-(8192 frames × 4 bytes + 232 > 20480), so either the frame count reported by the daemon is not the one
-backing the mapping on this device, or One UI sizes the cblk region differently. Start by logging the
-actual ashmem size next to the computed geometry on both devices and comparing — the OnePlus numbers
-are known-good, so the difference should be obvious. See `spike-audio-handoff.md` for the ring layout
-(`DATA_OFF=232`, `mFront`/`mRear` word offsets) that this arithmetic comes from.
+**Also fixed alongside it:** `DATA_OFF` was hardcoded to 232, which is `sizeof(audio_track_cblk_t)` on
+Android **13+** only — it is 228 on Android 12 and 224 on Android 11, and `minSdk` is 30. On those two
+releases the ring was being read misaligned rather than failing loudly. Now derived from
+`Build.VERSION.SDK_INT`.
+
+**Trap for whoever tests this:** the native drain rounds whatever frame count it is given up to a power
+of two and masks with it, so it must be passed `wrapFrames`, **not** `frameCount` — otherwise it
+recreates the oversized ring and reads out of bounds, with the Java-side check now passing. Both call
+sites were updated; a third caller added later would reintroduce the bug silently.
+
+**Still needs a Galaxy S24 FE** to confirm Resilient recording actually works there. Covered by unit
+tests including the exact S24 FE numbers, but no device has run it.
 
 ---
 

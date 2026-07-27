@@ -210,7 +210,7 @@ object HandoffReceiver {
         Thread {
             runCatching {
                 AudioHandoffNative.nativeDrainToPipe(
-                    cblkFdNum, geometry.cblkSize, geometry.frameCount, HandoffGeometry.DATA_OFF,
+                    cblkFdNum, geometry.cblkSize, geometry.wrapFrames, geometry.dataOff,
                     geometry.frameSize, HandoffGeometry.GUARD_FRAMES, writeFd, flag, MAX_SECONDS,
                 )
             }.onFailure { AppLogger.w(T, "handoff drain error: ${it.message}") }

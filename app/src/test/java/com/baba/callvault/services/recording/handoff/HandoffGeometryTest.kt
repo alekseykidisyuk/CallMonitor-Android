@@ -61,7 +61,7 @@ class HandoffGeometryTest {
         val end = geometry.ringEndOffset
 
         // Assert
-        assertEquals(HandoffGeometry.DATA_OFF + 4096L * 4, end)
+        assertEquals(geometry.dataOff + 4096L * 4, end)
     }
 
     // --- validation: accepted ---
@@ -83,24 +83,30 @@ class HandoffGeometryTest {
     // --- validation: rejected ---
 
     @Test
-    fun `rejects a ring one byte larger than the ashmem region`() {
-        // Arrange
-        val oneByteShort = HandoffGeometry.DATA_OFF + 4096 * 4 - 1
+    fun `a region one byte short clamps the ring instead of refusing it`() {
+        // This used to be refused, and refusing it is what stopped Resilient recording working on a
+        // Galaxy S24 FE. The reported count is not the ring's physical size, so the honest response is
+        // to believe the mapping and clamp — the smaller power of two — rather than throw the delivery
+        // away. What must never happen is reading past the end, asserted here directly.
+        // Sized off the geometry's own dataOff: under plain JUnit Build.VERSION.SDK_INT is 0, so the
+        // offset is the Android 11 value, and hardcoding 232 here quietly changes what is being tested.
+        val oneByteShort = realistic().dataOff + 4096 * 4 - 1
+        val geometry = realistic(frameCount = 4096, channels = 2, cblkSize = oneByteShort)
 
-        // Act
-        val error = realistic(frameCount = 4096, channels = 2, cblkSize = oneByteShort).validationError()
-
-        // Assert
-        assertNotNull("an over-long ring must be refused before it becomes a native offset", error)
-        assertTrue(error!!, error.contains("doesn't fit"))
+        assertNull("a clamped ring is usable, not an error", geometry.validationError())
+        assertEquals(2048, geometry.wrapFrames)
+        assertTrue("the ring must stay inside the mapping", geometry.ringEndOffset <= oneByteShort)
     }
 
     @Test
-    fun `rejects a frame count whose rounded-up ring overflows the region`() {
-        // frameCount 2049 rounds up to 4096 frames — the unrounded 2049 would have fit.
-        val sizedForUnrounded = HandoffGeometry.DATA_OFF + 2049 * 4
+    fun `a rounded-up count that overflows is clamped to what the region holds`() {
+        // frameCount 2049 rounds up to 4096 frames; the region was only sized for the unrounded 2049,
+        // so the usable ring is 2048 — and the read stays inside the mapping.
+        val sizedForUnrounded = realistic().dataOff + 2049 * 4
+        val geometry = realistic(frameCount = 2049, channels = 2, cblkSize = sizedForUnrounded)
 
-        assertNotNull(realistic(frameCount = 2049, channels = 2, cblkSize = sizedForUnrounded).validationError())
+        assertEquals(2048, geometry.wrapFrames)
+        assertTrue(geometry.ringEndOffset <= sizedForUnrounded)
     }
 
     @Test
@@ -153,5 +159,55 @@ class HandoffGeometryTest {
             3840,
             HandoffGeometry.of(frameCount = 3840, sampleRate = 48_000, channels = 2, cblkSize = 64 * 1024).frameCount,
         )
+    }
+
+    // --- the ring is bounded by the MAPPING, not by what the daemon reported ---
+
+    @Test
+    fun `ring is capped by what the shared memory can actually hold`() {
+        // The Galaxy S24 FE case: getBufferSizeInFrames() reported a count rounding to 8192 frames
+        // while AudioFlinger had allocated room for 4096. Trusting the report would read 12 KB past
+        // the end of the mapping; AudioFlinger allocates roundup(frameCount)*frameSize right after the
+        // control block, so the region's own size is the ground truth.
+        val g = HandoffGeometry(frameCount = 8192, sampleRate = 48_000, channels = 2, cblkSize = 20480)
+
+        assertEquals(4096, g.wrapFrames)
+        assertNull("a ring that fits must not be rejected", g.validationError())
+        assertTrue("the ring must end inside the mapping", g.ringEndOffset <= 20480)
+    }
+
+    @Test
+    fun `an honest report is left alone`() {
+        // Where the two agree — every OnePlus 12 delivery so far — nothing changes.
+        val g = realistic(frameCount = 3840, cblkSize = 64 * 1024)
+        assertEquals(4096, g.wrapFrames)
+        assertNull(g.validationError())
+    }
+
+    @Test
+    fun `never exceeds the reported count even when the mapping is huge`() {
+        // A roomy mapping must not inflate the ring past what the server actually uses.
+        val g = HandoffGeometry(frameCount = 2048, sampleRate = 48_000, channels = 2, cblkSize = 1 shl 20)
+        assertEquals(2048, g.wrapFrames)
+    }
+
+    @Test
+    fun `rejects a mapping with no usable ring`() {
+        // What a FAST record track looks like: its PCM lives in a separate pipe, so there is nothing
+        // usable after the control block and the offsets would point at whatever follows.
+        val g = HandoffGeometry(frameCount = 8192, sampleRate = 48_000, channels = 2, cblkSize = 300)
+        assertNotNull(g.validationError())
+    }
+
+    @Test
+    fun `the ring offset matches the control block size for this android version`() {
+        // 224 on Android 11, 228 on 12, 232 on 13+. minSdk is 30, so a hardcoded 232 was wrong on the
+        // two oldest supported releases — it would read the ring misaligned rather than fail loudly.
+        val expected = when {
+            android.os.Build.VERSION.SDK_INT >= 33 -> 232
+            android.os.Build.VERSION.SDK_INT >= 31 -> 228
+            else -> 224
+        }
+        assertEquals(expected, realistic().dataOff)
     }
 }

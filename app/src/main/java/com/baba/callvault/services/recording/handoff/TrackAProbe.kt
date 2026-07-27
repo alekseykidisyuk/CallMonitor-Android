@@ -140,7 +140,7 @@ object TrackAProbe {
         val drain = Thread {
             runCatching {
                 AudioHandoffNative.nativeDrainToPipe(
-                    cblk.fd, geometry.cblkSize, geometry.frameCount, HandoffGeometry.DATA_OFF,
+                    cblk.fd, geometry.cblkSize, geometry.wrapFrames, geometry.dataOff,
                     geometry.frameSize, HandoffGeometry.GUARD_FRAMES, writeFd, flag, seconds,
                 )
             }.onFailure { AppLogger.w(TAG, "drain failed: ${it.message}") }
