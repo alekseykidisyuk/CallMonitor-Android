@@ -106,13 +106,6 @@ object RecorderServerLauncher {
     private const val SHELL_READY_TIMEOUT_MS = 6_000L
 
     /**
-     * How long to wait for the loopback listener after Wireless debugging is switched off. Measured at
-     * **over 12 s** on a Galaxy S24 FE while `adbd` restarted; a shorter budget is what made the old
-     * code give up and re-enable Wireless debugging, restarting the loop.
-     */
-    private const val LOOPBACK_RETURN_TIMEOUT_MS = 20_000L
-
-    /**
      * Hard bound on the opportunistic USB-default refresh in [applyWdPolicy]. Generous for a local
      * `dumpsys` (normally milliseconds) but small enough that a wedged ADB stream cannot delay the start
      * of a recording — an unbounded read there loses the entire call.
@@ -157,16 +150,6 @@ object RecorderServerLauncher {
 
         val apk = context.applicationInfo.sourceDir
         val perAttemptMs = (timeoutMs / MAX_LAUNCH_ATTEMPTS).coerceAtLeast(2000L)
-
-        // Switch Wireless debugging off BEFORE the daemon exists, not after.
-        //
-        // Every `adbd` restart kills the daemon, because init tears down the service's process group
-        // AND its cgroup — `setsid` cannot escape that, which is why Shizuku dies the same way. So the
-        // daemon must never be running when a restart is provoked. Turning Wireless debugging off is
-        // exactly such a provocation; doing it after launching (as CallVault did up to 1.4.9) killed
-        // the daemon it had just started. Done here, the restart happens while there is nothing to
-        // lose, and the daemon is then spawned by the settled `adbd` and simply lives.
-        dropWirelessDebuggingBeforeLaunch(context)
 
         repeat(MAX_LAUNCH_ATTEMPTS) { attempt ->
             val n = attempt + 1
@@ -224,40 +207,6 @@ object RecorderServerLauncher {
      * transiently). This is unconditional: "WD only when needed" is CallVault's core behaviour, not a
      * user toggle. No-op if WD is already off or WRITE_SECURE_SETTINGS is missing.
      */
-    /**
-     * Turns Wireless debugging off ahead of the launch, when the loopback listener can carry `adbd`.
-     *
-     * Only meaningful with "Record without Wi-Fi" on: the listener set by `adb tcpip` keeps `adbd`
-     * reachable with no network and no Wireless debugging, which is the same trick Shizuku users apply
-     * by hand. It survives `adbd` restarts because it is a persisted property, so once Wireless
-     * debugging is off and the listener is back, nothing else will restart `adbd` and the daemon
-     * launched afterwards stays up.
-     *
-     * The wait has to be generous — the listener took **over 12 seconds** to come back on a Galaxy
-     * S24 FE, and treating that gap as a failure is precisely what made the old code re-enable Wireless
-     * debugging and loop. If it never returns, Wireless debugging goes back on and the caller proceeds
-     * exactly as before; a daemon with Wireless debugging on beats no daemon.
-     */
-    private fun dropWirelessDebuggingBeforeLaunch(context: Context) {
-        if (!AppPreferences(context).isOfflineRecordingEnabled()) return
-        if (!AdbShell.isWirelessDebuggingEnabled(context)) return
-        if (!AdbShell.isLoopbackArmed(context)) return
-
-        AppLogger.i(TAG, "Dropping Wireless debugging before launch; loopback will carry adbd")
-        if (!AdbShell.disableWirelessDebugging(context)) return
-
-        // adbd restarts on the way down; wait for the loopback listener to answer again.
-        if (AdbShell.forceReconnect(context) &&
-            AdbShell.waitForShellReady(context, LOOPBACK_RETURN_TIMEOUT_MS)
-        ) {
-            AppLogger.i(TAG, "Loopback answered with Wireless debugging off; launching over it")
-            return
-        }
-
-        AppLogger.w(TAG, "Loopback did not return within ${LOOPBACK_RETURN_TIMEOUT_MS}ms; keeping Wireless debugging on")
-        AdbShell.enableWirelessDebugging(context)
-    }
-
     private fun applyWdPolicy(context: Context) {
         // We still hold the ADB shell here (before WD is turned off) — opportunistically refresh the
         // USB-default cache that drives the "locking the screen may stop recording" warning.
