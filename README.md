@@ -48,7 +48,11 @@ You pair **once**; after that it's hands-free.
 
 After a one-time pairing, CallVault runs a **persistent privileged daemon** — a detached `app_process` under the shell user, in the spirit of Shizuku. Recording commands flow to it over **binder IPC**, so no ADB connection is needed at record time.
 
-- **Wireless Debugging stays on while CallVault is ready.** Android shuts `adbd` down when its last connection is removed, and the daemon runs inside it — so switching Wireless Debugging off stops the daemon too. Measured on both a OnePlus 12 and a Galaxy S24 FE. Enabling **USB debugging** gives `adbd` a second connection and CallVault then switches Wireless Debugging off by itself. You never toggle anything manually after the first pair.
+- **Wireless Debugging stays on while CallVault is ready — unless you enable USB debugging.** Android shuts `adbd` down when its last connection is removed, and the daemon runs inside it, so switching Wireless Debugging off stops the daemon too. Measured on both a OnePlus 12 and a Galaxy S24 FE.
+
+  **Turning on USB debugging is the way to get Wireless Debugging off.** No cable is needed — simply having it enabled keeps `adbd` running, and CallVault then switches Wireless Debugging off by itself. It is also the better switch to leave on: unlike Wireless Debugging it opens **no network port**. This is the same trade Shizuku makes; its own manager silently enables USB debugging for exactly this reason.
+
+  Do **not** turn USB debugging back off while Wireless Debugging is off — that leaves `adbd` with no connection at all and stops the daemon. CallVault watches for this and switches Wireless Debugging back on, but a call arriving in that gap can still be missed.
   > Earlier versions of this README said the daemon *survived* Wireless Debugging being turned off, and CallVault tried to turn it off on that basis. That was wrong on every device tested, and it caused a start-up loop; since 1.4.9 CallVault does not try. Getting back to "off" without USB debugging is on the [roadmap](#roadmap).
 - Call audio is captured by the daemon through a **direct `AudioRecord` path** and muxed into a file you own (via the Storage Access Framework) — on the device and/or a cloud folder you pick through the system file picker. `scrcpy-server` is launched only as a fallback, when the direct path can't handle the chosen source or codec on your device.
 
@@ -184,18 +188,21 @@ may turn out not to be possible — this is what is actually being worked on, no
 - **Turn cellular recording off independently** — today the automatic rules cover carrier calls; VoIP is
   a separate opt-in. Someone who only wants app calls recorded should be able to say so.
 
-**Getting Wireless Debugging back off**
+**Getting Wireless Debugging off**
 
-Since 1.4.9 it stays on while CallVault is ready, because switching it off stops the helper. Three
-routes, roughly in order of how promising they look:
+**Enabling USB debugging already does this today** — see [How it works](#how-it-works). The remaining
+work is to make it obvious rather than something you have to know:
 
-- **Hand the helper over to a connection that outlives the switch** — start it over the loopback
-  listener *after* Wireless Debugging is already off, instead of before. Needs "Record without Wi-Fi".
-- **Make the helper genuinely outlive `adbd`** — Shizuku's server appears to manage this, so the
-  technique is worth comparing against ours. This would fix it for everyone, with no extra settings.
-- **Shizuku support** — let people who already run Shizuku use it instead of CallVault's own setup, as
-  [requested](https://github.com/RikkaApps/Shizuku). Optional, alongside the built-in method, not
-  replacing it.
+- **Offer it in the app** — explain the trade and, with your agreement, enable USB debugging so
+  Wireless Debugging can be switched off. Shizuku's manager does this silently; asking first is better.
+- **Adopt `adb_allowed_connection_time = 0`** — the documented fix for ADB's authorization timeout,
+  which Shizuku sets for the same reason.
+
+Running with *neither* switch enabled is **not possible** without root: `adbd` does not exist without
+one of them, and a process started by `adb` is killed with it (Android kills the service's cgroup, which
+`setsid` cannot escape — Shizuku's maintainer calls this "work as intended… nothing we can do"). The
+only route that removes the switch entirely is not needing the daemon at call time — Track A in the
+dev notes.
 
 **Reliability and honesty about it**
 

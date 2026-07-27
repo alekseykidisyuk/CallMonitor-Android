@@ -14,12 +14,14 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.database.ContentObserver
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.provider.Settings
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -94,6 +96,33 @@ class DaemonKeepAliveService : Service() {
         RecorderConnection.service?.asBinder()?.pingBinder() == true
     }.getOrDefault(false)
 
+    /**
+     * Watches "USB debugging" so the daemon never silently loses its last way in.
+     *
+     * `adbd` only runs while USB debugging or Wireless debugging is enabled. When USB debugging is on,
+     * CallVault switches Wireless debugging off — correctly, since `adbd` stays up. But if the user then
+     * turns USB debugging off, BOTH are off: `adbd` stops, the daemon dies with it, and nothing notices
+     * until a call is missed. That is not hypothetical — it cost a real outgoing call, where the cold
+     * start took 18.3 s against a 15 s call and the recording never began. Shizuku's own wiki describes
+     * users doing exactly this, because some banking apps demand USB debugging be off.
+     *
+     * So the policy is re-evaluated when the switches change, not only when the daemon launches.
+     */
+    private val usbDebuggingObserver = object : ContentObserver(watchdogHandler) {
+        override fun onChange(selfChange: Boolean) {
+            if (AdbShell.isUsbDebuggingEnabled(applicationContext)) return
+            if (AdbShell.isWirelessDebuggingEnabled(applicationContext)) return
+
+            AppLogger.w(TAG, "USB debugging switched off and Wireless debugging is off — adbd has no transport; restoring")
+            Thread {
+                runCatching {
+                    AdbShell.enableWirelessDebugging(applicationContext)
+                    RecorderServerLauncher.ensureServerRunning(applicationContext)
+                }.onFailure { AppLogger.w(TAG, "Could not restore a transport: ${it.message}") }
+            }.start()
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         getSystemService(NotificationManager::class.java).createNotificationChannel(
@@ -103,6 +132,12 @@ class DaemonKeepAliveService : Service() {
                 setSound(null, null)
             },
         )
+
+        runCatching {
+            contentResolver.registerContentObserver(
+                Settings.Global.getUriFor("adb_enabled"), false, usbDebuggingObserver,
+            )
+        }.onFailure { AppLogger.w(TAG, "Could not watch USB debugging: ${it.message}") }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -231,6 +266,7 @@ class DaemonKeepAliveService : Service() {
     }
 
     override fun onDestroy() {
+        runCatching { contentResolver.unregisterContentObserver(usbDebuggingObserver) }
         runCatching { voipDetector.stop() }
         watchdogHandler.removeCallbacks(watchdog)
         RecorderConnection.onDeath = null
