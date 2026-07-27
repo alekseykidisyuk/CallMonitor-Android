@@ -8,6 +8,7 @@
 
 package com.baba.callvault.ui.screens
 
+import android.provider.Settings
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -61,6 +62,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.annotation.StringRes
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.data.RetentionPeriod
@@ -103,6 +105,7 @@ import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.WifiOff
 import com.baba.callvault.ui.common.OfflineDialogMode
@@ -1022,6 +1025,8 @@ private fun ExperimentalSection(expanded: Boolean, onToggle: () -> Unit) {
         SettingsDivider()
         OfflineRecordingToggle()
         SettingsDivider()
+        UsbDebuggingToggle()
+        SettingsDivider()
         UsbDefaultConfigRow()
 
         SettingsSubHeader(stringResource(R.string.settings_subsection_voip))
@@ -1151,6 +1156,45 @@ private fun HandoffPersistToggle() {
             prefs.setHandoffPersistEnabled(turnOn)
         },
     )
+}
+
+
+/**
+ * Turns on **USB debugging**, which is what lets CallVault switch Wireless debugging off.
+ *
+ * `adbd` runs only while USB debugging or Wireless debugging is enabled, and CallVault's helper lives
+ * inside it — so with neither, there is no helper (measured on a OnePlus 12 and a Galaxy S24 FE; see the
+ * README). USB debugging is the better of the two to leave on: no cable is needed, and unlike Wireless
+ * debugging it opens **no network port**. Shizuku makes the same trade, its manager just does it
+ * silently; asking is better.
+ *
+ * Turning it back off is allowed and honest about the consequence — Wireless debugging comes back on,
+ * because otherwise the helper would have no way in at all.
+ */
+@Composable
+private fun UsbDebuggingToggle() {
+    val context = LocalContext.current
+    var enabled by remember { mutableStateOf(AdbShell.isUsbDebuggingEnabled(context)) }
+    var failed by remember { mutableStateOf(false) }
+
+    SettingsToggleRow(
+        icon = Icons.Filled.Usb,
+        label = stringResource(R.string.settings_usb_debugging_label),
+        description = stringResource(R.string.settings_usb_debugging_description),
+        checked = enabled,
+        onCheckedChange = { turnOn ->
+            val ok = runCatching {
+                Settings.Global.putInt(context.contentResolver, "adb_enabled", if (turnOn) 1 else 0)
+            }.isSuccess
+            failed = !ok
+            if (ok) enabled = turnOn
+        },
+    )
+    when {
+        failed -> SettingsHint(stringResource(R.string.settings_usb_debugging_failed))
+        enabled -> SettingsHint(stringResource(R.string.settings_usb_debugging_on_hint))
+        else -> SettingsHint(stringResource(R.string.settings_usb_debugging_recommended))
+    }
 }
 
 /**

@@ -3,6 +3,28 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.5.0] — 2026-07-27
+
+The headline: **you can now switch Wireless debugging off** — by turning on USB debugging instead.
+
+### Added
+- **USB debugging is now offered in the app**, under Settings → Experimental and in the setup
+  checklist, marked *Recommended*. Turning it on is what lets CallVault switch **Wireless debugging
+  off** and keep it off. No cable is needed, and unlike Wireless debugging it opens **no network port**,
+  so it is the better of the two to leave enabled. It is genuinely optional — recording works either way.
+
+### Fixed
+- **CallVault could be left unable to record after you turned USB debugging off.** With USB debugging
+  on, CallVault switches Wireless debugging off; if you then turned USB debugging back off, *both* were
+  off, Android stopped its debugging service, and CallVault's helper went with it — silently, until a
+  call was missed. It cost a real call: the helper needed 18 seconds to come back and the call lasted
+  15. CallVault now notices immediately and switches Wireless debugging back on.
+
+### Note
+- Running with **neither** switch enabled is not possible without root: Android's debugging service
+  does not exist without one of them, and a helper started through it is stopped along with it. This is
+  the same limit Shizuku hits — its maintainer describes it as "work as intended… nothing we can do".
+
 ## [1.4.9] — 2026-07-26
 
 ### Fixed

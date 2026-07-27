@@ -89,6 +89,8 @@
     <string name="permission_call_log_label">Call Log</string>
     <string name="permission_call_log_description">Required so we receive the unredacted phone number on phone state events.</string>
 
+    <string name="permission_usb_debugging_label">USB debugging</string>
+    <string name="permission_usb_debugging_description">Recommended. Lets CallVault switch Wireless debugging off after setup. No cable needed.</string>
     <string name="permission_battery_label">Battery Optimization</string>
     <string name="permission_battery_description">Keeps the app alive when it needs and allow to bypass possible background startup limitations. On some phones (e.g. OnePlus/OxygenOS) also set this app\'s battery mode to \"Allow background activity\".</string>
     <string name="permission_battery_oem_hint">Battery exemption set. Now on this App info page, tap \"Battery\", then choose \"Allow background activity\" (Unrestricted) — required so recording survives in the background on OnePlus/OxygenOS.</string>
@@ -140,6 +142,11 @@
     <string name="voip_one_sided_warning">Only your side of that app call was recorded — the other app does not allow its call audio to be captured.</string>
     <string name="voip_recording_unavailable">Couldn\'t enable on this device — VoIP recording isn\'t available here.</string>
     <string name="voip_recording_names_hint">Contact names come from the calling app\'s own call notification. If notifications are turned off for that app, its recordings are saved without a name.</string>
+    <string name="settings_usb_debugging_label">USB debugging</string>
+    <string name="settings_usb_debugging_description">Recommended. Lets CallVault switch Wireless debugging off. No cable needed, and unlike Wireless debugging it opens no network port.</string>
+    <string name="settings_usb_debugging_recommended">Wireless debugging has to stay on without this. Turning this on lets CallVault switch it off.</string>
+    <string name="settings_usb_debugging_on_hint">CallVault can keep Wireless debugging off. Don\'t turn this back off — that would leave no way in, so Wireless debugging comes back on.</string>
+    <string name="settings_usb_debugging_failed">Couldn\'t change it — CallVault needs the permission it gets during setup.</string>
     <string name="notif_wd_required">Wireless debugging has to stay on for CallVault to stay ready on this phone. Turn on “Record without Wi-Fi” in Settings ▸ Experimental (or enable USB debugging) and CallVault will switch it off again.</string>
     <string name="settings_section_debug">Debug</string>
     <string name="settings_section_security">Security</string>

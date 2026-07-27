@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryStd
+import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Notifications
@@ -312,6 +313,21 @@ fun PermissionsContent(
                         label = stringResource(R.string.permission_battery_label),
                         description = stringResource(R.string.permission_battery_description),
                         granted = status.batteryExempted
+                    )
+                }
+                // Recommended, not required: with USB debugging on, CallVault can switch Wireless
+                // debugging off — `adbd` needs one of the two, and this is the one that opens no
+                // network port. Shown as "Recommended" rather than "Required" so nobody is misled
+                // into thinking recording depends on it.
+                item {
+                    val usbOn = AdbShell.isUsbDebuggingEnabled(LocalContext.current)
+                    PermissionCard(
+                        icon = Icons.Default.Usb,
+                        label = stringResource(R.string.permission_usb_debugging_label),
+                        description = stringResource(R.string.permission_usb_debugging_description),
+                        granted = usbOn,
+                        pillText = if (usbOn) null else stringResource(R.string.general_recommended),
+                        pillTone = if (usbOn) null else CvTone.Neutral,
                     )
                 }
             }

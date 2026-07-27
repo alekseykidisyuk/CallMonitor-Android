@@ -44,6 +44,9 @@
 
     <!-- Post-update note: one entry per release, newest first. Keep in sync with CHANGELOG.md. -->
     <string name="home_whatsnew_settings_cta">Open Settings</string>
+    <string name="whatsnew_150_title">Switch Wireless debugging off</string>
+    <string name="whatsnew_150_body">Turning on USB debugging lets CallVault switch Wireless debugging off and keep it off. No cable is needed, and unlike Wireless debugging it opens no network port — so it is the safer of the two to leave on. Optional: recording works either way.\n\nAlso fixed: turning USB debugging off could leave CallVault unable to record, without saying so.</string>
+    <string name="whatsnew_150_where">Settings ▸ Experimental ▸ USB debugging</string>
     <string name="whatsnew_148_title">More reliable start-up</string>
     <string name="whatsnew_148_body">On some phones CallVault could keep switching Wireless debugging on and off without ever becoming ready to record. That is fixed. Where Wireless debugging is the only way in, CallVault now leaves it on and tells you which setting would let it be switched off again.\n\nAlso fixed: an app call could report a failure even though it recorded fine, and could be labelled with the wrong app.</string>
     <string name="whatsnew_147_title">Record app calls (VoIP)</string>
