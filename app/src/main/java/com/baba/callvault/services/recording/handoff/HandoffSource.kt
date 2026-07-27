@@ -51,7 +51,21 @@ object HandoffSource {
      * the remote party's downlink on the other) — and fall back to mono. The ACTUAL channel count and
      * frame count are part of the delivery, so the receiver adapts to whatever the device gave us.
      */
-    fun deliverToApp(authority: String, sourceCliKey: String, sampleRate: Int, preferredChannels: Int): Boolean = runCatching {
+    /**
+     * @param startTrack when false the track is handed over **stopped**, for the app to start itself.
+     *   That is the Track A shape: capture permission is checked at creation, so a track created once
+     *   by the privileged daemon may be run per call by the app with no daemon alive. A track left
+     *   *started* across a call boundary is useless — the vendor HAL pins its use-case at
+     *   `start_input_stream()` and it stays silent for the whole call (measured), so "held" has to mean
+     *   "held stopped".
+     */
+    fun deliverToApp(
+        authority: String,
+        sourceCliKey: String,
+        sampleRate: Int,
+        preferredChannels: Int,
+        startTrack: Boolean = true,
+    ): Boolean = runCatching {
         val rate = if (sampleRate > 0) sampleRate else DEFAULT_SAMPLE_RATE
         val source = androidAudioSourceForKey(sourceCliKey)
             ?: run { AppLogger.w(T, "deliver: source '$sourceCliKey' has no direct AudioSource"); return@runCatching false }
@@ -79,8 +93,9 @@ object HandoffSource {
             AppLogger.w(T, "deliver: $sourceCliKey AudioRecord not initialized (stereo or mono)")
             return@runCatching false
         }
-        AppLogger.i(T, "deliver: handoff source=$sourceCliKey capture channels=$channelCount rate=$rate")
-        record.startRecording()
+        AppLogger.i(T, "deliver: handoff source=$sourceCliKey capture channels=$channelCount rate=$rate startTrack=$startTrack")
+        if (startTrack) record.startRecording()
+        else AppLogger.i(T, "deliver: handing the track over STOPPED — the app will start it (Track A)")
         heldRecord = record
 
         // The native android::AudioRecord* lives in an obfuscation-proof-but-unnamed long field; pick the

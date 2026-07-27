@@ -17,6 +17,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.Process
 import com.baba.callvault.services.recording.handoff.HandoffReceiver
+import com.baba.callvault.services.recording.handoff.TrackAProbe
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -56,6 +57,16 @@ class RecorderBinderProvider : ContentProvider() {
         when (method) {
             METHOD_SEND_BINDER -> handleSendBinder(extras)
             METHOD_SEND_HANDOFF -> handleSendHandoff(extras)
+            // Diagnostic only, and deliberately shell/self-only: it runs IN THE APP PROCESS, which is
+            // the whole point — the question is what the APP's uid is allowed to do.
+            METHOD_TRACK_A_PROBE -> {
+                val uid = Binder.getCallingUid()
+                if (uid != Process.SHELL_UID && uid != Process.SYSTEM_UID && uid != Process.myUid()) {
+                    AppLogger.w(TAG, "trackAProbe rejected: untrusted caller uid=$uid")
+                    return Bundle()
+                }
+                return TrackAProbe.run()
+            }
             else -> AppLogger.w(TAG, "Provider.call ignored method='$method'")
         }
         return Bundle()
@@ -144,6 +155,9 @@ class RecorderBinderProvider : ContentProvider() {
 
         /** Delivery of a handed-off capture (IAudioRecord binder + cblk fd); see HandoffReceiver. */
         const val METHOD_SEND_HANDOFF = "sendHandoff"
+
+        /** Diagnostic entry point for the Track A permission probe. Not part of normal operation. */
+        const val METHOD_TRACK_A_PROBE = "trackAProbe"
 
         /** Bundle key for the [BinderContainer]; analogous to ShizukuProvider.EXTRA_BINDER. */
         const val EXTRA_BINDER = "com.baba.callvault.recorder.extra.BINDER"

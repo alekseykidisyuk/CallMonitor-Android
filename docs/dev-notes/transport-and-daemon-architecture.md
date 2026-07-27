@@ -115,7 +115,22 @@ The daemon becomes a **once-per-boot track factory**. Its death stops mattering,
   once per boot, which still needs `adbd`, which still needs USB debugging or Wireless debugging.
 - **It does not retire the loopback.** Re-creating an evicted track needs the daemon again.
 
-### The open question — and it decides everything
+### ANSWERED 2026-07-27 — the app CAN start a track the daemon created
+
+`content call --method trackAProbe` on a OnePlus 12 returned `started=true`: AudioFlinger accepted
+`IAudioRecord.start()` from the app's unprivileged uid, on a track created by the shell-uid daemon.
+Capture permission really is bound to creation, not to the caller of `start`.
+
+So Track A is viable in principle: daemon creates once per boot, app runs it per call.
+
+**Not yet proven, and it is what matters next:** that *audio actually flows* through that
+app-started track with the daemon **dead**. `started=true` means the binder transaction was accepted
+and returned no error — it does not by itself prove the transaction was `start` (the AIDL codes are
+assumed from declaration order) nor that samples arrive. Both are settled by one measurement: kill the
+daemon by pid, place a call, drain the ring, compare dBFS against a control. Do not build on this until
+that runs.
+
+### The original open question, for the record
 
 **Can the *app* call `start()` on the handed-off `IAudioRecord`, with the daemon dead?**
 

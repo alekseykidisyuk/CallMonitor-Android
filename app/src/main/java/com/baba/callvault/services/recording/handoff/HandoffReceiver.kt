@@ -71,6 +71,13 @@ object HandoffReceiver {
      * Holds the binder + cblk and starts the drain + encode into the pending target's output fd.
      */
     fun onReceived(binder: IBinder?, cblkFd: ParcelFileDescriptor?, frameCount: Int, sampleRate: Int, channels: Int) {
+        // A probe run borrows the delivery: it is measuring whether the app may START a handed-over
+        // track, not recording anything, so the normal drain must not begin.
+        if (TrackAProbe.isArmed && binder != null) {
+            TrackAProbe.onHandoff(binder)
+            return
+        }
+
         val target = pending
         if (target == null) {
             AppLogger.w(T, "onReceived with no pending target — ignoring handoff")

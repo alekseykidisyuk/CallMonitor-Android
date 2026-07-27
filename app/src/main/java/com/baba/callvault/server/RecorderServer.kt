@@ -328,6 +328,25 @@ object RecorderServer {
 
         // Releases the daemon's held handoff AudioRecord (the app owns capture after the handoff; this
         // just frees the daemon's now-unneeded input so the next call can create a fresh one).
+        override fun startHandoffHeld(source: String?, sampleRate: Int, channels: Int): Boolean {
+            AppLogger.i(TAG, "startHandoffHeld source=$source rate=$sampleRate channels=$channels")
+            // Same lazy load the normal handoff does — the binder + cblk extraction is native, and
+            // without this the whole path fails with UnsatisfiedLinkError at the first native call.
+            if (!AudioHandoffNative.ensureLoadedFromApk(apkPath)) {
+                AppLogger.e(TAG, "startHandoffHeld: libaudiohandoff.so unavailable in the daemon")
+                return false
+            }
+            return runCatching {
+                HandoffSource.deliverToApp(
+                    authority = RecorderBinderProvider.AUTHORITY,
+                    sourceCliKey = source ?: "voice-call",
+                    sampleRate = sampleRate,
+                    preferredChannels = channels,
+                    startTrack = false,
+                )
+            }.onFailure { AppLogger.w(TAG, "startHandoffHeld failed: ${it.message}") }.getOrDefault(false)
+        }
+
         override fun stopHandoff() {
             AppLogger.i(TAG, "stopHandoff requested")
             runCatching { HandoffSource.releaseHeld() }

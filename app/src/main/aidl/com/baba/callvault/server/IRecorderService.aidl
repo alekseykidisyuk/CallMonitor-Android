@@ -120,6 +120,15 @@ interface IRecorderService {
      */
     String voipCallerName(String packageName);
 
+    /**
+     * Creates a capture track and hands it over **stopped**, for the app to start itself.
+     *
+     * Track A: capture permission is checked when the track is created, not when it is started, so a
+     * track created once here may be run per call by the app with no daemon alive. Whether AudioFlinger
+     * accepts a start from the app's uid is the open question this exists to answer.
+     */
+    boolean startHandoffHeld(String source, int sampleRate, int channels);
+
     /** Releases the daemon's held handoff AudioRecord (frees the capture input). Idempotent. */
     void stopHandoff();
 }
