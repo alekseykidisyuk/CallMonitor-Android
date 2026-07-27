@@ -27,7 +27,6 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyLauncher
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.services.recording.handoff.HandoffReceiver
-import com.baba.callvault.services.recording.handoff.HeldTrackStore
 import com.baba.callvault.services.recording.handoff.HandoffSource
 import com.baba.callvault.system.storage.SafHelper
 import com.baba.callvault.integrations.scrcpy.ServerExtractor
@@ -264,19 +263,6 @@ class AudioRecordingEngine {
         outputPfd = safResult.descriptor
         stagingFile = safResult.stagingFile
 
-        // Instant recording (Track A) opt-in: when a capture track is ALREADY held, start it right here
-        // and skip the daemon entirely — that is the whole point, since bringing a dead daemon up costs
-        // ~18s and a short call is over before it finishes. Tried first because it is the fast path; if
-        // nothing usable is held (never armed, or the track was evicted) it falls straight through to
-        // the paths below and the call is still recorded.
-        if (preferences.isInstantRecordingEnabled() && audioSourceEnum == ScrcpyAudioSource.VOICE_CALL &&
-            startInstantPipeline(codecEnum, bitRate)
-        ) {
-            handoffMode = true
-            currentCodecEnum = codecEnum
-            return
-        }
-
         // Resilient recording (Option B) opt-in: when ENABLED and the source can be captured via a Java
         // AudioRecord (voice-call/mic/voice-communication/…), use the handoff pipeline — the daemon hands
         // its live capture to the app, which reads the ring + encodes, so a recording SURVIVES the daemon
@@ -426,42 +412,6 @@ class AudioRecordingEngine {
      * @return true if the handoff established (capture is live); false → the caller falls back to the
      *         daemon path so a call is never lost. Never throws except the pre-start cancellation.
      */
-    /**
-     * Starts capture from the track [HeldTrackStore] is already holding — no daemon, no ADB.
-     *
-     * Returns false for any reason at all (nothing held, evicted, refused, no fd), leaving the caller
-     * to use the normal paths. A missed fast path costs a slower start; a wrongly-claimed one would
-     * cost the recording, so this errs entirely toward falling back.
-     */
-    private fun startInstantPipeline(codecEnum: ScrcpyAudioCodec, bitRate: Int): Boolean {
-        val (binder, cblkFd, geometry) = HeldTrackStore.held() ?: run {
-            AppLogger.i(TAG, "Instant: no track held; using the normal path")
-            return false
-        }
-        val outFd = outputPfd?.fileDescriptor ?: run {
-            AppLogger.w(TAG, "Instant: no output fd; falling back")
-            return false
-        }
-        AppLogger.i(TAG, "Instant: starting the held track (no daemon involved)")
-        val live = HandoffReceiver.startHeld(
-            HandoffReceiver.Target(
-                outputFd = outFd,
-                mime = codecEnum.mimeType,
-                muxerFormat = codecEnum.outputFormat,
-                bitRate = bitRate,
-                downmixToMono = true,
-            ),
-            binder, cblkFd, geometry,
-        )
-        if (live) {
-            handoffRecording = true
-            AppLogger.i(TAG, "Instant: capture live — the call started recording without a daemon")
-        } else {
-            AppLogger.w(TAG, "Instant: held track did not start; falling back to the daemon path")
-        }
-        return live
-    }
-
     private fun startHandoffPipeline(
         context: Service,
         audioSourceEnum: ScrcpyAudioSource,

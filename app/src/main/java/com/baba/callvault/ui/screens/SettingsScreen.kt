@@ -63,7 +63,6 @@ import kotlinx.coroutines.withContext
 import androidx.annotation.StringRes
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.integrations.adb.AdbShell
-import com.baba.callvault.services.recording.handoff.HeldTrackStore
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.data.RetentionPeriod
@@ -106,7 +105,6 @@ import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.WifiOff
@@ -1023,8 +1021,6 @@ private fun BugReportSection(
 private fun ExperimentalSection(expanded: Boolean, onToggle: () -> Unit) {
     SettingsSection(title = stringResource(R.string.settings_section_experimental), expanded = expanded, onToggle = onToggle) {
         SettingsSubHeader(stringResource(R.string.settings_subsection_resilience))
-        InstantRecordingToggle()
-        SettingsDivider()
         HandoffPersistToggle()
         SettingsDivider()
         OfflineRecordingToggle()
@@ -1162,41 +1158,6 @@ private fun HandoffPersistToggle() {
     )
 }
 
-
-/**
- * Holds a capture track ready so a call does not wait for the background helper.
- *
- * Normally a recording cannot start until the helper is running, and reviving a dead one takes about
- * 18 seconds — longer than a short call, which is how one was lost. With this on, the track is prepared
- * in advance and the call only has to start it.
- *
- * Off by default and experimental, because it changes how recording *starts*: a regression here costs
- * whole calls rather than degrading quality. Switching it off restores the existing behaviour exactly.
- */
-@Composable
-private fun InstantRecordingToggle() {
-    val context = LocalContext.current
-    val prefs = remember { AppPreferences(context) }
-    var enabled by remember { mutableStateOf(prefs.isInstantRecordingEnabled()) }
-
-    SettingsToggleRow(
-        icon = Icons.Filled.Bolt,
-        label = stringResource(R.string.settings_instant_recording_label),
-        description = stringResource(R.string.settings_instant_recording_description),
-        checked = enabled,
-        onCheckedChange = { turnOn ->
-            enabled = turnOn
-            prefs.setInstantRecordingEnabled(turnOn)
-            // Arming needs the helper, so do it now rather than when a call arrives — that timing is
-            // the entire feature. Releasing on the way off frees the capture input immediately.
-            Thread {
-                runCatching {
-                    if (turnOn) HeldTrackStore.arm(48_000, 2) else HeldTrackStore.release()
-                }
-            }.apply { isDaemon = true }.start()
-        },
-    )
-}
 
 /**
  * Turns on **USB debugging**, which is what lets CallVault switch Wireless debugging off.

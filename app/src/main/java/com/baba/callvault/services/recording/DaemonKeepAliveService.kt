@@ -28,7 +28,6 @@ import androidx.core.content.ContextCompat
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.integrations.adb.AdbShell
-import com.baba.callvault.services.recording.handoff.HeldTrackStore
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.WirelessDebuggingPolicy
 import com.baba.callvault.server.RecorderConnection
@@ -109,26 +108,6 @@ class DaemonKeepAliveService : Service() {
      *
      * So the policy is re-evaluated when the switches change, not only when the daemon launches.
      */
-    /**
-     * Whether calls can be recorded **without a daemon at all**, because a capture track is already
-     * held.
-     *
-     * When this is true, the usual rescue — switch Wireless debugging back on so `adbd` survives and
-     * the daemon can be relaunched — is not just unnecessary, it is wrong: there is nothing to save,
-     * and it turns a debugging switch back on that the user is entitled to leave off.
-     *
-     * Qualified deliberately. A held track covers **carrier** calls only; VoIP recording still needs the
-     * daemon at call time to arm its policy and run the capture, so with that feature on the daemon
-     * remains a live dependency. And the moment the track stops being usable — eviction, app restart —
-     * this goes false and the normal rescue resumes on the next check.
-     */
-    private fun heldTrackCoversCalls(): Boolean {
-        val prefs = AppPreferences(this)
-        if (!prefs.isInstantRecordingEnabled()) return false
-        if (prefs.isVoipRecordingEnabled()) return false
-        return HeldTrackStore.isUsable()
-    }
-
     private val usbDebuggingObserver = object : ContentObserver(watchdogHandler) {
         override fun onChange(selfChange: Boolean) {
             val usbOn = AdbShell.isUsbDebuggingEnabled(applicationContext)
@@ -139,10 +118,6 @@ class DaemonKeepAliveService : Service() {
             // broken even when it eventually corrects itself.
             val reason = when {
                 // Last way in just disappeared — adbd is going down and the daemon with it.
-                !usbOn && !wdOn && heldTrackCoversCalls() -> {
-                    AppLogger.i(TAG, "Both debugging switches off, but a capture track is held — leaving them off")
-                    return
-                }
                 !usbOn && !wdOn -> "USB debugging switched off and Wireless debugging is off — adbd has no transport; restoring"
                 // USB debugging now holds adbd up, so Wireless debugging is no longer needed. Dropping
                 // it here is safe: with USB debugging enabled, toggling Wireless debugging does not
@@ -280,8 +255,7 @@ class DaemonKeepAliveService : Service() {
             // debugging was switched off: twenty minutes down, and it only came back when the app was
             // opened by hand.
             if (!AdbShell.isUsbDebuggingEnabled(applicationContext) &&
-                !AdbShell.isWirelessDebuggingEnabled(applicationContext) &&
-                !heldTrackCoversCalls()
+                !AdbShell.isWirelessDebuggingEnabled(applicationContext)
             ) {
                 AppLogger.w(TAG, "keep-alive: adbd has no transport — switching Wireless debugging back on")
                 runCatching { AdbShell.enableWirelessDebugging(applicationContext) }
@@ -333,11 +307,7 @@ class DaemonKeepAliveService : Service() {
         }
     }
 
-    private fun buildNotification(daemonReady: Boolean): Notification {
-        // A held capture track makes the app ready for calls whether or not a daemon exists, so
-        // readiness is no longer the same question as "is the daemon alive". Without this the
-        // notification would sit on "starting up" indefinitely while recording works perfectly.
-        val ready = daemonReady || heldTrackCoversCalls()
+    private fun buildNotification(ready: Boolean): Notification {
         val voipRecording = runCatching { voipDetector.isRecording }.getOrDefault(false)
         val baseText = when {
             voipRecording -> getString(R.string.notif_voip_recording_text)

@@ -142,8 +142,6 @@
     <string name="voip_one_sided_warning">Only your side of that app call was recorded — the other app does not allow its call audio to be captured.</string>
     <string name="voip_recording_unavailable">Couldn\'t enable on this device — VoIP recording isn\'t available here.</string>
     <string name="voip_recording_names_hint">Contact names come from the calling app\'s own call notification. If notifications are turned off for that app, its recordings are saved without a name.</string>
-    <string name="settings_instant_recording_label">Instant recording</string>
-    <string name="settings_instant_recording_description">Experimental. Prepares recording in advance so a call starts recording immediately instead of waiting for the background helper. If the prepared capture is lost, CallVault falls back to the normal path.</string>
     <string name="settings_usb_debugging_label">USB debugging</string>
     <string name="settings_usb_debugging_description">Recommended. Lets CallVault switch Wireless debugging off. No cable needed, and unlike Wireless debugging it opens no network port.</string>
     <string name="settings_usb_debugging_recommended">Wireless debugging has to stay on without this. Turning this on lets CallVault switch it off.</string>
