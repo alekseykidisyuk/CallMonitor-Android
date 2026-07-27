@@ -200,6 +200,20 @@ class DaemonKeepAliveService : Service() {
         rewarming = true
         Thread {
             AppLogger.i(TAG, "keep-alive: daemon down — relaunching (force=$force offline=$offline)")
+            // Restore a transport FIRST, explicitly. `adbd` only runs while USB debugging or Wireless
+            // debugging is enabled; with neither there is nothing to launch the daemon over, and the
+            // connect path only rediscovers that after ~12 s of failing loopback probes. Turning
+            // Wireless debugging back on here is the difference between recovering in seconds and
+            // sitting on "starting up" indefinitely — which is what happened on a OnePlus 12 after USB
+            // debugging was switched off: twenty minutes down, and it only came back when the app was
+            // opened by hand.
+            if (!AdbShell.isUsbDebuggingEnabled(applicationContext) &&
+                !AdbShell.isWirelessDebuggingEnabled(applicationContext)
+            ) {
+                AppLogger.w(TAG, "keep-alive: adbd has no transport — switching Wireless debugging back on")
+                runCatching { AdbShell.enableWirelessDebugging(applicationContext) }
+                    .onFailure { AppLogger.w(TAG, "keep-alive: could not re-enable Wireless debugging: ${it.message}") }
+            }
             val ok = runCatching { RecorderServerLauncher.ensureServerRunning(applicationContext) }
                 .onFailure { AppLogger.w(TAG, "keep-alive relaunch failed: ${it.message}") }
                 .getOrDefault(false)
