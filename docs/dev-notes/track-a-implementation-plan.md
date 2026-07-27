@@ -3,8 +3,22 @@
 **Goal:** take the daemon off the call path. A capture track is created once while privileged, handed to
 the app, and simply **started** when a call begins — so a call no longer waits for a daemon launch.
 
-**Why it is worth doing:** a dead daemon costs an 18-second cold start, measured, which is longer than a
-short call. That is how a real outgoing call was lost on 2026-07-27.
+**Why it is worth doing — stated honestly, after an early overstatement.** The 18-second cold start
+that lost a call on 2026-07-27 happened in a *broken* state: both debugging switches off, so no `adbd`
+and no daemon. **1.5.1 fixed that cause.** On a healthy phone the daemon simply persists — measured the
+same day, alive 7m53s of an 8-minute uptime with Wireless debugging off and USB debugging on — and the
+normal path is already fast.
+
+So Track A is **not** an everyday speed-up, and it does not help in the ~16 s after boot either, since
+arming needs the daemon too. What it is:
+
+> **Insurance against the daemon dying between calls.** It changes the requirement from "the daemon must
+> be alive when a call arrives" to "the daemon must have been alive at some point since boot."
+
+That still matters — daemon death is the recurring theme of this app's failures (screen-lock `adbd`
+restarts, USB mode changes, memory pressure, OEM reaping) — but it is a narrowing of failure surface,
+not a visible improvement. Weigh it against the new failure mode it introduces: an evicted track that
+records silence. **If step 7 (idle for hours) fails, this feature costs more than it saves.**
 
 **WORKING end to end on a OnePlus 12, 2026-07-27.** Two consecutive calls recorded through a held
 track with the creating daemon killed and never consulted:
