@@ -188,6 +188,17 @@ may turn out not to be possible — this is what is actually being worked on, no
 - **Turn cellular recording off independently** — today the automatic rules cover carrier calls; VoIP is
   a separate opt-in. Someone who only wants app calls recorded should be able to say so.
 
+**Debug bypass — no debugging switch after boot**
+
+The goal: CallVault needs a debugging switch **once, at boot**, and never again — no Wireless Debugging,
+no USB debugging while you use the phone. Capture is prepared in advance, so calls record without the
+background helper being reachable at all.
+
+Two thirds of this is proven on real calls: a carrier-call capture can be prepared once and started by
+the app with the helper killed, recording normally. What is missing is the same treatment for **app
+calls (VoIP)**, which still run their capture inside the helper — so until that is solved, keeping VoIP
+recording means keeping a switch on.
+
 **Getting Wireless Debugging off**
 
 **Enabling USB debugging already does this today** — see [How it works](#how-it-works). The remaining

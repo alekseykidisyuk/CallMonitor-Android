@@ -1,7 +1,16 @@
 # Track A — implementation plan
 
-**Goal:** take the daemon off the call path. A capture track is created once while privileged, handed to
-the app, and simply **started** when a call begins — so a call no longer waits for a daemon launch.
+**Goal — "debug bypass".** A debugging switch is needed **once at boot**, to prepare capture, and never
+again. No Wireless debugging and no USB debugging while the phone is in use, and no waiting for a
+warm-up after boot. Speed is a side effect, not the point.
+
+The mechanism: a capture track is created once while privileged, handed to the app, and simply
+**started** when a call begins.
+
+**The blocker for the whole goal is VoIP.** Carrier calls no longer need the daemon; VoIP capture still
+runs *inside* it, so with VoIP recording enabled a switch must stay on. Both features work together
+today — VoIP via the daemon, carrier calls via the held track — but the debug-bypass prize needs VoIP
+handed off the same way. See `voip-without-the-daemon.md`.
 
 **Why it is worth doing — stated honestly, after an early overstatement.** The 18-second cold start
 that lost a call on 2026-07-27 happened in a *broken* state: both debugging switches off, so no `adbd`
