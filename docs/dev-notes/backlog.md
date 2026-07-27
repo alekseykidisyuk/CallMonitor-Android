@@ -46,28 +46,42 @@ is why `SECTION_EXPERIMENTAL` is still the string `"reliability"` after that ren
 
 ---
 
-## 🔵 Switch Wireless debugging off again for "Record without Wi-Fi" users
+## ⛔ Switching Wireless debugging off — NOT POSSIBLE, and why
 
-Since 1.4.9 Wireless debugging stays on whenever USB debugging is off, because turning it off restarts
-`adbd` and kills the daemon. That is correct but blunt: it means most users keep a debugging switch on.
+Three attempts, all failed, all for the same underlying reason. **Do not try routes 1 or 2 again.**
 
-**What was wrong before:** 1.4.8 treated an armed loopback listener as a second transport. It is not —
-`service.adb.tcp.port` is a persisted *setting*, so disabling Wireless debugging restarts `adbd`
-anyway, the daemon dies with it, and the listener only returns ~12 s later, by which point the launcher
-has given up and re-enabled Wireless debugging. Measured on a Galaxy S24 FE: daemon died 57 ms after
-the disable, and the churn loop returned exactly as before.
+**`adbd` only runs while USB debugging or Wireless debugging is enabled.** `service.adb.tcp.port` says
+*where* `adbd` listens — it is not a reason for `adbd` to exist. With both switches off there is no
+`adbd`, so there is nothing to launch the daemon over and nothing to keep it alive.
 
-**The shape that should work:** stop disabling Wireless debugging *after* launching the daemon, and do
-it *before* instead —
+Measured on a OnePlus 12 (1.5.0-wdoff3, USB debugging off throughout):
 
-1. bootstrap over Wireless debugging, arm the loopback listener
-2. switch Wireless debugging off, and **wait for the loopback to come back** (allow ~15 s; Samsung took
-   over 12) rather than treating the gap as a failed connection and re-enabling
-3. launch the daemon over the loopback — it now survives, because nothing toggles afterwards
+```
+11:02:15  Dropping Wireless debugging before launch
+11:03:18  shell not ready within 60000ms (150 probes)   <- a full minute, never returned
+11:03:20  Loopback self-healed after 1500ms             <- 1.5s AFTER WD was switched back on
+```
 
-Fall back to leaving Wireless debugging on if the listener never returns. The launcher currently does
-`launch → applyWdPolicy`; this reverses that for the loopback case only. Needs on-device verification
-with USB debugging **off**, since that is what hid the bug twice.
+The apparent success later in that log (11:04:25) is confounded — it is the exact moment USB debugging
+was enabled, which starts `adbd`. **Every "it worked" observation in this investigation turned out to
+have a second debugging switch on somewhere**, which is the single lesson most worth keeping.
+
+- **Route 2 (make the daemon outlive `adbd`)** — impossible without root. Init kills the service's POSIX
+  process group AND its cgroup on stop, explicitly so `setsid` cannot escape. Shizuku dies the same way
+  ([#311](https://github.com/RikkaApps/Shizuku/issues/311)); its community's workaround is `adb tcpip`
+  ([#864](https://github.com/RikkaApps/Shizuku/issues/864)), i.e. exactly our loopback — which does not
+  solve it either.
+- **Route 1 (launch over the loopback after dropping WD)** — cannot work, per the above. It also cost
+  **two minutes of delayed readiness** at boot, since each attempt burns the full timeout. Reverted.
+
+**One device difference:** on a Galaxy S24 FE the listener *did* return ~1.5 s after WD was dropped with
+USB debugging off, so its `adbd` behaves differently from the OnePlus. If this is ever revisited, the
+only defensible shape is **opportunistic and remembered**: after the daemon is up and idle (never on the
+launch path), try the drop once, poll briefly, record the answer for that device — success keeps WD off,
+failure re-enables it and never retries. That still leaves OnePlus-class devices with WD on.
+
+**The real escape is to stop needing the daemon at call time** — Track A in
+`capture-research-directions.md`. That is the only route that removes the debugging switch entirely.
 
 ---
 
