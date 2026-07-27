@@ -110,16 +110,60 @@ class DaemonKeepAliveService : Service() {
      */
     private val usbDebuggingObserver = object : ContentObserver(watchdogHandler) {
         override fun onChange(selfChange: Boolean) {
-            if (AdbShell.isUsbDebuggingEnabled(applicationContext)) return
-            if (AdbShell.isWirelessDebuggingEnabled(applicationContext)) return
+            val usbOn = AdbShell.isUsbDebuggingEnabled(applicationContext)
+            val wdOn = AdbShell.isWirelessDebuggingEnabled(applicationContext)
 
-            AppLogger.w(TAG, "USB debugging switched off and Wireless debugging is off — adbd has no transport; restoring")
+            // Both directions matter, and both are immediate. Waiting for the next daemon launch to
+            // re-evaluate means the user flips a switch and nothing visibly happens, which reads as
+            // broken even when it eventually corrects itself.
+            val reason = when {
+                // Last way in just disappeared — adbd is going down and the daemon with it.
+                !usbOn && !wdOn -> "USB debugging switched off and Wireless debugging is off — adbd has no transport; restoring"
+                // USB debugging now holds adbd up, so Wireless debugging is no longer needed. Dropping
+                // it here is safe: with USB debugging enabled, toggling Wireless debugging does not
+                // restart adbd (measured — its pid is unchanged), so the daemon is never at risk.
+                usbOn && wdOn -> "USB debugging switched on — Wireless debugging is no longer needed"
+                else -> return
+            }
+
+            AppLogger.i(TAG, reason)
             Thread {
                 runCatching {
-                    AdbShell.enableWirelessDebugging(applicationContext)
+                    if (!usbOn && !wdOn) AdbShell.enableWirelessDebugging(applicationContext)
+                    // Re-runs the transport policy: with the daemon already connected this is just the
+                    // decision, no relaunch — and it is what switches Wireless debugging off.
                     RecorderServerLauncher.ensureServerRunning(applicationContext)
-                }.onFailure { AppLogger.w(TAG, "Could not restore a transport: ${it.message}") }
-            }.start()
+                }.onFailure { AppLogger.w(TAG, "Could not apply the transport change: ${it.message}") }
+            }.apply { isDaemon = true; name = "cv-transport-change" }.start()
+        }
+    }
+
+    /**
+     * Reacts when the **user** switches Wireless debugging on while it is not needed.
+     *
+     * Only the user's changes count. CallVault turns Wireless debugging on itself during startup, so
+     * acting on every change here would switch off the very thing the bootstrap just switched on —
+     * [AdbShell.didWeJustSetWirelessDebugging] is what tells the two apart.
+     *
+     * Even then it acts only when Wireless debugging is genuinely redundant: USB debugging is holding
+     * `adbd` up **and** the daemon is already answering. Dropping it in any other state would be taking
+     * away the only way in.
+     */
+    private val wirelessDebuggingObserver = object : ContentObserver(watchdogHandler) {
+        override fun onChange(selfChange: Boolean) {
+            if (!AdbShell.isWirelessDebuggingEnabled(applicationContext)) return
+            if (AdbShell.didWeJustSetWirelessDebugging(enabled = true)) return
+            if (!AdbShell.isUsbDebuggingEnabled(applicationContext)) return
+            if (!isDaemonAlive()) return
+
+            AppLogger.i(TAG, "Wireless debugging switched on by hand but USB debugging covers adbd — switching it back off")
+            Thread {
+                runCatching { RecorderServerLauncher.ensureServerRunning(applicationContext) }
+                    .onFailure { AppLogger.w(TAG, "Could not re-apply the transport policy: ${it.message}") }
+            }.apply { isDaemon = true; name = "cv-wd-change" }.start()
+            // Say so. Undoing a switch the user just flipped, silently, reads as the app fighting them —
+            // even when it is right. One dismissible note explaining why is the honest minimum.
+            notifyWirelessDebuggingTurnedBackOff()
         }
     }
 
@@ -137,7 +181,10 @@ class DaemonKeepAliveService : Service() {
             contentResolver.registerContentObserver(
                 Settings.Global.getUriFor("adb_enabled"), false, usbDebuggingObserver,
             )
-        }.onFailure { AppLogger.w(TAG, "Could not watch USB debugging: ${it.message}") }
+            contentResolver.registerContentObserver(
+                Settings.Global.getUriFor("adb_wifi_enabled"), false, wirelessDebuggingObserver,
+            )
+        }.onFailure { AppLogger.w(TAG, "Could not watch the debugging switches: ${it.message}") }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -231,6 +278,29 @@ class DaemonKeepAliveService : Service() {
         caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }.getOrDefault(false)
 
+    /** Tells the user CallVault undid their Wireless-debugging change, and why. Dismissible, silent. */
+    private fun notifyWirelessDebuggingTurnedBackOff() {
+        runCatching {
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    INFO_CHANNEL_ID,
+                    getString(R.string.notif_info_channel),
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply { setShowBadge(false); enableVibration(false); setSound(null, null) },
+            )
+            val notification = NotificationCompat.Builder(this, INFO_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setContentTitle(getString(R.string.notif_wd_reverted_title))
+                .setContentText(getString(R.string.notif_wd_reverted_text))
+                .setStyle(NotificationCompat.BigTextStyle().bigText(getString(R.string.notif_wd_reverted_text)))
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build()
+            manager.notify(INFO_NOTIF_ID, notification)
+        }.onFailure { AppLogger.d(TAG, "Could not post the Wireless-debugging note: ${it.message}") }
+    }
+
     private fun updateNotification(ready: Boolean) {
         runCatching {
             getSystemService(NotificationManager::class.java).notify(NOTIF_ID, buildNotification(ready))
@@ -281,6 +351,7 @@ class DaemonKeepAliveService : Service() {
 
     override fun onDestroy() {
         runCatching { contentResolver.unregisterContentObserver(usbDebuggingObserver) }
+        runCatching { contentResolver.unregisterContentObserver(wirelessDebuggingObserver) }
         runCatching { voipDetector.stop() }
         watchdogHandler.removeCallbacks(watchdog)
         RecorderConnection.onDeath = null
@@ -292,6 +363,10 @@ class DaemonKeepAliveService : Service() {
     companion object {
         private const val TAG = "CV:DaemonKeepAlive"
         private const val CHANNEL_ID = "recorder_keepalive"
+
+        /** Low-importance channel for one-off explanations, kept apart from the permanent status note. */
+        private const val INFO_CHANNEL_ID = "callvault_info"
+        private const val INFO_NOTIF_ID = 4721
         private const val NOTIF_ID = 4720
 
         /** How often the watchdog checks the daemon is alive. Cheap (a binder ping). */

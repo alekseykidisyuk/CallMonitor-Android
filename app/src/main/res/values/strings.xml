@@ -147,6 +147,9 @@
     <string name="settings_usb_debugging_recommended">Wireless debugging has to stay on without this. Turning this on lets CallVault switch it off.</string>
     <string name="settings_usb_debugging_on_hint">CallVault can keep Wireless debugging off. Don\'t turn this back off — that would leave no way in, so Wireless debugging comes back on.</string>
     <string name="settings_usb_debugging_failed">Couldn\'t change it — CallVault needs the permission it gets during setup.</string>
+    <string name="notif_info_channel">CallVault notices</string>
+    <string name="notif_wd_reverted_title">Wireless debugging switched back off</string>
+    <string name="notif_wd_reverted_text">USB debugging is on, so CallVault doesn\'t need Wireless debugging — and it opens a network port, so it\'s left off. If you turned it on for something else, turn off USB debugging first and CallVault will leave Wireless debugging alone.</string>
     <string name="notif_wd_required">Wireless debugging has to stay on for CallVault to stay ready on this phone. Turn on “Record without Wi-Fi” in Settings ▸ Experimental (or enable USB debugging) and CallVault will switch it off again.</string>
     <string name="settings_section_debug">Debug</string>
     <string name="settings_section_security">Security</string>

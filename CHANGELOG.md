@@ -3,6 +3,20 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.5.1] — 2026-07-27
+
+### Fixed
+- **Switching USB debugging on now switches Wireless debugging off straight away**, instead of waiting
+  for the next time CallVault happened to re-check. The reverse already worked; this makes both
+  directions immediate.
+
+### Added
+- **If you switch Wireless debugging on while it isn't needed, CallVault switches it back off** — and
+  now tells you why, in a dismissible notification, rather than silently undoing what you just did.
+  CallVault can tell its own changes from yours, so it never fights its own start-up, and it only does
+  this when Wireless debugging is genuinely redundant: USB debugging is covering the connection *and*
+  the helper is already running.
+
 ## [1.5.0] — 2026-07-27
 
 The headline: **you can now switch Wireless debugging off** — by turning on USB debugging instead.

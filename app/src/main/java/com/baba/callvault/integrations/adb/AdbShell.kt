@@ -408,10 +408,34 @@ object AdbShell {
     fun enableWirelessDebugging(context: Context): Boolean {
         if (isWirelessDebuggingEnabled(context)) return true
         if (!hasWriteSecureSettings(context)) return false
+        markOwnWirelessDebuggingWrite(1)
         return runCatching {
             android.provider.Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 1)
         }.onFailure { AppLogger.e(TAG, "Failed to enable Wireless debugging", it) }.isSuccess
     }
+
+    // -------- Telling our own writes apart from the user's
+    //
+    // CallVault turns Wireless debugging on and off itself, so a watcher on that setting cannot simply
+    // react to every change — it would fight its own bootstrap, switching off the very thing it just
+    // switched on. Recording each write lets a change be attributed: if it matches what we just wrote,
+    // it is ours; anything else came from the user (or another app), and only then is it acted on.
+
+    @Volatile private var ownWdWriteValue = -1
+    @Volatile private var ownWdWriteAtMs = 0L
+
+    /** How long a write stays attributable to us. Long enough to cover the settings round-trip. */
+    private const val OWN_WRITE_WINDOW_MS = 10_000L
+
+    private fun markOwnWirelessDebuggingWrite(value: Int) {
+        ownWdWriteValue = value
+        ownWdWriteAtMs = android.os.SystemClock.elapsedRealtime()
+    }
+
+    /** True when the current Wireless-debugging state is one CallVault itself just set. */
+    fun didWeJustSetWirelessDebugging(enabled: Boolean): Boolean =
+        ownWdWriteValue == (if (enabled) 1 else 0) &&
+            android.os.SystemClock.elapsedRealtime() - ownWdWriteAtMs < OWN_WRITE_WINDOW_MS
 
     /**
      * Turns Wireless debugging OFF by writing adb_wifi_enabled=0. Requires WRITE_SECURE_SETTINGS.
@@ -424,6 +448,7 @@ object AdbShell {
     fun disableWirelessDebugging(context: Context): Boolean {
         if (!isWirelessDebuggingEnabled(context)) return true
         if (!hasWriteSecureSettings(context)) return false
+        markOwnWirelessDebuggingWrite(0)
         return runCatching {
             android.provider.Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 0)
         }.onFailure { AppLogger.e(TAG, "Failed to disable Wireless debugging", it) }.isSuccess
