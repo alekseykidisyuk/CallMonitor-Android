@@ -77,7 +77,14 @@ object HeldRecordControl {
             AppLogger.i(TAG, "IAudioRecord.$name accepted from the app (delivered=$delivered)")
             delivered
         } catch (t: Throwable) {
-            AppLogger.w(TAG, "IAudioRecord.$name REFUSED for the app: ${t.javaClass.simpleName}: ${t.message}")
+            // The error CODE is what distinguishes "you may not do this" from "this track is gone", so
+            // record it rather than just the class name.
+            // The error CODE distinguishes "you may not do this" from "this track is gone". Read it
+            // reflectively: ServiceSpecificException is not on this compile SDK's surface.
+            val errorCode = runCatching {
+                t.javaClass.getField("errorCode").getInt(t).toString()
+            }.getOrDefault("?")
+            AppLogger.w(TAG, "IAudioRecord.$name REFUSED: ${t.javaClass.simpleName} errorCode=$errorCode msg=${t.message}")
             false
         } finally {
             reply.recycle()

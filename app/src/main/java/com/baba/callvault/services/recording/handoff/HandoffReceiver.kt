@@ -74,7 +74,7 @@ object HandoffReceiver {
         // A probe run borrows the delivery: it is measuring whether the app may START a handed-over
         // track, not recording anything, so the normal drain must not begin.
         if (TrackAProbe.isArmed && binder != null) {
-            TrackAProbe.onHandoff(binder)
+            TrackAProbe.onHandoff(binder, cblkFd, frameCount, sampleRate, channels)
             return
         }
 

@@ -123,7 +123,19 @@ Capture permission really is bound to creation, not to the caller of `start`.
 
 So Track A is viable in principle: daemon creates once per boot, app runs it per call.
 
-**Not yet proven, and it is what matters next:** that *audio actually flows* through that
+**PROVEN 2026-07-27 — audio flows with the creator dead.** A track created by the daemon, handed over
+stopped, its creator then killed by pid, started by the app and drained by the app during a verified
+`MODE_IN_CALL` call: **−6.3 dBFS over 1,151,936 samples**, against a −6.7 dBFS same-process baseline.
+Track A works.
+
+Three probe bugs cost three calls before this landed, all mine and all worth remembering: calling native
+code before loading the library (twice — once per process), handing a `ParcelFileDescriptor`'s fd to
+native code that closes it (fdsan aborts the process), and — worst — measuring twice **after the call
+had ended** and reading the resulting digital silence as a negative result. The probe now refuses to
+measure unless `AudioManager.getMode() == MODE_IN_CALL`. Note that guard must ask `AudioManager`, not
+`dumpsys`: the app holds no DUMP permission, so a shell-based check silently answers "no call" forever.
+
+**Superseded:** that *audio actually flows* through that
 app-started track with the daemon **dead**. `started=true` means the binder transaction was accepted
 and returned no error — it does not by itself prove the transaction was `start` (the AIDL codes are
 assumed from declaration order) nor that samples arrive. Both are settled by one measurement: kill the
