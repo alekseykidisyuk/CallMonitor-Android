@@ -46,6 +46,39 @@ is why `SECTION_EXPERIMENTAL` is still the string `"reliability"` after that ren
 
 ---
 
+## 🔵 Split `AppPreferences` into per-domain interfaces
+
+**Why.** `AppPreferences` is 686 lines, 60 keys and 107 accessors, and every subsystem in the app
+reaches into it: the knowledge-graph build on 2026-07-27 measured 188 edges and a betweenness of
+0.190, bridging 33 of 243 communities — from `DaemonKeepAliveService` to `Theme` to
+`VoipRecordingCoordinator`. That number is a symptom, not the finding.
+
+The finding is *how* it clustered. Community detection split the class's own members into six groups,
+and the dividing line is the **storage primitive, not the subject**: boolean writers in one group,
+string writers in another, int accessors in a third, `getStringSet`/`setLong` in a fourth. Only the
+storage/sync accessors clustered by meaning. There is no domain structure inside the file for the
+algorithm to find, because the file has none below the comment headers.
+
+**What.** Keep one `SharedPreferences` instance and the `Key` enum. Expose them through roughly nine
+narrow interfaces — `RecordingPrefs`, `StoragePrefs`, `TransportPrefs`, `UpdatePrefs`,
+`AppearancePrefs`, `FilterPrefs`, `DebugPrefs`… — each 5–12 methods, with `AppPreferences` as the
+single implementation satisfying all of them. Consumers depend on the slice they actually use.
+
+**The boundaries are already written in the file.** `Key` has 13 comment-delimited groups, and they
+map nearly one-to-one onto communities that formed independently elsewhere in the graph: Storage
+Routing / Sync Schedule, Retention, ADB, In-app updates, Persistent recorder server, Automation +
+Filters, Developer & Debug, Audio quality, UI & Appearance. Those comments are doing an interface's
+job. Cut along them and the split needs no new judgement.
+
+**What this does not buy.** It does not decouple anything — `DaemonKeepAliveService` still needs its
+settings. The wins are narrower and worth stating honestly: each consumer's dependency becomes
+legible, tests can fake a 6-method interface instead of a 107-method class, and the "General" section
+restructure above gets a seam to cut along. It is a wide, mechanical diff across most of the app, on
+a file that has caused none of the recent failures — real value, no urgency. Do it *with* the Settings
+restructure, not on its own.
+
+---
+
 ## ⛔ Switching Wireless debugging off — NOT POSSIBLE, and why
 
 Three attempts, all failed, all for the same underlying reason. **Do not try routes 1 or 2 again.**
