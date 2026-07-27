@@ -111,14 +111,15 @@ re-arm-after-call logic is needed.
 
 Order matters: each step assumes the previous passed.
 
-1. **Arms** — toggle on, log shows armed, no call involved.
-2. **Survives the daemon** — `kill -9` the daemon by pid; the track is still usable.
-3. **Records a call with the daemon dead** — the headline. Compare duration and level against a normal
-   recording of a similar call.
-4. **Instant start** — verify no `ensureServerRunning` on the call path, and that recording begins at
-   the start of the call rather than seconds in. This is the user-visible payoff.
-5. **Second call** — reuse (§4) or clean re-arm.
-6. **Reboot** — re-arms without intervention.
+1. ✅ **Arms** — toggle on, log shows armed, no call involved.
+2. ✅ **Survives the daemon** — `kill -9` the daemon by pid; the track is still usable.
+3. ✅ **Records a call with the daemon dead** — verified by ear, not by file size.
+4. ✅ **Instant start** — 3 ms to live, no `ensureServerRunning` anywhere on the call path.
+5. ✅ **Second call** — reusable; no re-arm needed.
+6. ✅ **Reboot** — re-arms without intervention. Measured: boot 14:24:01 → armed 14:24:18, i.e.
+   **16.4 s**, during which a call falls back to the daemon path (correctly, and still recorded). The
+   Wireless-debugging flicker users will see at boot *is* the arming: it comes on to reach the daemon
+   and goes off again once USB debugging can hold `adbd`.
 7. **Idle for hours, then call** — the eviction question, and the one that needs patience rather than
    cleverness.
 8. **Screen lock mid-call** — the classic `adbd` killer; the recording must be unaffected.
