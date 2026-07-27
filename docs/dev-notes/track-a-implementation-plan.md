@@ -130,6 +130,40 @@ re-arm-after-call logic is needed.
 
 ---
 
+## Audit findings — must be fixed before this ships
+
+An adversarial read of the implementation, 2026-07-27. Ranked; the first two are the reason this is
+not release-ready.
+
+1. **CRITICAL — the held track is never stopped after a recording.** `HandoffReceiver.stop()` releases
+   fields that only `onReceived()` populates; `startHeld()` never sets them, so `HeldRecordControl.stop`
+   is not called on the record path. Every Instant recording leaves a **started** `VOICE_CALL` track
+   behind — a permanent wakelock and a 24/7 microphone indicator attributed to "Shell", which is exactly
+   the cost this feature was designed to avoid by holding the track stopped.
+
+2. **HIGH — teardown destroys the track it means to reuse.** `AudioRecordingEngine.release()` calls
+   `stopHandoff()` unconditionally in handoff mode; on the daemon that is `rec.stop(); rec.release()` on
+   the held record. **The two-call reuse test passed only because the arming daemon had been killed
+   first** — its replacement held no record, so the release was a no-op. On a normal phone the track
+   would be destroyed after the first call. **"Reusable, arm once per boot" is therefore UNPROVEN**, and
+   was reported as measured. Re-test with the arming daemon left alive.
+
+3. **HIGH — no locking in `HeldTrackStore`.** Concurrent arms (daemon-ready and the Settings toggle) each
+   create a track; the loser is leaked while still pinning the exclusive `VOICE_CALL` input, and
+   `onHandoff` overwrites the previous binder/fd without releasing them.
+
+4. **HIGH — TOCTOU between `held()` and `release()`.** `held()` hands a raw fd number to native; a
+   concurrent `release()` closes it. Use-after-close in native code, not a safe fallback.
+
+5. **MEDIUM — readiness can lie.** A track evicted by another app still pings, so the notification
+   reports ready while the next call records nothing. There is no periodic re-arm and no eviction
+   detection; the idle test (step 7) is the one that would expose it.
+
+6. **LOW/MEDIUM — toggling on with the daemon down silently does nothing.** The preference reads on, but
+   nothing is armed until some unrelated event triggers `onDaemonReady`.
+
+7. **LOW — pause is a no-op** on this path, as it already is for daemon mode, but now undocumented here.
+
 ## Test plan (OnePlus 12)
 
 Order matters: each step assumes the previous passed.
@@ -138,7 +172,9 @@ Order matters: each step assumes the previous passed.
 2. ✅ **Survives the daemon** — `kill -9` the daemon by pid; the track is still usable.
 3. ✅ **Records a call with the daemon dead** — verified by ear, not by file size.
 4. ✅ **Instant start** — 3 ms to live, no `ensureServerRunning` anywhere on the call path.
-5. ✅ **Second call** — reusable; no re-arm needed.
+5. ⚠️ **Second call** — passed, but CONFOUNDED: the arming daemon had been killed, so the teardown that
+   would have destroyed the track was a no-op (see audit finding 2). Re-run with the arming daemon
+   alive before believing "reusable".
 6. ✅ **Reboot** — re-arms without intervention. Measured: boot 14:24:01 → armed 14:24:18, i.e.
    **16.4 s**, during which a call falls back to the daemon path (correctly, and still recorded). The
    Wireless-debugging flicker users will see at boot *is* the arming: it comes on to reach the daemon
