@@ -12,13 +12,18 @@ The shell user (UID 2000, the account ADB runs as) holds an [advanced set of per
 
 ## How CallVault works (no Shizuku)
 
-Unlike the upstream project, CallVault does **not** use Shizuku. Instead it runs an **embedded ADB client** ([libadb-android](https://github.com/MuntashirAkon/libadb-android)) that talks to the device's own **Wireless Debugging** endpoint, and launches a **persistent privileged daemon** (a detached `app_process` under the shell UID) that survives Wireless Debugging being turned off. Recording then flows to the daemon over **binder IPC**.
+Unlike the upstream project, CallVault does **not** use Shizuku. Instead it runs an **embedded ADB client** ([libadb-android](https://github.com/MuntashirAkon/libadb-android)) that talks to the device's own **Wireless Debugging** endpoint, and launches a **persistent privileged daemon** (a detached `app_process` under the shell UID). Recording then flows to the daemon over **binder IPC**.
 
 The result is fully hands-free:
 
 - **One-time pairing.** During onboarding you pair once with Wireless Debugging (via the in-app pairing notification — enter the pairing code and port shown under *Developer Options → Wireless debugging → Pair device with pairing code*).
-- **Automatic, transient Wireless Debugging.** After pairing, CallVault turns Wireless Debugging **on only when it needs to (re)launch the daemon, then turns it back off**. You never toggle it manually.
+- **A debugging switch stays on.** Android's `adbd` — the service CallVault reaches the system through — runs **only while USB debugging or Wireless debugging is enabled**, and the daemon dies with it. So one of the two must remain on:
+  - **USB debugging on** (recommended, and offered during onboarding): CallVault switches Wireless debugging **off** and keeps it off, since USB debugging alone holds `adbd` up. No network port is left listening. You do not need a cable connected.
+  - **USB debugging off:** Wireless debugging must stay **on**, because it is then the only thing keeping `adbd` alive. CallVault will switch it back on if it is turned off, and the readiness notification explains why.
 - **Always-on daemon.** The privileged daemon stays available between calls, so recording can start without re-establishing an ADB connection.
+
+> [!NOTE]
+> Earlier versions of this guide said the daemon survives Wireless debugging being turned off, and that CallVault enables it only transiently. Measurement disproved both: with both switches off there is no `adbd` at all, and Android's init kills the daemon's process group when `adbd` stops. Turning the last remaining transport off is what caused the start-up loop fixed in 1.4.9 and 1.5.0.
 
 ## Setup steps
 
@@ -27,9 +32,10 @@ The result is fully hands-free:
    - Grant **notifications** (the pairing prompt is delivered as a notification).
    - Complete the **one-time Wireless Debugging pairing** when prompted.
    - Grant the remaining permissions (phone state, call log, contacts, battery exemption).
-3. On OEMs that throttle background startup (e.g. OnePlus/OxygenOS), allow CallVault in **Auto-launch / Startup Manager** so it can come up after a reboot.
+3. Accept the **USB debugging** prompt when onboarding offers it (recommended). CallVault then keeps Wireless debugging off; no cable is needed.
+4. On OEMs that throttle background startup (e.g. OnePlus/OxygenOS), allow CallVault in **Auto-launch / Startup Manager** so it can come up after a reboot.
 
-That's it — there is no Shizuku app to install and no manual debugging toggle to manage.
+That's it — there is no Shizuku app to install, and after setup you never toggle a debugging switch yourself.
 
 > [!NOTE]
 > After a reboot there can be a short delay before the daemon is ready (the OS may throttle the app's cold start). The first call placed immediately after a reboot may be missed until the daemon has relaunched.

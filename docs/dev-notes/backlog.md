@@ -223,13 +223,20 @@ It was the agreed next priority before VoIP took over.
 
 ## 🔵 Smaller, known, and worth not forgetting
 
-- **VoIP strings are English-only.** Every other feature is translated into 9 locales.
+- **Three VoIP strings are untranslated** — `voip_recording_arming`, `voip_recording_names_hint`,
+  `voip_recording_unavailable`. The other 9 of 12 VoIP keys are present in all 9 locales, so this is a
+  three-key gap, not the "English-only" state recorded here earlier.
 - **Stale screenshots** in `docs/screenshots` (21 June) — predate the current UI.
 - **`WD_DISABLE_WHEN_IDLE` is a dead preference** — read by nothing.
 - **Wrong contact label** on some recordings (reported, not diagnosed).
 - **CI release workflow is broken**: its `SIGNING_KEYSTORE` is a *different* key from the release key,
   so it fails at signing. Releases are built locally with `signing/callvault-signing.keystore`
   (cert `c875ffd0…`). Left broken deliberately — fixing it means putting the real key in CI.
+  It also still names its artifact `ShizuCallRecorder-<version>.apk` and titles the release the same,
+  while the in-app updater only accepts an asset named exactly `CallVault.apk`
+  (`GitHubReleases.APK_ASSET_NAME`). A release published by this workflow would therefore be **invisible
+  to the updater** — fix the naming at the same time as the signing, or the first CI release silently
+  reaches nobody.
 - **No instrumentation tests at all** (`app/src/androidTest` does not exist). 16 unit-test files cover
   parsing, version comparison and policy decisions; everything device-shaped is verified by hand on a
   real call. That is the honest state, and it is why regressions here are found by making phone calls.

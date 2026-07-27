@@ -4,36 +4,27 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Use community support when you need help installing, using, or configuring ShizuCallRecorder. If you have a bug, use [Issues](https://github.com/kitsumed/ShizuCallRecorder/issues).**
+        **Use community support when you need help installing, using, or configuring CallVault. If you have a bug, use [Issues](https://github.com/madkongo/CallVault/issues).**
         You should also check existing Issues, as the problem you are experiencing may have already been fixed or might be a known issue that cannot or will not be addressed.
         **When someone gives you an answer** that **resolves your issue**, **PLEASE MARK THEIR ANSWER AS THE SOLUTION** to close your support request and **give them credit**!
-        
+
   - type: checkboxes
     attributes:
       label: Checklist
       options:
-        - label: I tried using the latest ShizuCallRecorder version.
+        - label: I tried using the latest CallVault version.
           required: true
-        - label: I tried using the latest version of recommended Shizuku fork (thedjchi)
+        - label: I have completed the one-time ADB pairing during onboarding.
           required: true
-        - label: This is not a support request related to a problem with Shizuku
+        - label: I have read the [setup and troubleshooting docs](https://github.com/madkongo/CallVault/blob/main/docs/SUPPORT.md).
           required: true
 
   - type: input
     id: appVersion
     attributes:
-      label: ShizuCallRecorder Version
-      description: The version of your app. Please ensure you tried the latest version.
-      placeholder: e.g. v1.0.2
-    validations:
-      required: true
-
-  - type: input
-    id: shizukuVersion
-    attributes:
-      label: Shizuku Version
-      description: The version of your app and the url of the public repository. Please ensure you tried the latest version.
-      placeholder: e.g. v13.6.0.r1318 | https://github.com/thedjchi/Shizuku/
+      label: CallVault Version
+      description: Shown in Settings → About. Please ensure you tried the latest version.
+      placeholder: e.g. v1.5.1
     validations:
       required: true
 
@@ -50,11 +41,27 @@ body:
     id: phoneModel
     attributes:
       label: The model of your device
-      description: The name and model of your device, with its version if possible.
-      placeholder: e.g. Samsung Galaxy S24 | One UI 8 | 
+      description: The name and model of your device, with its OEM skin version if possible.
+      placeholder: e.g. Samsung Galaxy S24 FE | One UI 8
     validations:
       required: true
-      
+
+  - type: dropdown
+    id: debuggingState
+    attributes:
+      label: Debugging switches
+      description: |
+        CallVault reaches the system over the device's own ADB, which only runs while one of these is
+        enabled — Developer Options → USB debugging / Wireless debugging.
+      options:
+        - USB debugging ON, Wireless debugging OFF
+        - USB debugging OFF, Wireless debugging ON
+        - Both ON
+        - Both OFF
+        - I don't know
+    validations:
+      required: true
+
   - type: textarea
     id: problemContent
     attributes:

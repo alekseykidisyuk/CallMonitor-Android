@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest an idea or enhancement for ShizuCallRecorder
+description: Suggest an idea or enhancement for CallVault
 title: "[Feature]: "
 labels: ["Type: Feature", "Waiting For Contributors Review"]
 assignees: []
@@ -11,13 +11,13 @@ body:
       label: Checklist
       description: Please confirm the following before continuing
       options:
-        - label: I have searched existing [issues](https://github.com/kitsumed/ShizuCallRecorder/issues) and [discussions](https://github.com/kitsumed/ShizuCallRecorder/discussions/categories/community-support) and this is not a duplicate.
+        - label: I have searched existing [issues](https://github.com/madkongo/CallVault/issues) and [discussions](https://github.com/madkongo/CallVault/discussions/categories/community-support) and this is not a duplicate.
           required: true
-        - label: I am suggesting a new feature or enhancement for ShizuCallRecorder itself, NOT for Shizuku or another app.
+        - label: I am suggesting a new feature or enhancement for CallVault itself, NOT for another app.
           required: true
-        - label: I have read the project [README.md](https://github.com/kitsumed/ShizuCallRecorder/blob/main/README.md) and [CONTRIBUTING.md](https://github.com/kitsumed/ShizuCallRecorder/blob/main/CONTRIBUTING.md).
+        - label: I have read the project [README.md](https://github.com/madkongo/CallVault/blob/main/README.md) and [CONTRIBUTING.md](https://github.com/madkongo/CallVault/blob/main/CONTRIBUTING.md).
           required: true
-        - label: I have read the application [docs](https://github.com/kitsumed/ShizuCallRecorder/blob/main/docs/SUPPORT.md).
+        - label: I have read the application [docs](https://github.com/madkongo/CallVault/blob/main/docs/SUPPORT.md).
           required: true
 
   - type: textarea
