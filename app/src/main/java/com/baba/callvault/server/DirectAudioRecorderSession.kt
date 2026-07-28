@@ -239,6 +239,16 @@ internal class DirectAudioRecorderSession(
          * the codec's MIME. Otherwise [RecorderServer] uses the scrcpy fallback.
          */
         fun supports(source: ScrcpyAudioSource, codec: ScrcpyAudioCodec): Boolean {
+            // ⚠ DIAGNOSTIC BUILD ONLY — DO NOT MERGE ⚠
+            // Forces every recording down the scrcpy fallback, the path CallVault used before v1.4.0
+            // introduced this direct AudioRecord session. Issue #18 reports carrier recordings that are
+            // correctly sized but silent on a Samsung SM-F956U, and that AAC worked on some pre-1.4.0
+            // version. If audio returns with this build, the direct path is the regression — most likely
+            // because its AudioRecord carries no package attribution, and AppOps answers an unattributed
+            // capture with silence rather than an error.
+            return false
+
+            @Suppress("UNREACHABLE_CODE")
             if (source.androidAudioSource == null) return false
             return runCatching { hasEncoder(encoderMimeFor(codec)) }.getOrDefault(false)
         }
