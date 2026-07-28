@@ -59,4 +59,14 @@
     <string name="whatsnew_145_body">On many phones, locking the screen during a call was stopping the recorder mid-call. That is fixed, and CallVault now warns you if your phone\'s USB setting is the one causing it.</string>
     <string name="offline_recording_on">Off-Wi-Fi recording is on.</string>
     <string name="offline_recording_disabling">Turning off off-Wi-Fi recording…</string>
+
+    <!-- Setup health: what real calls proved, shown as the status card's second line when ready -->
+    <string name="home_health_verified">Last verified %1$s.</string>
+    <string name="home_health_unverified">Your next call will confirm recording works.</string>
+    <string name="home_health_setup_changed">Setup changed since your last call — your next call will confirm it still works.</string>
+    <string name="home_health_call_not_recorded">A call was not recorded — %1$s, %2$s.</string>
+    <string name="home_health_call_not_recorded_unnamed">A call was not recorded — %1$s.</string>
+    <string name="home_health_failed_empty">Your last call produced an empty recording (0 bytes).</string>
+    <string name="home_health_failed_daemon">The recorder stopped during your last call.</string>
+    <string name="home_health_failed_one_sided">Only your side was recorded on your last app call.</string>
 </resources>

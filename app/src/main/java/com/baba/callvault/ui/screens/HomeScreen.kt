@@ -9,6 +9,7 @@
 package com.baba.callvault.ui.screens
 
 import android.net.Uri
+import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -101,6 +102,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Groups
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.health.FailureReason
+import com.baba.callvault.data.health.SetupHealth
+import com.baba.callvault.data.health.isProblem
 import com.baba.callvault.data.recordings.RecordingDirection
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingSource
@@ -196,6 +200,7 @@ fun HomeScreen(
             item {
                 HeroStatusCard(
                     status = uiState.status,
+                    health = uiState.setupHealth,
                     onAction = if (uiState.status == HomeViewModel.HomeStatus.UPDATE_REGRANT_NEEDED) {
                         { context.openWirelessDebugging() }
                     } else {
@@ -557,11 +562,14 @@ private fun SupportPill(onClick: () -> Unit) {
 @Composable
 private fun HeroStatusCard(
     status: HomeViewModel.HomeStatus,
+    health: SetupHealth,
     onAction: (() -> Unit)? = null,
 ) {
     val brand = LocalCvBrand.current
-    val accent: Color = if (status.isReady) MaterialTheme.colorScheme.primary else brand.warning
-    val icon: ImageVector = if (status.isReady) Icons.Filled.CheckCircle else Icons.Filled.WarningAmber
+    // A healthy setup that has never been proved still reads as ready; only a real problem flips the card.
+    val showsProblem = !status.isReady || health.isProblem
+    val accent: Color = if (showsProblem) brand.warning else MaterialTheme.colorScheme.primary
+    val icon: ImageVector = if (showsProblem) Icons.Filled.WarningAmber else Icons.Filled.CheckCircle
     val tone = when (status) {
         HomeViewModel.HomeStatus.READY -> CvTone.Success
         HomeViewModel.HomeStatus.NOT_PAIRED -> CvTone.Warning
@@ -614,7 +622,7 @@ private fun HeroStatusCard(
         }
         Spacer(Modifier.height(14.dp))
         Text(
-            text = stringResource(status.suggestionResId),
+            text = if (status.isReady) healthMessage(health) else stringResource(status.suggestionResId),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -622,6 +630,33 @@ private fun HeroStatusCard(
         CvStatusPill(text = pillText, tone = tone)
     }
 }
+
+/**
+ * The card's second line when nothing is blocking: what real calls proved. The happy path stays plain —
+ * a byte count appears only in the empty-recording failure, never as reassurance.
+ */
+@Composable
+private fun healthMessage(health: SetupHealth): String = when (health) {
+    is SetupHealth.Verified -> stringResource(R.string.home_health_verified, relativeTime(health.atMillis))
+    is SetupHealth.Unverified -> stringResource(R.string.home_health_unverified)
+    is SetupHealth.StaleAfterChange -> stringResource(R.string.home_health_setup_changed)
+    is SetupHealth.CallNotRecorded -> health.label?.let {
+        stringResource(R.string.home_health_call_not_recorded, relativeTime(health.atMillis), it)
+    } ?: stringResource(R.string.home_health_call_not_recorded_unnamed, relativeTime(health.atMillis))
+    is SetupHealth.LastCallFailed -> stringResource(
+        when (health.reason) {
+            FailureReason.EMPTY_FILE -> R.string.home_health_failed_empty
+            FailureReason.DAEMON_DIED -> R.string.home_health_failed_daemon
+            FailureReason.ONE_SIDED -> R.string.home_health_failed_one_sided
+        }
+    )
+}
+
+/** "2 hours ago", "Yesterday 18:44" — the platform's own phrasing, so it is localised for free. */
+@Composable
+private fun relativeTime(atMillis: Long): String = DateUtils.getRelativeDateTimeString(
+    LocalContext.current, atMillis, DateUtils.MINUTE_IN_MILLIS, DateUtils.WEEK_IN_MILLIS, 0
+).toString()
 
 /** One selectable entry inside a filter chip's dropdown menu. */
 private data class FilterOption<T>(val value: T, val label: String)

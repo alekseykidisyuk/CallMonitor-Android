@@ -15,6 +15,12 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.health.CallGapDetector
+import com.baba.callvault.data.health.CallLogReader
+import com.baba.callvault.data.health.SetupFingerprint
+import com.baba.callvault.data.health.SetupHealth
+import com.baba.callvault.data.health.SetupHealthDeriver
+import com.baba.callvault.data.health.SetupHealthStore
 import com.baba.callvault.data.recordings.RecordingDirection
 import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.data.recordings.RecordingCatalog
@@ -143,7 +149,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         /** True while the one-tap "set USB to Charging only" fix is running. */
         val usbFixInProgress: Boolean = false,
         /** Uris of recordings currently being deleted — drives an inline spinner on their row. */
-        val deletingUris: Set<Uri> = emptySet()
+        val deletingUris: Set<Uri> = emptySet(),
+        /** What real calls have proved about this setup — drives the status card's second line. */
+        val setupHealth: SetupHealth = SetupHealth.Unverified
     ) {
         /**
          * The distinct contact keys present in [recordings], sorted A→Z case-insensitively. Each
@@ -351,6 +359,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
+            val health = withContext(Dispatchers.IO) { sweepSetupHealth() }
+            _uiState.update { it.copy(setupHealth = health) }
             val recordings = withContext(Dispatchers.IO) { RecordingsRepository.listRecordings(appContext) }
             _uiState.update { state ->
                 // Drop a contact/date selection that no longer exists in the reloaded set so the
@@ -458,6 +468,28 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Reconciles the call log against the calls CallVault observed, then derives what the card says.
+     * IO-bound (a content-provider query), so callers must be off the main thread. Best-effort
+     * throughout: anything unreadable yields Unverified rather than an invented failure.
+     */
+    private fun sweepSetupHealth(): SetupHealth = runCatching {
+        val store = SetupHealthStore(appContext)
+        val facts = store.read()
+        val result = CallGapDetector.sweep(
+            entries = CallLogReader.entriesSince(appContext, facts.sweepWatermark),
+            observedCallEnds = facts.observedCallEnds,
+            autoRecordIncoming = preferences.isAutoRecordIncomingEnabled(),
+            autoRecordOutgoing = preferences.isAutoRecordOutgoingEnabled(),
+            watermark = facts.sweepWatermark
+        )
+        if (result.newWatermark != facts.sweepWatermark) store.setSweepWatermark(result.newWatermark)
+        SetupHealthDeriver.derive(facts, SetupFingerprint.of(preferences), result.gaps.maxByOrNull { it.startedAt })
+    }.getOrElse { e ->
+        AppLogger.w(TAG, "Setup-health sweep failed (${e.message}); claiming nothing")
+        SetupHealth.Unverified
+    }
+
+    /**
      * Deletes [item] from disk (and any same-named copy in the other configured folder) off the main
      * thread, then reloads the recordings list. If [item] is the track currently loaded in the inline
      * player, playback is stopped first.
@@ -524,6 +556,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     companion object {
+        private const val TAG = "CV:HomeViewModel"
+
         /**
          * Whether the release note is due: only right after an update, and only once per version.
          *
