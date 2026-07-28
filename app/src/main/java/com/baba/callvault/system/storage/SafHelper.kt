@@ -11,6 +11,7 @@ package com.baba.callvault.system.storage
 import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.utils.AppLogger
 import java.io.File
@@ -169,33 +170,130 @@ object SafHelper {
         return directory?.name
     }
 
+    /** Outcome of [copyFileToFolder] — an upload that was skipped is as good as one that ran. */
+    sealed interface CopyResult {
+        /** The recording was already in the destination folder; nothing was uploaded. */
+        data class AlreadyPresent(val uri: Uri) : CopyResult
+
+        /** The bytes were streamed and published under the final name. */
+        data class Copied(val uri: Uri, val bytes: Long) : CopyResult
+
+        /** Nothing usable landed in the destination; [reason] is safe to log (no file content). */
+        data class Failed(val reason: String) : CopyResult
+    }
+
     /**
-     * Copies [srcUri]'s content into [destFolderUri] as [displayName] using a WRITE-ONLY output
-     * stream (works on cloud providers like Google Drive, unlike "rw"). Returns the new file Uri or null.
+     * Copies [srcUri] into [destFolderUri] as [displayName], **idempotently and atomically**.
+     *
+     * - *Idempotent*: a copy that is already there (same name, same size) is reported as
+     *   [CopyResult.AlreadyPresent] instead of being uploaded a second time. Repeating the call — which
+     *   is exactly what a WorkManager retry does — therefore costs nothing and produces no twin.
+     * - *Atomic*: the bytes are streamed into a staging document ([CloudCopyPolicy.stagingNameFor]) and
+     *   only renamed to [displayName] once the stream finished. An attempt killed mid-copy (the OEM
+     *   background killer does this to large uploads) can then never leave something that *looks* like a
+     *   finished recording; the next attempt cleans the leftover up and starts over.
+     *
+     * Uses a WRITE-ONLY output stream throughout, which is what works on cloud providers like Google
+     * Drive (they reject "rw").
      *
      * @param context       App context used for content resolver operations.
      * @param srcUri        The content URI of the source file to copy.
      * @param destFolderUri The tree URI of the destination folder.
      * @param displayName   The desired file name for the copy (including extension).
      * @param mimeType      The MIME type of the file (e.g. "audio/ogg").
-     * @return The content URI of the newly created copy, or null on failure.
+     * @param sourceSize    Byte length of the source, used to recognise a truncated earlier attempt.
+     *                      Pass a non-positive value when it is unknown (nothing is then replaced).
      */
-    fun copyFileToFolder(context: Context, srcUri: Uri, destFolderUri: Uri, displayName: String, mimeType: String): Uri? {
-        val dir = DocumentFile.fromTreeUri(context, destFolderUri) ?: return null
-        if (!dir.canWrite()) return null
-        val dest = dir.createFile(mimeType, displayName) ?: return null
-        return try {
-            context.contentResolver.openInputStream(srcUri)?.use { input ->
-                context.contentResolver.openOutputStream(dest.uri, "w")?.use { output ->
-                    input.copyTo(output)
-                } ?: return null
-            } ?: return null
-            dest.uri
-        } catch (e: Exception) {
-            runCatching { dest.delete() }
-            null
+    fun copyFileToFolder(
+        context: Context,
+        srcUri: Uri,
+        destFolderUri: Uri,
+        displayName: String,
+        mimeType: String,
+        sourceSize: Long
+    ): CopyResult {
+        val dir = DocumentFile.fromTreeUri(context, destFolderUri)
+            ?: return CopyResult.Failed("destination folder could not be resolved")
+        if (!dir.canWrite()) return CopyResult.Failed("destination folder is not writable")
+
+        val existing = runCatching { dir.findFile(displayName) }.getOrNull()
+        if (existing != null) {
+            val existingSize = runCatching { existing.length() }.getOrDefault(-1L)
+            when (CloudCopyPolicy.verdict(existingSize, sourceSize)) {
+                ExistingCopyVerdict.COMPLETE -> return CopyResult.AlreadyPresent(existing.uri)
+                ExistingCopyVerdict.PARTIAL -> {
+                    AppLogger.w(TAG, "Replacing a truncated '$displayName' ($existingSize of $sourceSize bytes)")
+                    if (runCatching { existing.delete() }.getOrDefault(false).not()) {
+                        return CopyResult.Failed("the truncated '$displayName' could not be removed")
+                    }
+                }
+            }
         }
+
+        // A leftover from an attempt that was killed mid-stream; it holds no value, only bytes.
+        runCatching { dir.findFile(CloudCopyPolicy.stagingNameFor(displayName))?.delete() }
+
+        val staged = dir.createFile(mimeType, CloudCopyPolicy.stagingNameFor(displayName))
+            ?: return CopyResult.Failed("staging document for '$displayName' could not be created")
+        // Renaming is how the copy is published. A provider that cannot rename (rare) gets the plain
+        // write instead — the size check above still heals a truncated result on the following attempt.
+        if (!supportsRename(context, staged.uri)) {
+            runCatching { staged.delete() }
+            AppLogger.i(TAG, "Destination provider cannot rename; writing '$displayName' directly")
+            return streamInto(context, srcUri, dir, displayName, mimeType)
+        }
+
+        val bytes = streamBytes(context, srcUri, staged.uri)
+            ?: return CopyResult.Failed("streaming '$displayName' into the staging document failed")
+                .also { runCatching { staged.delete() } }
+
+        val published = runCatching {
+            DocumentsContract.renameDocument(context.contentResolver, staged.uri, displayName)
+        }.getOrElse { e ->
+            runCatching { staged.delete() }
+            return CopyResult.Failed("publishing '$displayName' failed: ${e.message}")
+        }
+        // renameDocument returns null when the document keeps its URI — the rename still happened.
+        return CopyResult.Copied(published ?: staged.uri, bytes)
     }
+
+    /** Plain create-and-write, for destinations that do not support renaming a document. */
+    private fun streamInto(
+        context: Context,
+        srcUri: Uri,
+        dir: DocumentFile,
+        displayName: String,
+        mimeType: String
+    ): CopyResult {
+        val dest = dir.createFile(mimeType, displayName)
+            ?: return CopyResult.Failed("'$displayName' could not be created")
+        val bytes = streamBytes(context, srcUri, dest.uri)
+            ?: return CopyResult.Failed("streaming '$displayName' failed")
+                .also { runCatching { dest.delete() } }
+        return CopyResult.Copied(dest.uri, bytes)
+    }
+
+    /** Streams [srcUri] into [destUri] write-only. Returns the byte count, or null if anything failed. */
+    private fun streamBytes(context: Context, srcUri: Uri, destUri: Uri): Long? = runCatching {
+        context.contentResolver.openInputStream(srcUri)?.use { input ->
+            context.contentResolver.openOutputStream(destUri, "w")?.use { output ->
+                input.copyTo(output)
+            }
+        }
+    }.getOrElse { e ->
+        AppLogger.w(TAG, "Copy stream failed: ${e.message}")
+        null
+    }
+
+    /** True when the document at [uri] can be renamed — the mechanism the atomic publish relies on. */
+    private fun supportsRename(context: Context, uri: Uri): Boolean = runCatching {
+        context.contentResolver.query(
+            uri, arrayOf(DocumentsContract.Document.COLUMN_FLAGS), null, null, null
+        )?.use { cursor ->
+            cursor.moveToFirst() &&
+                (cursor.getInt(0) and DocumentsContract.Document.FLAG_SUPPORTS_RENAME) != 0
+        } ?: false
+    }.getOrDefault(false)
 
     /**
      * Returns the byte length of the document at [uri], or -1 if unknown.

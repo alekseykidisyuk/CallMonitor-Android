@@ -97,6 +97,7 @@
     <string name="recording_error_start_failed">L\'enregistrement n\'a pas pu démarrer. Une erreur s\'est produite lors de l\'appel de ShellService binder method.</string>
     <string name="recording_error_empty_file">L\'enregistrement est vide — aucun audio n\'a été capturé car le démon d\'enregistrement n\'était pas actif. Vérifiez que les options pour les développeurs et le débogage sans fil sont activés.</string>
     <string name="recording_error_daemon_died">Le démon d\'enregistrement s\'est arrêté — cet appel n\'est PAS enregistré. Vérifiez que les options pour les développeurs et le débogage sans fil sont activés.</string>
+    <string name="recording_error_drive_copy_failed">Un enregistrement n\'a pas pu être copié dans votre dossier cloud. Il reste enregistré sur cet appareil — vérifiez le dossier dans les Paramètres.</string>
     <string name="recording_error_title">Erreur d\'enregistrement</string>
     <string name="recording_notification_cross_country_tip">🌐International</string>
     <string name="recording_notification_current_country_tip">🏠Pays d\'origine</string>

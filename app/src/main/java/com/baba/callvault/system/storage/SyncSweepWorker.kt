@@ -54,41 +54,56 @@ class SyncSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(
         }
         val driveDir = DocumentFile.fromTreeUri(applicationContext, driveFolderUri) ?: return Result.retry()
 
-        // Names already in Drive (case-insensitive) so we don't re-copy.
-        val existingDriveNames = driveDir.listFiles()
-            .mapNotNull { it.name?.lowercase() }
-            .toHashSet()
+        // What Drive already holds (name -> byte length, case-insensitive), so a recording that is
+        // already up there is never uploaded a second time.
+        val existingInDrive = driveDir.listFiles()
+            .mapNotNull { doc -> doc.name?.lowercase()?.to(runCatching { doc.length() }.getOrDefault(-1L)) }
+            .toMap(HashMap())
 
         val deleteLocal = target == StorageTarget.DRIVE
         var copied = 0
         var failures = 0
+        var skipped = 0
         for (file in sourceDir.listFiles()) {
             val name = file.name ?: continue
             if (!file.isFile) continue
-            if (existingDriveNames.contains(name.lowercase())) continue
+            // A staging document from an interrupted copy is not a recording.
+            if (CloudCopyPolicy.isStagingName(name)) continue
 
-            val mime = file.type ?: DEFAULT_MIME
-            val result = runCatching {
-                SafHelper.copyFileToFolder(applicationContext, file.uri, driveFolderUri, name, mime)
-            }.getOrNull()
-
-            if (result == null) {
-                failures++
-                AppLogger.w(TAG, "Failed to copy '$name' to Drive; will retry the sweep later.")
+            val sourceSize = runCatching { file.length() }.getOrDefault(-1L)
+            if (sourceSize <= 0L) {
+                skipped++
+                continue // an empty file means capture never ran; copying it would fake a backup
+            }
+            val alreadyThere = existingInDrive[name.lowercase()]
+            if (alreadyThere != null &&
+                CloudCopyPolicy.verdict(alreadyThere, sourceSize) == ExistingCopyVerdict.COMPLETE
+            ) {
                 continue
             }
 
-            copied++
-            existingDriveNames.add(name.lowercase())
+            val mime = file.type ?: DEFAULT_MIME
+            val driveUri = when (val result = SafHelper.copyFileToFolder(applicationContext, file.uri, driveFolderUri, name, mime, sourceSize)) {
+                is SafHelper.CopyResult.AlreadyPresent -> result.uri
+                is SafHelper.CopyResult.Copied -> result.uri.also { copied++ }
+                is SafHelper.CopyResult.Failed -> {
+                    failures++
+                    AppLogger.w(TAG, "Failed to copy '$name' to Drive (${result.reason}).")
+                    null
+                }
+            } ?: continue
+
+            existingInDrive[name.lowercase()] = sourceSize
             if (deleteLocal) runCatching { file.delete() }
-            // Stamp the Drive copy onto the catalog (clearing the local copy for DRIVE-only mode) so the
-            // Home list reflects the swept file without re-scanning the Drive folder.
-            val destSize = SafHelper.fileSize(applicationContext, result)
-            RecordingCatalog.markDrive(applicationContext, name, result, destSize.takeIf { it > 0L }, deleteLocal)
+            // Stamp the Drive copy onto the catalog (clearing the local copy for DRIVE-only mode) so
+            // the Home list reflects the swept file without re-scanning the Drive folder.
+            RecordingCatalog.markDrive(applicationContext, name, driveUri, sourceSize, deleteLocal)
         }
 
-        AppLogger.i(TAG, "Sweep complete (target=$target copied=$copied failures=$failures deleteLocal=$deleteLocal).")
-        return if (failures > 0) Result.retry() else Result.success()
+        AppLogger.i(TAG, "Sweep complete (target=$target copied=$copied failures=$failures skipped=$skipped deleteLocal=$deleteLocal).")
+        // A sweep that keeps failing backs off rather than hammering the provider: the next scheduled run
+        // picks the stragglers up anyway, so there is nothing to gain from an unbounded retry chain.
+        return if (failures > 0 && !CloudCopyPolicy.isLastAttempt(runAttemptCount)) Result.retry() else Result.success()
     }
 
     companion object {
