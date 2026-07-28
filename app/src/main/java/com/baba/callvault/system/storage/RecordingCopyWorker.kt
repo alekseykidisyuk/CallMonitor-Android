@@ -81,8 +81,7 @@ class RecordingCopyWorker(ctx: Context, params: WorkerParameters) : CoroutineWor
         src: Uri
     ): Result {
         if (deleteLocal) {
-            runCatching { DocumentFile.fromSingleUri(applicationContext, src)?.delete() }
-                .onFailure { AppLogger.w(TAG, "Local copy of '$name' could not be deleted: ${it.message}") }
+            SafHelper.deleteDocument(DocumentFile.fromSingleUri(applicationContext, src), "the device copy of '$name'")
         }
         // Stamp the Drive copy onto the catalog row (clearing the local copy when cloud-only deletes it),
         // so the Home list reflects where the file now lives without re-scanning the Drive folder.

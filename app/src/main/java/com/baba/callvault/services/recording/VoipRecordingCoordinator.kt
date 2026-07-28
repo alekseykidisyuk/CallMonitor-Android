@@ -140,7 +140,9 @@ object VoipRecordingCoordinator {
                 .onFailure { AppLogger.e(TAG, "Staged VoIP copy failed: ${it.message}", it) }
                 .getOrDefault(false)
             AppLogger.i(TAG, "VoIP staged copy ${if (copied) "ok" else "FAILED"} -> ${saf.uri}")
-            runCatching { staging.delete() }
+            if (!runCatching { staging.delete() }.getOrDefault(false)) {
+                AppLogger.w(TAG, "The VoIP staging file ${staging.name} could not be deleted; it stays in the cache")
+            }
         }
         // The Home list reads CallVault's own catalog, not the folder — a file that is never recorded
         // here exists on disk but is invisible in the app. The carrier path does this from

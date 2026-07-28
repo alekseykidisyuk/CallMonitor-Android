@@ -296,6 +296,28 @@ object SafHelper {
     }.getOrDefault(false)
 
     /**
+     * Deletes [doc] and says so when it does not happen.
+     *
+     * [DocumentFile.delete] reports a refusal by **returning false**, not by throwing, so the common
+     * `runCatching { doc.delete() }` idiom silently accepts a cleanup that never ran. That is how empty
+     * recordings piled up in a user's folder: the guard that rejects a 0-byte capture asked for it to be
+     * deleted, the provider declined, and nothing in the log ever mentioned it.
+     *
+     * @param doc  the document to remove; null means there was nothing to delete, which is not a failure.
+     * @param what a short description of the document, for the log line ("the empty recording 'x.ogg'").
+     * @return true when the document is gone (or was never there).
+     */
+    fun deleteDocument(doc: DocumentFile?, what: String): Boolean {
+        if (doc == null) return true
+        val deleted = runCatching { doc.delete() }.getOrElse { e ->
+            AppLogger.w(TAG, "Deleting $what threw: ${e.message}")
+            false
+        }
+        if (!deleted) AppLogger.w(TAG, "Deleting $what was refused by the provider; it stays in the folder")
+        return deleted
+    }
+
+    /**
      * Returns the byte length of the document at [uri], or -1 if unknown.
      *
      * @param context App context used to resolve the [DocumentFile].

@@ -94,7 +94,7 @@ class SyncSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(
             } ?: continue
 
             existingInDrive[name.lowercase()] = sourceSize
-            if (deleteLocal) runCatching { file.delete() }
+            if (deleteLocal) SafHelper.deleteDocument(file, "the device copy of '$name'")
             // Stamp the Drive copy onto the catalog (clearing the local copy for DRIVE-only mode) so
             // the Home list reflects the swept file without re-scanning the Drive folder.
             RecordingCatalog.markDrive(applicationContext, name, driveUri, sourceSize, deleteLocal)

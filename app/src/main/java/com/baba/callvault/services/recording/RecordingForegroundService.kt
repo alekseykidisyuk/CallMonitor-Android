@@ -27,6 +27,7 @@ import com.baba.callvault.R
 import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.data.recordings.RecordingDirection
 import com.baba.callvault.data.recordings.RecordingMetadata
+import com.baba.callvault.system.storage.SafHelper
 import com.baba.callvault.system.storage.StorageRouter
 import com.baba.callvault.utils.AppLogger
 import com.baba.callvault.utils.PhoneNumberManager
@@ -515,8 +516,7 @@ class RecordingForegroundService : Service() {
             if (!daemonLossNotified) {
                 notificationHelper.showErrorNotification(getString(R.string.recording_error_empty_file))
             }
-            runCatching { doc.delete() }
-                .onFailure { AppLogger.w(TAG, "Failed to delete empty recording '$name': ${it.message}") }
+            SafHelper.deleteDocument(doc, "the empty recording '$name'")
             return
         }
         // Record this finished recording in CallVault's own catalog (the Home list's source of truth).
