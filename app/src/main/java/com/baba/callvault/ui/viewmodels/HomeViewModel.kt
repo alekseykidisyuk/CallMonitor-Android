@@ -21,6 +21,8 @@ import com.baba.callvault.data.health.SetupFingerprint
 import com.baba.callvault.data.health.SetupHealth
 import com.baba.callvault.data.health.SetupHealthDeriver
 import com.baba.callvault.data.health.SetupHealthStore
+import com.baba.callvault.data.health.Prerequisite
+import com.baba.callvault.data.health.SetupPrerequisites
 import com.baba.callvault.data.recordings.RecordingDirection
 import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.data.recordings.RecordingCatalog
@@ -29,10 +31,8 @@ import com.baba.callvault.data.recordings.RecordingsRepository
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingSource
 import com.baba.callvault.integrations.adb.AdbShell
-import com.baba.callvault.integrations.adb.DeveloperOptions
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
-import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.system.updates.UpdateInstallWorker
 import com.baba.callvault.system.updates.UpdateScheduler
 import androidx.work.WorkManager
@@ -431,13 +431,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Derives the current [HomeStatus]. First match wins:
+     * Derives the current [HomeStatus] by delegating to [SetupPrerequisites.missing] — the single
+     * definition of "is this setup capable of recording right now", shared with
+     * [com.baba.callvault.services.call.CallSessionManager] so the two can never drift. First match
+     * wins:
      *  1. NO_FOLDER        — no device recording folder configured.
      *  2. NOT_PAIRED       — Wireless Debugging pairing was never completed in setup.
      *  3. DEV_OPTIONS_OFF  — the Developer options master toggle is disabled, so Wireless debugging
      *                        (and with it the recorder daemon) cannot function; recordings come out
      *                        empty while everything else still "looks" configured.
-     *  4. READY            — everything looks good.
+     *  4. UPDATE_REGRANT_NEEDED — WRITE_SECURE_SETTINGS gone (an install-over dropped the grant) AND
+     *                        the daemon is disconnected, i.e. the next call genuinely couldn't be
+     *                        recorded (can't relaunch without the grant). While the daemon binder is
+     *                        connected, recording already works right now regardless of the grant, so
+     *                        this does NOT alarm — showing "recording paused" then was a false warning
+     *                        a user hit. refresh() still tries a silent, non-churning self-heal whenever
+     *                        the grant is missing.
+     *  5. READY            — everything looks good.
      *
      * By design, Wireless Debugging (ADB) is INTENTIONALLY transient: it is turned off between
      * calls and recording flows over the privileged daemon's binder, not over ADB. So a live
@@ -448,23 +458,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * All checks are synchronous, cheap reads (AppPreferences + one Settings.Global int); none
      * launch the daemon or do I/O.
      */
-    private fun computeStatus(): HomeStatus {
-        if (preferences.getRecordingFolderUri() == null) return HomeStatus.NO_FOLDER
-        if (!preferences.isAdbPaired()) return HomeStatus.NOT_PAIRED
-        // isExplicitlyDisabled (not !isEnabled): an absent/unreadable global must not paint a
-        // permanent red banner on ROMs that don't expose the setting.
-        if (DeveloperOptions.isExplicitlyDisabled(appContext)) return HomeStatus.DEV_OPTIONS_OFF
-        // WRITE_SECURE_SETTINGS gone → an install-over (Obtainium / manual sideload) dropped the grant.
-        // But this ONLY matters if recording can't happen: the grant is needed to RELAUNCH a dead daemon,
-        // NOT to record over an already-warm one. So while the daemon binder is connected (recording works
-        // right now), we do NOT alarm — showing "recording paused" then was a false warning a user hit.
-        // We only surface UPDATE_REGRANT_NEEDED when the grant is missing AND the daemon is disconnected,
-        // i.e. the next call genuinely couldn't be recorded (can't relaunch without the grant). refresh()
-        // still tries a silent, non-churning self-heal whenever the grant is missing.
-        if (!AdbShell.hasWriteSecureSettings(appContext) && !RecorderConnection.isConnected) {
-            return HomeStatus.UPDATE_REGRANT_NEEDED
-        }
-        return HomeStatus.READY
+    private fun computeStatus(): HomeStatus = when (SetupPrerequisites.missing(appContext)) {
+        Prerequisite.RECORDING_FOLDER -> HomeStatus.NO_FOLDER
+        Prerequisite.ADB_PAIRING -> HomeStatus.NOT_PAIRED
+        Prerequisite.DEVELOPER_OPTIONS -> HomeStatus.DEV_OPTIONS_OFF
+        Prerequisite.SECURE_SETTINGS_GRANT -> HomeStatus.UPDATE_REGRANT_NEEDED
+        null -> HomeStatus.READY
     }
 
     /**

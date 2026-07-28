@@ -14,6 +14,9 @@ import android.net.Uri
 import android.provider.ContactsContract
 import android.telephony.TelephonyManager
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.health.SetupHealthStore
+import com.baba.callvault.data.health.SetupPrerequisites
+import com.baba.callvault.data.health.recordGapForMissingPrerequisite
 import com.baba.callvault.data.recordings.RecordingDirection
 import com.baba.callvault.data.recordings.RecordingMetadata
 import com.baba.callvault.services.recording.RecordingForegroundService
@@ -274,6 +277,7 @@ class CallSessionManager private constructor(context: Context) {
         val sessionMetadata = session.currentMetadata ?: throw IllegalStateException("Metadata should have been determined by now. There is a logic error.")
 
         if (shouldAutoRecord(sessionMetadata)) {
+            reportGapIfPrerequisiteMissing(sessionMetadata)
             AppLogger.i(TAG, "Sending start INTENT for ${sessionMetadata.direction} call to RecordingForegroundService.")
             sendServiceCommand(RecordingForegroundService.ACTION_START_RECORDING, sessionMetadata)
         } else {
@@ -281,6 +285,30 @@ class CallSessionManager private constructor(context: Context) {
             sendServiceCommand(RecordingForegroundService.ACTION_STANDBY, sessionMetadata)
         }
         session.wasRecordingServiceStartIntentSend = true
+    }
+
+    /**
+     * Reports, for the status card, when THIS call — one the user expected recorded, per
+     * [shouldAutoRecord] — starts with a user-owned prerequisite missing (no recording folder, ADB
+     * never paired, Developer options off, or the WRITE_SECURE_SETTINGS grant gone while the daemon is
+     * disconnected). Recording this precisely means the card need not wait for the call-log sweep to
+     * infer the gap later, and the label names the exact call rather than a generic warning.
+     *
+     * Reporting only — never touches the recording path. Wrapped end-to-end so a failure here (a
+     * prefs read, a Settings.Global read) can never affect whether the call actually gets recorded:
+     * the START_RECORDING intent above is sent regardless, exactly as before this existed. When
+     * nothing is missing, nothing is recorded here — a daemon that dies later on an otherwise-complete
+     * setup is the normal path this whole feature exists to catch, and must stay reportable.
+     */
+    private fun reportGapIfPrerequisiteMissing(metadata: RecordingMetadata) {
+        runCatching {
+            val missing = SetupPrerequisites.missing(appContext)
+            SetupHealthStore(appContext).recordGapForMissingPrerequisite(
+                missing,
+                System.currentTimeMillis(),
+                metadata.getBestNumber()?.takeIf { it.isNotBlank() }
+            )
+        }.onFailure { AppLogger.w(TAG, "Could not record setup-health gap: ${it.message}") }
     }
 
     @Synchronized

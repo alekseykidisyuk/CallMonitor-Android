@@ -27,7 +27,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.health.SetupHealthStore
 import com.baba.callvault.integrations.adb.AdbShell
+import com.baba.callvault.integrations.adb.DeveloperOptions
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.WirelessDebuggingPolicy
 import com.baba.callvault.server.RecorderConnection
@@ -117,8 +119,14 @@ class DaemonKeepAliveService : Service() {
             // re-evaluate means the user flips a switch and nothing visibly happens, which reads as
             // broken even when it eventually corrects itself.
             val reason = when {
-                // Last way in just disappeared — adbd is going down and the daemon with it.
-                !usbOn && !wdOn -> "USB debugging switched off and Wireless debugging is off — adbd has no transport; restoring"
+                // Last way in just disappeared — adbd is going down and the daemon with it. This is a
+                // user-caused unrecordable window opening RIGHT NOW, not the daemon dying on its own —
+                // restart the observation window immediately rather than waiting for the user to next
+                // open the app, so a call missed in this window is never later judged as a failure.
+                !usbOn && !wdOn -> {
+                    restartObservationWindow("USB debugging switched off with Wireless debugging already off")
+                    "USB debugging switched off and Wireless debugging is off — adbd has no transport; restoring"
+                }
                 // USB debugging now holds adbd up, so Wireless debugging is no longer needed. Dropping
                 // it here is safe: with USB debugging enabled, toggling Wireless debugging does not
                 // restart adbd (measured — its pid is unchanged), so the daemon is never at risk.
@@ -136,6 +144,23 @@ class DaemonKeepAliveService : Service() {
                 }.onFailure { AppLogger.w(TAG, "Could not apply the transport change: ${it.message}") }
             }.apply { isDaemon = true; name = "cv-transport-change" }.start()
         }
+    }
+
+    /**
+     * Restarts the setup-health observation window the INSTANT readiness is lost, instead of waiting
+     * for the user to next open the app ([com.baba.callvault.ui.viewmodels.HomeViewModel.refresh] is
+     * otherwise the only place this window moves). Without this, a user who disables Wireless
+     * debugging, misses a call, then re-enables it WITHOUT opening CallVault would never have the
+     * unrecordable window recorded — and the missed call would read as a silent daemon failure
+     * instead of a call that was never recordable in the first place.
+     *
+     * Wrapped so a failure here can never destabilise this service — health bookkeeping is strictly
+     * secondary to keeping the daemon warm.
+     */
+    private fun restartObservationWindow(reason: String) {
+        runCatching {
+            SetupHealthStore(applicationContext).observationWindowStart(isReady = false, System.currentTimeMillis())
+        }.onFailure { AppLogger.w(TAG, "Could not restart the observation window ($reason): ${it.message}") }
     }
 
     /**
@@ -167,6 +192,19 @@ class DaemonKeepAliveService : Service() {
         }
     }
 
+    /**
+     * Watches the Developer options master toggle for the same reason as [usbDebuggingObserver]: with
+     * it off, Wireless debugging cannot function and the daemon cannot run — a user-caused unrecordable
+     * window that must be recorded the instant it opens, not discovered the next time the user happens
+     * to open CallVault.
+     */
+    private val developerOptionsObserver = object : ContentObserver(watchdogHandler) {
+        override fun onChange(selfChange: Boolean) {
+            if (!DeveloperOptions.isExplicitlyDisabled(applicationContext)) return
+            restartObservationWindow("Developer options switched off")
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         getSystemService(NotificationManager::class.java).createNotificationChannel(
@@ -183,6 +221,9 @@ class DaemonKeepAliveService : Service() {
             )
             contentResolver.registerContentObserver(
                 Settings.Global.getUriFor("adb_wifi_enabled"), false, wirelessDebuggingObserver,
+            )
+            contentResolver.registerContentObserver(
+                Settings.Global.getUriFor("development_settings_enabled"), false, developerOptionsObserver,
             )
         }.onFailure { AppLogger.w(TAG, "Could not watch the debugging switches: ${it.message}") }
     }
@@ -352,6 +393,7 @@ class DaemonKeepAliveService : Service() {
     override fun onDestroy() {
         runCatching { contentResolver.unregisterContentObserver(usbDebuggingObserver) }
         runCatching { contentResolver.unregisterContentObserver(wirelessDebuggingObserver) }
+        runCatching { contentResolver.unregisterContentObserver(developerOptionsObserver) }
         runCatching { voipDetector.stop() }
         watchdogHandler.removeCallbacks(watchdog)
         RecorderConnection.onDeath = null
