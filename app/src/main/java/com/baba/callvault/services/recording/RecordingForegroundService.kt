@@ -21,6 +21,10 @@ import android.provider.CallLog
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.health.CallOutcomes
+import com.baba.callvault.data.health.SetupFingerprint
+import com.baba.callvault.data.health.SetupHealthStore
+import com.baba.callvault.data.health.record
 import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.R
@@ -517,6 +521,7 @@ class RecordingForegroundService : Service() {
                 notificationHelper.showErrorNotification(getString(R.string.recording_error_empty_file))
             }
             SafHelper.deleteDocument(doc, "the empty recording '$name'")
+            recordHealth(sizeBytes, name)
             return
         }
         // Record this finished recording in CallVault's own catalog (the Home list's source of truth).
@@ -527,7 +532,21 @@ class RecordingForegroundService : Service() {
         CoroutineScope(Dispatchers.IO).launch {
             RecordingCatalog.recordLocal(applicationContext, name, uri, sizeBytes, lastModified)
         }
+        recordHealth(sizeBytes, name)
         StorageRouter.route(applicationContext, uri, name, mimeType)
+    }
+
+    /**
+     * Records what this call proved, for the Home status card. Best-effort: a store that cannot be
+     * written leaves the previous state rather than corrupting it. `farPartyHeard` is null because the
+     * carrier capture path cannot observe silence — see the follow-on plan.
+     */
+    private fun recordHealth(sizeBytes: Long, name: String) {
+        runCatching {
+            val outcome = CallOutcomes.of(sizeBytes, daemonLossNotified, farPartyHeard = null)
+            SetupHealthStore(applicationContext)
+                .record(outcome, System.currentTimeMillis(), name, SetupFingerprint.of(appPreferences))
+        }.onFailure { AppLogger.w(TAG, "Could not record setup health for '$name': ${it.message}") }
     }
 
     /**

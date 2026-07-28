@@ -12,6 +12,10 @@ import android.content.Context
 import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.health.CallOutcomes
+import com.baba.callvault.data.health.SetupFingerprint
+import com.baba.callvault.data.health.SetupHealthStore
+import com.baba.callvault.data.health.record
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.server.IRecorderService
 import com.baba.callvault.server.RecorderConnection
@@ -153,6 +157,12 @@ object VoipRecordingCoordinator {
                 runCatching {
                     val size = SafHelper.fileSize(context, saf.uri)
                     RecordingCatalog.recordLocal(context, name, saf.uri, size, System.currentTimeMillis())
+                    runCatching {
+                        val outcome = CallOutcomes.of(size, daemonDied = false, farPartyHeard = farHeard)
+                        SetupHealthStore(context).record(
+                            outcome, System.currentTimeMillis(), name, SetupFingerprint.of(AppPreferences(context))
+                        )
+                    }.onFailure { AppLogger.w(TAG, "Could not record setup health for '$name': ${it.message}") }
                     AppLogger.i(TAG, "VoIP recording catalogued: $name ($size bytes)")
                     StorageRouter.route(context, saf.uri, name, codecMime)
                 }.onFailure { AppLogger.e(TAG, "Cataloguing the VoIP recording failed: ${it.message}", it) }
