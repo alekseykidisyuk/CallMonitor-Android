@@ -28,8 +28,13 @@ data class HealthFacts(
     val lastGapLabel: String? = null,
     val sweepWatermark: Long = 0L,
     val observedCallEnds: List<Long> = emptyList(),
-    /** Epoch millis this install first became ABLE to record, or 0 if never established. */
-    val observingSince: Long = 0L
+    /**
+     * Epoch millis at the start of the span this install has, as far as it knows, been
+     * CONTINUOUSLY able to record in — or 0 if never established. Not monotonic: a confirmed
+     * not-ready observation restarts it forward, since that observation is positive evidence the
+     * earlier span is no longer vouched for. See [SetupHealthStore.observationWindowStart].
+     */
+    val observationWindowStart: Long = 0L
 )
 
 /**
@@ -57,7 +62,7 @@ class SetupHealthStore(context: Context) {
         lastGapLabel = prefs.getString(KEY_GAP_LABEL, null),
         sweepWatermark = prefs.getLong(KEY_SWEEP_WATERMARK, 0L),
         observedCallEnds = readRing(),
-        observingSince = prefs.getLong(KEY_OBSERVING_SINCE, 0L)
+        observationWindowStart = prefs.getLong(KEY_WINDOW_START, 0L)
     )
 
     /**
@@ -105,20 +110,29 @@ class SetupHealthStore(context: Context) {
     fun setSweepWatermark(millis: Long) = prefs.edit { putLong(KEY_SWEEP_WATERMARK, millis) }
 
     /**
-     * Returns the moment this install first became ABLE to record, establishing it now if it is
-     * unset AND [isReady] is true. Once set, it never moves — a later loss of readiness (e.g. dev
-     * options toggled off) must not erase the fact that recording once worked, or the gap sweep's
-     * floor would silently retreat.
+     * Returns the start of the span this install has, as far as it knows, been CONTINUOUSLY able
+     * to record in — establishing or restarting it as needed:
+     *  - not ready → stores and returns [nowMillis]. Observing not-ready is positive evidence that
+     *    the span up to now is no longer covered, so the window restarts here. This deliberately
+     *    means the value is NOT monotonic and CAN move backward-in-meaning (forward in time) even
+     *    once set — unlike a simple "first ever ready" timestamp.
+     *  - ready and nothing stored yet → stores and returns [nowMillis] (first-ever-ready).
+     *  - ready and a value is already stored → returns it unchanged. This is what keeps the case the
+     *    whole gap-detection fix exists for working: a user whose status is READY but whose daemon
+     *    died at call time still has an OLD window start, so that unrecorded call stays caught.
      *
      * Synchronized for the same reason as [observeCall]: this is a read-then-maybe-write, and two
-     * racing callers could otherwise commit two different "first ready" moments.
+     * racing callers could otherwise commit two different window starts.
      */
     @Synchronized
-    fun observingSinceOrSet(isReady: Boolean, nowMillis: Long): Long {
-        val existing = prefs.getLong(KEY_OBSERVING_SINCE, 0L)
+    fun observationWindowStart(isReady: Boolean, nowMillis: Long): Long {
+        if (!isReady) {
+            prefs.edit { putLong(KEY_WINDOW_START, nowMillis) }
+            return nowMillis
+        }
+        val existing = prefs.getLong(KEY_WINDOW_START, 0L)
         if (existing != 0L) return existing
-        if (!isReady) return 0L
-        prefs.edit { putLong(KEY_OBSERVING_SINCE, nowMillis) }
+        prefs.edit { putLong(KEY_WINDOW_START, nowMillis) }
         return nowMillis
     }
 
@@ -146,6 +160,6 @@ class SetupHealthStore(context: Context) {
         private const val KEY_GAP_LABEL = "last_gap_label"
         private const val KEY_SWEEP_WATERMARK = "sweep_watermark"
         private const val KEY_OBSERVED_ENDS = "observed_call_ends"
-        private const val KEY_OBSERVING_SINCE = "observing_since"
+        private const val KEY_WINDOW_START = "observation_window_start"
     }
 }

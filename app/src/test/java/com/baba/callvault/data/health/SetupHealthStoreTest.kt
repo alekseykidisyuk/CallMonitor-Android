@@ -11,6 +11,7 @@ package com.baba.callvault.data.health
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,7 +36,7 @@ class SetupHealthStoreTest {
         assertNull(facts.verifiedFingerprint)
         assertNull(facts.lastFailureReason)
         assertEquals(emptyList<Long>(), facts.observedCallEnds)
-        assertEquals(0L, facts.observingSince)
+        assertEquals(0L, facts.observationWindowStart)
     }
 
     @Test
@@ -106,29 +107,70 @@ class SetupHealthStoreTest {
     }
 
     @Test
-    fun `observingSinceOrSet stores now on the first ready call`() {
-        val value = store.observingSinceOrSet(isReady = true, nowMillis = 12_345L)
+    fun `observationWindowStart stores now on the first ready call`() {
+        val value = store.observationWindowStart(isReady = true, nowMillis = 12_345L)
 
         assertEquals(12_345L, value)
-        assertEquals(12_345L, store.read().observingSince)
+        assertEquals(12_345L, store.read().observationWindowStart)
     }
 
     @Test
-    fun `observingSinceOrSet returns zero when not ready and unset`() {
-        val value = store.observingSinceOrSet(isReady = false, nowMillis = 12_345L)
+    fun `observationWindowStart stores now when not ready and unset`() {
+        // Not ready is itself an observation: it is positive evidence recording was not covered up
+        // to this moment, so the window starts here rather than staying unset at 0.
+        val value = store.observationWindowStart(isReady = false, nowMillis = 12_345L)
 
-        assertEquals(0L, value)
-        assertEquals(0L, store.read().observingSince)
+        assertEquals(12_345L, value)
+        assertEquals(12_345L, store.read().observationWindowStart)
     }
 
     @Test
-    fun `observingSinceOrSet never moves once set`() {
-        store.observingSinceOrSet(isReady = true, nowMillis = 1_000L)
+    fun `observationWindowStart does not move while ready with a value already stored`() {
+        store.observationWindowStart(isReady = true, nowMillis = 1_000L)
 
-        val second = store.observingSinceOrSet(isReady = true, nowMillis = 2_000L)
+        val second = store.observationWindowStart(isReady = true, nowMillis = 2_000L)
 
         assertEquals(1_000L, second)
-        assertEquals(1_000L, store.read().observingSince)
+        assertEquals(1_000L, store.read().observationWindowStart)
+    }
+
+    @Test
+    fun `observationWindowStart restarts forward on a not-ready observation, even after it was set while ready`() {
+        store.observationWindowStart(isReady = true, nowMillis = 1_000L)
+
+        val restarted = store.observationWindowStart(isReady = false, nowMillis = 2_000L)
+        val afterReadyAgain = store.observationWindowStart(isReady = true, nowMillis = 3_000L)
+
+        assertEquals(2_000L, restarted)
+        // Readiness returning must not move it back to the earlier, now-discarded start.
+        assertEquals(2_000L, afterReadyAgain)
+        assertEquals(2_000L, store.read().observationWindowStart)
+    }
+
+    @Test
+    fun `a call inside a span discarded by a not-ready observation is not a gap once readiness returns`() {
+        // Ready at 1_000 (window start = 1_000). Not-ready observed at 5_000 — e.g. the user reopens
+        // the app while dev options are still off — restarts the window there, since that observation
+        // is positive evidence the 1_000..5_000 span is no longer vouched for. A call at 2_000, inside
+        // the now-discarded span, must not be judged once readiness returns at 9_000 (which must not
+        // move the window back to 1_000).
+        store.observationWindowStart(isReady = true, nowMillis = 1_000L)
+        store.observationWindowStart(isReady = false, nowMillis = 5_000L)
+        val windowStart = store.observationWindowStart(isReady = true, nowMillis = 9_000L)
+        assertEquals(5_000L, windowStart)
+
+        val call = CallLogEntry(startedAt = 2_000L, durationSeconds = 60, isIncoming = true, label = "Feroza")
+        val result = CallGapDetector.sweep(
+            entries = listOf(call),
+            observedCallEnds = emptyList(),
+            autoRecordIncoming = true,
+            autoRecordOutgoing = true,
+            watermark = 0L,
+            ringCapacity = SetupHealthStore.RING_SIZE,
+            windowStart = windowStart
+        )
+
+        assertTrue(result.gaps.isEmpty())
     }
 
     @Test

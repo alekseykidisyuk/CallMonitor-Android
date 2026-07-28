@@ -479,14 +479,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * that was never written down has nothing to survive on.
      *
      * [isReady] is [HomeStatus.isReady] from the status this same [refresh] call just computed. It is
-     * threaded into [SetupHealthStore.observingSinceOrSet] so "observing since" is only established
-     * once this install can actually record — a call during onboarding, before ADB pairing, was never
-     * going to be recorded and must not later read as a failure.
+     * threaded into [SetupHealthStore.observationWindowStart] on EVERY sweep (not only while ready):
+     * a not-ready reading restarts the window forward so a call CallVault genuinely could not have
+     * recorded is never later judged as a failure once the setup is fixed and status returns to READY.
+     * While ready, an already-established window start is left alone — that is what keeps a daemon
+     * that dies mid-call, despite the status card reading READY, still caught as a gap.
      */
     private fun sweepSetupHealth(isReady: Boolean): SetupHealth = runCatching {
         val store = SetupHealthStore(appContext)
         val facts = store.read()
-        val observingSince = store.observingSinceOrSet(isReady, System.currentTimeMillis())
+        val windowStart = store.observationWindowStart(isReady, System.currentTimeMillis())
         val result = CallGapDetector.sweep(
             entries = CallLogReader.entriesSince(appContext, facts.sweepWatermark),
             observedCallEnds = facts.observedCallEnds,
@@ -494,7 +496,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             autoRecordOutgoing = preferences.isAutoRecordOutgoingEnabled(),
             watermark = facts.sweepWatermark,
             ringCapacity = SetupHealthStore.RING_SIZE,
-            observingSince = observingSince
+            windowStart = windowStart
         )
         if (result.newWatermark != facts.sweepWatermark) store.setSweepWatermark(result.newWatermark)
         result.gaps.maxByOrNull { it.startedAt }?.let { store.recordGap(it.startedAt, it.label) }

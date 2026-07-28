@@ -32,12 +32,13 @@ data class SweepResult(val gaps: List<CallGap>, val newWatermark: Long)
  * How far back judging reaches (the floor) depends on whether the ring has ever evicted anything:
  *  - ring at capacity ([ringCapacity]) → floor at the oldest remembered end, the eviction horizon.
  *    Older than that, "I cannot remember" must never render as "it failed".
- *  - ring below capacity → nothing has been evicted, so every call since [observingSince] (the moment
- *    this install first became able to record) is fully accounted for; an unobserved one in that
+ *  - ring below capacity → nothing has been evicted, so every call since [windowStart] (the start of
+ *    the span this install has, as far as it knows, been continuously able to record in — see
+ *    [SetupHealthStore.observationWindowStart]) is fully accounted for; an unobserved one in that
  *    window is a genuine gap, even with an empty ring. This is what stops a recorder that has been
  *    broken since day one — whose ring never fills — from staying silent forever: the person worst
  *    off is the one this feature must not go quiet for.
- *  - [observingSince] itself unknown (0) → judge nothing, exactly as before this floor existed.
+ *  - [windowStart] itself unknown (0) → judge nothing, exactly as before this floor existed.
  */
 object CallGapDetector {
 
@@ -56,7 +57,7 @@ object CallGapDetector {
         autoRecordOutgoing: Boolean,
         watermark: Long,
         ringCapacity: Int,
-        observingSince: Long
+        windowStart: Long
     ): SweepResult {
         val newWatermark = entries.maxOfOrNull { it.startedAt }?.coerceAtLeast(watermark) ?: watermark
         val oldestRemembered = observedCallEnds.minOrNull()
@@ -65,9 +66,9 @@ object CallGapDetector {
             // The ring is full: something has definitely been evicted, so anything older than its
             // oldest remembered end is unknowable and must not be judged.
             oldestRemembered != null && observedCallEnds.size >= ringCapacity -> oldestRemembered
-            // The ring still has room: nothing has been evicted, so observingSince — if we know it —
+            // The ring still has room: nothing has been evicted, so windowStart — if we know it —
             // is a true floor, reaching further back than the ring alone would allow.
-            observingSince > 0L -> observingSince
+            windowStart > 0L -> windowStart
             // Neither an eviction horizon nor a known start: nothing can be judged safely.
             else -> return SweepResult(emptyList(), newWatermark)
         }

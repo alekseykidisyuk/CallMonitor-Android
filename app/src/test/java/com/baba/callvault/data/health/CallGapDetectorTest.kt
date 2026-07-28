@@ -17,10 +17,10 @@ class CallGapDetectorTest {
         watermark: Long = 0L,
         // Existing tests never think about capacity: defaulting it to the ring's own size means
         // that ring is always "at capacity", which reproduces the pre-fix floor (oldest remembered)
-        // exactly — so every test written before observingSince existed keeps its old meaning.
+        // exactly — so every test written before windowStart existed keeps its old meaning.
         ringCapacity: Int = observed.size.coerceAtLeast(1),
-        observingSince: Long = 0L
-    ) = CallGapDetector.sweep(entries, observed, incoming, outgoing, watermark, ringCapacity, observingSince)
+        windowStart: Long = 0L
+    ) = CallGapDetector.sweep(entries, observed, incoming, outgoing, watermark, ringCapacity, windowStart)
 
     @Test
     fun `a call CallVault never observed is a gap`() {
@@ -108,50 +108,66 @@ class CallGapDetectorTest {
     }
 
     // --- The empty-ring blind spot: a recorder broken since day one must not stay silent forever. ---
+    //
+    // Each case below is written so that reverting to the pre-fix floor (oldestRemembered, with no
+    // concept of windowStart or capacity at all) makes at least one assertion fail — not just so
+    // that it happens to produce the same "no gaps" answer either way.
 
     @Test
-    fun `an empty ring with observingSince set makes a later call a gap`() {
+    fun `windowStart unset judges nothing, even though the same call is a gap once it is set`() {
         val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = "Feroza")
-        val result = sweep(listOf(call), observed = emptyList(), ringCapacity = 20, observingSince = s(500))
-        assertEquals(listOf(CallGap(s(1_000), "Feroza")), result.gaps)
+        val unset = sweep(listOf(call), observed = emptyList(), ringCapacity = 20, windowStart = 0L)
+        val onceSet = sweep(listOf(call), observed = emptyList(), ringCapacity = 20, windowStart = s(500))
+
+        // Under the pre-fix floor (oldestRemembered only), an empty ring always yields no gaps
+        // regardless of any windowStart value — so onceSet would wrongly stay empty too if this
+        // fix were reverted.
+        assertTrue(unset.gaps.isEmpty())
+        assertEquals(listOf(CallGap(s(1_000), "Feroza")), onceSet.gaps)
     }
 
     @Test
-    fun `an empty ring with observingSince unset judges nothing`() {
-        val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = null)
-        val result = sweep(listOf(call), observed = emptyList(), ringCapacity = 20, observingSince = 0L)
-        assertTrue(result.gaps.isEmpty())
-    }
-
-    @Test
-    fun `a call before observingSince is never judged`() {
-        val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = null)
-        val result = sweep(listOf(call), observed = emptyList(), ringCapacity = 20, observingSince = s(2_000))
-        assertTrue(result.gaps.isEmpty())
-    }
-
-    @Test
-    fun `a full ring floors at the oldest remembered end, not observingSince`() {
-        // Capacity 2, ring holds exactly 2 → at capacity. A call between observingSince (far older)
-        // and the oldest remembered end must stay unjudged, exactly like before this fix.
-        val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = null)
+    fun `a call before windowStart is never judged, while one at or after it is`() {
+        val before = CallLogEntry(s(1_000), 60, isIncoming = true, label = null)
+        val atOrAfter = CallLogEntry(s(3_000), 60, isIncoming = true, label = "Feroza")
         val result = sweep(
-            listOf(call),
+            listOf(before, atOrAfter),
+            observed = emptyList(),
+            ringCapacity = 20,
+            windowStart = s(2_000)
+        )
+
+        // Exactly one gap: the pre-windowStart call must be excluded (else both would appear), and
+        // the post-windowStart call must be included (else the list would be empty) — the pre-fix
+        // floor logic, which ignores windowStart entirely on an empty ring, would return no gaps at
+        // all here.
+        assertEquals(listOf(CallGap(s(3_000), "Feroza")), result.gaps)
+    }
+
+    @Test
+    fun `a full ring floors at the oldest remembered end, not windowStart`() {
+        // Capacity 2, ring holds exactly 2 → at capacity. A call between windowStart (far older) and
+        // the oldest remembered end must stay unjudged; a call after the oldest remembered end must
+        // still be judged. A bug that let windowStart leak into the at-capacity case would flag both.
+        val betweenWindowStartAndOldest = CallLogEntry(s(1_000), 60, isIncoming = true, label = null)
+        val afterOldest = CallLogEntry(s(5_000), 60, isIncoming = true, label = "Feroza")
+        val result = sweep(
+            listOf(betweenWindowStartAndOldest, afterOldest),
             observed = listOf(s(3_000), s(4_000)),
             ringCapacity = 2,
-            observingSince = s(0)
+            windowStart = s(0)
         )
-        assertTrue(result.gaps.isEmpty())
+        assertEquals(listOf(CallGap(s(5_000), "Feroza")), result.gaps)
     }
 
     @Test
-    fun `a ring below capacity floors at observingSince, reaching further back than the oldest remembered end`() {
+    fun `a ring below capacity floors at windowStart, reaching further back than the oldest remembered end`() {
         val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = "Feroza")
         val result = sweep(
             listOf(call),
             observed = listOf(s(3_000), s(4_000)), // oldest remembered is s(3_000); the call is before that
             ringCapacity = 20, // far below capacity → nothing has been evicted
-            observingSince = s(500)
+            windowStart = s(500)
         )
         assertEquals(listOf(CallGap(s(1_000), "Feroza")), result.gaps)
     }
