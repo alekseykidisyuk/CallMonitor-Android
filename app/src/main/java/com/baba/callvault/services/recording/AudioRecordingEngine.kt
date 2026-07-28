@@ -24,6 +24,7 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyAudioMuxer
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioSource
 import com.baba.callvault.integrations.scrcpy.ScrcpyClient
 import com.baba.callvault.integrations.scrcpy.ScrcpyLauncher
+import com.baba.callvault.server.DirectAudioRecorderSession
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.services.recording.handoff.HandoffReceiver
@@ -389,7 +390,21 @@ class AudioRecordingEngine {
         return try {
             service.startRecording(audioSourceEnum.cliKey, codecEnum.cliKey, bitRate, outputPfd)
             daemonRecording = true
-            AppLogger.i(TAG, "Daemon startRecording dispatched; daemon now owns scrcpy + muxing")
+            // Name the capture path the daemon is expected to take. This line used to assert "scrcpy"
+            // unconditionally, which predates the direct AudioRecord path and sends whoever reads a bug
+            // report to the wrong component — a VOICE_CALL/AAC recording goes direct, not through scrcpy.
+            // The daemon logs which path it actually took, but that never reaches this file: it runs in
+            // its own process, where AppLogger was never given a context to write one.
+            val expectedPath = if (DirectAudioRecorderSession.supports(audioSourceEnum, codecEnum)) {
+                "direct AudioRecord"
+            } else {
+                "scrcpy"
+            }
+            AppLogger.i(
+                TAG,
+                "Daemon startRecording dispatched; it owns capture + muxing from here " +
+                    "(expected path: $expectedPath — the daemon falls back to scrcpy if the direct path cannot start)"
+            )
             // A successful dispatch only proves the binder was alive at that instant — watch it so a
             // daemon that dies moments later surfaces as a failure instead of a silent empty file.
             livenessHandler.postDelayed(livenessWatch, DAEMON_LIVENESS_POLL_MS)
