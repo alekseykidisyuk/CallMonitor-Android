@@ -3,6 +3,24 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.5.2] — 2026-07-28
+
+### Fixed
+- **Google Drive kept announcing calls it had already saved, sometimes an hour or more after they
+  ended.** Every failed copy started over with a brand-new file in your cloud folder rather than
+  recognising the one already there, and it never stopped trying: one recording had been re-uploading
+  for a day, leaving a second, half-finished copy of the call beside the good one. A copy now sees a
+  recording that is already up there and does nothing at all.
+- **A copy cut short can no longer be mistaken for a finished one.** Android kills long uploads that
+  run in the background; the recording is now written under a temporary name and only takes its real
+  name once every byte has arrived. A half-finished copy left by an older version is replaced.
+- **A recording that cannot be copied now tells you.** After ten attempts CallVault stops and shows a
+  notification, keeping the recording on your device, instead of retrying silently for days. An empty
+  recording is never uploaded as though it were a saved call.
+- **The scheduled cloud sweep now matches the cadence you picked.** Leaving the setup wizard without
+  finishing it could strand a daily or weekly sweep, which then uploaded in batches alongside the
+  per-call copy.
+
 ## [1.5.1] — 2026-07-27
 
 ### Fixed
