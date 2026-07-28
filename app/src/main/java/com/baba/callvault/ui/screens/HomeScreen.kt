@@ -78,6 +78,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.baba.callvault.ui.common.OfflineDialogMode
@@ -636,20 +637,47 @@ private fun HeroStatusCard(
  * a byte count appears only in the empty-recording failure, never as reassurance.
  */
 @Composable
-private fun healthMessage(health: SetupHealth): String = when (health) {
-    is SetupHealth.Verified -> stringResource(R.string.home_health_verified, relativeTime(health.atMillis))
-    is SetupHealth.Unverified -> stringResource(R.string.home_health_unverified)
-    is SetupHealth.StaleAfterChange -> stringResource(R.string.home_health_setup_changed)
-    is SetupHealth.CallNotRecorded -> health.label?.let {
-        stringResource(R.string.home_health_call_not_recorded, relativeTime(health.atMillis), it)
-    } ?: stringResource(R.string.home_health_call_not_recorded_unnamed, relativeTime(health.atMillis))
-    is SetupHealth.LastCallFailed -> stringResource(
-        when (health.reason) {
-            FailureReason.EMPTY_FILE -> R.string.home_health_failed_empty
-            FailureReason.DAEMON_DIED -> R.string.home_health_failed_daemon
-            FailureReason.ONE_SIDED -> R.string.home_health_failed_one_sided
+private fun healthMessage(health: SetupHealth): String {
+    // Read the ticking clock so the phrasing below re-renders as time passes. Without it the line is
+    // computed once and frozen: a card left on screen still read "0 minutes ago" three minutes after
+    // the call, because an unchanged SetupHealth means no state change and so no recomposition.
+    val now = tickingNow()
+    return when (health) {
+        is SetupHealth.Verified ->
+            if (now - health.atMillis < DateUtils.MINUTE_IN_MILLIS) {
+                stringResource(R.string.home_health_verified_just_now)
+            } else {
+                stringResource(R.string.home_health_verified, relativeTime(health.atMillis))
+            }
+        is SetupHealth.Unverified -> stringResource(R.string.home_health_unverified)
+        is SetupHealth.StaleAfterChange -> stringResource(R.string.home_health_setup_changed)
+        is SetupHealth.CallNotRecorded -> health.label?.let {
+            stringResource(R.string.home_health_call_not_recorded, relativeTime(health.atMillis), it)
+        } ?: stringResource(R.string.home_health_call_not_recorded_unnamed, relativeTime(health.atMillis))
+        is SetupHealth.LastCallFailed -> stringResource(
+            when (health.reason) {
+                FailureReason.EMPTY_FILE -> R.string.home_health_failed_empty
+                FailureReason.DAEMON_DIED -> R.string.home_health_failed_daemon
+                FailureReason.ONE_SIDED -> R.string.home_health_failed_one_sided
+            }
+        )
+    }
+}
+
+/**
+ * Wall-clock time that advances while the card is on screen, so a relative phrase ages instead of
+ * freezing at whatever it said when it was first drawn. Ticks once a minute — the finest resolution
+ * any of these lines actually shows.
+ */
+@Composable
+private fun tickingNow(): Long {
+    val now by produceState(initialValue = System.currentTimeMillis()) {
+        while (true) {
+            delay(DateUtils.MINUTE_IN_MILLIS)
+            value = System.currentTimeMillis()
         }
-    )
+    }
+    return now
 }
 
 /** "2 hours ago", "Yesterday 18:44" — the platform's own phrasing, so it is localised for free. */

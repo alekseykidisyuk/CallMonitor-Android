@@ -62,6 +62,7 @@
 
     <!-- Setup health: what real calls proved, shown as the status card's second line when ready -->
     <string name="home_health_verified">Last verified %1$s.</string>
+    <string name="home_health_verified_just_now">Last verified just now.</string>
     <string name="home_health_unverified">Your next call will confirm recording works.</string>
     <string name="home_health_setup_changed">Setup changed since your last call — your next call will confirm it still works.</string>
     <string name="home_health_call_not_recorded">A call was not recorded — %1$s, %2$s.</string>

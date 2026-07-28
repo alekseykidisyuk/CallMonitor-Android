@@ -35,6 +35,7 @@
     <string name="home_whatsnew_resilient_enabled">L\'enregistrement résilient est activé. Un enregistrement déjà en cours n\'est plus affecté si Android arrête le service d\'arrière-plan de CallVault.</string>
 
     <string name="home_health_verified">Dernière vérification %1$s.</string>
+    <string name="home_health_verified_just_now">Dernière vérification à l\'instant.</string>
     <string name="home_health_unverified">Votre prochain appel confirmera que l\'enregistrement fonctionne.</string>
     <string name="home_health_setup_changed">La configuration a changé depuis votre dernier appel — le prochain confirmera qu\'elle fonctionne toujours.</string>
     <string name="home_health_call_not_recorded">Un appel n\'a pas été enregistré — %1$s, %2$s.</string>
