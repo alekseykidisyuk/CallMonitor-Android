@@ -57,11 +57,22 @@ object SetupPrerequisites {
 
 /**
  * Reports, for the status card, that the call starting at [atMillis] could not have been recorded
- * because [missing] was absent — precise reporting instead of leaving it to the gap sweep to infer
- * later from the call log. A no-op when [missing] is null: a daemon that dies later on an otherwise
- * complete setup is the normal path this whole feature exists to catch, and must stay reportable, so
- * nothing is ever recorded here on that path.
+ * because [missing] was absent — precise reporting (naming the exact cause via
+ * [SetupHealthStore.recordMissedWhileNotReady]) instead of leaving it to the gap sweep to later infer
+ * an unexplained [SetupHealth.CallNotRecorded] for a call that was never recordable in the first place.
+ *
+ * Two refusals matter as much as the recording itself:
+ *  - A no-op when [missing] is null: a daemon that dies later on an otherwise-complete setup is the
+ *    normal path this whole feature exists to catch, and must stay reportable, so nothing is ever
+ *    recorded here on that path.
+ *  - GATED on the setup having verified at least once before ([HealthFacts.lastVerifiedAt] > 0). A user
+ *    who has never had a single working call — mid-onboarding, no folder configured yet, never paired —
+ *    must never be told a call was "missed"; there is nothing earlier that proved recording ever worked
+ *    for them to have lost. Without this gate, reporting turns into nagging someone who never finished
+ *    setting the app up.
  */
-fun SetupHealthStore.recordGapForMissingPrerequisite(missing: Prerequisite?, atMillis: Long, label: String?) {
-    if (missing != null) recordGap(atMillis, label)
+fun SetupHealthStore.recordMissedForMissingPrerequisite(missing: Prerequisite?, atMillis: Long, label: String?) {
+    if (missing == null) return
+    if (read().lastVerifiedAt <= 0L) return
+    recordMissedWhileNotReady(atMillis, label, missing)
 }

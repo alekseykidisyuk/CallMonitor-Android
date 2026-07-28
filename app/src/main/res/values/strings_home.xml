@@ -67,6 +67,17 @@
     <string name="home_health_setup_changed">Setup changed since your last call — your next call will confirm it still works.</string>
     <string name="home_health_call_not_recorded">A call was not recorded — %1$s, %2$s.</string>
     <string name="home_health_call_not_recorded_unnamed">A call was not recorded — %1$s.</string>
+    <!-- A call missed while a specific, user-owned prerequisite was missing — named precisely rather
+         than reading as the unexplained daemon-died case above. One pair (labelled/unnamed) per
+         Prerequisite, mirroring home_health_call_not_recorded / _unnamed. -->
+    <string name="home_health_missed_recording_folder">A call was not recorded — no recording folder was set at the time, %1$s.</string>
+    <string name="home_health_missed_recording_folder_unnamed">A call was not recorded — no recording folder was set at the time.</string>
+    <string name="home_health_missed_adb_pairing">A call was not recorded — setup was not finished at the time, %1$s.</string>
+    <string name="home_health_missed_adb_pairing_unnamed">A call was not recorded — setup was not finished at the time.</string>
+    <string name="home_health_missed_developer_options">A call was not recorded — Developer options were off at the time, %1$s.</string>
+    <string name="home_health_missed_developer_options_unnamed">A call was not recorded — Developer options were off at the time.</string>
+    <string name="home_health_missed_secure_settings">A call was not recorded — CallVault had lost permission to start the recorder, %1$s.</string>
+    <string name="home_health_missed_secure_settings_unnamed">A call was not recorded — CallVault had lost permission to start the recorder.</string>
     <string name="home_health_failed_empty">Your last call produced an empty recording (0 bytes).</string>
     <string name="home_health_failed_daemon">The recorder stopped during your last call.</string>
     <string name="home_health_failed_one_sided">Only your side was recorded on your last app call.</string>

@@ -73,6 +73,42 @@ class SetupHealthStoreTest {
     }
 
     @Test
+    fun `recording a missed-while-not-ready entry round-trips, separately from the generic gap`() {
+        store.recordMissedWhileNotReady(4_000L, "Feroza", Prerequisite.DEVELOPER_OPTIONS)
+
+        val facts = store.read()
+        assertEquals(4_000L, facts.lastNotReadyAt)
+        assertEquals("Feroza", facts.lastNotReadyLabel)
+        assertEquals(Prerequisite.DEVELOPER_OPTIONS, facts.lastNotReadyPrerequisite)
+        // Must never blur into the unrelated generic gap this store also tracks.
+        assertEquals(0L, facts.lastGapAt)
+        assertNull(facts.lastGapLabel)
+    }
+
+    @Test
+    fun `recording a verified call clears a stored missed-while-not-ready entry`() {
+        store.recordMissedWhileNotReady(4_000L, "Feroza", Prerequisite.RECORDING_FOLDER)
+        store.recordVerified(5_000L, "fp-1")
+
+        val facts = store.read()
+        assertEquals(0L, facts.lastNotReadyAt)
+        assertNull(facts.lastNotReadyLabel)
+        assertNull(facts.lastNotReadyPrerequisite)
+    }
+
+    @Test
+    fun `an unknown persisted prerequisite name reads back as no missed-while-not-ready entry`() {
+        // Same forward-compatible pattern as FailureReason: a name from a future version must not crash
+        // or be misread, it just reads as null.
+        store.recordMissedWhileNotReady(4_000L, "Feroza", Prerequisite.ADB_PAIRING)
+        ApplicationProvider.getApplicationContext<android.content.Context>()
+            .getSharedPreferences("cv_setup_health", android.content.Context.MODE_PRIVATE)
+            .edit().putString("last_notready_prerequisite", "FROM_A_FUTURE_VERSION").commit()
+
+        assertNull(store.read().lastNotReadyPrerequisite)
+    }
+
+    @Test
     fun `recording a failure keeps the earlier verification date`() {
         store.recordVerified(2_000L, "fp-1")
         store.recordFailure(3_000L, FailureReason.DAEMON_DIED, null)

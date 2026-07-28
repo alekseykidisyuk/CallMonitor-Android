@@ -26,6 +26,15 @@ data class HealthFacts(
     val lastFailureLabel: String? = null,
     val lastGapAt: Long = 0L,
     val lastGapLabel: String? = null,
+    /**
+     * A call the user expected recorded started while [lastNotReadyPrerequisite] was missing — a
+     * USER-OWNED, excused cause, persisted separately from [lastGapAt]/[lastGapLabel] so the two never
+     * blur: this one names why the call could not have been recorded, the other is the unexplained
+     * (daemon-died) case this whole feature exists to catch.
+     */
+    val lastNotReadyAt: Long = 0L,
+    val lastNotReadyLabel: String? = null,
+    val lastNotReadyPrerequisite: Prerequisite? = null,
     val sweepWatermark: Long = 0L,
     val observedCallEnds: List<Long> = emptyList(),
     /**
@@ -60,6 +69,11 @@ class SetupHealthStore(context: Context) {
         lastFailureLabel = prefs.getString(KEY_FAILURE_LABEL, null),
         lastGapAt = prefs.getLong(KEY_GAP_AT, 0L),
         lastGapLabel = prefs.getString(KEY_GAP_LABEL, null),
+        lastNotReadyAt = prefs.getLong(KEY_NOTREADY_AT, 0L),
+        lastNotReadyLabel = prefs.getString(KEY_NOTREADY_LABEL, null),
+        lastNotReadyPrerequisite = prefs.getString(KEY_NOTREADY_PREREQUISITE, null)?.let { name ->
+            Prerequisite.entries.firstOrNull { it.name == name }
+        },
         sweepWatermark = prefs.getLong(KEY_SWEEP_WATERMARK, 0L),
         observedCallEnds = readRing(),
         observationWindowStart = prefs.getLong(KEY_WINDOW_START, 0L)
@@ -74,6 +88,7 @@ class SetupHealthStore(context: Context) {
         putString(KEY_VERIFIED_FINGERPRINT, fingerprint)
         remove(KEY_FAILURE_AT); remove(KEY_FAILURE_REASON); remove(KEY_FAILURE_LABEL)
         remove(KEY_GAP_AT); remove(KEY_GAP_LABEL)
+        remove(KEY_NOTREADY_AT); remove(KEY_NOTREADY_LABEL); remove(KEY_NOTREADY_PREREQUISITE)
     }
 
     /** A call was handled but produced nothing usable. The last verification date is left intact. */
@@ -93,6 +108,19 @@ class SetupHealthStore(context: Context) {
     fun recordGap(atMillis: Long, label: String?) = prefs.edit {
         putLong(KEY_GAP_AT, atMillis)
         putString(KEY_GAP_LABEL, label)
+    }
+
+    /**
+     * A call the user expected recorded started at [atMillis] while [prerequisite] was missing — a
+     * USER-OWNED, excused gap. Persisted under its OWN keys, never [KEY_GAP_AT]/[KEY_GAP_LABEL]: the
+     * two must never blur into each other, since one excuses the call and the other is precisely the
+     * silent daemon failure this feature exists to report. Cleared only by [recordVerified], exactly
+     * like every other warning here — a later call proving things work again is what retires it.
+     */
+    fun recordMissedWhileNotReady(atMillis: Long, label: String?, prerequisite: Prerequisite) = prefs.edit {
+        putLong(KEY_NOTREADY_AT, atMillis)
+        putString(KEY_NOTREADY_LABEL, label)
+        putString(KEY_NOTREADY_PREREQUISITE, prerequisite.name)
     }
 
     /**
@@ -158,6 +186,9 @@ class SetupHealthStore(context: Context) {
         private const val KEY_FAILURE_LABEL = "last_failure_label"
         private const val KEY_GAP_AT = "last_gap_at"
         private const val KEY_GAP_LABEL = "last_gap_label"
+        private const val KEY_NOTREADY_AT = "last_notready_at"
+        private const val KEY_NOTREADY_LABEL = "last_notready_label"
+        private const val KEY_NOTREADY_PREREQUISITE = "last_notready_prerequisite"
         private const val KEY_SWEEP_WATERMARK = "sweep_watermark"
         private const val KEY_OBSERVED_ENDS = "observed_call_ends"
         private const val KEY_WINDOW_START = "observation_window_start"

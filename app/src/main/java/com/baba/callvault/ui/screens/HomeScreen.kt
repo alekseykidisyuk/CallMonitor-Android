@@ -104,6 +104,7 @@ import androidx.compose.material.icons.filled.Groups
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.health.FailureReason
+import com.baba.callvault.data.health.Prerequisite
 import com.baba.callvault.data.health.SetupHealth
 import com.baba.callvault.data.health.isProblem
 import com.baba.callvault.data.recordings.RecordingDirection
@@ -654,6 +655,21 @@ private fun healthMessage(health: SetupHealth): String {
         is SetupHealth.CallNotRecorded -> health.label?.let {
             stringResource(R.string.home_health_call_not_recorded, relativeTime(health.atMillis), it)
         } ?: stringResource(R.string.home_health_call_not_recorded_unnamed, relativeTime(health.atMillis))
+        is SetupHealth.CallMissedNotReady -> {
+            // Named per prerequisite so the card states the actual, user-owned cause instead of
+            // reading as the unexplained CallNotRecorded case above.
+            val (named, unnamed) = when (health.prerequisite) {
+                Prerequisite.RECORDING_FOLDER ->
+                    R.string.home_health_missed_recording_folder to R.string.home_health_missed_recording_folder_unnamed
+                Prerequisite.ADB_PAIRING ->
+                    R.string.home_health_missed_adb_pairing to R.string.home_health_missed_adb_pairing_unnamed
+                Prerequisite.DEVELOPER_OPTIONS ->
+                    R.string.home_health_missed_developer_options to R.string.home_health_missed_developer_options_unnamed
+                Prerequisite.SECURE_SETTINGS_GRANT ->
+                    R.string.home_health_missed_secure_settings to R.string.home_health_missed_secure_settings_unnamed
+            }
+            health.label?.let { stringResource(named, it) } ?: stringResource(unnamed)
+        }
         is SetupHealth.LastCallFailed -> stringResource(
             when (health.reason) {
                 FailureReason.EMPTY_FILE -> R.string.home_health_failed_empty

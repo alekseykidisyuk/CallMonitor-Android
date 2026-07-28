@@ -40,6 +40,14 @@
     <string name="home_health_setup_changed">La configuration a changé depuis votre dernier appel — le prochain confirmera qu\'elle fonctionne toujours.</string>
     <string name="home_health_call_not_recorded">Un appel n\'a pas été enregistré — %1$s, %2$s.</string>
     <string name="home_health_call_not_recorded_unnamed">Un appel n\'a pas été enregistré — %1$s.</string>
+    <string name="home_health_missed_recording_folder">Un appel n\'a pas été enregistré — aucun dossier d\'enregistrement n\'était configuré à ce moment-là, %1$s.</string>
+    <string name="home_health_missed_recording_folder_unnamed">Un appel n\'a pas été enregistré — aucun dossier d\'enregistrement n\'était configuré à ce moment-là.</string>
+    <string name="home_health_missed_adb_pairing">Un appel n\'a pas été enregistré — la configuration n\'était pas terminée à ce moment-là, %1$s.</string>
+    <string name="home_health_missed_adb_pairing_unnamed">Un appel n\'a pas été enregistré — la configuration n\'était pas terminée à ce moment-là.</string>
+    <string name="home_health_missed_developer_options">Un appel n\'a pas été enregistré — les options pour développeurs étaient désactivées à ce moment-là, %1$s.</string>
+    <string name="home_health_missed_developer_options_unnamed">Un appel n\'a pas été enregistré — les options pour développeurs étaient désactivées à ce moment-là.</string>
+    <string name="home_health_missed_secure_settings">Un appel n\'a pas été enregistré — CallVault avait perdu la permission de démarrer l\'enregistreur, %1$s.</string>
+    <string name="home_health_missed_secure_settings_unnamed">Un appel n\'a pas été enregistré — CallVault avait perdu la permission de démarrer l\'enregistreur.</string>
     <string name="home_health_failed_empty">Votre dernier appel a produit un enregistrement vide (0 octet).</string>
     <string name="home_health_failed_daemon">L\'enregistreur s\'est arrêté pendant votre dernier appel.</string>
     <string name="home_health_failed_one_sided">Seul votre côté a été enregistré lors de votre dernier appel via une application.</string>

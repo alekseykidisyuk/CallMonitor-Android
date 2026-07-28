@@ -116,36 +116,57 @@ class SetupPrerequisitesTest {
         assertNull(SetupPrerequisites.missing(context))
     }
 
-    // ── recordGapForMissingPrerequisite: the CallSessionManager seam ──────────────────────────
+    // ── recordMissedForMissingPrerequisite: the CallSessionManager seam ───────────────────────
     //
     // CallSessionManager.evaluateAndStartService() is not practical to drive directly under
     // Robolectric: it is a process-wide singleton wired to live TelephonyManager broadcasts, a
     // 500ms coroutine "verification window", and contact-lookup content-resolver queries, none of
-    // which this feature touches. The actual decision it needs — "if a prerequisite is missing,
-    // report this call's gap; otherwise report nothing" — is entirely captured by
-    // [recordGapForMissingPrerequisite], which CallSessionManager calls verbatim. Testing here
-    // exercises the exact function production code runs, rather than re-deriving the same branch
-    // inside the test.
+    // which this feature touches. The actual decision it needs — "if a prerequisite is missing AND
+    // the setup has verified before, report a MISSED-WHILE-NOT-READY entry (never the generic gap);
+    // otherwise report nothing" — is entirely captured by [recordMissedForMissingPrerequisite],
+    // which CallSessionManager calls verbatim. Testing here exercises the exact function production
+    // code runs, rather than re-deriving the same branch inside the test.
 
     @Test
-    fun `a prerequisite-missing call start records a gap`() {
+    fun `a prerequisite-missing call start on a previously-verified setup records a MISSED-WHILE-NOT-READY entry, not a generic gap`() {
         val store = SetupHealthStore(context)
+        store.recordVerified(500L, "fp-1")
 
-        store.recordGapForMissingPrerequisite(Prerequisite.DEVELOPER_OPTIONS, 1_000L, "Alice")
+        store.recordMissedForMissingPrerequisite(Prerequisite.DEVELOPER_OPTIONS, 1_000L, "Alice")
 
         val facts = store.read()
-        assertEquals(1_000L, facts.lastGapAt)
-        assertEquals("Alice", facts.lastGapLabel)
+        assertEquals(1_000L, facts.lastNotReadyAt)
+        assertEquals("Alice", facts.lastNotReadyLabel)
+        assertEquals(Prerequisite.DEVELOPER_OPTIONS, facts.lastNotReadyPrerequisite)
+        // Must never blur into the generic (daemon-died) gap this feature also tracks.
+        assertEquals(0L, facts.lastGapAt)
+        assertNull(facts.lastGapLabel)
     }
 
     @Test
     fun `a prerequisites-met call start records nothing`() {
         val store = SetupHealthStore(context)
+        store.recordVerified(500L, "fp-1")
 
-        store.recordGapForMissingPrerequisite(null, 1_000L, "Alice")
+        store.recordMissedForMissingPrerequisite(null, 1_000L, "Alice")
 
         val facts = store.read()
-        assertEquals(0L, facts.lastGapAt)
-        assertNull(facts.lastGapLabel)
+        assertEquals(0L, facts.lastNotReadyAt)
+        assertNull(facts.lastNotReadyLabel)
+        assertNull(facts.lastNotReadyPrerequisite)
+    }
+
+    @Test
+    fun `a setup that has never verified a working call records nothing, even with a prerequisite missing`() {
+        // The gate: mid-onboarding (no folder yet, never paired) must never be told a call was
+        // "missed" — there is no earlier proof recording ever worked to have lost.
+        val store = SetupHealthStore(context)
+
+        store.recordMissedForMissingPrerequisite(Prerequisite.RECORDING_FOLDER, 1_000L, "Alice")
+
+        val facts = store.read()
+        assertEquals(0L, facts.lastNotReadyAt)
+        assertNull(facts.lastNotReadyLabel)
+        assertNull(facts.lastNotReadyPrerequisite)
     }
 }

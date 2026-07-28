@@ -52,6 +52,47 @@ class SetupHealthTest {
     }
 
     @Test
+    fun `a call missed while a prerequisite was absent surfaces as CallMissedNotReady, not the generic gap`() {
+        val facts = HealthFacts(
+            lastNotReadyAt = 9_000L,
+            lastNotReadyLabel = "Feroza",
+            lastNotReadyPrerequisite = Prerequisite.DEVELOPER_OPTIONS
+        )
+        assertEquals(
+            SetupHealth.CallMissedNotReady(9_000L, "Feroza", Prerequisite.DEVELOPER_OPTIONS),
+            SetupHealthDeriver.derive(facts, "fp-1")
+        )
+    }
+
+    @Test
+    fun `a missed-while-not-ready entry at or before the last verification stays buried`() {
+        val facts = verifiedFacts.copy(
+            lastNotReadyAt = 5_000L,
+            lastNotReadyLabel = "Feroza",
+            lastNotReadyPrerequisite = Prerequisite.RECORDING_FOLDER
+        )
+        assertEquals(SetupHealth.Verified(5_000L), SetupHealthDeriver.derive(facts, "fp-1"))
+    }
+
+    @Test
+    fun `whichever of the gap and the missed-while-not-ready entry is newer wins`() {
+        val notReadyNewer = HealthFacts(
+            lastGapAt = 6_000L, lastGapLabel = "Older",
+            lastNotReadyAt = 9_000L, lastNotReadyLabel = "Newer", lastNotReadyPrerequisite = Prerequisite.ADB_PAIRING
+        )
+        assertEquals(
+            SetupHealth.CallMissedNotReady(9_000L, "Newer", Prerequisite.ADB_PAIRING),
+            SetupHealthDeriver.derive(notReadyNewer, "fp-1")
+        )
+
+        val gapNewer = HealthFacts(
+            lastGapAt = 9_000L, lastGapLabel = "Newer",
+            lastNotReadyAt = 6_000L, lastNotReadyLabel = "Older", lastNotReadyPrerequisite = Prerequisite.ADB_PAIRING
+        )
+        assertEquals(SetupHealth.CallNotRecorded(9_000L, "Newer"), SetupHealthDeriver.derive(gapNewer, "fp-1"))
+    }
+
+    @Test
     fun `a failure outranks a setup change`() {
         val facts = verifiedFacts.copy(lastFailureAt = 6_000L, lastFailureReason = FailureReason.DAEMON_DIED)
         assertEquals(
@@ -75,5 +116,6 @@ class SetupHealthTest {
         assertFalse(SetupHealth.StaleAfterChange.isProblem)
         assertTrue(SetupHealth.LastCallFailed(1L, FailureReason.EMPTY_FILE).isProblem)
         assertTrue(SetupHealth.CallNotRecorded(1L, null).isProblem)
+        assertTrue(SetupHealth.CallMissedNotReady(1L, null, Prerequisite.RECORDING_FOLDER).isProblem)
     }
 }
