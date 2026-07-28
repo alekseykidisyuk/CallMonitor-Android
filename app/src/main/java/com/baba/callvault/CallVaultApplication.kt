@@ -13,6 +13,7 @@ import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.services.debug.DebugNotificationHelper
 import com.baba.callvault.system.storage.RetentionScheduler
+import com.baba.callvault.system.storage.SyncScheduler
 import com.baba.callvault.system.updates.UpdateScheduler
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.services.recording.VoipCaptureController
@@ -74,6 +75,13 @@ class CallVaultApplication : Application() {
             UpdateScheduler.apply(applicationContext)
             UpdateScheduler.checkNowIfDue(applicationContext)
         }.onFailure { AppLogger.w(TAG, "Update scheduler apply failed: ${it.message}") }
+
+        // Reconcile the periodic cloud sweep too. It was only ever applied when the wizard was
+        // *finished*, while the cadence pref is written the moment it is tapped — so backing out of the
+        // wizard (or being killed in it) could leave a scheduled sweep behind for a cadence the app no
+        // longer uses, batch-uploading alongside the per-recording copy.
+        runCatching { SyncScheduler.apply(applicationContext) }
+            .onFailure { AppLogger.w(TAG, "Sync scheduler apply failed: ${it.message}") }
 
         // If ADB was already paired, proactively bring up the persistent recorder daemon in the
         // background: this (transiently) enables Wireless debugging if needed, launches the daemon,
