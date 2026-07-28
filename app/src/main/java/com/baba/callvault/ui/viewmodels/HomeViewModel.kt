@@ -359,7 +359,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
-            val health = withContext(Dispatchers.IO) { sweepSetupHealth() }
+            val health = withContext(Dispatchers.IO) { sweepSetupHealth(status.isReady) }
             _uiState.update { it.copy(setupHealth = health) }
             val recordings = withContext(Dispatchers.IO) { RecordingsRepository.listRecordings(appContext) }
             _uiState.update { state ->
@@ -477,16 +477,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * happened to find (and never persisting it) was the bug: the watermark advance a few lines above
      * moves past that same entry, so the very next resume's sweep no longer finds it, and a warning
      * that was never written down has nothing to survive on.
+     *
+     * [isReady] is [HomeStatus.isReady] from the status this same [refresh] call just computed. It is
+     * threaded into [SetupHealthStore.observingSinceOrSet] so "observing since" is only established
+     * once this install can actually record — a call during onboarding, before ADB pairing, was never
+     * going to be recorded and must not later read as a failure.
      */
-    private fun sweepSetupHealth(): SetupHealth = runCatching {
+    private fun sweepSetupHealth(isReady: Boolean): SetupHealth = runCatching {
         val store = SetupHealthStore(appContext)
         val facts = store.read()
+        val observingSince = store.observingSinceOrSet(isReady, System.currentTimeMillis())
         val result = CallGapDetector.sweep(
             entries = CallLogReader.entriesSince(appContext, facts.sweepWatermark),
             observedCallEnds = facts.observedCallEnds,
             autoRecordIncoming = preferences.isAutoRecordIncomingEnabled(),
             autoRecordOutgoing = preferences.isAutoRecordOutgoingEnabled(),
-            watermark = facts.sweepWatermark
+            watermark = facts.sweepWatermark,
+            ringCapacity = SetupHealthStore.RING_SIZE,
+            observingSince = observingSince
         )
         if (result.newWatermark != facts.sweepWatermark) store.setSweepWatermark(result.newWatermark)
         result.gaps.maxByOrNull { it.startedAt }?.let { store.recordGap(it.startedAt, it.label) }

@@ -28,6 +28,16 @@ data class SweepResult(val gaps: List<CallGap>, val newWatermark: Long)
  * The join is on "did we observe this call", never "does a file exist": a user who deletes recordings
  * must not manufacture failures. Two refusals matter more than the matching itself — a call the ring
  * is too short to remember is not judged, and neither is one below the answer floor.
+ *
+ * How far back judging reaches (the floor) depends on whether the ring has ever evicted anything:
+ *  - ring at capacity ([ringCapacity]) → floor at the oldest remembered end, the eviction horizon.
+ *    Older than that, "I cannot remember" must never render as "it failed".
+ *  - ring below capacity → nothing has been evicted, so every call since [observingSince] (the moment
+ *    this install first became able to record) is fully accounted for; an unobserved one in that
+ *    window is a genuine gap, even with an empty ring. This is what stops a recorder that has been
+ *    broken since day one — whose ring never fills — from staying silent forever: the person worst
+ *    off is the one this feature must not go quiet for.
+ *  - [observingSince] itself unknown (0) → judge nothing, exactly as before this floor existed.
  */
 object CallGapDetector {
 
@@ -44,15 +54,27 @@ object CallGapDetector {
         observedCallEnds: List<Long>,
         autoRecordIncoming: Boolean,
         autoRecordOutgoing: Boolean,
-        watermark: Long
+        watermark: Long,
+        ringCapacity: Int,
+        observingSince: Long
     ): SweepResult {
         val newWatermark = entries.maxOfOrNull { it.startedAt }?.coerceAtLeast(watermark) ?: watermark
         val oldestRemembered = observedCallEnds.minOrNull()
-            ?: return SweepResult(emptyList(), newWatermark) // nothing remembered → judge nothing
+
+        val floor = when {
+            // The ring is full: something has definitely been evicted, so anything older than its
+            // oldest remembered end is unknowable and must not be judged.
+            oldestRemembered != null && observedCallEnds.size >= ringCapacity -> oldestRemembered
+            // The ring still has room: nothing has been evicted, so observingSince — if we know it —
+            // is a true floor, reaching further back than the ring alone would allow.
+            observingSince > 0L -> observingSince
+            // Neither an eviction horizon nor a known start: nothing can be judged safely.
+            else -> return SweepResult(emptyList(), newWatermark)
+        }
 
         val gaps = entries
             .filter { it.startedAt > watermark }
-            .filter { it.startedAt >= oldestRemembered }
+            .filter { it.startedAt >= floor }
             .filter { it.durationSeconds >= MIN_ANSWERED_SECONDS }
             .filter { if (it.isIncoming) autoRecordIncoming else autoRecordOutgoing }
             .filterNot { entry ->

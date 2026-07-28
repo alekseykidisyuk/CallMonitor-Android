@@ -35,6 +35,7 @@ class SetupHealthStoreTest {
         assertNull(facts.verifiedFingerprint)
         assertNull(facts.lastFailureReason)
         assertEquals(emptyList<Long>(), facts.observedCallEnds)
+        assertEquals(0L, facts.observingSince)
     }
 
     @Test
@@ -102,6 +103,32 @@ class SetupHealthStoreTest {
     fun `the sweep watermark round-trips`() {
         store.setSweepWatermark(9_999L)
         assertEquals(9_999L, store.read().sweepWatermark)
+    }
+
+    @Test
+    fun `observingSinceOrSet stores now on the first ready call`() {
+        val value = store.observingSinceOrSet(isReady = true, nowMillis = 12_345L)
+
+        assertEquals(12_345L, value)
+        assertEquals(12_345L, store.read().observingSince)
+    }
+
+    @Test
+    fun `observingSinceOrSet returns zero when not ready and unset`() {
+        val value = store.observingSinceOrSet(isReady = false, nowMillis = 12_345L)
+
+        assertEquals(0L, value)
+        assertEquals(0L, store.read().observingSince)
+    }
+
+    @Test
+    fun `observingSinceOrSet never moves once set`() {
+        store.observingSinceOrSet(isReady = true, nowMillis = 1_000L)
+
+        val second = store.observingSinceOrSet(isReady = true, nowMillis = 2_000L)
+
+        assertEquals(1_000L, second)
+        assertEquals(1_000L, store.read().observingSince)
     }
 
     @Test

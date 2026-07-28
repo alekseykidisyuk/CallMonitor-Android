@@ -14,8 +14,13 @@ class CallGapDetectorTest {
         observed: List<Long> = listOf(s(0)),
         incoming: Boolean = true,
         outgoing: Boolean = true,
-        watermark: Long = 0L
-    ) = CallGapDetector.sweep(entries, observed, incoming, outgoing, watermark)
+        watermark: Long = 0L,
+        // Existing tests never think about capacity: defaulting it to the ring's own size means
+        // that ring is always "at capacity", which reproduces the pre-fix floor (oldest remembered)
+        // exactly — so every test written before observingSince existed keeps its old meaning.
+        ringCapacity: Int = observed.size.coerceAtLeast(1),
+        observingSince: Long = 0L
+    ) = CallGapDetector.sweep(entries, observed, incoming, outgoing, watermark, ringCapacity, observingSince)
 
     @Test
     fun `a call CallVault never observed is a gap`() {
@@ -100,5 +105,54 @@ class CallGapDetectorTest {
     @Test
     fun `an empty call log leaves the watermark alone`() {
         assertEquals(s(42), sweep(emptyList(), watermark = s(42)).newWatermark)
+    }
+
+    // --- The empty-ring blind spot: a recorder broken since day one must not stay silent forever. ---
+
+    @Test
+    fun `an empty ring with observingSince set makes a later call a gap`() {
+        val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = "Feroza")
+        val result = sweep(listOf(call), observed = emptyList(), ringCapacity = 20, observingSince = s(500))
+        assertEquals(listOf(CallGap(s(1_000), "Feroza")), result.gaps)
+    }
+
+    @Test
+    fun `an empty ring with observingSince unset judges nothing`() {
+        val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = null)
+        val result = sweep(listOf(call), observed = emptyList(), ringCapacity = 20, observingSince = 0L)
+        assertTrue(result.gaps.isEmpty())
+    }
+
+    @Test
+    fun `a call before observingSince is never judged`() {
+        val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = null)
+        val result = sweep(listOf(call), observed = emptyList(), ringCapacity = 20, observingSince = s(2_000))
+        assertTrue(result.gaps.isEmpty())
+    }
+
+    @Test
+    fun `a full ring floors at the oldest remembered end, not observingSince`() {
+        // Capacity 2, ring holds exactly 2 → at capacity. A call between observingSince (far older)
+        // and the oldest remembered end must stay unjudged, exactly like before this fix.
+        val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = null)
+        val result = sweep(
+            listOf(call),
+            observed = listOf(s(3_000), s(4_000)),
+            ringCapacity = 2,
+            observingSince = s(0)
+        )
+        assertTrue(result.gaps.isEmpty())
+    }
+
+    @Test
+    fun `a ring below capacity floors at observingSince, reaching further back than the oldest remembered end`() {
+        val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = "Feroza")
+        val result = sweep(
+            listOf(call),
+            observed = listOf(s(3_000), s(4_000)), // oldest remembered is s(3_000); the call is before that
+            ringCapacity = 20, // far below capacity → nothing has been evicted
+            observingSince = s(500)
+        )
+        assertEquals(listOf(CallGap(s(1_000), "Feroza")), result.gaps)
     }
 }

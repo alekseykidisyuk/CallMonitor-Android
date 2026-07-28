@@ -27,7 +27,9 @@ data class HealthFacts(
     val lastGapAt: Long = 0L,
     val lastGapLabel: String? = null,
     val sweepWatermark: Long = 0L,
-    val observedCallEnds: List<Long> = emptyList()
+    val observedCallEnds: List<Long> = emptyList(),
+    /** Epoch millis this install first became ABLE to record, or 0 if never established. */
+    val observingSince: Long = 0L
 )
 
 /**
@@ -54,7 +56,8 @@ class SetupHealthStore(context: Context) {
         lastGapAt = prefs.getLong(KEY_GAP_AT, 0L),
         lastGapLabel = prefs.getString(KEY_GAP_LABEL, null),
         sweepWatermark = prefs.getLong(KEY_SWEEP_WATERMARK, 0L),
-        observedCallEnds = readRing()
+        observedCallEnds = readRing(),
+        observingSince = prefs.getLong(KEY_OBSERVING_SINCE, 0L)
     )
 
     /**
@@ -101,6 +104,24 @@ class SetupHealthStore(context: Context) {
 
     fun setSweepWatermark(millis: Long) = prefs.edit { putLong(KEY_SWEEP_WATERMARK, millis) }
 
+    /**
+     * Returns the moment this install first became ABLE to record, establishing it now if it is
+     * unset AND [isReady] is true. Once set, it never moves — a later loss of readiness (e.g. dev
+     * options toggled off) must not erase the fact that recording once worked, or the gap sweep's
+     * floor would silently retreat.
+     *
+     * Synchronized for the same reason as [observeCall]: this is a read-then-maybe-write, and two
+     * racing callers could otherwise commit two different "first ready" moments.
+     */
+    @Synchronized
+    fun observingSinceOrSet(isReady: Boolean, nowMillis: Long): Long {
+        val existing = prefs.getLong(KEY_OBSERVING_SINCE, 0L)
+        if (existing != 0L) return existing
+        if (!isReady) return 0L
+        prefs.edit { putLong(KEY_OBSERVING_SINCE, nowMillis) }
+        return nowMillis
+    }
+
     private fun readRing(): List<Long> =
         prefs.getString(KEY_OBSERVED_ENDS, null)
             ?.split(',')
@@ -108,17 +129,23 @@ class SetupHealthStore(context: Context) {
             ?.sortedDescending()
             .orEmpty()
 
-    private companion object {
-        const val FILE_NAME = "cv_setup_health"
+    companion object {
+        /**
+         * How many of the newest observed call ends [observeCall] keeps; the sweep's eviction
+         * horizon. Public so callers of [CallGapDetector.sweep] can pass it as `ringCapacity`.
+         */
         const val RING_SIZE = 20
-        const val KEY_VERIFIED_AT = "last_verified_at"
-        const val KEY_VERIFIED_FINGERPRINT = "verified_fingerprint"
-        const val KEY_FAILURE_AT = "last_failure_at"
-        const val KEY_FAILURE_REASON = "last_failure_reason"
-        const val KEY_FAILURE_LABEL = "last_failure_label"
-        const val KEY_GAP_AT = "last_gap_at"
-        const val KEY_GAP_LABEL = "last_gap_label"
-        const val KEY_SWEEP_WATERMARK = "sweep_watermark"
-        const val KEY_OBSERVED_ENDS = "observed_call_ends"
+
+        private const val FILE_NAME = "cv_setup_health"
+        private const val KEY_VERIFIED_AT = "last_verified_at"
+        private const val KEY_VERIFIED_FINGERPRINT = "verified_fingerprint"
+        private const val KEY_FAILURE_AT = "last_failure_at"
+        private const val KEY_FAILURE_REASON = "last_failure_reason"
+        private const val KEY_FAILURE_LABEL = "last_failure_label"
+        private const val KEY_GAP_AT = "last_gap_at"
+        private const val KEY_GAP_LABEL = "last_gap_label"
+        private const val KEY_SWEEP_WATERMARK = "sweep_watermark"
+        private const val KEY_OBSERVED_ENDS = "observed_call_ends"
+        private const val KEY_OBSERVING_SINCE = "observing_since"
     }
 }
