@@ -48,7 +48,12 @@ class RecordingCopyWorker(ctx: Context, params: WorkerParameters) : CoroutineWor
         if (srcSize <= 0L) {
             // Either capture produced nothing or the source is gone. Uploading it would put an unplayable
             // file in the user's Drive and mark the recording as backed up; refusing is the honest answer.
-            AppLogger.e(TAG, "Not copying '$name' to Drive: the source is empty or missing (size=$srcSize)")
+            // This is also a terminal answer, not a retry: a source that is empty now stays empty, and
+            // retrying one forever is what kept re-uploading recordings hours after the call.
+            val gone = runCatching { DocumentFile.fromSingleUri(applicationContext, src)?.exists() != true }
+                .getOrDefault(false)
+            val what = if (gone) "the source file is gone" else "the source is empty (size=$srcSize)"
+            AppLogger.e(TAG, "Not copying '$name' to Drive: $what")
             return Result.failure()
         }
 
