@@ -80,8 +80,12 @@ class CallGapDetectorTest {
 
     @Test
     fun `an empty ring judges nothing`() {
+        // The first-run path every existing user hits exactly once: no ring yet, so nothing is judged
+        // — but the watermark must still advance, or every call log entry is re-examined forever.
         val call = CallLogEntry(s(1_000), 60, isIncoming = true, label = null)
-        assertTrue(sweep(listOf(call), observed = emptyList()).gaps.isEmpty())
+        val result = sweep(listOf(call), observed = emptyList())
+        assertTrue(result.gaps.isEmpty())
+        assertEquals(s(1_000), result.newWatermark)
     }
 
     @Test

@@ -126,8 +126,8 @@ object VoipRecordingCoordinator {
         // A recording where the far party was never audible is one-sided. Say so now rather than let it
         // be discovered weeks later — the app may have opted out of capture, or this OEM build may not
         // attach calls to our mix; from here the two are indistinguishable.
-        val farHeard = runCatching { RecorderConnection.service?.voipFarPartyHeard() == true }
-            .getOrDefault(true)   // on error assume fine; never cry wolf
+        val farHeard = runCatching { RecorderConnection.service?.voipFarPartyHeard() ?: true }
+            .getOrDefault(true)   // no service, or an error: assume fine; never cry wolf
         if (!farHeard) {
             AppLogger.w(TAG, "VoIP recording captured only your side — the other app blocks capture")
             runCatching {
@@ -157,12 +157,20 @@ object VoipRecordingCoordinator {
                 runCatching {
                     val size = SafHelper.fileSize(context, saf.uri)
                     RecordingCatalog.recordLocal(context, name, saf.uri, size, System.currentTimeMillis())
-                    runCatching {
-                        val outcome = CallOutcomes.of(size, daemonDied = false, farPartyHeard = farHeard)
-                        SetupHealthStore(context).record(
-                            outcome, System.currentTimeMillis(), name, SetupFingerprint.of(AppPreferences(context))
-                        )
-                    }.onFailure { AppLogger.w(TAG, "Could not record setup health for '$name': ${it.message}") }
+                    // SafHelper.fileSize() returns -1 specifically for "unknown" (a provider that can't
+                    // report a length right now), never for "empty" — that's 0. CallOutcomes.of() cannot
+                    // tell the two apart and would judge a negative size as EMPTY_FILE, so an unknowable
+                    // size must never reach it: recording nothing is the safe direction, not guessing.
+                    if (size < 0L) {
+                        AppLogger.i(TAG, "VoIP file size unknown for '$name' (SAF reported $size); skipping the setup-health write")
+                    } else {
+                        runCatching {
+                            val outcome = CallOutcomes.of(size, daemonDied = false, farPartyHeard = farHeard)
+                            SetupHealthStore(context).record(
+                                outcome, System.currentTimeMillis(), name, SetupFingerprint.of(AppPreferences(context))
+                            )
+                        }.onFailure { AppLogger.w(TAG, "Could not record setup health for '$name': ${it.message}") }
+                    }
                     AppLogger.i(TAG, "VoIP recording catalogued: $name ($size bytes)")
                     StorageRouter.route(context, saf.uri, name, codecMime)
                 }.onFailure { AppLogger.e(TAG, "Cataloguing the VoIP recording failed: ${it.message}", it) }

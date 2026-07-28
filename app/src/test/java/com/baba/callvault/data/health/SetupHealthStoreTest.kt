@@ -51,6 +51,26 @@ class SetupHealthStoreTest {
     }
 
     @Test
+    fun `recording a gap round-trips`() {
+        store.recordGap(4_000L, "Feroza")
+
+        val facts = store.read()
+        assertEquals(4_000L, facts.lastGapAt)
+        assertEquals("Feroza", facts.lastGapLabel)
+    }
+
+    @Test
+    fun `recording a verified call clears a stored gap`() {
+        // A later call proving things work again is exactly what should retire an earlier gap warning.
+        store.recordGap(4_000L, "Feroza")
+        store.recordVerified(5_000L, "fp-1")
+
+        val facts = store.read()
+        assertEquals(0L, facts.lastGapAt)
+        assertNull(facts.lastGapLabel)
+    }
+
+    @Test
     fun `recording a failure keeps the earlier verification date`() {
         store.recordVerified(2_000L, "fp-1")
         store.recordFailure(3_000L, FailureReason.DAEMON_DIED, null)

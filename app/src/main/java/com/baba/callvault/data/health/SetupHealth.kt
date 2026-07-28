@@ -24,10 +24,16 @@ sealed interface SetupHealth {
     data class CallNotRecorded(val atMillis: Long, val label: String?) : SetupHealth
 }
 
-/** True for the states that should flip the card to a warning. */
+/**
+ * True for the states that should flip the card to a warning.
+ *
+ * [StaleAfterChange] is deliberately excluded: a setup change (e.g. an app update bumping the build's
+ * version code) is informational, not proof that anything is broken. It just means the next call
+ * hasn't re-confirmed the new configuration yet. Painting that as a warning would raise a false alarm
+ * on every update, exactly the "cried wolf" outcome this whole feature exists to avoid.
+ */
 val SetupHealth.isProblem: Boolean
-    get() = this is SetupHealth.StaleAfterChange ||
-        this is SetupHealth.LastCallFailed ||
+    get() = this is SetupHealth.LastCallFailed ||
         this is SetupHealth.CallNotRecorded
 
 object SetupHealthDeriver {
@@ -36,10 +42,16 @@ object SetupHealthDeriver {
      * First match wins, most urgent first: a call that vanished entirely, then a call that failed,
      * then a setup change that makes an old verification stop speaking for the current configuration.
      *
-     * A failure older than the last verification is spent — a later call proved things work again.
+     * Both the gap and the failure are read from [facts] rather than passed in transiently: a gap or a
+     * failure at or older than [HealthFacts.lastVerifiedAt] is spent — a later call proved things work
+     * again — but it must still be POSSIBLE for either to outlive the sweep pass that found it. Passing
+     * a transient "newest gap this pass" made the sweep's own watermark advance erase the warning it had
+     * just raised, the moment the next resume re-swept past it.
      */
-    fun derive(facts: HealthFacts, currentFingerprint: String, newestGap: CallGap?): SetupHealth {
-        if (newestGap != null) return SetupHealth.CallNotRecorded(newestGap.startedAt, newestGap.label)
+    fun derive(facts: HealthFacts, currentFingerprint: String): SetupHealth {
+        if (facts.lastGapAt > facts.lastVerifiedAt) {
+            return SetupHealth.CallNotRecorded(facts.lastGapAt, facts.lastGapLabel)
+        }
 
         val reason = facts.lastFailureReason
         if (reason != null && facts.lastFailureAt > facts.lastVerifiedAt) {

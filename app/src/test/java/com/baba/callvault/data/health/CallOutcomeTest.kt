@@ -38,4 +38,16 @@ class CallOutcomeTest {
             CallOutcomes.of(43_971L, daemonDied = false, farPartyHeard = false)
         )
     }
+
+    @Test
+    fun `a negative size is judged empty here, which is why a caller must never pass it`() {
+        // SafHelper.fileSize() returns -1 for "unknown size", never for "empty" — that's 0. This
+        // function has no way to tell the two apart, so it judges anything <= 0 as EMPTY_FILE. That is
+        // exactly why VoipRecordingCoordinator.onCallEnded must special-case a negative size and skip
+        // calling this at all, rather than let an unknowable size render as a false empty-file failure.
+        assertEquals(
+            CallOutcome.Failed(FailureReason.EMPTY_FILE),
+            CallOutcomes.of(-1L, daemonDied = false, farPartyHeard = null)
+        )
+    }
 }

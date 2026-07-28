@@ -471,6 +471,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * Reconciles the call log against the calls CallVault observed, then derives what the card says.
      * IO-bound (a content-provider query), so callers must be off the main thread. Best-effort
      * throughout: anything unreadable yields Unverified rather than an invented failure.
+     *
+     * The newest gap this pass found is persisted via [SetupHealthStore.recordGap] BEFORE deriving,
+     * and derive() reads a fresh copy of the facts afterwards. Deriving straight from the gap this pass
+     * happened to find (and never persisting it) was the bug: the watermark advance a few lines above
+     * moves past that same entry, so the very next resume's sweep no longer finds it, and a warning
+     * that was never written down has nothing to survive on.
      */
     private fun sweepSetupHealth(): SetupHealth = runCatching {
         val store = SetupHealthStore(appContext)
@@ -483,7 +489,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             watermark = facts.sweepWatermark
         )
         if (result.newWatermark != facts.sweepWatermark) store.setSweepWatermark(result.newWatermark)
-        SetupHealthDeriver.derive(facts, SetupFingerprint.of(preferences), result.gaps.maxByOrNull { it.startedAt })
+        result.gaps.maxByOrNull { it.startedAt }?.let { store.recordGap(it.startedAt, it.label) }
+        SetupHealthDeriver.derive(store.read(), SetupFingerprint.of(preferences))
     }.getOrElse { e ->
         AppLogger.w(TAG, "Setup-health sweep failed (${e.message}); claiming nothing")
         SetupHealth.Unverified
