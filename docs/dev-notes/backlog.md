@@ -169,6 +169,11 @@ tests including the exact S24 FE numbers, but no device has run it.
 
 ## 🔵 "Test my setup" — prove the whole path works, before it matters
 
+> **Superseded (2026-07-28) by [the setup-health design](2026-07-28-setup-health-status-design.md).**
+> The button is gone: a test the user has to remember to press is not read by the people who need it
+> most. The status card reports what real calls proved instead, and a call-log sweep catches calls
+> CallVault never saw. The reasoning below still holds — only the shape of the answer changed.
+
 **Why.** This app fails *silently*, and the failure is discovered after the call you needed. Every
 recovery mechanism shipped so far (screen-lock USB fix, resilient recording, fast daemon recovery)
 reduces the chance of a failure without ever telling the user whether their setup works **right now**.
