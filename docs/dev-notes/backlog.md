@@ -8,23 +8,19 @@ Status key: 🔵 agreed, not started · 🟡 in progress · ✅ done (kept brief
 
 ---
 
-## Current state — 2026-07-29
+## Current state — 2026-07-29 (after the 1.5.3 release)
 
 Kept at the top so a session can start from disk instead of from recall. **Update it whenever a
 release is cut, a branch lands, or something starts or stops being blocked.**
 
-**Released:** `v1.5.2` is the latest release users can get. Also published: `v1.5.2-diag-scrcpy`, a
+**Released:** `v1.5.3` is the latest release users can get (versionCode **10630**, tag `v1.5.3`, asset `CallVault.apk`). Also published: `v1.5.2-diag-scrcpy`, a
 **pre-release** debug build for issue #18 — invisible to the in-app updater, on branch
 `diag/scrcpy-only`, **never to be merged**.
 
-**Unreleased:** `main` is ahead of `v1.5.2` by the **setup-health** feature — the status card now
-reports what real calls proved, with a call-log sweep for calls CallVault never observed — plus the
-SAF delete fix, the capture-path log fix, and the **i18n work of 2026-07-29**: Brazilian Portuguese
-added and all nine existing locales brought up to date, with a build check that keeps them there.
-**1.5.3 has not been cut**: no CHANGELOG entry, no version bump. Nothing is pushed to `origin/main`.
+**Unreleased:** nothing. `main` is level with `origin/main` and with the `v1.5.3` tag. The setup-health
+feature, the SAF delete fix, the capture-path log fix and the i18n work all shipped in 1.5.3.
 
-**Hard constraint on the next release:** versionCode must exceed **10624**, which the diagnostic
-pre-release used. See the `release-version-bump` memory for why a lower number is unrecoverable
+**Hard constraint on the next release:** versionCode must exceed **10630**, which 1.5.3 used. See the `release-version-bump` memory for why a lower number is unrecoverable
 without an uninstall.
 
 **Blocked on other people:**
