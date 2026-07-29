@@ -303,6 +303,9 @@ aboutLibraries {
     }
 }
 
+// Fails the build when a locale drifts from the base strings. See the script for why.
+apply(from = rootProject.file("gradle/translation-coverage.gradle.kts"))
+
 dependencies {
     // AndroidX Core & Lifecycle
     implementation(libs.androidx.core.ktx)
