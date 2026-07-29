@@ -8,6 +8,43 @@ Status key: 🔵 agreed, not started · 🟡 in progress · ✅ done (kept brief
 
 ---
 
+## Current state — 2026-07-29
+
+Kept at the top so a session can start from disk instead of from recall. **Update it whenever a
+release is cut, a branch lands, or something starts or stops being blocked.**
+
+**Released:** `v1.5.2` is the latest release users can get. Also published: `v1.5.2-diag-scrcpy`, a
+**pre-release** debug build for issue #18 — invisible to the in-app updater, on branch
+`diag/scrcpy-only`, **never to be merged**.
+
+**Unreleased:** `main` is **18 commits ahead of `v1.5.2`** and **3 ahead of `origin/main`**. The bulk
+is the **setup-health** feature — the status card now reports what real calls proved, with a call-log
+sweep for calls CallVault never observed — plus the SAF delete fix and the capture-path log fix.
+**1.5.3 has not been cut**: no CHANGELOG entry, no version bump.
+
+**Hard constraint on the next release:** versionCode must exceed **10624**, which the diagnostic
+pre-release used. See the `release-version-bump` memory for why a lower number is unrecoverable
+without an uninstall.
+
+**Blocked on other people:**
+
+| Waiting for | Who | Unblocks |
+|---|---|---|
+| Diagnostic APK result on a real call | issue #18 reporter | Confirms or kills the v1.4.0 `DirectAudioRecorderSession` regression hypothesis — see `2026-07-28-issue-18-silent-carrier-recordings.md` |
+| A carrier call with VoIP recording switched off | maintainer | Rules VoIP in or out as a factor in issue #18 |
+| A Galaxy S24 FE in hand | maintainer | The resilient-recording fix below, written and unit-tested but never run on the device it was written for |
+
+**Written but unplanned:** `2026-07-28-daemon-and-system-logs-design.md` — a design for getting daemon
+diagnostics into a bug report, with no implementation plan yet. Issue #18 is the standing argument for
+it: twice, the answer lived in the daemon's process where no bug report can reach.
+
+**Also argued for by issue #18, not yet scheduled:** `SILENT` detection (an all-zeros check on the
+daemon's PCM, cheap on the direct path) and a settings snapshot in the log-export header (the export
+carries device and version but not the toggles, which is why the VoIP question above needs a manual
+test at all).
+
+---
+
 ## 🔵 Manual "Check for updates" in Settings
 
 **Why.** A release only surfaces two ways: a check when the app opens, throttled to once per 6 hours
@@ -228,9 +265,15 @@ It was the agreed next priority before VoIP took over.
 
 ## 🔵 Smaller, known, and worth not forgetting
 
-- **Three VoIP strings are untranslated** — `voip_recording_arming`, `voip_recording_names_hint`,
-  `voip_recording_unavailable`. The other 9 of 12 VoIP keys are present in all 9 locales, so this is a
-  three-key gap, not the "English-only" state recorded here earlier.
+- **Every locale has fallen behind, and nothing catches it.** Measured 2026-07-29: the base has 465
+  strings, 445 of them translatable (20 carry `translatable="false"`). Eight of the nine locales — de,
+  es, hu, it, pl, ru, vi, zh-rCN — are missing **47**; fr is missing **29**. Those strings render in
+  English inside an otherwise translated screen. This entry previously read "three VoIP strings are
+  untranslated"; that was true when written and rotted, and the three keys it named
+  (`voip_recording_arming`, `voip_recording_names_hint`, `voip_recording_unavailable`) are in fact
+  present in **zero** locales. There is no coverage check in the build — the `fix/complete-translations`
+  branch claims to have added one, but nothing enforcing it exists in the tree, so drift is silent by
+  design. Any translation work should land the check alongside it, or this entry rots again.
 - **Stale screenshots** in `docs/screenshots` (21 June) — predate the current UI.
 - **`WD_DISABLE_WHEN_IDLE` is a dead preference** — read by nothing.
 - **Wrong contact label** on some recordings (reported, not diagnosed).
