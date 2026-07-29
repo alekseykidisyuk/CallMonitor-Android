@@ -17,10 +17,11 @@ release is cut, a branch lands, or something starts or stops being blocked.**
 **pre-release** debug build for issue #18 — invisible to the in-app updater, on branch
 `diag/scrcpy-only`, **never to be merged**.
 
-**Unreleased:** `main` is **18 commits ahead of `v1.5.2`** and **3 ahead of `origin/main`**. The bulk
-is the **setup-health** feature — the status card now reports what real calls proved, with a call-log
-sweep for calls CallVault never observed — plus the SAF delete fix and the capture-path log fix.
-**1.5.3 has not been cut**: no CHANGELOG entry, no version bump.
+**Unreleased:** `main` is ahead of `v1.5.2` by the **setup-health** feature — the status card now
+reports what real calls proved, with a call-log sweep for calls CallVault never observed — plus the
+SAF delete fix, the capture-path log fix, and the **i18n work of 2026-07-29**: Brazilian Portuguese
+added and all nine existing locales brought up to date, with a build check that keeps them there.
+**1.5.3 has not been cut**: no CHANGELOG entry, no version bump. Nothing is pushed to `origin/main`.
 
 **Hard constraint on the next release:** versionCode must exceed **10624**, which the diagnostic
 pre-release used. See the `release-version-bump` memory for why a lower number is unrecoverable
@@ -265,15 +266,13 @@ It was the agreed next priority before VoIP took over.
 
 ## 🔵 Smaller, known, and worth not forgetting
 
-- **Every locale has fallen behind, and nothing catches it.** Measured 2026-07-29: the base has 465
-  strings, 445 of them translatable (20 carry `translatable="false"`). Eight of the nine locales — de,
-  es, hu, it, pl, ru, vi, zh-rCN — are missing **47**; fr is missing **29**. Those strings render in
-  English inside an otherwise translated screen. This entry previously read "three VoIP strings are
-  untranslated"; that was true when written and rotted, and the three keys it named
-  (`voip_recording_arming`, `voip_recording_names_hint`, `voip_recording_unavailable`) are in fact
-  present in **zero** locales. There is no coverage check in the build — the `fix/complete-translations`
-  branch claims to have added one, but nothing enforcing it exists in the tree, so drift is silent by
-  design. Any translation work should land the check alongside it, or this entry rots again.
+- **✅ Translations are complete and now enforced (2026-07-29).** Ten locales — pt-BR added, the other
+  nine backfilled — at 445 translatable strings each. `./gradlew :app:checkTranslations` fails the
+  build on a missing string, an orphaned one, or a placeholder that differs from the base; it gates
+  `check` and `assembleRelease`, with `-PallowMissingTranslations=true` as the deliberate override.
+  **This entry is the reason the check exists:** it previously read "three VoIP strings are
+  untranslated" while eight locales were actually 46 behind and the three keys it named were in zero
+  locales. Counting by hand is what failed, twice. Do not replace the check with a note.
 - **Stale screenshots** in `docs/screenshots` (21 June) — predate the current UI.
 - **`WD_DISABLE_WHEN_IDLE` is a dead preference** — read by nothing.
 - **Wrong contact label** on some recordings (reported, not diagnosed).
