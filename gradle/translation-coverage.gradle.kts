@@ -14,10 +14,13 @@
 // backlog still described the gap as three strings. Counting by hand is what failed; this task is
 // the thing that counts instead.
 //
-// It checks both directions, because both have broken a build here before:
-//   missing  — the base defines a string the locale does not. Renders in English.
-//   orphaned — the locale defines a string the base does not. AGP's MissingDefaultResource lint
-//              fails the release build on these; see the fix/release-build-r8-translations branch.
+// It checks three things:
+//   missing     — the base defines a string the locale does not. Renders in English.
+//   orphaned    — the locale defines a string the base does not. AGP's MissingDefaultResource lint
+//                 fails the release build on these; see the fix/release-build-r8-translations branch.
+//   placeholder — the locale's format specifiers differ from the base's. This one is not cosmetic:
+//                 a dropped or renumbered %1$s throws IllegalFormatException at runtime, so the
+//                 crash lands only on users reading that language.
 //
 // Escape hatch: -PallowMissingTranslations=true downgrades failure to a warning, for the case where
 // a fix has to ship ahead of its translations. Deliberately explicit — nobody sets it by accident.
@@ -31,14 +34,17 @@ val translatableElements = setOf("string", "string-array", "plurals")
 /** `values-de`, `values-zh-rCN`. Deliberately excludes `values-night`, `values-v31`, `values-land`. */
 val localeDirPattern = Regex("""^values-[a-z]{2}(-r[A-Z]{2})?$""")
 
+/** A format specifier: `%1$s`, `%d`, `%%`. */
+val placeholderPattern = Regex("""%(\d+\$[a-zA-Z]|[a-zA-Z%])""")
+
 /**
- * Resource names defined in one `values*` directory.
+ * Resource name to its text, for one `values*` directory.
  *
  * Parses the XML rather than matching `name="..."` textually, so a name inside a comment or an
  * attribute of some other element cannot be mistaken for a definition.
  */
-fun resourceNamesIn(dir: File, translatableOnly: Boolean): Set<String> {
-    if (!dir.isDirectory) return emptySet()
+fun resourcesIn(dir: File, translatableOnly: Boolean): Map<String, String> {
+    if (!dir.isDirectory) return emptyMap()
     val builder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
     return dir.listFiles { f: File -> f.extension == "xml" }
         .orEmpty()
@@ -49,41 +55,51 @@ fun resourceNamesIn(dir: File, translatableOnly: Boolean): Set<String> {
                 .mapNotNull { children.item(it) as? Element }
                 .filter { it.tagName in translatableElements }
                 .filter { !translatableOnly || it.getAttribute("translatable") != "false" }
-                .map { it.getAttribute("name") }
+                .map { it.getAttribute("name") to it.textContent }
         }
-        .toSet()
+        .toMap()
 }
+
+/** The format specifiers a string uses, sorted so order of appearance does not matter. */
+fun placeholdersOf(text: String): List<String> =
+    placeholderPattern.findAll(text).map { it.value }.sorted().toList()
 
 val checkTranslations = tasks.register("checkTranslations") {
     group = "verification"
-    description = "Fails when a locale is missing a base string, or defines one the base does not."
+    description = "Fails when a locale is missing a base string, defines one the base does not, or changes its placeholders."
 
     val resDir = project.file("src/main/res")
     val lenient = project.hasProperty("allowMissingTranslations")
 
     doLast {
-        val baseKeys = resourceNamesIn(File(resDir, "values"), translatableOnly = true)
-        require(baseKeys.isNotEmpty()) { "No translatable strings found in $resDir/values — is the path right?" }
+        val base = resourcesIn(File(resDir, "values"), translatableOnly = true)
+        require(base.isNotEmpty()) { "No translatable strings found in $resDir/values — is the path right?" }
 
         val localeDirs = resDir.listFiles { f: File -> f.isDirectory && localeDirPattern.matches(f.name) }
             .orEmpty()
             .sortedBy { it.name }
 
         val problems = localeDirs.mapNotNull { dir ->
-            val localeKeys = resourceNamesIn(dir, translatableOnly = false)
-            val missing = (baseKeys - localeKeys).sorted()
-            val orphaned = (localeKeys - baseKeys).sorted()
-            if (missing.isEmpty() && orphaned.isEmpty()) return@mapNotNull null
+            val locale = resourcesIn(dir, translatableOnly = false)
+            val missing = (base.keys - locale.keys).sorted()
+            val orphaned = (locale.keys - base.keys).sorted()
+            val mismatched = locale.keys.intersect(base.keys).sorted().mapNotNull { name ->
+                val expected = placeholdersOf(base.getValue(name))
+                val actual = placeholdersOf(locale.getValue(name))
+                if (expected == actual) null else "$name (base ${expected}, locale ${actual})"
+            }
+            if (missing.isEmpty() && orphaned.isEmpty() && mismatched.isEmpty()) return@mapNotNull null
 
             buildString {
-                appendLine("${dir.name} — ${missing.size} missing, ${orphaned.size} orphaned")
-                missing.forEach { appendLine("    missing:  $it") }
-                orphaned.forEach { appendLine("    orphaned: $it") }
+                appendLine("${dir.name} — ${missing.size} missing, ${orphaned.size} orphaned, ${mismatched.size} placeholder mismatches")
+                missing.forEach { appendLine("    missing:     $it") }
+                orphaned.forEach { appendLine("    orphaned:    $it") }
+                mismatched.forEach { appendLine("    placeholder: $it") }
             }
         }
 
         if (problems.isEmpty()) {
-            logger.lifecycle("Translations complete: ${localeDirs.size} locales, ${baseKeys.size} translatable strings each.")
+            logger.lifecycle("Translations complete: ${localeDirs.size} locales, ${base.size} translatable strings each, placeholders consistent.")
             return@doLast
         }
 
@@ -93,6 +109,7 @@ val checkTranslations = tasks.register("checkTranslations") {
             problems.forEach { append(it); appendLine() }
             appendLine("A missing string renders in English inside a translated screen.")
             appendLine("An orphaned string fails the release build via the MissingDefaultResource lint.")
+            appendLine("A placeholder mismatch throws IllegalFormatException — a crash only that language sees.")
             append("To ship anyway: ./gradlew <task> -PallowMissingTranslations=true")
         }
 
