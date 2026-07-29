@@ -64,4 +64,6 @@
     <string name="whatsnew_150_body">开启 USB 调试后，CallVault 就能关闭无线调试并让它保持关闭。无需数据线，而且与无线调试不同，它不会打开网络端口 — 因此在两者之中，它是更适合保持开启的那个。可选：无论哪种方式，录音都能正常工作。\n\n同时修复：关闭 USB 调试可能导致 CallVault 无法录音，却不作任何提示。</string>
     <string name="whatsnew_150_title">关闭无线调试</string>
     <string name="whatsnew_150_where">设置 ▸ 实验性功能 ▸ USB 调试</string>
+    <string name="whatsnew_153_body">状态卡片现在会告诉你录音是否真的成功了 — 依据是你的真实通话，而不是一个只表示应用已启动的绿灯。如果某通通话没有被录音，它会说明这一点并给出原因：从未设置文件夹、开发者选项被关闭、更新导致权限丢失。\n\n此外：CallVault 现在支持巴西葡萄牙语，其他所有语言也都已更新。</string>
+    <string name="whatsnew_153_title">你的设置，由你自己的通话来验证</string>
 </resources>

@@ -64,4 +64,6 @@
     <string name="whatsnew_150_body">Bật Gỡ lỗi USB cho phép CallVault tắt Gỡ lỗi không dây và giữ nó ở trạng thái tắt. Không cần cáp, và khác với Gỡ lỗi không dây, nó không mở cổng mạng nào — nên đây là lựa chọn an toàn hơn trong hai cái để bật. Không bắt buộc: việc ghi âm vẫn hoạt động theo cả hai cách.\n\nCũng đã sửa: tắt Gỡ lỗi USB có thể khiến CallVault không ghi âm được mà không hề báo.</string>
     <string name="whatsnew_150_title">Tắt Gỡ lỗi không dây</string>
     <string name="whatsnew_150_where">Cài đặt ▸ Thử nghiệm ▸ Gỡ lỗi USB</string>
+    <string name="whatsnew_153_body">Thẻ trạng thái giờ cho bạn biết việc ghi âm có thực sự hoạt động hay không, dựa trên các cuộc gọi thật của bạn chứ không phải một đèn xanh chỉ có nghĩa là ứng dụng đã khởi động. Nếu một cuộc gọi không được ghi âm, thẻ sẽ nói rõ và cho biết lý do: chưa bao giờ đặt thư mục, Tùy chọn nhà phát triển bị tắt, một quyền bị mất sau khi cập nhật.\n\nNgoài ra: CallVault giờ nói tiếng Bồ Đào Nha Brazil, và tất cả các ngôn ngữ khác đã được cập nhật.</string>
+    <string name="whatsnew_153_title">Thiết lập của bạn, được chính các cuộc gọi của bạn kiểm chứng</string>
 </resources>

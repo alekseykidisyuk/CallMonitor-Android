@@ -44,6 +44,8 @@
 
     <!-- Post-update note: one entry per release, newest first. Keep in sync with CHANGELOG.md. -->
     <string name="home_whatsnew_settings_cta">Open Settings</string>
+    <string name="whatsnew_153_title">Your setup, checked by your own calls</string>
+    <string name="whatsnew_153_body">The status card now tells you whether recording actually worked, based on your real calls rather than a green light that only means the app started. If a call was not recorded, it says so and why — a folder that was never set, Developer options switched off, a permission lost to an update.\n\nAlso: CallVault now speaks Brazilian Portuguese, and every other language has been brought up to date.</string>
     <string name="whatsnew_150_title">Switch Wireless debugging off</string>
     <string name="whatsnew_150_body">Turning on USB debugging lets CallVault switch Wireless debugging off and keep it off. No cable is needed, and unlike Wireless debugging it opens no network port — so it is the safer of the two to leave on. Optional: recording works either way.\n\nAlso fixed: turning USB debugging off could leave CallVault unable to record, without saying so.</string>
     <string name="whatsnew_150_where">Settings ▸ Experimental ▸ USB debugging</string>

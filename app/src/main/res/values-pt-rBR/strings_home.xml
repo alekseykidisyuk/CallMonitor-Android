@@ -64,4 +64,6 @@
     <string name="whatsnew_150_body">Ativar a Depuração USB permite que o CallVault desligue a Depuração sem fio e a mantenha desligada. Não é preciso cabo e, ao contrário da Depuração sem fio, ela não abre nenhuma porta de rede — por isso é a mais segura das duas para deixar ativada. Opcional: a gravação funciona de qualquer forma.\n\nTambém corrigido: desativar a Depuração USB podia deixar o CallVault sem conseguir gravar, sem avisar.</string>
     <string name="whatsnew_150_title">Desative a Depuração sem fio</string>
     <string name="whatsnew_150_where">Configurações ▸ Experimental ▸ Depuração USB</string>
+    <string name="whatsnew_153_body">O cartão de status agora informa se a gravação realmente funcionou, com base nas suas chamadas reais e não em um sinal verde que só indica que o app iniciou. Se uma chamada não foi gravada, ele diz isso e o motivo — uma pasta que nunca foi definida, as Opções do desenvolvedor desativadas, uma permissão perdida em uma atualização.\n\nAlém disso: o CallVault agora fala português do Brasil, e todos os outros idiomas foram atualizados.</string>
+    <string name="whatsnew_153_title">Sua configuração, verificada pelas suas próprias chamadas</string>
 </resources>

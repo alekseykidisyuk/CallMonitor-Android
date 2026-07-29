@@ -64,4 +64,6 @@
     <string name="whatsnew_150_body">Wenn Sie das USB-Debugging aktivieren, kann CallVault das drahtlose Debugging abschalten und abgeschaltet lassen. Ein Kabel ist nicht nötig, und anders als das drahtlose Debugging öffnet es keinen Netzwerkport — es ist also das sicherere der beiden, um es aktiviert zu lassen. Optional: Die Aufnahme funktioniert so oder so.\n\nEbenfalls behoben: Das Deaktivieren des USB-Debuggings konnte dazu führen, dass CallVault nicht mehr aufnehmen konnte, ohne dies mitzuteilen.</string>
     <string name="whatsnew_150_title">Drahtloses Debugging abschalten</string>
     <string name="whatsnew_150_where">Einstellungen ▸ Experimentell ▸ USB-Debugging</string>
+    <string name="whatsnew_153_body">Die Statuskarte zeigt Ihnen jetzt, ob die Aufnahme tatsächlich funktioniert hat — anhand Ihrer echten Anrufe statt eines grünen Lichts, das nur bedeutet, dass die App gestartet ist. Wenn ein Anruf nicht aufgezeichnet wurde, sagt sie es und nennt den Grund: ein nie festgelegter Ordner, deaktivierte Entwickleroptionen, eine durch ein Update verlorene Berechtigung.\n\nAußerdem: CallVault spricht jetzt brasilianisches Portugiesisch, und alle anderen Sprachen wurden aktualisiert.</string>
+    <string name="whatsnew_153_title">Ihre Einrichtung, geprüft von Ihren eigenen Anrufen</string>
 </resources>

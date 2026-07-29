@@ -33,7 +33,7 @@ without an uninstall.
 |---|---|---|
 | Diagnostic APK result on a real call | issue #18 reporter | Confirms or kills the v1.4.0 `DirectAudioRecorderSession` regression hypothesis — see `2026-07-28-issue-18-silent-carrier-recordings.md` |
 | A carrier call with VoIP recording switched off | maintainer | Rules VoIP in or out as a factor in issue #18 |
-| A Galaxy S24 FE in hand | maintainer | The resilient-recording fix below, written and unit-tested but never run on the device it was written for |
+| A Galaxy S24 FE in hand | maintainer | **Confirming** the resilient-recording ring-geometry fix, which already **shipped in v1.5.2** (`5244411`) and has never been run on the device it was written for. It is not awaiting release — it is awaiting proof. Shipping it unconfirmed was bounded by Resilient recording being **default-off**, so only opt-in users run that code. |
 
 **Written but unplanned:** `2026-07-28-daemon-and-system-logs-design.md` — a design for getting daemon
 diagnostics into a bug report, with no implementation plan yet. Issue #18 is the standing argument for

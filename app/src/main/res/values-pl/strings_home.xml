@@ -64,4 +64,6 @@
     <string name="whatsnew_150_body">Włączenie debugowania USB pozwala CallVault wyłączyć debugowanie bezprzewodowe i utrzymać je wyłączone. Kabel nie jest potrzebny, a w przeciwieństwie do debugowania bezprzewodowego nie otwiera ono żadnego portu sieciowego — jest więc bezpieczniejsze z tych dwóch, by zostawić je włączone. Opcjonalne: nagrywanie działa tak czy inaczej.\n\nNaprawiono również: wyłączenie debugowania USB mogło pozbawić CallVault możliwości nagrywania, nie informując o tym.</string>
     <string name="whatsnew_150_title">Wyłącz debugowanie bezprzewodowe</string>
     <string name="whatsnew_150_where">Ustawienia ▸ Eksperymentalne ▸ Debugowanie USB</string>
+    <string name="whatsnew_153_body">Karta stanu mówi teraz, czy nagrywanie naprawdę zadziałało — na podstawie twoich rzeczywistych połączeń, a nie zielonego światełka, które oznacza tylko, że aplikacja wystartowała. Jeśli połączenie nie zostało nagrane, karta to mówi i podaje powód: nigdy nieustawiony folder, wyłączone opcje programistyczne, uprawnienie utracone przy aktualizacji.\n\nPonadto: CallVault mówi teraz po portugalsku (brazylijsku), a wszystkie pozostałe języki zostały zaktualizowane.</string>
+    <string name="whatsnew_153_title">Twoja konfiguracja, sprawdzona przez twoje własne połączenia</string>
 </resources>

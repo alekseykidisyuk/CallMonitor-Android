@@ -64,4 +64,6 @@
     <string name="whatsnew_150_body">Attivare il debug USB consente a CallVault di disattivare il debug wireless e tenerlo disattivato. Non serve alcun cavo e, a differenza del debug wireless, non apre porte di rete: è quindi il più sicuro dei due da lasciare attivo. Facoltativo: la registrazione funziona in entrambi i casi.\n\nRisolto anche: disattivare il debug USB poteva lasciare CallVault senza la possibilità di registrare, senza dirlo.</string>
     <string name="whatsnew_150_title">Disattiva il debug wireless</string>
     <string name="whatsnew_150_where">Impostazioni ▸ Sperimentale ▸ Debug USB</string>
+    <string name="whatsnew_153_body">La scheda di stato ora ti dice se la registrazione ha davvero funzionato, in base alle tue chiamate reali e non a una spia verde che significa solo che l\'app è partita. Se una chiamata non è stata registrata, lo dice e ne spiega il motivo: una cartella mai impostata, le opzioni sviluppatore disattivate, un\'autorizzazione persa con un aggiornamento.\n\nInoltre: CallVault ora parla portoghese brasiliano, e tutte le altre lingue sono state aggiornate.</string>
+    <string name="whatsnew_153_title">La tua configurazione, verificata dalle tue stesse chiamate</string>
 </resources>

@@ -65,4 +65,6 @@
     <string name="whatsnew_150_body">Activer le débogage USB permet à CallVault de désactiver le débogage sans fil et de le laisser désactivé. Aucun câble n\'est nécessaire et, contrairement au débogage sans fil, il n\'ouvre aucun port réseau — c\'est donc le plus sûr des deux à laisser activé. Facultatif : l\'enregistrement fonctionne dans les deux cas.\n\nAussi corrigé : désactiver le débogage USB pouvait empêcher CallVault d\'enregistrer, sans le dire.</string>
     <string name="whatsnew_150_title">Désactiver le débogage sans fil</string>
     <string name="whatsnew_150_where">Paramètres ▸ Expérimental ▸ Débogage USB</string>
+    <string name="whatsnew_153_body">La carte d\'état vous indique désormais si l\'enregistrement a réellement fonctionné, d\'après vos appels réels et non d\'après un voyant vert qui signifie seulement que l\'application a démarré. Si un appel n\'a pas été enregistré, elle le dit et en donne la raison : un dossier jamais défini, les options pour les développeurs désactivées, une autorisation perdue lors d\'une mise à jour.\n\nEn outre : CallVault parle maintenant le portugais du Brésil, et toutes les autres langues ont été mises à jour.</string>
+    <string name="whatsnew_153_title">Votre configuration, vérifiée par vos propres appels</string>
 </resources>

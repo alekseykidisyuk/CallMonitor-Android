@@ -58,9 +58,34 @@ class ReleaseHighlightsTest {
         assertTrue(ReleaseHighlights.recent().size <= ReleaseHighlights.MAX_SHOWN)
     }
 
+    /**
+     * Ordering is the invariant, not any particular version.
+     *
+     * This assertion used to be `assertEquals("1.5.0", …first().version)`, which failed on every
+     * release that added a note and never checked ordering at all — a note inserted in the wrong
+     * place passed it happily, as long as the top entry was unchanged. Comparing each pair instead
+     * catches the misplacement and needs no edit at release time.
+     */
     @Test
     fun `lists the newest release first`() {
-        assertEquals("1.5.0", ReleaseHighlights.recent().first().version)
+        val versions = ReleaseHighlights.recent().map { it.version }
+        versions.zipWithNext { newer, older ->
+            assertTrue(
+                "$newer should sort above $older in the release note",
+                compareVersions(newer, older) > 0,
+            )
+        }
+    }
+
+    /** Numeric, component-wise: "1.5.10" is newer than "1.5.9", which string ordering gets wrong. */
+    private fun compareVersions(a: String, b: String): Int {
+        val left = a.split(".").map { it.toInt() }
+        val right = b.split(".").map { it.toInt() }
+        for (i in 0 until maxOf(left.size, right.size)) {
+            val diff = left.getOrElse(i) { 0 }.compareTo(right.getOrElse(i) { 0 })
+            if (diff != 0) return diff
+        }
+        return 0
     }
 
     @Test

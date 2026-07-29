@@ -3,6 +3,34 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.5.3] — 2026-07-29
+
+### Added
+- **The status card now tells you whether recording actually works.** Until now it reported that the
+  app was ready — that the pieces were connected — which is not the same as knowing a call came out
+  the other end. It now reports what your real calls proved: when recording was last verified, and,
+  when something went wrong, what went wrong. An empty recording, a recorder that stopped mid-call,
+  an app call where only your side came through: each says so plainly instead of leaving you to find
+  out weeks later.
+- **Calls CallVault never saw are caught too.** A sweep of the phone's own call log finds answered
+  calls that produced no recording, so a setup that quietly stopped working is surfaced by the next
+  call rather than by the one you needed. Where the cause is something you can fix — no recording
+  folder, Developer options switched off, a permission lost to an update — it names that cause
+  instead of reporting an unexplained gap.
+- **Brazilian Portuguese.** CallVault is now available in Português (Brasil), selectable under
+  Settings ▸ Visual settings ▸ Language.
+
+### Fixed
+- **Every other language was behind, and now none of them are.** German, Spanish, French, Hungarian,
+  Italian, Polish, Russian, Vietnamese and Chinese were each missing dozens of strings, which
+  rendered in English inside an otherwise translated screen — including the whole USB-debugging
+  section and the VoIP messages. All ten languages are now complete, and the build refuses to
+  produce a release if a language falls behind again.
+- **A recording deletion that never happened is no longer reported as success.** When the storage
+  provider refused a delete, CallVault carried on as though the file were gone.
+- **A misleading log line** claimed recordings always went through scrcpy, which sent bug-report
+  troubleshooting down the wrong path. It now names the capture route actually taken.
+
 ## [1.5.2] — 2026-07-28
 
 ### Fixed
