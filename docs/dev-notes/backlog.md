@@ -83,7 +83,7 @@ rather than remove it.
 
 ---
 
-## 🟡 Upload schedule is built but stranded in the wizard — issue #20
+## ✅ Upload schedule is built but stranded in the wizard — issue #20 (DONE, awaiting device test)
 
 **Issue:** https://github.com/madkongo/CallVault/issues/20 (CathaEdulis, 2026-07-29)
 
@@ -107,6 +107,15 @@ anywhere."
 - `SettingsScreen` already has the time-picker pattern (it borrows those same wizard strings for the
   retention sweep, around `SettingsScreen.kt:687`).
 - Call `SyncScheduler.apply(context)` on change — `WizardViewModel:137` is the reference.
+
+**Done 2026-07-30.** Exposed as a sub-section of **Storage**, alongside **Retention**, which moved from
+its own top-level accordion into the same section. Zero new strings — `wizard_schedule_title` ("When to
+upload to Drive") and `wizard_schedule_mode_label` ("Upload schedule") already existed in all ten
+locales, so `checkTranslations` stayed green with no translation round. The mode/day labels were
+extracted to `ui/common/SyncScheduleLabels.kt` so the wizard and Settings cannot drift. The old
+`SECTION_RETENTION` key now opens Storage, so a user whose saved open-section was Retention lands on
+the section that contains it instead of a collapsed screen. The schedule rows are hidden when the
+storage target is LOCAL, where there is no upload to schedule.
 
 **Fits with** the General-section restructure below; do them together if that one lands first.
 

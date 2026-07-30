@@ -66,6 +66,7 @@ import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.data.SyncScheduleMode
+import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
@@ -93,10 +94,8 @@ import com.baba.callvault.utils.presetForTemplateOrFirst
 private val WIZARD_BITRATE_OPTIONS = listOf(8000, 16000, 32000, 64000, 128000)
 
 /** Minute granularity offered in the schedule step. */
-private val WIZARD_MINUTE_OPTIONS = listOf(0, 15, 30, 45)
 
 /** java.util.Calendar day-of-week constants (SUNDAY=1..SATURDAY=7). */
-private val WIZARD_DAY_OF_WEEK_OPTIONS = (1..7).toList()
 
 /**
  * The one-time post-onboarding setup wizard, redesigned on the "Signal" design system.
@@ -624,8 +623,8 @@ private fun ScheduleStep(
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SyncScheduleMode.entries.forEach { mode ->
             OptionCard(
-                title = stringResource(scheduleModeTitleRes(mode)),
-                description = stringResource(scheduleModeDescRes(mode)),
+                title = stringResource(SyncScheduleLabels.titleOf(mode)),
+                description = stringResource(SyncScheduleLabels.descriptionOf(mode)),
                 selected = scheduleMode == mode,
                 onClick = { onSelectMode(mode) }
             )
@@ -638,8 +637,8 @@ private fun ScheduleStep(
         if (scheduleMode == SyncScheduleMode.DAILY || scheduleMode == SyncScheduleMode.WEEKLY) {
             CvCard(contentPadding = PaddingValues(vertical = 8.dp)) {
                 if (scheduleMode == SyncScheduleMode.WEEKLY) {
-                    val dayOptions = WIZARD_DAY_OF_WEEK_OPTIONS.map { day ->
-                        OptionItem(day.toString(), stringResource(dayOfWeekLabelRes(day)))
+                    val dayOptions = SyncScheduleLabels.DAY_OF_WEEK_OPTIONS.map { day ->
+                        OptionItem(day.toString(), stringResource(SyncScheduleLabels.dayOfWeekOf(day)))
                     }
                     M3DropdownField(
                         label = stringResource(R.string.wizard_schedule_day_label),
@@ -655,7 +654,7 @@ private fun ScheduleStep(
                     options = hourOptions,
                     onOptionSelected = { onSelectHour(it.key.toInt()) }
                 )
-                val minuteOptions = WIZARD_MINUTE_OPTIONS.map { OptionItem(it.toString(), it.toString().padStart(2, '0')) }
+                val minuteOptions = SyncScheduleLabels.MINUTE_OPTIONS.map { OptionItem(it.toString(), it.toString().padStart(2, '0')) }
                 M3DropdownField(
                     label = stringResource(R.string.wizard_schedule_minute_label),
                     selected = minuteOptions.find { it.key == minute.toString() } ?: minuteOptions.first(),
@@ -906,25 +905,3 @@ private fun storageTargetDescRes(target: StorageTarget): Int = when (target) {
     StorageTarget.BOTH -> R.string.wizard_ui_storage_both_desc
 }
 
-private fun scheduleModeTitleRes(mode: SyncScheduleMode): Int = when (mode) {
-    SyncScheduleMode.IMMEDIATE -> R.string.wizard_schedule_immediate
-    SyncScheduleMode.DAILY -> R.string.wizard_schedule_daily
-    SyncScheduleMode.WEEKLY -> R.string.wizard_schedule_weekly
-}
-
-private fun scheduleModeDescRes(mode: SyncScheduleMode): Int = when (mode) {
-    SyncScheduleMode.IMMEDIATE -> R.string.wizard_ui_schedule_immediate_desc
-    SyncScheduleMode.DAILY -> R.string.wizard_ui_schedule_daily_desc
-    SyncScheduleMode.WEEKLY -> R.string.wizard_ui_schedule_weekly_desc
-}
-
-/** Maps a java.util.Calendar day-of-week constant (SUNDAY=1..SATURDAY=7) to a label string resource. */
-private fun dayOfWeekLabelRes(day: Int): Int = when (day) {
-    1 -> R.string.wizard_day_sunday
-    2 -> R.string.wizard_day_monday
-    3 -> R.string.wizard_day_tuesday
-    4 -> R.string.wizard_day_wednesday
-    5 -> R.string.wizard_day_thursday
-    6 -> R.string.wizard_day_friday
-    else -> R.string.wizard_day_saturday
-}

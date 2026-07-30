@@ -17,7 +17,9 @@ import com.baba.callvault.services.debug.DebugNotificationHelper
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
+import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.system.storage.RetentionScheduler
+import com.baba.callvault.system.storage.SyncScheduler
 import com.baba.callvault.system.updates.UpdateScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,6 +59,10 @@ interface SettingsActions {
     fun setRetentionDriveDays(days: Int)
     fun setRetentionTimeHour(hour: Int)
     fun setRetentionTimeMinute(minute: Int)
+    fun setSyncScheduleMode(mode: SyncScheduleMode)
+    fun setSyncTimeHour(hour: Int)
+    fun setSyncTimeMinute(minute: Int)
+    fun setSyncDayOfWeek(day: Int)
     fun setUpdateCheckEnabled(enabled: Boolean)
 }
 
@@ -297,6 +303,41 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     override fun setRetentionTimeHour(hour: Int) {
         preferences.setRetentionTimeHour(hour)
         RetentionScheduler.apply(appContext)
+        refresh()
+    }
+
+    /**
+     * Saves when recordings are uploaded to Drive and reconciles the periodic sweep.
+     *
+     * [SyncScheduler.apply] must run on every change: it is what registers (or cancels) the periodic
+     * work, and `StorageRouter.route` reads the mode on each finished call to decide between copying
+     * immediately and leaving the file for that sweep. Persisting the preference without reconciling
+     * would leave the two disagreeing — recordings held back for a sweep that was never scheduled.
+     */
+    override fun setSyncScheduleMode(mode: SyncScheduleMode) {
+        preferences.setSyncScheduleMode(mode)
+        SyncScheduler.apply(appContext)
+        refresh()
+    }
+
+    /** Saves the scheduled-upload hour (0-23, local) and re-anchors the periodic sweep. */
+    override fun setSyncTimeHour(hour: Int) {
+        preferences.setSyncTimeHour(hour)
+        SyncScheduler.apply(appContext)
+        refresh()
+    }
+
+    /** Saves the scheduled-upload minute and re-anchors the periodic sweep. */
+    override fun setSyncTimeMinute(minute: Int) {
+        preferences.setSyncTimeMinute(minute)
+        SyncScheduler.apply(appContext)
+        refresh()
+    }
+
+    /** Saves the weekly upload day (Calendar.SUNDAY=1 .. SATURDAY=7) and re-anchors the periodic sweep. */
+    override fun setSyncDayOfWeek(day: Int) {
+        preferences.setSyncDayOfWeek(day)
+        SyncScheduler.apply(appContext)
         refresh()
     }
 

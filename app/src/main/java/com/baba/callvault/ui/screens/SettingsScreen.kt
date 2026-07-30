@@ -66,6 +66,8 @@ import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.data.RetentionPeriod
+import com.baba.callvault.data.SyncScheduleMode
+import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.integrations.scrcpy.RECOMMENDED_AUDIO_BIT_RATE
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
@@ -277,19 +279,13 @@ fun SettingsContent(
                     preferences = preferences,
                     updateTrigger = updateTrigger,
                     actions = actions,
-                    expanded = openSection == SECTION_STORAGE,
+                    // SECTION_RETENTION also opens Storage: retention used to be its own accordion, and a
+                    // user whose saved open-section is the old key should land on the section that now
+                    // contains it rather than on a collapsed screen.
+                    expanded = openSection == SECTION_STORAGE || openSection == SECTION_RETENTION,
                     onToggle = { onToggleSection(SECTION_STORAGE) },
                     onSelectFolder = onSelectFolder,
                     onSelectDriveFolder = onSelectDriveFolder
-                )
-            }
-            item {
-                RetentionSection(
-                    preferences = preferences,
-                    updateTrigger = updateTrigger,
-                    actions = actions,
-                    expanded = openSection == SECTION_RETENTION,
-                    onToggle = { onToggleSection(SECTION_RETENTION) }
                 )
             }
             item {
@@ -595,7 +591,101 @@ private fun StorageSection(
             supporting = stringResource(R.string.settings_drive_folder_desc),
             onClick = onSelectDriveFolder
         )
+
+        // Only meaningful when something is actually uploaded — with LOCAL there is no upload to schedule.
+        if (storageTarget != StorageTarget.LOCAL) {
+            SettingsDivider()
+            UploadScheduleSubSection(preferences, updateTrigger, actions)
+        }
+
+        SettingsDivider()
+        RetentionSubSection(preferences, updateTrigger, actions)
     }
+}
+
+/**
+ * When finished recordings are uploaded to the Drive folder.
+ *
+ * The choice already drove `StorageRouter.route` and [SyncScheduler] from the day it shipped, but the
+ * picker existed ONLY in the setup wizard — and the wizard cannot be re-run, so whatever was chosen
+ * during onboarding (defaulting to "immediately") was permanent. Issue #20 is a user who went looking
+ * for it and reasonably concluded it did not exist.
+ *
+ * Deferring batches the Drive app's "upload finished" notifications into one run per day or week
+ * instead of one per call, which is what that reporter actually wanted; it does not silence them.
+ */
+@Composable
+private fun UploadScheduleSubSection(
+    preferences: AppPreferences,
+    updateTrigger: Int,
+    actions: SettingsActions
+) {
+    val mode = remember(updateTrigger) { preferences.getSyncScheduleMode() }
+    val hour = remember(updateTrigger) { preferences.getSyncTimeHour() }
+    val minute = remember(updateTrigger) { preferences.getSyncTimeMinute() }
+    val dayOfWeek = remember(updateTrigger) { preferences.getSyncDayOfWeek() }
+
+    val modeOptions = SyncScheduleMode.entries.map {
+        OptionItem(it.key, stringResource(SyncScheduleLabels.titleOf(it)))
+    }
+
+    SettingsSubHeader(stringResource(R.string.wizard_schedule_title))
+
+    DropdownRow {
+        M3DropdownField(
+            label = stringResource(R.string.wizard_schedule_mode_label),
+            selected = modeOptions.find { it.key == mode.key } ?: modeOptions.first(),
+            options = modeOptions,
+            onOptionSelected = { actions.setSyncScheduleMode(SyncScheduleMode.fromKey(it.key)) }
+        )
+    }
+
+    if (mode == SyncScheduleMode.WEEKLY) {
+        val dayOptions = SyncScheduleLabels.DAY_OF_WEEK_OPTIONS.map { day ->
+            OptionItem(day.toString(), stringResource(SyncScheduleLabels.dayOfWeekOf(day)))
+        }
+        DropdownRow {
+            M3DropdownField(
+                label = stringResource(R.string.wizard_schedule_day_label),
+                selected = dayOptions.find { it.key == dayOfWeek.toString() } ?: dayOptions.first(),
+                options = dayOptions,
+                onOptionSelected = { actions.setSyncDayOfWeek(it.key.toIntOrNull() ?: 2) }
+            )
+        }
+    }
+
+    if (mode != SyncScheduleMode.IMMEDIATE) {
+        val hourOptions = (0..23).map { OptionItem(it.toString(), it.toString().padStart(2, '0')) }
+        val minuteOptions = SyncScheduleLabels.MINUTE_OPTIONS.map {
+            OptionItem(it.toString(), it.toString().padStart(2, '0'))
+        }
+        DropdownRow {
+            M3DropdownField(
+                label = stringResource(R.string.wizard_schedule_hour_label),
+                selected = hourOptions.find { it.key == hour.toString() } ?: hourOptions.first(),
+                options = hourOptions,
+                onOptionSelected = { actions.setSyncTimeHour(it.key.toIntOrNull() ?: 2) }
+            )
+        }
+        DropdownRow {
+            M3DropdownField(
+                label = stringResource(R.string.wizard_schedule_minute_label),
+                selected = minuteOptions.find { it.key == minute.toString() } ?: minuteOptions.first(),
+                options = minuteOptions,
+                onOptionSelected = { actions.setSyncTimeMinute(it.key.toIntOrNull() ?: 0) }
+            )
+        }
+    }
+
+    Text(
+        text = stringResource(
+            if (mode == SyncScheduleMode.IMMEDIATE) R.string.wizard_schedule_immediate_note
+            else R.string.wizard_schedule_subtitle
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    )
 }
 
 /** Retention: auto-delete recordings older than a chosen period. One shared period for device & Drive,
@@ -609,12 +699,10 @@ private fun StorageSection(
  * @param onToggle      Invoked when the section header is tapped.
  */
 @Composable
-private fun RetentionSection(
+private fun RetentionSubSection(
     preferences: AppPreferences,
     updateTrigger: Int,
-    actions: SettingsActions,
-    expanded: Boolean,
-    onToggle: () -> Unit
+    actions: SettingsActions
 ) {
     val linked = remember(updateTrigger) { preferences.isRetentionLinked() }
     val localDays = remember(updateTrigger) { preferences.getRetentionLocalDays() }
@@ -630,7 +718,8 @@ private fun RetentionSection(
         if (wasOff && newDays > 0) pendingConfirm = apply else apply()
     }
 
-    SettingsSection(title = stringResource(R.string.settings_section_retention), expanded = expanded, onToggle = onToggle) {
+    SettingsSubHeader(stringResource(R.string.settings_section_retention))
+    Column {
         SettingsToggleRow(
             label = stringResource(R.string.retention_linked_label),
             checked = linked,
@@ -1719,6 +1808,10 @@ private fun SettingsScreenPreview() {
             override fun setRetentionDriveDays(days: Int) {}
             override fun setRetentionTimeHour(hour: Int) {}
             override fun setRetentionTimeMinute(minute: Int) {}
+            override fun setSyncScheduleMode(mode: SyncScheduleMode) {}
+            override fun setSyncTimeHour(hour: Int) {}
+            override fun setSyncTimeMinute(minute: Int) {}
+            override fun setSyncDayOfWeek(day: Int) {}
             override fun setUpdateCheckEnabled(enabled: Boolean) {}
         }
 
