@@ -24,6 +24,14 @@
 //
 // Escape hatch: -PallowMissingTranslations=true downgrades failure to a warning, for the case where
 // a fix has to ship ahead of its translations. Deliberately explicit — nobody sets it by accident.
+//
+// Adding a locale: create `values-<lang>[-r<REGION>]/` — Android wants the `r` prefix on the region,
+// so Brazilian Portuguese is `values-pt-rBR`, not `values-pt-BR`. That directory is the whole
+// registration: AGP generates the locale config from the res folders, and SettingsScreen reads that
+// generated config, so the in-app language picker lists it with no code change. Translate every key
+// the base declares except those marked translatable="false" — including those, rather than skipping
+// them, is what makes a locale "orphaned" here. `scripts/merge-translations.py` merges a fragment of
+// new strings into the right files in sorted order; run this task before and after.
 
 import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Element

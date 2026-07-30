@@ -1,6 +1,20 @@
 # Issue #18 — carrier recordings that are the right size and completely silent
 
 **Status:** hypothesis formed, diagnostic build published, **awaiting the reporter's result**
+
+> **v1.5.3 shipped on 2026-07-29 and contains no fix for this.** Verified, not assumed:
+> `DirectAudioRecorderSession.kt` is byte-identical between `v1.5.2` and `v1.5.3`, and
+> `diag/scrcpy-only` is not merged. There is nothing to fix yet because the cause is still
+> unconfirmed — the diagnostic APK has not been run by anyone.
+>
+> Two things 1.5.3 does carry that touch this case without solving it: the setup-health card now
+> reports an **empty recording**, which would have caught his Opus era (0-byte files) at the first
+> call instead of over months; and the capture-path log line now names the route actually taken.
+> Neither catches his *current* symptom — a file of the correct size that plays back silent. That
+> needs the deferred **`SILENT`** detection (all-zeros check on the daemon's PCM), still unbuilt.
+>
+> **Open action:** the reporter may reasonably assume 1.5.3 supersedes the debug APK, since it is
+> newer. A comment saying otherwise was offered and not yet sent.
 **Issue:** https://github.com/madkongo/CallVault/issues/18
 **Reporter's device:** Samsung Galaxy Z Fold 6, **SM-F956U** (US model), Android 16, CallVault 1.5.2
 
