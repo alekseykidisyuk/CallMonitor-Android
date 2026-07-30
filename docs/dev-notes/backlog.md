@@ -265,7 +265,7 @@ Three related asks, all about the user deciding rather than the rules deciding:
 
 ---
 
-## 🟡 Resilient recording on One UI — cause found, fix written, UNTESTED on the device
+## 🔴 Resilient recording on One UI — ring fix CONFIRMED, but it crackles on the S24 FE
 
 **Root cause, confirmed against AOSP source rather than guessed.** The handoff sized the ring from
 `AudioRecord.getBufferSizeInFrames()`. That returns `cblk->mBufferSizeInFrames`, a **logical value the
@@ -292,8 +292,35 @@ of two and masks with it, so it must be passed `wrapFrames`, **not** `frameCount
 recreates the oversized ring and reads out of bounds, with the Java-side check now passing. Both call
 sites were updated; a third caller added later would reintroduce the bug silently.
 
-**Still needs a Galaxy S24 FE** to confirm Resilient recording actually works there. Covered by unit
-tests including the exact S24 FE numbers, but no device has run it.
+## Tested on a Galaxy S24 FE, 2026-07-30 — two results
+
+**The ring-geometry fix is confirmed.** A 46 s carrier call with Resilient recording ON produced a
+full-duration Opus file, mean −39.7 dB / peak −12.1 dB, and **no periodic dropouts**: silence-interval
+`stdev/mean = 1.00` (irregular, i.e. conversational pauses), and click phase concentration `R = 0.03`
+to `0.18` against every candidate wrap (1024/2048/4096/8192 frames) — a geometry error would cluster
+near `R = 1.0`. The v1.5.2 fix works on the device it was written for.
+
+**But the audio crackles, and the handoff is the cause.** Confirmed by A/B on the device: same phone,
+same call type, same codec, one toggle.
+
+| | crackle | mean | transients/s (>10x local) |
+|---|---|---|---|
+| Resilient ON | **yes** | −33.8 dB | 25.2 |
+| Resilient OFF | no | −30.7 dB | 17.6 |
+
+**Instrumentation could barely see it** — worth knowing before anyone re-measures. Transient counts
+differ by only ~40% (both dominated by ordinary speech consonants), and the spectra differ only
+slightly (3-6 kHz: 2.2% ON vs 1.5% OFF). The ear separated these two files instantly; none of the
+metrics above would have. Do not conclude "no defect" from a flat measurement here.
+
+**Where to look.** The artefacts are **aperiodic**, which rules out a fixed geometry error and points
+at a producer/consumer race in the drain: reading `[mFront, mRear)` slightly ahead of or behind the
+writer, dropping or repeating a few frames at irregular moments. `GUARD_FRAMES = 32` and the
+release-store of `mFront` are the first places to look. Note the OnePlus 12 does NOT exhibit this, so
+it is timing-sensitive and likely depends on the HAL's buffer cadence.
+
+**Blast radius is bounded:** the feature is default-OFF, so only opt-in users are affected — but for
+those users it degrades every recording, which is worse than the daemon death it protects against.
 
 ---
 
