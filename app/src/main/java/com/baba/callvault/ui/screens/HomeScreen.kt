@@ -1076,20 +1076,15 @@ private fun RecordingRow(
             )
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = primaryLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(Modifier.height(2.dp))
+                // The badge rides with the NAME, not with the meta line below. On the meta line it took
+                // the width that the date, duration and size need, which is what kept truncating them
+                // to "Yesterday 1…" — a name has slack to give up, a line of four facts does not.
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = buildSubtitle(item),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = primaryLabel,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
@@ -1097,6 +1092,7 @@ private fun RecordingRow(
                     Spacer(Modifier.width(8.dp))
                     SourceBadge(source = item.source)
                 }
+
             }
             Spacer(Modifier.width(8.dp))
             // BOTH rows expose an expand chevron; single-source rows expose only delete.
@@ -1134,6 +1130,19 @@ private fun RecordingRow(
                 }
             }
         }
+
+        // The meta line sits BELOW the row, not inside its middle column. In the column it had only the
+        // sliver left between the play disc and two icon buttons — about twenty characters — so it
+        // truncated mid-duration ("Yesterday 17:33 · 23…") no matter which fields were dropped. Here it
+        // has the card's full width, indented to line up under the name.
+        Text(
+            text = buildSubtitle(item),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = META_INDENT, top = 2.dp)
+        )
 
         // Single-source: inline player directly under the row when this copy is active.
         if (!isBoth && isRowActive) {
@@ -1509,6 +1518,9 @@ private fun InlinePlayer(
 
 // -------- Formatting helpers
 
+/** Play disc (48dp) plus its gap (14dp), so the meta line starts under the name rather than the disc. */
+private val META_INDENT = 62.dp
+
 /**
  * The muted line under the name: when the call happened, how long it ran, how big the file is.
  *
@@ -1516,8 +1528,9 @@ private fun InlinePlayer(
  * that the date truncated to "2026…" — present, and useless. Size moved onto this line so it spans
  * the row, and the date became short enough to read at a glance.
  *
- * Duration is omitted rather than faked when it cannot be known (see [CallDurationLookup]), and the
- * number still trails the line when the title shows a contact name instead.
+ * Duration is omitted rather than faked when it cannot be known (see [CallDurationLookup]). The phone
+ * number no longer trails this line: it pushed the date and duration — the two things the line exists
+ * for — off the end on any row with a contact name, which is most of them.
  */
 @Composable
 private fun buildSubtitle(item: RecordingItem): String {
@@ -1525,8 +1538,6 @@ private fun buildSubtitle(item: RecordingItem): String {
         formatWhen(item)?.let { add(it) }
         item.durationSeconds?.let { add(formatDuration(it)) }
         if (item.sizeBytes > 0) add(formatSize(item.sizeBytes))
-        // Only when the title is a contact name — otherwise the title IS the number and this repeats it.
-        item.number?.takeIf { item.contactName != null }?.let { add(it) }
     }
     return if (parts.isEmpty()) item.displayName else parts.joinToString(" · ")
 }
