@@ -115,8 +115,25 @@ data class HandoffGeometry(
          */
         private const val MIN_RING_FRAMES = 256
 
-        /** Freshest frames held back each drain cycle — they may still be mid-write by the server. */
-        const val GUARD_FRAMES = 32
+        /**
+         * Freshest frames held back each drain cycle — they may still be mid-write by the server.
+         *
+         * **This must exceed one HAL write burst.** AudioFlinger's record thread does not advance
+         * `mRear` sample by sample; it publishes a whole HAL period at a time, and while that copy is
+         * in flight the frames just below `mRear` are partially written. A guard smaller than one
+         * burst therefore lets the drain read half-written frames — heard as crackle, aperiodic
+         * because it depends on where the 5 ms read cycle happens to land inside the write burst.
+         *
+         * It was 32 frames — **0.67 ms at 48 kHz** — against HAL periods that are typically 4-20 ms
+         * (192-960 frames), so it was 6x to 30x too small. It survived because the artefact is
+         * timing-sensitive: a OnePlus 12 sounded clean while a Galaxy S24 FE crackled on every call
+         * (measured 2026-07-30, A/B against Resilient recording off).
+         *
+         * 960 frames = 20 ms covers the largest common period. The cost is 20 ms of extra latency
+         * before a frame reaches the encoder, which is irrelevant for call recording, and 20 ms more
+         * of the ring left unread — trivial against a ring measured in thousands of frames.
+         */
+        const val GUARD_FRAMES = 960
 
         private const val BYTES_PER_SAMPLE = 2 // PCM-16
         private const val MIN_CHANNELS = 1

@@ -265,7 +265,7 @@ Three related asks, all about the user deciding rather than the rules deciding:
 
 ---
 
-## 🔴 Resilient recording on One UI — ring fix CONFIRMED, but it crackles on the S24 FE
+## ✅ Resilient recording on One UI — ring fix CONFIRMED, crackle root-caused and fixed
 
 **Root cause, confirmed against AOSP source rather than guessed.** The handoff sized the ring from
 `AudioRecord.getBufferSizeInFrames()`. That returns `cblk->mBufferSizeInFrames`, a **logical value the
@@ -308,19 +308,38 @@ same call type, same codec, one toggle.
 | Resilient ON | **yes** | −33.8 dB | 25.2 |
 | Resilient OFF | no | −30.7 dB | 17.6 |
 
-**Instrumentation could barely see it** — worth knowing before anyone re-measures. Transient counts
-differ by only ~40% (both dominated by ordinary speech consonants), and the spectra differ only
-slightly (3-6 kHz: 2.2% ON vs 1.5% OFF). The ear separated these two files instantly; none of the
-metrics above would have. Do not conclude "no defect" from a flat measurement here.
+### Root cause: GUARD_FRAMES was smaller than one HAL write burst
 
-**Where to look.** The artefacts are **aperiodic**, which rules out a fixed geometry error and points
-at a producer/consumer race in the drain: reading `[mFront, mRear)` slightly ahead of or behind the
-writer, dropping or repeating a few frames at irregular moments. `GUARD_FRAMES = 32` and the
-release-store of `mFront` are the first places to look. Note the OnePlus 12 does NOT exhibit this, so
-it is timing-sensitive and likely depends on the HAL's buffer cadence.
+`GUARD_FRAMES` held back **32 frames = 0.67 ms at 48 kHz**. But AudioFlinger's record thread does not
+advance `mRear` sample by sample — it publishes a whole HAL period at a time, and while that copy is
+in flight the frames just below `mRear` are **partially written**. HAL periods are typically 4-20 ms
+(192-960 frames), so the guard was 6x to 30x too small and the drain read half-written frames.
 
-**Blast radius is bounded:** the feature is default-OFF, so only opt-in users are affected — but for
-those users it degrades every recording, which is worse than the daemon death it protects against.
+That explains every property of the symptom: crackle rather than gaps (corrupt samples, not missing
+ones), **aperiodic** (it depends where the 5 ms read cycle lands inside the write burst, which is why
+the phase-concentration test against every candidate ring wrap came back R = 0.03-0.18), and
+**vendor-specific** (a OnePlus 12 was clean throughout while every S24 FE call crackled).
+
+Raised to **960 frames (20 ms)**, covering the largest common period. Cost: 20 ms more latency before
+a frame reaches the encoder — irrelevant for call recording.
+
+### Verified on the device, 2026-07-30
+
+| build | transients/s (>10x local) | 3-6 kHz energy |
+|---|---|---|
+| handoff ON, guard 32 | 25.2 | 2.25% |
+| handoff OFF (baseline) | 17.6 | 1.52% |
+| **handoff ON, guard 960** | **16.3** | **0.39%** |
+
+The fixed handoff now measures at or below the no-handoff baseline on both.
+
+**A measurement lesson worth keeping.** With only the first two files, transient counts differed by
+~40% (both swamped by speech consonants) and the spectra by a single point — the ear separated them
+instantly and the metrics nearly did not. What discriminated cleanly was **3-6 kHz band energy**, and
+only once a third file gave the scale. Do not read a flat two-way measurement here as "no defect".
+
+**Follow-up worth doing:** derive the guard from the observed `mRear` step (the burst size the device
+actually uses) rather than hardcoding 960.
 
 ---
 
