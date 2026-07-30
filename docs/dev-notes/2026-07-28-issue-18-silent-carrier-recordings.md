@@ -105,41 +105,89 @@ daemon serving the new app would have produced a false "still broken" while neve
 It was provable anyway, from the file sizes. Fitting `bytes = R·(T − d)` over each log's calls
 (`T` = dispatch→release window) separates steady-state byte rate from startup delay:
 
-| build | fit across | byte rate | startup delay | worst residual |
-|---|---|---|---|---|
-| `v1.5.2` (direct path) | 4 calls | 3032 B/s = **24.26 kbps** | 0.88 s | 1.4% |
-| `1.5.2-diag-scrcpy` | 5 calls | 3381 B/s = **27.04 kbps** | 1.36 s | 0.9% |
+Measured over every call in all three logs (window = `startRecording dispatched` → `Releasing
+session resources`), grouped by build and selected source:
 
-Both fits are tight, and the bitrate shift is **predicted by the code**: the direct path encodes
-**mono** (`DirectAudioRecorderSession.ENCODE_CHANNELS = 1`), which hits the 24 kbps target almost
-exactly; scrcpy-server "always outputs stereo" (`ScrcpyConfig.AUDIO_CHANNELS = 2`), and AAC-LC
-overshoots a 24 kbps target with two channels. The longer startup matches spawning scrcpy. Two
-independent signatures both move as predicted, so **the scrcpy path genuinely ran.**
+| log | build | source | path | kbps (calls >10 s) |
+|---|---|---|---|---|
+| A | 1.4.9 / 1.5.2 | `voice-call` | direct | 24.9, 24.1, 24.0, 23.9, 24.1 |
+| A | 1.4.9 / 1.5.2 | `mic-voice-communication` | direct | 25.6, 25.5, 25.6, 25.5 |
+| B | 1.5.2 | `voice-call` | direct | 23.1, 24.1 |
+| C | **1.5.2-diag-scrcpy** | `voice-call` | scrcpy | **25.8, 26.9, 26.9, 26.2, 26.6** |
+
+Every diag call sits **above every direct-path call**, including the mic captures. That is what the
+code predicts: the direct path encodes **mono**
+(`DirectAudioRecorderSession.ENCODE_CHANNELS = 1`) and lands on its 24 kbps target; scrcpy-server
+"always outputs stereo" (`ScrcpyConfig.AUDIO_CHANNELS = 2`), and AAC-LC overshoots a 24 kbps target
+with two channels. Fitting `bytes = R·(T − d)` also puts diag startup at 1.36 s against 0.88 s for
+the direct path, consistent with spawning scrcpy.
+
+So the evidence says **the scrcpy path ran** — contrary to the "the debug version never ran properly"
+read. It is inference, not proof. The **decisive** check is one line of `ffprobe` on any of his files:
+**2 channels = scrcpy ran, 1 channel = it did not.**
 
 (Sizes alone still cannot distinguish silence from audio — CBR encodes zeros at the same rate. They
 distinguish *which encoder configuration produced them*, which is a different question.)
 
-### So the hypothesis is dead
+### So the direct-path hypothesis is dead — but the diagnostic could not test the real suspect
 
-Both capture paths produce correctly-sized silent files on this device. The unattributed `AudioRecord`
-in the direct path is **not** the cause — scrcpy's fake-`com.android.shell` context did not help. The
-fault is upstream of the capture path: `AudioSource.VOICE_CALL` appears to hand back zeros on this
-device rather than failing.
+The unattributed `AudioRecord` is **not** the cause: scrcpy's fake-`com.android.shell` context did not
+help. The fault is upstream of the capture path.
 
-That also reframes "AAC worked on an earlier version". Both paths fail now, so the change is unlikely
-to be an app version at all. The device is on **Android 16 (API 36)** — a Fold 6 that shipped on
-Android 14 — which makes an OS/One UI upgrade the better-fitting suspect than any CallVault release.
+**The diagnostic was built to answer the wrong question.** It swaps *which* capture path runs. The
+leading suspect — an armed VoIP audio policy — sits **above both paths**, so this build was
+structurally incapable of clearing or convicting it. "Still silent" was the guaranteed outcome either
+way. That is a flaw in the diagnostic's design, not (necessarily) in how the reporter ran it.
 
-### What to try next — capture source, not code
+### The hypothesis that actually fits: the VoIP policy is armed during carrier calls
 
-`ScrcpyAudioSource` already offers eleven sources. Nothing needs building to test whether any of them
-returns audio on this ROM: `voice-call-uplink`, `voice-call-downlink`, `mic-voice-communication`,
-`mic`, and `output`/`playback` are all selectable in Settings today. A sweep by the reporter is the
-cheapest next evidence, and if one works it is also his workaround.
+`VoipAudioPolicy.arm()` registers a **system-wide** dynamic `AudioMix` matching
+`USAGE_VOICE_COMMUNICATION`, routed `ROUTE_FLAG_LOOP_BACK_RENDER`. A **carrier** call's downlink is
+rendered as voice communication too, so the mix matches telephony as well as VoIP apps and reroutes
+that stream through a submix.
 
-If every source is silent, capture is blocked at the HAL for this ROM and the honest answer is that
-the device is unsupported for carrier calls — the VoIP path ([[voip-recording-feasibility]]) would be
-the only route left.
+Three properties of the current design make this fit the evidence exactly:
+
+1. **It is armed permanently.** `VoipCaptureController`: "armed when the user enables the feature,
+   re-armed whenever the daemon is (re)launched, and left armed" — because a policy registered
+   mid-call attaches to nothing. Deliberate, and correct for VoIP.
+2. **Nothing disarms it for a carrier call.** `sync()` is called from app start, the Settings toggle,
+   and daemon-ready. There is no `MODE_IN_CALL` hook. The mix is live through every carrier call.
+3. **It is invisible.** `sync()` logs only on failure, and `arm`/`disarm` log inside the *daemon*,
+   which cannot write the app's log file at all (shell uid vs app-private cache). No export we have
+   can show whether the policy was armed.
+
+It also explains everything the other hypotheses had to strain for: both paths silent (the policy is
+upstream of both), no error, correctly-sized files, nothing device-specific needed beyond a ROM that
+honours the reroute, and **"AAC worked on an earlier version"** — the VoIP engine shipped in
+**v1.4.7** (`2b50fbe`); he first reported on **1.4.9**. Anything before 1.4.7, or before he switched
+the toggle on, predates the mechanism.
+
+The open assumption is that he enabled the toggle — it is default-off (`VOIP_RECORDING_ENABLED =
+false`) and he has never confirmed it, despite being asked twice.
+
+### This is reproducible without a Samsung
+
+Turn VoIP recording **on** on any device, make an ordinary carrier call, and check whether the
+recording goes silent. If it reproduces on the OP12, the bug is ours and the reporter is off the
+critical path entirely.
+
+### The fix, if it reproduces
+
+Disarm on carrier-call start and re-arm on IDLE. A carrier call and a VoIP call are mutually
+exclusive, so nothing is lost: the "must arm before the track exists" constraint only binds for VoIP
+calls, and re-arming after the carrier call ends happens with no VoIP track in flight.
+
+### The other unanswered question — did the mic source work?
+
+Log A contains **seven** calls on `mic-voice-communication` alongside six on `voice-call`; he has been
+switching sources all along and never said which produced audio. This single answer splits the
+diagnosis:
+
+- **mic works, `voice-call` silent** → source-specific block, and he has a workaround today.
+- **both silent** → a global cause: the policy above, or playback.
+
+`ScrcpyAudioSource` offers eleven sources, all selectable in Settings, so a sweep costs nothing.
 
 ### Two diagnostic-quality defects this exposed
 
