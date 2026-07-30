@@ -566,7 +566,15 @@ private fun StorageSection(
         OptionItem(target.key, stringResource(labelRes))
     }
 
-    SettingsSection(title = stringResource(R.string.settings_section_storage), expanded = expanded, onToggle = onToggle) {
+    SettingsSection(
+        title = stringResource(R.string.settings_section_storage),
+        expanded = expanded,
+        onToggle = onToggle,
+        wrapInCard = false,
+    ) {
+      // The target and the two folder pickers are this section's own rows, so they keep a card. The
+      // sub-sections below manage their own.
+      CvCard(contentPadding = PaddingValues(vertical = 8.dp)) {
         DropdownRow {
             M3DropdownField(
                 label    = stringResource(R.string.settings_storage_target_label),
@@ -596,9 +604,10 @@ private fun StorageSection(
             onClick = onSelectDriveFolder
         )
 
+      }
+
         // Only meaningful when something is actually uploaded — with LOCAL there is no upload to schedule.
         if (storageTarget != StorageTarget.LOCAL) {
-            SettingsDivider()
             SettingsSubSection(
                 title = stringResource(R.string.wizard_schedule_title),
                 expanded = openSub == SUB_UPLOAD,
@@ -606,7 +615,6 @@ private fun StorageSection(
             ) { UploadScheduleSubSection(preferences, updateTrigger, actions) }
         }
 
-        SettingsDivider()
         SettingsSubSection(
             title = stringResource(R.string.settings_section_retention),
             expanded = openSub == SUB_RETENTION,
@@ -956,19 +964,22 @@ private fun GeneralSection(
     // One open sub-section at a time, within this section only, and nothing open on entry.
     var openSub by rememberSaveable { mutableStateOf<String?>(null) }
 
-    SettingsSection(title = stringResource(R.string.settings_section_general), expanded = expanded, onToggle = onToggle) {
+    SettingsSection(
+        title = stringResource(R.string.settings_section_general),
+        expanded = expanded,
+        onToggle = onToggle,
+        wrapInCard = false,
+    ) {
         SettingsSubSection(
             title = stringResource(R.string.settings_section_visual),
             expanded = openSub == SUB_VISUAL,
             onToggle = { openSub = if (openSub == SUB_VISUAL) null else SUB_VISUAL },
         ) { VisualSubSection(preferences, updateTrigger, actions) }
-        SettingsDivider()
         SettingsSubSection(
             title = stringResource(R.string.settings_section_experimental),
             expanded = openSub == SUB_EXPERIMENTAL,
             onToggle = { openSub = if (openSub == SUB_EXPERIMENTAL) null else SUB_EXPERIMENTAL },
         ) { ExperimentalSubSection() }
-        SettingsDivider()
         SettingsSubSection(
             title = stringResource(R.string.settings_section_updates),
             expanded = openSub == SUB_UPDATES,
@@ -1191,12 +1202,12 @@ private fun SettingsSubHeader(text: String, nested: Boolean = false, modifier: M
     // indented instead of introducing a second component.
     Text(
         text = text,
-        style = if (nested) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
-        color = if (nested) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+        style = if (nested) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleSmall,
+        color = if (nested) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
         modifier = modifier.padding(
-            start = if (nested) 16.dp else 4.dp,
-            top = if (nested) 10.dp else 14.dp,
-            bottom = 2.dp,
+            start = if (nested) 20.dp else 12.dp,
+            top = if (nested) 10.dp else 12.dp,
+            bottom = if (nested) 2.dp else 8.dp,
         )
     )
 }
@@ -1561,6 +1572,10 @@ private fun SettingsSection(
     title: String,
     expanded: Boolean,
     onToggle: () -> Unit,
+    // A section made of sub-sections passes false: the card then belongs around each OPEN
+    // sub-section's rows, not around a list of labels that do nothing until tapped. Wrapping the
+    // labels made a closed section read as a floating menu of empty items.
+    wrapInCard: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val chevronRotation by animateFloatAsState(
@@ -1592,8 +1607,10 @@ private fun SettingsSection(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            CvCard(contentPadding = PaddingValues(vertical = 8.dp)) {
-                content()
+            if (wrapInCard) {
+                CvCard(contentPadding = PaddingValues(vertical = 8.dp)) { content() }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { content() }
             }
         }
     }
@@ -1602,9 +1619,10 @@ private fun SettingsSection(
 /**
  * A collapsible group INSIDE a section — Storage ▸ Retention, General ▸ Updates, and so on.
  *
- * Same interaction as [SettingsSection] so the two levels behave alike, but rendered quieter: the
- * header is a label rather than a section title, and there is no card, because the parent section
- * already draws one and nesting cards muddies the hierarchy.
+ * Same interaction as [SettingsSection] so the two levels behave alike, and the same shape: a bare
+ * header row, with the card around the CONTENT once it opens. The header is quieter than a section
+ * title — ordinary text rather than the accent colour — so it reads as a level down rather than as a
+ * competing heading.
  *
  * Callers hold the open key themselves, one per parent section, which makes the sub-sections an
  * accordion within their own section only — opening Retention cannot close something in General.
@@ -1641,7 +1659,7 @@ private fun SettingsSubSection(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Column { content() }
+            CvCard(contentPadding = PaddingValues(vertical = 8.dp)) { content() }
         }
     }
 }
