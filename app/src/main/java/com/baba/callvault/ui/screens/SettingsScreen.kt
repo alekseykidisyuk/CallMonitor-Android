@@ -100,6 +100,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Favorite
@@ -1592,10 +1593,13 @@ private fun SettingsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             CvSectionHeader(text = title, modifier = Modifier.weight(1f))
+            // A section takes the accent, matching its teal dash; a sub-section gets a small muted
+            // triangle instead (see [SettingsSubSection]). Differing in BOTH shape and colour is what
+            // makes the two levels tellable apart at a glance — size alone did not.
             Icon(
                 imageVector = Icons.Filled.ExpandMore,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .padding(end = 4.dp)
                     .size(22.dp)
@@ -1647,11 +1651,13 @@ private fun SettingsSubSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             SettingsSubHeader(title, modifier = Modifier.weight(1f))
+            // Triangle, not a chevron, and muted rather than accented — the opposite of the section
+            // marker above it on both counts.
             Icon(
-                imageVector = Icons.Filled.ExpandMore,
+                imageVector = Icons.Filled.ArrowDropDown,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(end = 6.dp).size(18.dp).rotate(chevronRotation)
+                modifier = Modifier.padding(end = 6.dp).size(24.dp).rotate(chevronRotation)
             )
         }
         AnimatedVisibility(
