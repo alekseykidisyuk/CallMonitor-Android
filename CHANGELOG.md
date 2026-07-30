@@ -3,6 +3,23 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.5.4] - 2026-07-30
+
+### Fixed
+
+- **Recording could stop silently until the app was restarted.** A connect to the recorder that was
+  interrupted mid-handshake could park forever, because the ADB library's connect has no timeout —
+  and it parked holding the locks every other ADB operation needs. A keep-alive latch then meant the
+  watchdog never tried again, so recording stayed off with nothing on screen to say so. The handshake
+  and the relaunch are both bounded now, and the app recovers on its own.
+
+### Added
+
+- **Choose when recordings upload to Drive** — immediately, daily or weekly, under
+  Settings ▸ Storage. The schedule already worked, but its picker only existed in the setup wizard,
+  which cannot be re-run ([#20](https://github.com/madkongo/CallVault/issues/20)).
+- **Retention moved into Storage** as a sub-section, next to the upload schedule.
+
 ## [1.5.3] — 2026-07-29
 
 ### Added

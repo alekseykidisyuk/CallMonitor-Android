@@ -66,4 +66,6 @@
     <string name="whatsnew_150_where">Beállítások ▸ Kísérleti ▸ USB hibakeresés</string>
     <string name="whatsnew_153_body">Az állapotkártya mostantól megmondja, hogy a rögzítés valóban működött-e — a valódi hívásai alapján, nem pedig egy zöld jelzés alapján, amely csak annyit jelent, hogy az alkalmazás elindult. Ha egy hívás nem lett rögzítve, ezt kiírja, és megmondja az okát is: soha nem volt beállítva mappa, ki voltak kapcsolva a fejlesztői beállítások, egy frissítés miatt elveszett egy engedély.\n\nEzenkívül: a CallVault mostantól beszél brazíliai portugálul, és az összes többi nyelv is frissült.</string>
     <string name="whatsnew_153_title">A beállítása, amelyet a saját hívásai ellenőriznek</string>
+    <string name="whatsnew_154_title">A felvétel magától helyreáll</string>
+    <string name="whatsnew_154_body">A rögzítővel való kapcsolat ritka elakadása csendben kikapcsolva hagyhatta a felvételt az alkalmazás újraindításáig – anélkül, hogy a képernyőn bármi jelezte volna. Ez most időtúllépéssel magától helyreáll.\n\nAzt is megválaszthatja, mikor töltődjenek fel a felvételek a Drive-ra: azonnal, naponta vagy hetente. A Beállítások ▸ Tárhely alatt található, a Megőrzéssel együtt, amely ugyanide került át.</string>
 </resources>

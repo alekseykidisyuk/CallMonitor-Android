@@ -66,4 +66,6 @@
     <string name="whatsnew_150_where">设置 ▸ 实验性功能 ▸ USB 调试</string>
     <string name="whatsnew_153_body">状态卡片现在会告诉你录音是否真的成功了 — 依据是你的真实通话，而不是一个只表示应用已启动的绿灯。如果某通通话没有被录音，它会说明这一点并给出原因：从未设置文件夹、开发者选项被关闭、更新导致权限丢失。\n\n此外：CallVault 现在支持巴西葡萄牙语，其他所有语言也都已更新。</string>
     <string name="whatsnew_153_title">你的设置，由你自己的通话来验证</string>
+    <string name="whatsnew_154_title">能自行恢复的录音</string>
+    <string name="whatsnew_154_body">与录音器的连接偶尔会出现罕见的卡顿，可能在无任何提示的情况下悄悄停止录音，直到重启应用。现在它会超时并自行恢复。\n\n你还可以选择录音上传到云端硬盘的时间：立即、每天或每周。请前往「设置 ▸ 存储」，「保留时长」也已移至同一板块。</string>
 </resources>

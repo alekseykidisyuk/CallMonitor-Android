@@ -66,4 +66,6 @@
     <string name="whatsnew_150_where">Ajustes ▸ Experimental ▸ Depuración por USB</string>
     <string name="whatsnew_153_body">La tarjeta de estado ahora te dice si la grabación funcionó de verdad, según tus llamadas reales y no según una luz verde que solo significa que la app se inició. Si una llamada no se grabó, lo dice y explica por qué: una carpeta que nunca se configuró, las opciones de desarrollador desactivadas, un permiso perdido en una actualización.\n\nAdemás: CallVault ya habla portugués de Brasil, y el resto de idiomas se han puesto al día.</string>
     <string name="whatsnew_153_title">Tu configuración, comprobada por tus propias llamadas</string>
+    <string name="whatsnew_154_title">Grabación que se recupera sola</string>
+    <string name="whatsnew_154_body">Un fallo poco frecuente en la conexión con el grabador podía dejar la grabación desactivada en silencio hasta reiniciar la aplicación, sin ningún aviso en pantalla. Ahora se agota el tiempo de espera y se recupera por sí sola.\n\nTambién puedes elegir cuándo se suben las grabaciones a Drive: al momento, a diario o cada semana. Está en Ajustes ▸ Almacenamiento, junto con la Retención, que se ha trasladado a la misma sección.</string>
 </resources>

@@ -67,4 +67,6 @@
     <string name="whatsnew_150_where">Paramètres ▸ Expérimental ▸ Débogage USB</string>
     <string name="whatsnew_153_body">La carte d\'état vous indique désormais si l\'enregistrement a réellement fonctionné, d\'après vos appels réels et non d\'après un voyant vert qui signifie seulement que l\'application a démarré. Si un appel n\'a pas été enregistré, elle le dit et en donne la raison : un dossier jamais défini, les options pour les développeurs désactivées, une autorisation perdue lors d\'une mise à jour.\n\nEn outre : CallVault parle maintenant le portugais du Brésil, et toutes les autres langues ont été mises à jour.</string>
     <string name="whatsnew_153_title">Votre configuration, vérifiée par vos propres appels</string>
+    <string name="whatsnew_154_title">Un enregistrement qui se rétablit seul</string>
+    <string name="whatsnew_154_body">Un blocage rare de la connexion à l\'enregistreur pouvait désactiver l\'enregistrement en silence jusqu\'au redémarrage de l\'application, sans rien afficher à l\'écran. Le délai expire désormais et tout se rétablit tout seul.\n\nVous pouvez aussi choisir quand les enregistrements sont envoyés vers Drive : immédiatement, chaque jour ou chaque semaine. C\'est dans Paramètres ▸ Stockage, avec la Conservation, qui a rejoint la même section.</string>
 </resources>
