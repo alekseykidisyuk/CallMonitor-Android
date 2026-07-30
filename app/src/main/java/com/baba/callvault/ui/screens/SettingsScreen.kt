@@ -242,7 +242,9 @@ fun SettingsContent(
     // Accordion: at most one section open at a time; Recording & storage is open on entry. State is
     // hoisted here (above the LazyColumn) so it is shared across all sections. Tapping the open section
     // closes it (null = none open); tapping any other section opens it and closes the previous one.
-    var openSection by rememberSaveable { mutableStateOf<String?>(SECTION_RECORDING) }
+    // Everything closed on entry: the panel then opens on a short list of section names, which is
+    // navigable at a glance. Auto-opening one buried the other five under a screenful of its rows.
+    var openSection by rememberSaveable { mutableStateOf<String?>(null) }
     val onToggleSection: (String) -> Unit = { id -> openSection = if (openSection == id) null else id }
 
     CvScaffold(
@@ -385,6 +387,13 @@ private const val SECTION_STORAGE = "storage"
 private const val SECTION_RETENTION = "retention"
 private const val SECTION_AUDIO = "audio"
 private const val SECTION_GENERAL = "general"
+
+// Sub-section keys. Scoped to their parent section, so the same value can never collide across two.
+private const val SUB_UPLOAD = "sub_upload"
+private const val SUB_RETENTION = "sub_retention"
+private const val SUB_VISUAL = "sub_visual"
+private const val SUB_EXPERIMENTAL = "sub_experimental"
+private const val SUB_UPDATES = "sub_updates"
 private const val SECTION_VISUAL = "visual"
 private const val SECTION_EXPERIMENTAL = "reliability"   // key kept so a user's open-section state survives the rename
 private const val SECTION_BUG_REPORT = "bug_report"
@@ -545,6 +554,9 @@ private fun StorageSection(
     val storageTarget = remember(updateTrigger) { preferences.getStorageTarget() }
     val driveFolderLabel = remember(updateTrigger) { SafHelper.getFolderDisplayNameOrNull(context, preferences.getDriveFolderUri()) }
 
+    // One open sub-section at a time, within this section only, and nothing open on entry.
+    var openSub by rememberSaveable { mutableStateOf<String?>(null) }
+
     val storageTargetOptions = StorageTarget.entries.map { target ->
         val labelRes = when (target) {
             StorageTarget.LOCAL -> R.string.storage_target_local
@@ -587,11 +599,19 @@ private fun StorageSection(
         // Only meaningful when something is actually uploaded — with LOCAL there is no upload to schedule.
         if (storageTarget != StorageTarget.LOCAL) {
             SettingsDivider()
-            UploadScheduleSubSection(preferences, updateTrigger, actions)
+            SettingsSubSection(
+                title = stringResource(R.string.wizard_schedule_title),
+                expanded = openSub == SUB_UPLOAD,
+                onToggle = { openSub = if (openSub == SUB_UPLOAD) null else SUB_UPLOAD },
+            ) { UploadScheduleSubSection(preferences, updateTrigger, actions) }
         }
 
         SettingsDivider()
-        RetentionSubSection(preferences, updateTrigger, actions)
+        SettingsSubSection(
+            title = stringResource(R.string.settings_section_retention),
+            expanded = openSub == SUB_RETENTION,
+            onToggle = { openSub = if (openSub == SUB_RETENTION) null else SUB_RETENTION },
+        ) { RetentionSubSection(preferences, updateTrigger, actions) }
     }
 }
 
@@ -620,8 +640,6 @@ private fun UploadScheduleSubSection(
     val modeOptions = SyncScheduleMode.entries.map {
         OptionItem(it.key, stringResource(SyncScheduleLabels.titleOf(it)))
     }
-
-    SettingsSubHeader(stringResource(R.string.wizard_schedule_title))
 
     DropdownRow {
         M3DropdownField(
@@ -710,7 +728,6 @@ private fun RetentionSubSection(
         if (wasOff && newDays > 0) pendingConfirm = apply else apply()
     }
 
-    SettingsSubHeader(stringResource(R.string.settings_section_retention))
     Column {
         SettingsToggleRow(
             label = stringResource(R.string.retention_linked_label),
@@ -936,12 +953,27 @@ private fun GeneralSection(
     expanded: Boolean,
     onToggle: () -> Unit
 ) {
+    // One open sub-section at a time, within this section only, and nothing open on entry.
+    var openSub by rememberSaveable { mutableStateOf<String?>(null) }
+
     SettingsSection(title = stringResource(R.string.settings_section_general), expanded = expanded, onToggle = onToggle) {
-        VisualSubSection(preferences, updateTrigger, actions)
+        SettingsSubSection(
+            title = stringResource(R.string.settings_section_visual),
+            expanded = openSub == SUB_VISUAL,
+            onToggle = { openSub = if (openSub == SUB_VISUAL) null else SUB_VISUAL },
+        ) { VisualSubSection(preferences, updateTrigger, actions) }
         SettingsDivider()
-        ExperimentalSubSection()
+        SettingsSubSection(
+            title = stringResource(R.string.settings_section_experimental),
+            expanded = openSub == SUB_EXPERIMENTAL,
+            onToggle = { openSub = if (openSub == SUB_EXPERIMENTAL) null else SUB_EXPERIMENTAL },
+        ) { ExperimentalSubSection() }
         SettingsDivider()
-        UpdatesSubSection(preferences, updateTrigger, actions)
+        SettingsSubSection(
+            title = stringResource(R.string.settings_section_updates),
+            expanded = openSub == SUB_UPDATES,
+            onToggle = { openSub = if (openSub == SUB_UPDATES) null else SUB_UPDATES },
+        ) { UpdatesSubSection(preferences, updateTrigger, actions) }
     }
 }
 
@@ -991,7 +1023,6 @@ private fun VisualSubSection(preferences: AppPreferences, updateTrigger: Int, ac
         options.distinctBy { it.key }
     }
 
-    SettingsSubHeader(stringResource(R.string.settings_section_visual))
     Column {
         DropdownRow {
             M3DropdownField(
@@ -1126,7 +1157,6 @@ private fun BugReportSection(
  */
 @Composable
 private fun ExperimentalSubSection() {
-    SettingsSubHeader(stringResource(R.string.settings_section_experimental))
     Column {
         SettingsSubHeader(stringResource(R.string.settings_subsection_resilience), nested = true)
         HandoffPersistToggle()
@@ -1155,7 +1185,7 @@ private fun SettingsHint(text: String) {
 
 /** Small label separating groups of related rows inside one collapsible section. */
 @Composable
-private fun SettingsSubHeader(text: String, nested: Boolean = false) {
+private fun SettingsSubHeader(text: String, nested: Boolean = false, modifier: Modifier = Modifier) {
     // General ▸ Experimental ▸ Resilience is three levels deep. Rendering the inner grouping at the
     // same weight as its parent makes the two read as siblings, so a nested header is quieter and
     // indented instead of introducing a second component.
@@ -1163,7 +1193,7 @@ private fun SettingsSubHeader(text: String, nested: Boolean = false) {
         text = text,
         style = if (nested) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
         color = if (nested) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(
+        modifier = modifier.padding(
             start = if (nested) 16.dp else 4.dp,
             top = if (nested) 10.dp else 14.dp,
             bottom = 2.dp,
@@ -1515,7 +1545,6 @@ private fun UpdatesSubSection(
 ) {
     val isCheckEnabled = remember(updateTrigger) { preferences.isUpdateCheckEnabled() }
 
-    SettingsSubHeader(stringResource(R.string.settings_section_updates))
     Column {
         SettingsToggleRow(
             icon = Icons.Filled.SystemUpdate,
@@ -1566,6 +1595,53 @@ private fun SettingsSection(
             CvCard(contentPadding = PaddingValues(vertical = 8.dp)) {
                 content()
             }
+        }
+    }
+}
+
+/**
+ * A collapsible group INSIDE a section — Storage ▸ Retention, General ▸ Updates, and so on.
+ *
+ * Same interaction as [SettingsSection] so the two levels behave alike, but rendered quieter: the
+ * header is a label rather than a section title, and there is no card, because the parent section
+ * already draws one and nesting cards muddies the hierarchy.
+ *
+ * Callers hold the open key themselves, one per parent section, which makes the sub-sections an
+ * accordion within their own section only — opening Retention cannot close something in General.
+ */
+@Composable
+private fun SettingsSubSection(
+    title: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "settingsSubSectionChevron"
+    )
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { onToggle() },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SettingsSubHeader(title, modifier = Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.Filled.ExpandMore,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 6.dp).size(18.dp).rotate(chevronRotation)
+            )
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column { content() }
         }
     }
 }
