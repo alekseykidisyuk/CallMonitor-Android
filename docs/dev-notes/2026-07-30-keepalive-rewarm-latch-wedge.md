@@ -61,15 +61,40 @@ escape is killing the app — which nothing in the product ever does or suggests
 `AdbConnectionManager.isConnected`, which is a state flag, not a liveness check. A `CLOSE_WAIT`
 socket satisfies it.
 
-## Why yesterday
+## What triggered it — UNKNOWN, and an earlier claim here was wrong
 
-The 1.5.3 release was installed over USB at 13:15. Attaching or detaching USB churns `adbd`, which
-dropped the app's loopback connection. The socket went to `CLOSE_WAIT`, the first watchdog rewarm
-wedged on it, and the latch closed. Everything after that was silence.
+An earlier version of this note asserted that the 1.5.3 USB install churned `adbd` and started the
+chain. **That was an assumption written as a finding, and the maintainer's counter-evidence is
+strong:** the cable has been connected and disconnected many times across many versions without this
+ever happening. Cable churn alone does not explain it.
 
-The latch bug is from v1.4.0. Any adbd churn can trigger it — a cable, a screen-off adbd restart, a
-debugging-switch toggle. **This has almost certainly been happening to users in the field**, reported
-as "it just stopped recording", and is a strong candidate for reports we have already dismissed.
+What the thread order does pin down is *where* it parked. TIDs had wrapped past `pid_max`, so the true
+creation order was `cv-usbdefault-refresh` ×2 → `cv-keepalive-rewarm` (21033) → `cv-shell-probe` ×4
+(21034-21089). The rewarm thread **spawned those probes**, so `ensureConnected` returned and
+`waitForShellReady` ran and failed. With only one probe round present, it then parked on launch
+attempt 2 — at `AdbShell.forceReconnect`, which is `@Synchronized` and called under
+`heavyOperationLock`, holding both.
+
+The concrete hang site is `connectLoopback`:
+
+```kotlin
+runCatching { mgr.connect("127.0.0.1", port) }   // no timeout anywhere
+```
+
+libadb's `connect` performs the ADB handshake. If adbd accepts the TCP connection but never completes
+`CNXN`/`AUTH`, this blocks forever — while holding the AdbShell monitor and `heavyOperationLock`.
+
+**A 1.5.3 regression was looked for and not found.** 1.5.3 changed **nothing** under
+`integrations/**`, `server/**`, or `CallVaultApplication.kt` — verified by
+`git diff v1.5.2..v1.5.3 --name-only`. Its 906 added lines are the setup-health feature: additive
+bookkeeping that is either `Dispatchers.IO`-dispatched or `runCatching`-wrapped, with no ADB connect,
+no lock acquisition, and no new startup path. `SetupPrerequisites.missing()` is called at call start
+but performs only synchronous preference and `Settings.Global` reads.
+
+That is a negative result, not a conclusion. **The evidence that would settle it still exists and has
+not been read: the app's own `app_debug.log`**, which is a file that survived the force-stop and
+covers yesterday. It is app-private and the release build is not debuggable, so it can only be
+obtained by exporting a debug report from the app itself.
 
 ## The fix — implemented 2026-07-30
 

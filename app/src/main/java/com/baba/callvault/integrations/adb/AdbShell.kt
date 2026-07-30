@@ -190,27 +190,32 @@ object AdbShell {
      * @return true if a live connection is up after the reconnect attempt.
      */
     @Synchronized
-    /**
-     * Drops the ADB connection WITHOUT reconnecting, to unblock a caller wedged on a half-dead socket.
-     *
-     * A socket in `CLOSE_WAIT` (adbd hung up, we never closed our end) leaves a stream read blocked with
-     * no timeout, and if that read happens to be inside [RecorderServerLauncher.ensureServerRunning] the
-     * thread also holds [heavyOperationLock] — so every later ADB operation queues behind it forever.
-     * Closing the connection from another thread is what lets the blocked one unwind and release the
-     * lock; it is the same technique [probeShellOnce] uses on its own hung read.
-     *
-     * Deliberately does NOT reconnect: the caller that needs a connection will build a fresh one through
-     * [ensureConnected], and reconnecting here would just re-enter the code we are trying to escape.
-     */
-    fun dropConnection(context: Context) {
-        runCatching { AdbConnectionManager.getInstance(context).disconnect() }
-            .onFailure { AppLogger.d(TAG, "dropConnection ignored: ${it.message}") }
-    }
-
     fun forceReconnect(context: Context): Boolean {
         runCatching { AdbConnectionManager.getInstance(context).disconnect() }
             .onFailure { AppLogger.d(TAG, "forceReconnect disconnect ignored: ${it.message}") }
         return ensureConnected(context)
+    }
+
+    /**
+     * Drops the ADB connection WITHOUT reconnecting, to unblock a caller wedged on a half-dead socket.
+     *
+     * A socket in `CLOSE_WAIT` (adbd hung up, we never closed our end) leaves a stream read blocked with
+     * no timeout. If that read is inside [com.baba.callvault.server.RecorderServerLauncher.ensureServerRunning]
+     * the blocked thread also holds [heavyOperationLock], so every later ADB operation queues behind it.
+     * Closing the connection from another thread is what lets the blocked one unwind and release the
+     * lock — the same technique `probeShellOnce` uses on its own hung read.
+     *
+     * **Deliberately NOT `@Synchronized`, and this is the whole point.** The thread we are trying to
+     * rescue is typically blocked *inside* [ensureConnected], which holds this object's monitor — so a
+     * synchronized rescue would wait on the very lock it exists to release, and deadlock instead of
+     * recovering. Do not "tidy" this to match its neighbours.
+     *
+     * Does not reconnect either: whoever needs a connection builds a fresh one through
+     * [ensureConnected], and reconnecting here would re-enter the code we are escaping.
+     */
+    fun dropConnection(context: Context) {
+        runCatching { AdbConnectionManager.getInstance(context).disconnect() }
+            .onFailure { AppLogger.d(TAG, "dropConnection ignored: ${it.message}") }
     }
 
     /**
