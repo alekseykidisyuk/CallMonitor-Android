@@ -85,4 +85,6 @@
     <string name="home_health_failed_empty">Your last call produced an empty recording (0 bytes).</string>
     <string name="home_health_failed_daemon">The recorder stopped during your last call.</string>
     <string name="home_health_failed_one_sided">Only your side was recorded on your last app call.</string>
+    <string name="home_date_today">Today</string>
+    <string name="home_date_yesterday">Yesterday</string>
 </resources>

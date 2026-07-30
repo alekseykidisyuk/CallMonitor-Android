@@ -68,4 +68,6 @@
     <string name="whatsnew_153_title">Sua configuração, verificada pelas suas próprias chamadas</string>
     <string name="whatsnew_154_title">Gravação que se recupera sozinha</string>
     <string name="whatsnew_154_body">Uma falha rara na conexão com o gravador podia deixar a gravação desligada em silêncio até o app ser reiniciado — sem nada na tela avisando. Agora ela expira e se recupera sozinha.\n\nVocê também pode escolher quando as gravações são enviadas ao Drive: na hora, diariamente ou semanalmente. Fica em Configurações ▸ Armazenamento, junto com a Retenção, que passou para a mesma seção.</string>
+    <string name="home_date_today">Hoje</string>
+    <string name="home_date_yesterday">Ontem</string>
 </resources>

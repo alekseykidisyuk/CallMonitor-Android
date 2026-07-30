@@ -68,4 +68,6 @@
     <string name="whatsnew_153_title">Twoja konfiguracja, sprawdzona przez twoje własne połączenia</string>
     <string name="whatsnew_154_title">Nagrywanie, które samo wraca do działania</string>
     <string name="whatsnew_154_body">Rzadka blokada połączenia z rejestratorem mogła po cichu wyłączyć nagrywanie aż do ponownego uruchomienia aplikacji – bez żadnej informacji na ekranie. Teraz upływa limit czasu i wszystko wraca samo.\n\nMożesz też wybrać, kiedy nagrania trafiają na Dysk: od razu, codziennie albo co tydzień. Znajdziesz to w Ustawienia ▸ Pamięć, razem z Przechowywaniem, które przeniosło się do tej samej sekcji.</string>
+    <string name="home_date_today">Dziś</string>
+    <string name="home_date_yesterday">Wczoraj</string>
 </resources>

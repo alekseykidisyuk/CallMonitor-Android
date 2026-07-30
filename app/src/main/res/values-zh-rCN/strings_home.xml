@@ -68,4 +68,6 @@
     <string name="whatsnew_153_title">你的设置，由你自己的通话来验证</string>
     <string name="whatsnew_154_title">能自行恢复的录音</string>
     <string name="whatsnew_154_body">与录音器的连接偶尔会出现罕见的卡顿，可能在无任何提示的情况下悄悄停止录音，直到重启应用。现在它会超时并自行恢复。\n\n你还可以选择录音上传到云端硬盘的时间：立即、每天或每周。请前往「设置 ▸ 存储」，「保留时长」也已移至同一板块。</string>
+    <string name="home_date_today">今天</string>
+    <string name="home_date_yesterday">昨天</string>
 </resources>

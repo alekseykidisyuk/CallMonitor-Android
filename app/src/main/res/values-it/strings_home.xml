@@ -68,4 +68,6 @@
     <string name="whatsnew_153_title">La tua configurazione, verificata dalle tue stesse chiamate</string>
     <string name="whatsnew_154_title">Una registrazione che si ripristina da sola</string>
     <string name="whatsnew_154_body">Un raro blocco della connessione al registratore poteva lasciare la registrazione disattivata in silenzio fino al riavvio dell\'app, senza nulla a schermo che lo segnalasse. Ora scade il tempo di attesa e tutto si ripristina da solo.\n\nPuoi anche scegliere quando le registrazioni vengono caricate su Drive: subito, ogni giorno o ogni settimana. Lo trovi in Impostazioni ▸ Archiviazione, insieme alla Conservazione, che si è spostata nella stessa sezione.</string>
+    <string name="home_date_today">Oggi</string>
+    <string name="home_date_yesterday">Ieri</string>
 </resources>

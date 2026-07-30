@@ -68,4 +68,6 @@
     <string name="whatsnew_153_title">A beállítása, amelyet a saját hívásai ellenőriznek</string>
     <string name="whatsnew_154_title">A felvétel magától helyreáll</string>
     <string name="whatsnew_154_body">A rögzítővel való kapcsolat ritka elakadása csendben kikapcsolva hagyhatta a felvételt az alkalmazás újraindításáig – anélkül, hogy a képernyőn bármi jelezte volna. Ez most időtúllépéssel magától helyreáll.\n\nAzt is megválaszthatja, mikor töltődjenek fel a felvételek a Drive-ra: azonnal, naponta vagy hetente. A Beállítások ▸ Tárhely alatt található, a Megőrzéssel együtt, amely ugyanide került át.</string>
+    <string name="home_date_today">Ma</string>
+    <string name="home_date_yesterday">Tegnap</string>
 </resources>

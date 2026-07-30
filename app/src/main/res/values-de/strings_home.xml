@@ -68,4 +68,6 @@
     <string name="whatsnew_153_title">Ihre Einrichtung, geprüft von Ihren eigenen Anrufen</string>
     <string name="whatsnew_154_title">Aufnahme, die sich selbst wiederherstellt</string>
     <string name="whatsnew_154_body">Eine seltene Störung der Verbindung zum Recorder konnte die Aufnahme stillschweigend deaktivieren, bis die App neu gestartet wurde – ohne jeden Hinweis auf dem Bildschirm. Das läuft jetzt in eine Zeitüberschreitung und stellt sich selbst wieder her.\n\nAußerdem können Sie wählen, wann Aufnahmen zu Drive hochgeladen werden: sofort, täglich oder wöchentlich. Zu finden unter Einstellungen ▸ Speicher, zusammen mit der Aufbewahrung, die in denselben Bereich umgezogen ist.</string>
+    <string name="home_date_today">Heute</string>
+    <string name="home_date_yesterday">Gestern</string>
 </resources>

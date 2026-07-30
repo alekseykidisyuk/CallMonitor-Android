@@ -68,4 +68,6 @@
     <string name="whatsnew_153_title">Tu configuración, comprobada por tus propias llamadas</string>
     <string name="whatsnew_154_title">Grabación que se recupera sola</string>
     <string name="whatsnew_154_body">Un fallo poco frecuente en la conexión con el grabador podía dejar la grabación desactivada en silencio hasta reiniciar la aplicación, sin ningún aviso en pantalla. Ahora se agota el tiempo de espera y se recupera por sí sola.\n\nTambién puedes elegir cuándo se suben las grabaciones a Drive: al momento, a diario o cada semana. Está en Ajustes ▸ Almacenamiento, junto con la Retención, que se ha trasladado a la misma sección.</string>
+    <string name="home_date_today">Hoy</string>
+    <string name="home_date_yesterday">Ayer</string>
 </resources>

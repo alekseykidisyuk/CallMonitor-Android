@@ -121,6 +121,9 @@ import com.baba.callvault.ui.viewmodels.HomeViewModel.DirectionFilter
 import com.baba.callvault.ui.viewmodels.HomeViewModel.SourceFilter
 import com.baba.callvault.ui.viewmodels.RecordingPlaybackController
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 /**
@@ -1096,11 +1099,6 @@ private fun RecordingRow(
                 }
             }
             Spacer(Modifier.width(8.dp))
-            Text(
-                text = formatSize(item.sizeBytes),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
             // BOTH rows expose an expand chevron; single-source rows expose only delete.
             if (isBoth) {
                 IconButton(onClick = { expanded = !expanded }) {
@@ -1511,18 +1509,58 @@ private fun InlinePlayer(
 
 // -------- Formatting helpers
 
-/** Builds the muted subtitle line: "date · number" when both are present, else whichever exists. */
+/**
+ * The muted line under the name: when the call happened, how long it ran, how big the file is.
+ *
+ * It used to carry a raw "yyyy-MM-dd HH:mm" beside the size column, which left it so little width
+ * that the date truncated to "2026…" — present, and useless. Size moved onto this line so it spans
+ * the row, and the date became short enough to read at a glance.
+ *
+ * Duration is omitted rather than faked when it cannot be known (see [CallDurationLookup]), and the
+ * number still trails the line when the title shows a contact name instead.
+ */
+@Composable
 private fun buildSubtitle(item: RecordingItem): String {
-    val date = item.displayDate
-    // If the primary label is already the number, avoid repeating it on the subtitle.
-    val numberShown = item.contactName != null
-    val number = item.number?.takeIf { numberShown }
-    return when {
-        date != null && number != null -> "$date · $number"
-        date != null -> date
-        number != null -> number
-        else -> item.displayName
+    val parts = buildList {
+        formatWhen(item)?.let { add(it) }
+        item.durationSeconds?.let { add(formatDuration(it)) }
+        if (item.sizeBytes > 0) add(formatSize(item.sizeBytes))
+        // Only when the title is a contact name — otherwise the title IS the number and this repeats it.
+        item.number?.takeIf { item.contactName != null }?.let { add(it) }
     }
+    return if (parts.isEmpty()) item.displayName else parts.joinToString(" · ")
+}
+
+/**
+ * "Today 14:30", "Yesterday 09:15", or "29/07/26 14:30" for anything older.
+ *
+ * Relative days are compared on the calendar day, not on elapsed hours: a call at 23:50 is still
+ * "Yesterday" at 00:10, which "less than 24 hours ago" would get wrong.
+ */
+@Composable
+private fun formatWhen(item: RecordingItem): String? {
+    val millis = item.startedAtMillis ?: return item.displayDate
+    val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(millis))
+    val day = Calendar.getInstance().apply { timeInMillis = millis }
+    val today = Calendar.getInstance()
+    val yesterday = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }
+    fun sameDay(a: Calendar, b: Calendar) =
+        a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
+            a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR)
+    return when {
+        sameDay(day, today) -> "${stringResource(R.string.home_date_today)} $time"
+        sameDay(day, yesterday) -> "${stringResource(R.string.home_date_yesterday)} $time"
+        else -> SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()).format(Date(millis))
+    }
+}
+
+/** "12:41" for a call under an hour, "1:05:30" beyond it. */
+private fun formatDuration(seconds: Long): String {
+    val h = seconds / 3600
+    val m = (seconds % 3600) / 60
+    val sec = seconds % 60
+    return if (h > 0) String.format(Locale.US, "%d:%02d:%02d", h, m, sec)
+    else String.format(Locale.US, "%d:%02d", m, sec)
 }
 
 /** Formats a byte count as a compact human-readable size (e.g. "1.2 MB"). */
