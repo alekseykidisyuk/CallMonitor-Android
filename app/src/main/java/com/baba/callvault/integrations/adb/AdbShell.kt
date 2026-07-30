@@ -52,6 +52,14 @@ object AdbShell {
     private const val SHELL_PROBE_CAP_MS = 1500L
 
     /**
+     * Hard cap on one ADB connect INCLUDING its CNXN/AUTH handshake. The library's connect has no
+     * timeout of its own, so without this a handshake interrupted by an adbd restart parks the caller
+     * forever while it holds this object's monitor and (usually) [heavyOperationLock]. Generous enough
+     * for a healthy local handshake, which is milliseconds over loopback.
+     */
+    private const val CONNECT_BUDGET_MS = 8_000L
+
+    /**
      * Ensures the ADB connection is up (mDNS-discover the connect port, connect, settle).
      * Call off main thread. On success, persists the "ADB paired" flag so the onboarding gate
      * is not shown again on subsequent launches (a live connection only exists per-process).
@@ -318,10 +326,43 @@ object AdbShell {
     private fun connectLoopback(context: Context): Boolean {
         val port = AppPreferences(context).getLoopbackAdbPort()
         val mgr = AdbConnectionManager.getInstance(context)
-        return runCatching { mgr.connect("127.0.0.1", port) }
-            .onFailure { AppLogger.d(TAG, "Loopback :$port unavailable (unarmed/refused): ${it.message}") }
-            .getOrDefault(false)
+        return connectBounded(context, "loopback tcpip :$port") { mgr.connect("127.0.0.1", port) }
             .also { if (it) AppLogger.i(TAG, "Connected over loopback tcpip :$port (works off-WiFi)") }
+    }
+
+    /**
+     * Runs an ADB [connect] under a hard time bound, because the library's connect has none.
+     *
+     * `AdbConnectionManager.connect` opens the socket and then waits out the whole ADB `CNXN`/`AUTH`
+     * handshake. On this ROM `adbd` restarts on screen on/off transitions, and a TCP connect can succeed
+     * against a listener whose `adbd` is mid-restart — so the handshake reply never arrives, the reader
+     * dies, and nothing ever signals the waiter. The caller then parks **forever**, and because
+     * [ensureConnected] is `@Synchronized` and its callers hold [heavyOperationLock], it parks holding
+     * both — freezing every ADB operation in the process.
+     *
+     * That is not hypothetical: on 2026-07-30 it cost a device ~16 hours of silently missed recordings
+     * overnight, when the daemon was reaped while idle and every relaunch after the bad roll piled up
+     * behind the parked thread. See `2026-07-30-keepalive-rewarm-latch-wedge.md`.
+     *
+     * The work runs on a throwaway daemon thread and is abandoned on timeout — the same technique
+     * [probeShellOnce] uses. Abandoning is safe *because it is a separate thread*: it never entered this
+     * object's monitor, so the caller returning false releases both locks and the next attempt gets a
+     * clean run. We also drop the connection so the stranded thread can unwind if it is able to.
+     */
+    private fun connectBounded(context: Context, what: String, connect: () -> Boolean): Boolean {
+        val ok = java.util.concurrent.atomic.AtomicBoolean(false)
+        val worker = Thread {
+            runCatching { ok.set(connect()) }
+                .onFailure { AppLogger.d(TAG, "$what unavailable (unarmed/refused): ${it.message}") }
+        }.apply { isDaemon = true; name = "cv-adb-connect" }
+        worker.start()
+        runCatching { worker.join(CONNECT_BUDGET_MS) }
+        if (worker.isAlive) {
+            AppLogger.w(TAG, "$what did not complete the ADB handshake within ${CONNECT_BUDGET_MS}ms (adbd restarting?) — abandoning this attempt")
+            runCatching { AdbConnectionManager.getInstance(context).disconnect() }
+            return false
+        }
+        return ok.get()
     }
 
     /**

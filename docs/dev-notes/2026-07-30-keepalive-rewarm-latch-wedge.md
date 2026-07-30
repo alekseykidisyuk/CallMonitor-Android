@@ -61,40 +61,49 @@ escape is killing the app — which nothing in the product ever does or suggests
 `AdbConnectionManager.isConnected`, which is a state flag, not a liveness check. A `CLOSE_WAIT`
 socket satisfies it.
 
-## What triggered it — UNKNOWN, and an earlier claim here was wrong
+## What actually happened — settled by the call log, 2026-07-30
 
-An earlier version of this note asserted that the 1.5.3 USB install churned `adbd` and started the
-chain. **That was an assumption written as a finding, and the maintainer's counter-evidence is
-strong:** the cable has been connected and disconnected many times across many versions without this
-ever happening. Cable churn alone does not explain it.
+Two earlier answers here were wrong, and both were guesses dressed as findings: first "the 1.5.3 USB
+install churned adbd", then "the install-over did it". The device settled it.
 
-What the thread order does pin down is *where* it parked. TIDs had wrapped past `pid_max`, so the true
-creation order was `cv-usbdefault-refresh` ×2 → `cv-keepalive-rewarm` (21033) → `cv-shell-probe` ×4
-(21034-21089). The rewarm thread **spawned those probes**, so `ensureConnected` returned and
-`waitForShellReady` ran and failed. With only one probe round present, it then parked on launch
-attempt 2 — at `AdbShell.forceReconnect`, which is `@Synchronized` and called under
-`heavyOperationLock`, holding both.
+**Recordings against the call log:**
 
-The concrete hang site is `connectLoopback`:
+| time | call | recording |
+|---|---|---|
+| 07-29 13:15 | *(1.5.3 installed over local build 1.5.3-dev / 10623)* | |
+| 07-29 13:21 | out 7 s | none — short-call cold start, a separate known issue |
+| 07-29 15:29 | in **3040 s** | ✅ 12,653,000 B |
+| 07-29 17:33 | in **1421 s** | ✅ 5,906,285 B |
+| *overnight, phone idle* | | |
+| 07-30 09:54 | in 66 s | ❌ 0 bytes |
+| 07-30 09:56 | in 1262 s | ❌ 0 bytes |
+| 07-30 10:25 | in 1085 s | ❌ 0 bytes |
+
+Two long calls recorded perfectly **2¼ and 4½ hours after the install**. That exonerates the install,
+the cable, and 1.5.3 by evidence rather than argument — and matches the maintainer's objection that
+cable cycles and install-overs had been routine for many versions without this.
+
+**It broke overnight, and the overnight window is the hostile one.** From `waitForShellReady`'s own
+doc: *"On OnePlus, adbd RESTARTS on screen on/off transitions (even cable-out, WD off) — a TCP connect
+to the loopback port can succeed while adbd is still mid-init."* While the phone idles the daemon is
+reaped (normal), the keep-alive rewarms every 60 s, and adbd restarts on every screen transition —
+hundreds of chances to land a connect *inside* an adbd restart.
+
+`connectLoopback` called:
 
 ```kotlin
-runCatching { mgr.connect("127.0.0.1", port) }   // no timeout anywhere
+mgr.connect("127.0.0.1", port)   // TCP connect + full CNXN/AUTH handshake, no timeout anywhere
 ```
 
-libadb's `connect` performs the ADB handshake. If adbd accepts the TCP connection but never completes
-`CNXN`/`AUTH`, this blocks forever — while holding the AdbShell monitor and `heavyOperationLock`.
+When adbd dies mid-handshake the reader dies and nothing ever signals the waiter, so the caller parks
+**forever** — holding this object's monitor and `heavyOperationLock`. Every observation matches:
 
-**A 1.5.3 regression was looked for and not found.** 1.5.3 changed **nothing** under
-`integrations/**`, `server/**`, or `CallVaultApplication.kt` — verified by
-`git diff v1.5.2..v1.5.3 --name-only`. Its 906 added lines are the setup-health feature: additive
-bookkeeping that is either `Dispatchers.IO`-dispatched or `runCatching`-wrapped, with no ADB connect,
-no lock acquisition, and no new startup path. `SetupPrerequisites.missing()` is called at call start
-but performs only synchronous preference and `Settings.Global` reads.
+- socket left in **`CLOSE_WAIT`** — peer sent FIN, our side never closed
+- thread parked at **`00:00:00` CPU** — waiting on a latch, not spinning on a socket read
+- park point at launch attempt 2's `forceReconnect`, after `waitForShellReady` had already failed
 
-That is a negative result, not a conclusion. **The evidence that would settle it still exists and has
-not been read: the app's own `app_debug.log`**, which is a file that survived the force-stop and
-covers yesterday. It is app-private and the release build is not debuggable, so it can only be
-obtained by exporting a debug report from the app itself.
+**So it is a rare race that finally came up, not a regression.** It needed one bad roll out of hundreds
+of overnight attempts. The `rewarming` latch is what turned a transient hang into a 16-hour outage.
 
 ## The fix — implemented 2026-07-30
 
@@ -109,8 +118,15 @@ Layers 1 and 2 are done; layer 3 stays on the backlog.
    hung probe. On timeout it also calls the new `AdbShell.dropConnection()`, which closes the
    half-dead socket so the abandoned thread unwinds and **releases `heavyOperationLock`** — without
    that, every later attempt would queue behind it: bounded, but never succeeding.
-3. ⬜ **Bound `AdbShell.ensureConnected` itself**, and make `isConnected` prove liveness rather than
-   trusting a flag. Still open; this is the root, and layers 1-2 contain it rather than remove it.
+3. ✅ **The connect itself is bounded** — this is the actual cure, and it was only identified once the
+   call log dated the outage to the overnight window. `connectBounded` runs the library's connect on a
+   throwaway thread with `CONNECT_BUDGET_MS` (8 s) and abandons it on timeout. Abandoning is safe
+   *because it is a separate thread*: it never entered the `AdbShell` monitor, so the caller returning
+   false frees both locks and the next attempt runs clean. Layers 1-2 alone were not enough —
+   `dropConnection` closes the socket, but a thread parked on a handshake latch may never be woken by
+   that.
+4. ⬜ Make `isConnected` prove liveness rather than trusting a flag. Still open, and still why a
+   `CLOSE_WAIT` socket reads as connected.
 
 Two things the tests caught that review had not:
 
