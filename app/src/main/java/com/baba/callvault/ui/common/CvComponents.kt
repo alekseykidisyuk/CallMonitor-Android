@@ -73,6 +73,10 @@ fun CvScaffold(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // Opaque: the content below scrolls UNDER this bar, so a transparent header lets
+                    // rows slide through the title. Only visible once the list is long enough to
+                    // scroll, which is why it went unnoticed until Settings moved into a panel.
+                    .background(MaterialTheme.colorScheme.background)
                     .statusBarsPadding()
                     .padding(start = if (onBack != null) 4.dp else 20.dp, end = 8.dp, top = 16.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,

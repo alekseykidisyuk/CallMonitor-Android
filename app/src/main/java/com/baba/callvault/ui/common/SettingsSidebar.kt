@@ -12,6 +12,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -61,7 +62,12 @@ fun SettingsSidebar(
                     // Settings is dense — dropdowns, toggle rows and their supporting text — so it needs
                     // most of the width. The sliver left over keeps the panel legible as a panel: it is
                     // clear that Home is still there behind it, waiting.
-                    ModalDrawerSheet(modifier = Modifier.fillMaxWidth(SHEET_WIDTH_FRACTION)) {
+                    ModalDrawerSheet(
+                        // Match the app background rather than the drawer's default surface tint, so the
+                        // panel reads as the app and CvScaffold's own header sits on the colour it expects.
+                        drawerContainerColor = MaterialTheme.colorScheme.background,
+                        modifier = Modifier.fillMaxWidth(SHEET_WIDTH_FRACTION),
+                    ) {
                         settings()
                     }
                 }

@@ -125,7 +125,7 @@ plainly rather than letting him expect silence.
 
 ---
 
-## 🔵 Settings restructure: a "General" section
+## ✅ Settings restructure: a "General" section — DONE on feat/settings-sidebar
 
 **Why.** Settings has grown top-level sections that are really peers of each other, so the screen reads
 as a flat list of everything rather than a shape.
@@ -136,6 +136,11 @@ as a flat list of everything rather than a shape.
   - Visual settings
   - Experimental *(keeps its own Resilience / VoIP sub-grouping)*
   - Updates
+
+**Done 2026-07-30** on `feat/settings-sidebar`, together with opening Settings as a right-side panel
+instead of a destination. Nine top-level sections became six. `SettingsSubHeader` gained a quieter
+nested variant, because General ▸ Experimental ▸ Resilience is three levels deep and the inner
+grouping otherwise rendered at the same weight as its parent.
 
 **Notes.** `SettingsScreen` already has `SettingsSubHeader`, used for the Resilience/VoIP split inside
 Experimental, so the nesting pattern exists. Section expand-state is persisted by key — keep the
