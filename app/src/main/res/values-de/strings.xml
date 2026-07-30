@@ -192,6 +192,7 @@
     <string name="settings_section_security">Sicherheit</string>
     <string name="settings_section_storage">Speicher</string>
     <string name="settings_section_updates">Updates</string>
+    <string name="settings_section_general">Allgemein</string>
     <string name="settings_section_visual">Visuelle Einstellungen</string>
     <string name="settings_select_contacts">Kontakte auswählen (%1$d)</string>
     <string name="settings_select_contacts_incoming">Eingehende Kontakte auswählen</string>
@@ -199,6 +200,8 @@
     <string name="settings_show_toasts">Zeige Toast-Benachrichtigungen an</string>
     <string name="settings_storage_section">Speicher</string>
     <string name="settings_storage_target_label">Speicherort für Aufnahmen</string>
+    <string name="settings_subsection_incoming">Eingehende Anrufe</string>
+    <string name="settings_subsection_outgoing">Ausgehende Anrufe</string>
     <string name="settings_subsection_resilience">Robustheit</string>
     <string name="settings_subsection_voip">VoIP-Anrufe</string>
     <string name="settings_support_label">Entwicklung unterstützen</string>
@@ -261,6 +264,10 @@
     <string name="wizard_reliability_offline_button">Aktivieren</string>
     <string name="wizard_reliability_offline_done">Offline-Aufnahme ist aktiviert</string>
     <string name="wizard_reliability_subtitle">Zwei optionale Einstellungen, die die Aufnahme unter schwierigen Bedingungen am Laufen halten. Du kannst sie überspringen und später in den Einstellungen ändern.</string>
+    <string name="wizard_experimental_title">Optionale Extras</string>
+    <string name="wizard_experimental_subtitle">Zwei Funktionen, die noch erprobt werden. Beide sind standardmäßig aus — Sie können sie später in den Einstellungen aktivieren.</string>
+    <string name="wizard_updates_title">Auf dem neuesten Stand bleiben</string>
+    <string name="wizard_updates_subtitle">CallVault ist in keinem App-Store, daher sucht es selbst auf GitHub nach neuen Versionen.</string>
     <string name="wizard_reliability_title">Zuverlässige Aufnahme</string>
     <string name="wizard_reliability_usb_button">USB auf „Nur Laden“ setzen</string>
     <string name="wizard_reliability_usb_desc">Bei manchen Handys kann das Sperren des Bildschirms während eines Anrufs die Aufnahme stoppen. „Nur Laden“ für USB verhindert das. (Dein Handy lädt dann standardmäßig am PC – wähle bei Bedarf manuell Dateiübertragung.)</string>

@@ -80,6 +80,10 @@ object RecordingsRepository {
         val lastModified: Long,
         val direction: RecordingDirection?,
         val displayDate: String?,
+        /** Call start in epoch millis, parsed from the same filename timestamp as [displayDate]. */
+        val startedAtMillis: Long?,
+        /** How long the call lasted, matched from the call log. Null when it cannot be known. */
+        val durationSeconds: Long? = null,
         val number: String?,
         val source: RecordingSource = RecordingSource.LOCAL,
         val contactName: String? = null,
@@ -137,16 +141,24 @@ object RecordingsRepository {
             // "No name" is cached as "" — getOrPut re-runs the lambda for stored nulls.
             val hasContactsPermission = PermissionChecks.hasContactsPermission(context)
             val nameCache = HashMap<String, String>()
+
+            // How long each call lasted, from the system call log — one query for the whole list. A
+            // recording it cannot account for (VoIP, older than the log keeps, no permission) simply
+            // has no duration, and the row shows none rather than inventing one.
+            val durations = CallDurationLookup.durationsFor(context, items.mapNotNull { it.startedAtMillis })
+
             items.map { item ->
-                val number = item.number
-                if (number.isNullOrBlank()) item
+                val withDuration = item.startedAtMillis?.let { durations[it] }
+                    ?.let { item.copy(durationSeconds = it) } ?: item
+                val number = withDuration.number
+                if (number.isNullOrBlank()) withDuration
                 else {
                     val name = nameCache.getOrPut(number) {
                         (if (hasContactsPermission) lookupContactName(context, number) else null)
                             ?: VoicemailLabel.labelOrNull(context, number)
                             ?: ""
                     }
-                    if (name.isEmpty()) item else item.copy(contactName = name)
+                    if (name.isEmpty()) withDuration else withDuration.copy(contactName = name)
                 }
             }
         }.getOrElse { e ->
@@ -177,6 +189,7 @@ object RecordingsRepository {
             lastModified = entry.lastModified,
             direction = parsed.direction,
             displayDate = parsed.displayDate,
+            startedAtMillis = parsed.startedAtMillis,
             number = parsed.number,
             contactName = parsed.contactName,
             voipApp = parsed.voipApp,
@@ -371,6 +384,7 @@ object RecordingsRepository {
             lastModified = doc.lastModified().coerceAtLeast(0L),
             direction = parsed.direction,
             displayDate = parsed.displayDate,
+            startedAtMillis = parsed.startedAtMillis,
             number = parsed.number,
             contactName = parsed.contactName,
             voipApp = parsed.voipApp
@@ -388,6 +402,7 @@ object RecordingsRepository {
     internal data class ParsedName(
         val direction: RecordingDirection?,
         val displayDate: String?,
+        val startedAtMillis: Long? = null,
         val number: String?,
         /** Set only for VoIP recordings, which carry a name rather than a number. */
         val contactName: String? = null,
@@ -439,6 +454,7 @@ object RecordingsRepository {
             return ParsedName(
                 direction = null,
                 displayDate = formatDate(rawDate),
+                startedAtMillis = parseStartedAt(rawDate),
                 number = null,
                 contactName = caller,
                 voipApp = voipApp,
@@ -446,7 +462,7 @@ object RecordingsRepository {
         }
 
         val dirIndex = parts.indexOfFirst { it == "in" || it == "out" }
-        if (dirIndex <= 0) return ParsedName(null, null, null)
+        if (dirIndex <= 0) return ParsedName(null, null, null, null)
 
         val direction = when (parts[dirIndex]) {
             "in" -> RecordingDirection.INCOMING
@@ -455,13 +471,32 @@ object RecordingsRepository {
         }
         val rawDate = parts.subList(0, dirIndex).joinToString("_")
         val number = parts.subList(dirIndex + 1, parts.size).joinToString("_").ifBlank { null }
-        return ParsedName(direction, formatDate(rawDate), number)
+        return ParsedName(direction, formatDate(rawDate), parseStartedAt(rawDate), number)
     }
 
     /**
      * Reformats the raw "yyyyMMdd_HHmmss.SSSZ" date token into a friendlier "yyyy-MM-dd HH:mm".
      * Falls back to the raw token if it doesn't match the expected shape.
      */
+    /**
+     * Parses the raw "yyyyMMdd_HHmmss.SSSZ" filename token into epoch millis, for relative dates in
+     * the UI and for matching a recording to its call-log entry.
+     *
+     * The offset form is tried FIRST and matters: a recording made abroad, or before a DST change,
+     * carries the offset it was made at, and reading it as local time would shift the call by hours
+     * and match it to the wrong call-log entry — or to none.
+     */
+    private fun parseStartedAt(rawDate: String): Long? {
+        val token = rawDate.trim().ifBlank { return null }
+        for (pattern in arrayOf("yyyyMMdd_HHmmss.SSSZ", "yyyyMMdd_HHmmss.SSS", "yyyyMMdd_HHmmss")) {
+            val parsed = runCatching {
+                SimpleDateFormat(pattern, Locale.US).apply { isLenient = false }.parse(token)
+            }.getOrNull()
+            if (parsed != null) return parsed.time
+        }
+        return null
+    }
+
     private fun formatDate(rawDate: String): String? {
         // Expected shape: yyyyMMdd_HHmmss(.SSSZ)?  take the yyyyMMdd and HHmmss segments.
         val segments = rawDate.split('_')

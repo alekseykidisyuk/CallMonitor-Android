@@ -192,6 +192,7 @@
     <string name="settings_section_security">Безопасность</string>
     <string name="settings_section_storage">Хранилище</string>
     <string name="settings_section_updates">Обновления</string>
+    <string name="settings_section_general">Общие</string>
     <string name="settings_section_visual">Визуальные настройки</string>
     <string name="settings_select_contacts">Выбрать контакты (%1$d)</string>
     <string name="settings_select_contacts_incoming">Выбрать входящие контакты</string>
@@ -199,6 +200,8 @@
     <string name="settings_show_toasts">Показывать всплывающие уведомления</string>
     <string name="settings_storage_section">Хранилище</string>
     <string name="settings_storage_target_label">Куда сохранять записи</string>
+    <string name="settings_subsection_incoming">Входящие звонки</string>
+    <string name="settings_subsection_outgoing">Исходящие звонки</string>
     <string name="settings_subsection_resilience">Устойчивость</string>
     <string name="settings_subsection_voip">Звонки VoIP</string>
     <string name="settings_support_label">Поддержать разработку</string>
@@ -261,6 +264,10 @@
     <string name="wizard_reliability_offline_button">Включить</string>
     <string name="wizard_reliability_offline_done">Автономная запись включена</string>
     <string name="wizard_reliability_subtitle">Две необязательные настройки, которые сохраняют запись в сложных условиях. Их можно пропустить и изменить позже в настройках.</string>
+    <string name="wizard_experimental_title">Дополнительно</string>
+    <string name="wizard_experimental_subtitle">Две функции, которые ещё проверяются. Обе выключены по умолчанию — включить их можно позже в настройках.</string>
+    <string name="wizard_updates_title">Быть в курсе обновлений</string>
+    <string name="wizard_updates_subtitle">CallVault не публикуется в магазинах приложений, поэтому сам проверяет новые версии на GitHub.</string>
     <string name="wizard_reliability_title">Надёжная запись</string>
     <string name="wizard_reliability_usb_button">Установить USB «Только зарядка»</string>
     <string name="wizard_reliability_usb_desc">На некоторых телефонах блокировка экрана во время звонка может остановить запись. Режим USB «Только зарядка» это предотвращает. (При подключении к ПК телефон будет только заряжаться — при необходимости выберите «Передача файлов» вручную.)</string>

@@ -42,6 +42,60 @@ test at all).
 
 ---
 
+## 🔵 Don't install an update while a call is being recorded
+
+**Found the hard way, 2026-07-30.** An APK installed over the running app kills the app process, and
+any recording in flight dies with it. Observed on the OP12: one call became two files, and the second
+was mislabelled `out_` with no contact name, because on restart the app saw the already-running call
+as a fresh outgoing one. Nothing was lost — the first file closed cleanly and the second picked up —
+but the call is split, and the seam is silent for as long as the app takes to come back.
+
+**Why it is not just an adb mishap.** `UpdateInstaller` installs over ADB exactly the same way. It is
+tap-to-install, so a user initiates it, but nothing stops them tapping Install mid-call — and an
+update notification is precisely the kind of thing people poke at idly. Sideloads and Obtainium
+updates do it too. So the app can truncate the recording it exists to make.
+
+**What.** Before `UpdateInstaller` takes `AdbShell.heavyOperationLock` and starts streaming the APK,
+check whether a call is in progress; if it is, defer and say so ("Update will install after your
+call"). Checking, downloading and notifying are unaffected — only the install step waits.
+
+**Notes.** Small: a state check plus a deferral. The app already tracks call state in
+`CallSessionManager`, so no new permission is needed. Re-trigger the deferred install from the IDLE
+transition `PhoneStateReceiver` already sees.
+
+**Known limit, worth stating rather than pretending otherwise.** A call that starts *during* an
+install is a few seconds a pre-check cannot close. Closing it properly would mean aborting the
+installer mid-stream, which is worse than the problem — a half-written APK is a broken app.
+
+---
+
+## ✅ VoIP near-party drops out on One UI — FIXED by re-taking the mic
+
+On a Galaxy S24 FE, One UI **silences** our shell-uid MIC capture intermittently while the VoIP app
+holds the mic — logged by the platform itself as `rec update uid:2000 src:MIC silenced
+pack:com.android.shell`. The loser of that arbitration keeps receiving buffers full of zeros, so the
+recording gets silent holes rather than failing. Measured: ~6 s lost from a 21 s call, matching a flat
+-107 dB stretch in the file to within a second. The OnePlus 12 records the same call cleanly.
+
+The platform's own bypass permission (`BYPASS_CONCURRENT_RECORD_AUDIO_RESTRICTION`) is
+`signature|privileged` and `pm grant` refuses it, so shell access cannot open it.
+
+**Minimum viable response: report it.** `VoipCaptureSession` has `farPartyHeard` and no near-party
+equivalent, and `substituted` counts only *missing* chunks — a silenced capture delivers present,
+zero-filled ones, so the log reads `farPartyHeard=true, 2 silence-filled chunks` on a recording with
+a six-second hole. A near-side silence check turns an invisible failure into a visible one.
+
+**HOTWORD was tried and is dead** — it constructs, reports `STATE_INITIALIZED`, then `read()` returns
+0 and the platform never registers the capture at all. Reverted.
+
+**Separate bug it exposed, worth fixing on its own:** when the near feeder dies, `captureLoop` is
+paced by `CHUNK_WAIT_MS` poll timeouts and encodes slower than real time — an 11 s call became ~6 s of
+audio. Losing one source should cost that source, not the recording's length.
+
+Full evidence: `2026-07-30-voip-near-party-silenced-on-one-ui.md`.
+
+---
+
 ## 🔵 Manual "Check for updates" in Settings
 
 **Why.** A release only surfaces two ways: a check when the app opens, throttled to once per 6 hours
@@ -125,7 +179,7 @@ plainly rather than letting him expect silence.
 
 ---
 
-## 🔵 Settings restructure: a "General" section
+## ✅ Settings restructure: a "General" section — DONE on feat/settings-sidebar
 
 **Why.** Settings has grown top-level sections that are really peers of each other, so the screen reads
 as a flat list of everything rather than a shape.
@@ -136,6 +190,11 @@ as a flat list of everything rather than a shape.
   - Visual settings
   - Experimental *(keeps its own Resilience / VoIP sub-grouping)*
   - Updates
+
+**Done 2026-07-30** on `feat/settings-sidebar`, together with opening Settings as a right-side panel
+instead of a destination. Nine top-level sections became six. `SettingsSubHeader` gained a quieter
+nested variant, because General ▸ Experimental ▸ Resilience is three levels deep and the inner
+grouping otherwise rendered at the same weight as its parent.
 
 **Notes.** `SettingsScreen` already has `SettingsSubHeader`, used for the Resilience/VoIP split inside
 Experimental, so the nesting pattern exists. Section expand-state is persisted by key — keep the
@@ -233,7 +292,7 @@ Three related asks, all about the user deciding rather than the rules deciding:
 
 ---
 
-## 🟡 Resilient recording on One UI — cause found, fix written, UNTESTED on the device
+## ✅ Resilient recording on One UI — ring fix CONFIRMED, crackle root-caused and fixed
 
 **Root cause, confirmed against AOSP source rather than guessed.** The handoff sized the ring from
 `AudioRecord.getBufferSizeInFrames()`. That returns `cblk->mBufferSizeInFrames`, a **logical value the
@@ -260,8 +319,73 @@ of two and masks with it, so it must be passed `wrapFrames`, **not** `frameCount
 recreates the oversized ring and reads out of bounds, with the Java-side check now passing. Both call
 sites were updated; a third caller added later would reintroduce the bug silently.
 
-**Still needs a Galaxy S24 FE** to confirm Resilient recording actually works there. Covered by unit
-tests including the exact S24 FE numbers, but no device has run it.
+## Tested on a Galaxy S24 FE, 2026-07-30 — two results
+
+**The ring-geometry fix is confirmed.** A 46 s carrier call with Resilient recording ON produced a
+full-duration Opus file, mean −39.7 dB / peak −12.1 dB, and **no periodic dropouts**: silence-interval
+`stdev/mean = 1.00` (irregular, i.e. conversational pauses), and click phase concentration `R = 0.03`
+to `0.18` against every candidate wrap (1024/2048/4096/8192 frames) — a geometry error would cluster
+near `R = 1.0`. The v1.5.2 fix works on the device it was written for.
+
+**But the audio crackles, and the handoff is the cause.** Confirmed by A/B on the device: same phone,
+same call type, same codec, one toggle.
+
+| | crackle | mean | transients/s (>10x local) |
+|---|---|---|---|
+| Resilient ON | **yes** | −33.8 dB | 25.2 |
+| Resilient OFF | no | −30.7 dB | 17.6 |
+
+### Root cause: GUARD_FRAMES was smaller than one HAL write burst
+
+`GUARD_FRAMES` held back **32 frames = 0.67 ms at 48 kHz**. But AudioFlinger's record thread does not
+advance `mRear` sample by sample — it publishes a whole HAL period at a time, and while that copy is
+in flight the frames just below `mRear` are **partially written**. HAL periods are typically 4-20 ms
+(192-960 frames), so the guard was 6x to 30x too small and the drain read half-written frames.
+
+That explains every property of the symptom: crackle rather than gaps (corrupt samples, not missing
+ones), **aperiodic** (it depends where the 5 ms read cycle lands inside the write burst, which is why
+the phase-concentration test against every candidate ring wrap came back R = 0.03-0.18), and
+**vendor-specific** (a OnePlus 12 was clean throughout while every S24 FE call crackled).
+
+Raised to **960 frames (20 ms)**, covering the largest common period. Cost: 20 ms more latency before
+a frame reaches the encoder — irrelevant for call recording.
+
+### Verified on the device, 2026-07-30
+
+| build | transients/s (>10x local) | 3-6 kHz energy |
+|---|---|---|
+| handoff ON, guard 32 | 25.2 | 2.25% |
+| handoff OFF (baseline) | 17.6 | 1.52% |
+| **handoff ON, guard 960** | **16.3** | **0.39%** |
+
+The fixed handoff now measures at or below the no-handoff baseline on both.
+
+**A measurement lesson worth keeping.** With only the first two files, transient counts differed by
+~40% (both swamped by speech consonants) and the spectra by a single point — the ear separated them
+instantly and the metrics nearly did not. What discriminated cleanly was **3-6 kHz band energy**, and
+only once a third file gave the scale. Do not read a flat two-way measurement here as "no defect".
+
+### Daemon-kill test passed on One UI, 2026-07-30
+
+The premise of the feature, demonstrated on Samsung for the first time. Mid-call, the daemon that
+created the capture was `kill -9`'d:
+
+- app pid **unchanged**, and the original `cv-handoff-drai` / `cv-handoff-enco` threads carried on
+- the file grew straight through the kill with no stall (281 KB → 344 KB over the following 12 s)
+- the keep-alive relaunched a fresh daemon behind it, as designed
+- finalised as a valid 106 s Opus file
+- **no seam**: only 7 of 300 windows within ±3 s of the kill dipped near the silence floor, and
+  scattered rather than contiguous — ordinary conversational gaps, not a dropout
+
+**A measurement trap, recorded so it is not re-walked.** A first pass compared 3-6 kHz energy before
+(1.06%) and after (15.13%) the kill and looked alarming. It is an artefact: that metric is a
+*proportion*, so it tracks level, not defects — loud passages read 0.1-1.6%, quiet ones 40-89%. A
+per-5s time series showed the spikes at 10-20 s and 25-40 s, long before the kill, with the kill
+window itself at 3.9%. Always plot the metric against time before attributing a difference to an
+event.
+
+**Follow-up worth doing:** derive the guard from the observed `mRear` step (the burst size the device
+actually uses) rather than hardcoding 960.
 
 ---
 

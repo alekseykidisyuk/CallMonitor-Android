@@ -68,4 +68,6 @@
     <string name="whatsnew_153_title">Thiết lập của bạn, được chính các cuộc gọi của bạn kiểm chứng</string>
     <string name="whatsnew_154_title">Bản ghi tự khôi phục</string>
     <string name="whatsnew_154_body">Một lỗi hiếm gặp ở kết nối tới bộ ghi có thể âm thầm tắt việc ghi âm cho đến khi khởi động lại ứng dụng, mà không hiển thị bất cứ điều gì. Giờ đây kết nối sẽ hết thời gian chờ và tự khôi phục.\n\nBạn cũng có thể chọn thời điểm tải bản ghi lên Drive: ngay lập tức, hằng ngày hoặc hằng tuần. Xem trong Cài đặt ▸ Bộ nhớ, cùng với Thời gian lưu giữ đã chuyển vào cùng mục.</string>
+    <string name="home_date_today">Hôm nay</string>
+    <string name="home_date_yesterday">Hôm qua</string>
 </resources>

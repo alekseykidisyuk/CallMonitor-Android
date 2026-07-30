@@ -192,6 +192,7 @@
     <string name="settings_section_security">Sécurité</string>
     <string name="settings_section_storage">Stockage</string>
     <string name="settings_section_updates">Mises à jour</string>
+    <string name="settings_section_general">Général</string>
     <string name="settings_section_visual">Paramètres visuels</string>
     <string name="settings_select_contacts">Sélectionner les contacts (%1$d)</string>
     <string name="settings_select_contacts_incoming">Sélectionnez les contacts entrants</string>
@@ -199,6 +200,8 @@
     <string name="settings_show_toasts">Afficher les notifications Toast</string>
     <string name="settings_storage_section">Stockage</string>
     <string name="settings_storage_target_label">Où enregistrer les enregistrements</string>
+    <string name="settings_subsection_incoming">Appels entrants</string>
+    <string name="settings_subsection_outgoing">Appels sortants</string>
     <string name="settings_subsection_resilience">Résilience</string>
     <string name="settings_subsection_voip">Appels VoIP</string>
     <string name="settings_support_label">Soutenir le développement</string>
@@ -261,6 +264,10 @@
     <string name="wizard_reliability_offline_button">Activer</string>
     <string name="wizard_reliability_offline_done">L\'enregistrement hors ligne est activé</string>
     <string name="wizard_reliability_subtitle">Deux réglages facultatifs qui maintiennent l\'enregistrement dans des conditions difficiles. Tu peux les ignorer et les modifier plus tard dans les Paramètres.</string>
+    <string name="wizard_experimental_title">Options supplémentaires</string>
+    <string name="wizard_experimental_subtitle">Deux fonctionnalités encore à l\'épreuve. Les deux sont désactivées par défaut : vous pourrez les activer plus tard dans les Paramètres.</string>
+    <string name="wizard_updates_title">Rester à jour</string>
+    <string name="wizard_updates_subtitle">CallVault n\'est sur aucune boutique d\'applications : il cherche donc lui-même les nouvelles versions sur GitHub.</string>
     <string name="wizard_reliability_title">Enregistrement fiable</string>
     <string name="wizard_reliability_usb_button">Régler l\'USB sur Charge uniquement</string>
     <string name="wizard_reliability_usb_desc">Sur certains téléphones, verrouiller l\'écran pendant un appel peut arrêter l\'enregistrement. Régler l\'USB sur « Charge uniquement » l\'empêche. (Ton téléphone se met alors en charge par défaut sur un PC — choisis Transfert de fichiers manuellement au besoin.)</string>

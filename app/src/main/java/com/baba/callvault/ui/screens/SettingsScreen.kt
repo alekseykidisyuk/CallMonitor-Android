@@ -66,6 +66,7 @@ import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.data.RetentionPeriod
+import com.baba.callvault.integrations.scrcpy.AUDIO_BIT_RATE_OPTIONS
 import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.data.StorageTarget
@@ -100,6 +101,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Favorite
@@ -242,7 +244,9 @@ fun SettingsContent(
     // Accordion: at most one section open at a time; Recording & storage is open on entry. State is
     // hoisted here (above the LazyColumn) so it is shared across all sections. Tapping the open section
     // closes it (null = none open); tapping any other section opens it and closes the previous one.
-    var openSection by rememberSaveable { mutableStateOf<String?>(SECTION_RECORDING) }
+    // Everything closed on entry: the panel then opens on a short list of section names, which is
+    // navigable at a glance. Auto-opening one buried the other five under a screenful of its rows.
+    var openSection by rememberSaveable { mutableStateOf<String?>(null) }
     val onToggleSection: (String) -> Unit = { id -> openSection = if (openSection == id) null else id }
 
     CvScaffold(
@@ -296,16 +300,14 @@ fun SettingsContent(
                 )
             }
             item {
-                VisualSection(
-                    preferences, updateTrigger, actions,
-                    expanded = openSection == SECTION_VISUAL,
-                    onToggle = { onToggleSection(SECTION_VISUAL) }
-                )
-            }
-            item {
-                ExperimentalSection(
-                    expanded = openSection == SECTION_EXPERIMENTAL,
-                    onToggle = { onToggleSection(SECTION_EXPERIMENTAL) }
+                GeneralSection(
+                    preferences = preferences,
+                    updateTrigger = updateTrigger,
+                    actions = actions,
+                    // Old keys still open General, so a user whose saved section was Visual,
+                    // Experimental or Updates lands on the section that now contains it.
+                    expanded = openSection in setOf(SECTION_GENERAL, SECTION_VISUAL, SECTION_EXPERIMENTAL, SECTION_UPDATES),
+                    onToggle = { onToggleSection(SECTION_GENERAL) }
                 )
             }
             // Debug section: always visible so anyone can enable logging and share logs to report an issue.
@@ -314,13 +316,6 @@ fun SettingsContent(
                     preferences, updateTrigger, actions, onShareLogs,
                     expanded = openSection == SECTION_BUG_REPORT,
                     onToggle = { onToggleSection(SECTION_BUG_REPORT) }
-                )
-            }
-            item {
-                UpdatesSection(
-                    preferences, updateTrigger, actions,
-                    expanded = openSection == SECTION_UPDATES,
-                    onToggle = { onToggleSection(SECTION_UPDATES) }
                 )
             }
             // About moved to the bottom; the fork attribution stays visible (GPLv3 §7 requirement).
@@ -393,6 +388,18 @@ private const val SECTION_RECORDING = "recording"
 private const val SECTION_STORAGE = "storage"
 private const val SECTION_RETENTION = "retention"
 private const val SECTION_AUDIO = "audio"
+private const val SECTION_GENERAL = "general"
+
+// Sub-section keys. Scoped to their parent section, so the same value can never collide across two.
+private const val SUB_FILE_NAME = "sub_file_name"
+private const val SUB_INCOMING = "sub_incoming"
+private const val SUB_OUTGOING = "sub_outgoing"
+private const val SUB_WHERE = "sub_where"
+private const val SUB_UPLOAD = "sub_upload"
+private const val SUB_RETENTION = "sub_retention"
+private const val SUB_VISUAL = "sub_visual"
+private const val SUB_EXPERIMENTAL = "sub_experimental"
+private const val SUB_UPDATES = "sub_updates"
 private const val SECTION_VISUAL = "visual"
 private const val SECTION_EXPERIMENTAL = "reliability"   // key kept so a user's open-section state survives the rename
 private const val SECTION_BUG_REPORT = "bug_report"
@@ -436,7 +443,20 @@ private fun RecordingSection(
 
     var showFileNameFormatDialog by remember { mutableStateOf(false) }
 
-    SettingsSection(title = stringResource(R.string.settings_section_recording), expanded = expanded, onToggle = onToggle) {
+    // One open sub-section at a time, within this section only, and nothing open on entry.
+    var openSub by rememberSaveable { mutableStateOf<String?>(null) }
+
+    SettingsSection(
+        title = stringResource(R.string.settings_section_recording),
+        expanded = expanded,
+        onToggle = onToggle,
+        wrapInCard = false,
+    ) {
+      SettingsSubSection(
+        title = stringResource(R.string.settings_file_name_template),
+        expanded = openSub == SUB_FILE_NAME,
+        onToggle = { openSub = if (openSub == SUB_FILE_NAME) null else SUB_FILE_NAME },
+      ) {
         NavigationRow(
             icon = Icons.Filled.DriveFileRenameOutline,
             label = stringResource(R.string.settings_file_name_template),
@@ -447,9 +467,13 @@ private fun RecordingSection(
             ),
             onClick = { showFileNameFormatDialog = true }
         )
+      }
 
-        SettingsDivider()
-
+      SettingsSubSection(
+        title = stringResource(R.string.settings_subsection_incoming),
+        expanded = openSub == SUB_INCOMING,
+        onToggle = { openSub = if (openSub == SUB_INCOMING) null else SUB_INCOMING },
+      ) {
         SettingsToggleRow(
             icon = Icons.AutoMirrored.Filled.CallReceived,
             label = stringResource(R.string.settings_auto_record_incoming),
@@ -482,9 +506,13 @@ private fun RecordingSection(
                 )
             }
         }
+      }
 
-        SettingsDivider()
-
+      SettingsSubSection(
+        title = stringResource(R.string.settings_subsection_outgoing),
+        expanded = openSub == SUB_OUTGOING,
+        onToggle = { openSub = if (openSub == SUB_OUTGOING) null else SUB_OUTGOING },
+      ) {
         SettingsToggleRow(
             icon = Icons.AutoMirrored.Filled.CallMade,
             label = stringResource(R.string.settings_auto_record_outgoing),
@@ -511,6 +539,7 @@ private fun RecordingSection(
                 )
             }
         }
+      }
     }
 
     if (showFileNameFormatDialog) {
@@ -553,6 +582,9 @@ private fun StorageSection(
     val storageTarget = remember(updateTrigger) { preferences.getStorageTarget() }
     val driveFolderLabel = remember(updateTrigger) { SafHelper.getFolderDisplayNameOrNull(context, preferences.getDriveFolderUri()) }
 
+    // One open sub-section at a time, within this section only, and nothing open on entry.
+    var openSub by rememberSaveable { mutableStateOf<String?>(null) }
+
     val storageTargetOptions = StorageTarget.entries.map { target ->
         val labelRes = when (target) {
             StorageTarget.LOCAL -> R.string.storage_target_local
@@ -562,7 +594,17 @@ private fun StorageSection(
         OptionItem(target.key, stringResource(labelRes))
     }
 
-    SettingsSection(title = stringResource(R.string.settings_section_storage), expanded = expanded, onToggle = onToggle) {
+    SettingsSection(
+        title = stringResource(R.string.settings_section_storage),
+        expanded = expanded,
+        onToggle = onToggle,
+        wrapInCard = false,
+    ) {
+      SettingsSubSection(
+        title = stringResource(R.string.settings_storage_target_label),
+        expanded = openSub == SUB_WHERE,
+        onToggle = { openSub = if (openSub == SUB_WHERE) null else SUB_WHERE },
+      ) {
         DropdownRow {
             M3DropdownField(
                 label    = stringResource(R.string.settings_storage_target_label),
@@ -592,14 +634,22 @@ private fun StorageSection(
             onClick = onSelectDriveFolder
         )
 
+      }
+
         // Only meaningful when something is actually uploaded — with LOCAL there is no upload to schedule.
         if (storageTarget != StorageTarget.LOCAL) {
-            SettingsDivider()
-            UploadScheduleSubSection(preferences, updateTrigger, actions)
+            SettingsSubSection(
+                title = stringResource(R.string.wizard_schedule_title),
+                expanded = openSub == SUB_UPLOAD,
+                onToggle = { openSub = if (openSub == SUB_UPLOAD) null else SUB_UPLOAD },
+            ) { UploadScheduleSubSection(preferences, updateTrigger, actions) }
         }
 
-        SettingsDivider()
-        RetentionSubSection(preferences, updateTrigger, actions)
+        SettingsSubSection(
+            title = stringResource(R.string.settings_section_retention),
+            expanded = openSub == SUB_RETENTION,
+            onToggle = { openSub = if (openSub == SUB_RETENTION) null else SUB_RETENTION },
+        ) { RetentionSubSection(preferences, updateTrigger, actions) }
     }
 }
 
@@ -628,8 +678,6 @@ private fun UploadScheduleSubSection(
     val modeOptions = SyncScheduleMode.entries.map {
         OptionItem(it.key, stringResource(SyncScheduleLabels.titleOf(it)))
     }
-
-    SettingsSubHeader(stringResource(R.string.wizard_schedule_title))
 
     DropdownRow {
         M3DropdownField(
@@ -718,7 +766,6 @@ private fun RetentionSubSection(
         if (wasOff && newDays > 0) pendingConfirm = apply else apply()
     }
 
-    SettingsSubHeader(stringResource(R.string.settings_section_retention))
     Column {
         SettingsToggleRow(
             label = stringResource(R.string.retention_linked_label),
@@ -902,7 +949,7 @@ private fun AudioSection(preferences: AppPreferences, updateTrigger: Int, action
         }
 
         val recommendedLabel = stringResource(R.string.general_recommended)
-        val bitrateOptions = listOf(8000, 16000, 24000, 32000, 64000, 128000)
+        val bitrateOptions = AUDIO_BIT_RATE_OPTIONS
             .map { bps ->
                 val kbpsLabel = stringResource(R.string.audio_bitrate_kbps, bps / 1000)
                 // 24 kbps is the recommended sweet spot for voice — flag it right in the dropdown.
@@ -928,8 +975,51 @@ private fun AudioSection(preferences: AppPreferences, updateTrigger: Int, action
  * @param updateTrigger Trigger value to force recomposition when settings change.
  * @param actions       Implementation of [SettingsActions] to handle user interaction.
  */
+/**
+ * **General** — the settings that are about the app itself rather than about a recording: how it
+ * looks, what is switched on experimentally, and how it updates.
+ *
+ * These were three top-level accordions, which made Settings read as a flat list of everything
+ * instead of having a shape. They keep their own section keys as sub-headers so nothing about the
+ * user's stored state changes.
+ */
 @Composable
-private fun VisualSection(preferences: AppPreferences, updateTrigger: Int, actions: SettingsActions, expanded: Boolean, onToggle: () -> Unit) {
+private fun GeneralSection(
+    preferences: AppPreferences,
+    updateTrigger: Int,
+    actions: SettingsActions,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
+    // One open sub-section at a time, within this section only, and nothing open on entry.
+    var openSub by rememberSaveable { mutableStateOf<String?>(null) }
+
+    SettingsSection(
+        title = stringResource(R.string.settings_section_general),
+        expanded = expanded,
+        onToggle = onToggle,
+        wrapInCard = false,
+    ) {
+        SettingsSubSection(
+            title = stringResource(R.string.settings_section_visual),
+            expanded = openSub == SUB_VISUAL,
+            onToggle = { openSub = if (openSub == SUB_VISUAL) null else SUB_VISUAL },
+        ) { VisualSubSection(preferences, updateTrigger, actions) }
+        SettingsSubSection(
+            title = stringResource(R.string.settings_section_experimental),
+            expanded = openSub == SUB_EXPERIMENTAL,
+            onToggle = { openSub = if (openSub == SUB_EXPERIMENTAL) null else SUB_EXPERIMENTAL },
+        ) { ExperimentalSubSection() }
+        SettingsSubSection(
+            title = stringResource(R.string.settings_section_updates),
+            expanded = openSub == SUB_UPDATES,
+            onToggle = { openSub = if (openSub == SUB_UPDATES) null else SUB_UPDATES },
+        ) { UpdatesSubSection(preferences, updateTrigger, actions) }
+    }
+}
+
+@Composable
+private fun VisualSubSection(preferences: AppPreferences, updateTrigger: Int, actions: SettingsActions) {
     val currentThemeMode = remember(updateTrigger) { preferences.getThemeMode() }
     val isDynamicColorEnabled = remember(updateTrigger) { preferences.isDynamicColorEnabled() }
     val isShowToastsEnabled = remember(updateTrigger) { preferences.isShowToastsEnabled() }
@@ -974,7 +1064,7 @@ private fun VisualSection(preferences: AppPreferences, updateTrigger: Int, actio
         options.distinctBy { it.key }
     }
 
-    SettingsSection(title = stringResource(R.string.settings_section_visual), expanded = expanded, onToggle = onToggle) {
+    Column {
         DropdownRow {
             M3DropdownField(
                 label = stringResource(R.string.settings_language),
@@ -1107,9 +1197,9 @@ private fun BugReportSection(
  * mid-call. Grouped together so users have one place to make recording robust.
  */
 @Composable
-private fun ExperimentalSection(expanded: Boolean, onToggle: () -> Unit) {
-    SettingsSection(title = stringResource(R.string.settings_section_experimental), expanded = expanded, onToggle = onToggle) {
-        SettingsSubHeader(stringResource(R.string.settings_subsection_resilience))
+private fun ExperimentalSubSection() {
+    Column {
+        SettingsSubHeader(stringResource(R.string.settings_subsection_resilience), nested = true)
         HandoffPersistToggle()
         SettingsDivider()
         OfflineRecordingToggle()
@@ -1118,7 +1208,7 @@ private fun ExperimentalSection(expanded: Boolean, onToggle: () -> Unit) {
         SettingsDivider()
         UsbDefaultConfigRow()
 
-        SettingsSubHeader(stringResource(R.string.settings_subsection_voip))
+        SettingsSubHeader(stringResource(R.string.settings_subsection_voip), nested = true)
         VoipRecordingToggle()
     }
 }
@@ -1136,12 +1226,19 @@ private fun SettingsHint(text: String) {
 
 /** Small label separating groups of related rows inside one collapsible section. */
 @Composable
-private fun SettingsSubHeader(text: String) {
+private fun SettingsSubHeader(text: String, nested: Boolean = false, modifier: Modifier = Modifier) {
+    // General ▸ Experimental ▸ Resilience is three levels deep. Rendering the inner grouping at the
+    // same weight as its parent makes the two read as siblings, so a nested header is quieter and
+    // indented instead of introducing a second component.
     Text(
         text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, top = 14.dp, bottom = 2.dp)
+        style = if (nested) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleSmall,
+        color = if (nested) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+        modifier = modifier.padding(
+            start = if (nested) 20.dp else 12.dp,
+            top = if (nested) 10.dp else 12.dp,
+            bottom = if (nested) 2.dp else 8.dp,
+        )
     )
 }
 
@@ -1154,7 +1251,7 @@ private fun SettingsSubHeader(text: String) {
  * can only tell once a call is under way.
  */
 @Composable
-private fun VoipRecordingToggle() {
+internal fun VoipRecordingToggle() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
@@ -1230,7 +1327,7 @@ private fun VoipRecordingToggle() {
  * no arming side effects, so — unlike the offline toggle — it writes straight from the switch.
  */
 @Composable
-private fun HandoffPersistToggle() {
+internal fun HandoffPersistToggle() {
     val context = LocalContext.current
     val prefs = remember { AppPreferences(context) }
     var enabled by remember { mutableStateOf(prefs.isHandoffPersistEnabled()) }
@@ -1482,20 +1579,14 @@ private fun AboutSection(
  * Home banner, and installs only on an explicit tap.
  */
 @Composable
-private fun UpdatesSection(
+private fun UpdatesSubSection(
     preferences: AppPreferences,
     updateTrigger: Int,
-    actions: SettingsActions,
-    expanded: Boolean,
-    onToggle: () -> Unit
+    actions: SettingsActions
 ) {
     val isCheckEnabled = remember(updateTrigger) { preferences.isUpdateCheckEnabled() }
 
-    SettingsSection(
-        title = stringResource(R.string.settings_section_updates),
-        expanded = expanded,
-        onToggle = onToggle
-    ) {
+    Column {
         SettingsToggleRow(
             icon = Icons.Filled.SystemUpdate,
             label = stringResource(R.string.settings_update_check_label),
@@ -1511,6 +1602,10 @@ private fun SettingsSection(
     title: String,
     expanded: Boolean,
     onToggle: () -> Unit,
+    // A section made of sub-sections passes false: the card then belongs around each OPEN
+    // sub-section's rows, not around a list of labels that do nothing until tapped. Wrapping the
+    // labels made a closed section read as a floating menu of empty items.
+    wrapInCard: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val chevronRotation by animateFloatAsState(
@@ -1527,10 +1622,13 @@ private fun SettingsSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             CvSectionHeader(text = title, modifier = Modifier.weight(1f))
+            // A section takes the accent, matching its teal dash; a sub-section gets a small muted
+            // triangle instead (see [SettingsSubSection]). Differing in BOTH shape and colour is what
+            // makes the two levels tellable apart at a glance — size alone did not.
             Icon(
                 imageVector = Icons.Filled.ExpandMore,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .padding(end = 4.dp)
                     .size(22.dp)
@@ -1542,9 +1640,61 @@ private fun SettingsSection(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            CvCard(contentPadding = PaddingValues(vertical = 8.dp)) {
-                content()
+            if (wrapInCard) {
+                CvCard(contentPadding = PaddingValues(vertical = 8.dp)) { content() }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { content() }
             }
+        }
+    }
+}
+
+/**
+ * A collapsible group INSIDE a section — Storage ▸ Retention, General ▸ Updates, and so on.
+ *
+ * Same interaction as [SettingsSection] so the two levels behave alike, and the same shape: a bare
+ * header row, with the card around the CONTENT once it opens. The header is quieter than a section
+ * title — ordinary text rather than the accent colour — so it reads as a level down rather than as a
+ * competing heading.
+ *
+ * Callers hold the open key themselves, one per parent section, which makes the sub-sections an
+ * accordion within their own section only — opening Retention cannot close something in General.
+ */
+@Composable
+private fun SettingsSubSection(
+    title: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "settingsSubSectionChevron"
+    )
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { onToggle() },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SettingsSubHeader(title, modifier = Modifier.weight(1f))
+            // Triangle, not a chevron, and muted rather than accented — the opposite of the section
+            // marker above it on both counts.
+            Icon(
+                imageVector = Icons.Filled.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 6.dp).size(24.dp).rotate(chevronRotation)
+            )
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            CvCard(contentPadding = PaddingValues(vertical = 8.dp)) { content() }
         }
     }
 }
@@ -1552,10 +1702,14 @@ private fun SettingsSection(
 /** A thin inset divider used to separate row clusters inside a [CvCard]. */
 @Composable
 private fun SettingsDivider() {
+    // outlineVariant is Material's subtlest rule, and against this app's very dark surface it all but
+    // disappears — reported as "barely visible in dark theme". Deriving the colour from
+    // onSurfaceVariant instead keeps it theme-aware (it inverts with the scheme) while guaranteeing
+    // contrast against whatever surface it lands on, in light and dark alike.
     HorizontalDivider(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.28f)
     )
 }
 
@@ -1670,7 +1824,7 @@ private fun NavigationRow(
  * ToggleListItem while matching the redesigned row anatomy.
  */
 @Composable
-private fun SettingsToggleRow(
+internal fun SettingsToggleRow(
     label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,

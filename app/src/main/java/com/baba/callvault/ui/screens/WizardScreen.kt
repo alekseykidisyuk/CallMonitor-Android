@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
@@ -66,6 +67,8 @@ import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.data.SyncScheduleMode
+import com.baba.callvault.system.updates.UpdateScheduler
+import com.baba.callvault.integrations.scrcpy.AUDIO_BIT_RATE_OPTIONS
 import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
@@ -91,7 +94,6 @@ import com.baba.callvault.utils.fileNameTemplateExample
 import com.baba.callvault.utils.presetForTemplateOrFirst
 
 /** The audio bit-rate options offered in the wizard (bps), shared with Settings. */
-private val WIZARD_BITRATE_OPTIONS = listOf(8000, 16000, 32000, 64000, 128000)
 
 /** Minute granularity offered in the schedule step. */
 
@@ -166,8 +168,10 @@ fun WizardScreen(
             if (usesDrive) add(WizardStep.SCHEDULE)
             add(WizardStep.AUTO_RECORD)
             add(WizardStep.RELIABILITY)
+            add(WizardStep.EXPERIMENTAL)
             add(WizardStep.AUDIO)
             add(WizardStep.FILE_NAME)
+            add(WizardStep.UPDATES)
         }
     }
 
@@ -258,6 +262,8 @@ fun WizardScreen(
                         onOutgoingChange = viewModel::setAutoRecordOutgoing
                     )
                     WizardStep.RELIABILITY -> ReliabilityStep()
+                    WizardStep.EXPERIMENTAL -> ExperimentalStep()
+                    WizardStep.UPDATES -> UpdatesStep()
                     WizardStep.AUDIO -> AudioStep(
                         audioCodec = audioCodec,
                         audioBitRate = audioBitRate,
@@ -275,7 +281,7 @@ fun WizardScreen(
 }
 
 /** The logical steps of the wizard (the schedule step is conditionally included). */
-private enum class WizardStep { STORAGE, SCHEDULE, AUTO_RECORD, RELIABILITY, AUDIO, FILE_NAME }
+private enum class WizardStep { STORAGE, SCHEDULE, AUTO_RECORD, RELIABILITY, EXPERIMENTAL, AUDIO, FILE_NAME, UPDATES }
 
 // ── Shell: header + progress + bottom bar ─────────────────────────────────────────────────────
 
@@ -697,6 +703,44 @@ private fun AutoRecordStep(
  *  2. **Offline recording (no Wi-Fi)** — the warned loopback opt-in (via the shared dialog).
  * Both are skippable (Next always advances) — nothing here gates setup.
  */
+/**
+ * The experimental opt-ins, mirroring Settings ▸ General ▸ Experimental so the two group them alike.
+ *
+ * Both toggles are the very same composables Settings renders — shared rather than reimplemented, so
+ * a change to either (VoIP's consent confirmation especially) reaches both screens at once. The
+ * wizard cannot be re-run, so a feature it never mentions is one most users never discover.
+ */
+@Composable
+private fun ExperimentalStep() {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        CvCard { HandoffPersistToggle() }
+        CvCard { VoipRecordingToggle() }
+    }
+}
+
+/** Whether CallVault checks GitHub for new releases. Off-by-default settings need asking about once. */
+@Composable
+private fun UpdatesStep() {
+    val context = LocalContext.current
+    val prefs = remember { AppPreferences(context) }
+    var enabled by remember { mutableStateOf(prefs.isUpdateCheckEnabled()) }
+    CvCard {
+        SettingsToggleRow(
+            icon = Icons.Filled.SystemUpdate,
+            label = stringResource(R.string.settings_update_check_label),
+            description = stringResource(R.string.settings_update_check_description),
+            checked = enabled,
+            onCheckedChange = { turnOn ->
+                enabled = turnOn
+                prefs.setUpdateCheckEnabled(turnOn)
+                // Reconcile the periodic worker immediately, exactly as Settings does — persisting the
+                // flag alone would leave the schedule disagreeing with it.
+                UpdateScheduler.apply(context)
+            },
+        )
+    }
+}
+
 @Composable
 private fun ReliabilityStep() {
     val context = LocalContext.current
@@ -824,7 +868,7 @@ private fun AudioStep(
             onOptionSelected = { onSelectCodec(it.key) }
         )
 
-        val bitrateOptions = WIZARD_BITRATE_OPTIONS.map {
+        val bitrateOptions = AUDIO_BIT_RATE_OPTIONS.map {
             OptionItem(it.toString(), stringResource(R.string.audio_bitrate_kbps, it / 1000))
         }
         M3DropdownField(
@@ -880,6 +924,8 @@ private fun stepTitleRes(step: WizardStep): Int = when (step) {
     WizardStep.SCHEDULE -> R.string.wizard_schedule_title
     WizardStep.AUTO_RECORD -> R.string.wizard_auto_record_title
     WizardStep.RELIABILITY -> R.string.wizard_reliability_title
+    WizardStep.EXPERIMENTAL -> R.string.wizard_experimental_title
+    WizardStep.UPDATES -> R.string.wizard_updates_title
     WizardStep.AUDIO -> R.string.wizard_audio_title
     WizardStep.FILE_NAME -> R.string.wizard_filename_title
 }
@@ -889,6 +935,8 @@ private fun stepSubtitleRes(step: WizardStep): Int = when (step) {
     WizardStep.SCHEDULE -> R.string.wizard_schedule_subtitle
     WizardStep.AUTO_RECORD -> R.string.wizard_auto_record_subtitle
     WizardStep.RELIABILITY -> R.string.wizard_reliability_subtitle
+    WizardStep.EXPERIMENTAL -> R.string.wizard_experimental_subtitle
+    WizardStep.UPDATES -> R.string.wizard_updates_subtitle
     WizardStep.AUDIO -> R.string.wizard_audio_subtitle
     WizardStep.FILE_NAME -> R.string.wizard_filename_subtitle
 }

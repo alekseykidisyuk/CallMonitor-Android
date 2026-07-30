@@ -171,13 +171,17 @@ object AdbShell {
             Thread.sleep(WD_START_WAIT_MS)
         }
         val port = AdbMdns.discoverPort(context, AdbMdns.TLS_CONNECT, MDNS_TIMEOUT_MS) ?: return false
-        // connect() THROWS on an unpaired/unauthorised identity (AdbPairingRequiredException) or a flaky
-        // TLS handshake (SSLProtocolException: CERTIFICATE_UNKNOWN). Callers branch on the boolean —
-        // propagating crashed the app at onboarding's "Setup ADB" step — so swallow to false.
-        val ok = runCatching { mgr.connect("127.0.0.1", port) }.getOrElse { e ->
-            AppLogger.w(TAG, "ADB connect failed (pairing required or transport error): ${e.message}")
-            false
-        }
+        // Bounded for the same reason as the loopback connect: this call runs the whole CNXN/AUTH
+        // handshake with no timeout of its own, and it is reached from armLoopbackIfNeeded, which holds
+        // heavyOperationLock throughout — so one stalled handshake here freezes every ADB operation in
+        // the process. Seen on a fresh install (2026-07-30): onboarding's "Enabling off-Wi-Fi
+        // recording…" spinner never returned, with eleven threads parked behind this lock.
+        //
+        // connect() also THROWS on an unpaired/unauthorised identity (AdbPairingRequiredException) or a
+        // flaky TLS handshake (SSLProtocolException: CERTIFICATE_UNKNOWN). Callers branch on the
+        // boolean — propagating crashed the app at onboarding's "Setup ADB" step — so it stays swallowed
+        // to false inside the bounded worker.
+        val ok = connectBounded(context, "Wireless debugging :$port") { mgr.connect("127.0.0.1", port) }
         if (ok) {
             Thread.sleep(CONNECT_SETTLE_MS)
             AppPreferences(context).setAdbPaired(true)

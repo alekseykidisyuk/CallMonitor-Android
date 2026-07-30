@@ -69,4 +69,6 @@
     <string name="whatsnew_153_title">Votre configuration, vérifiée par vos propres appels</string>
     <string name="whatsnew_154_title">Un enregistrement qui se rétablit seul</string>
     <string name="whatsnew_154_body">Un blocage rare de la connexion à l\'enregistreur pouvait désactiver l\'enregistrement en silence jusqu\'au redémarrage de l\'application, sans rien afficher à l\'écran. Le délai expire désormais et tout se rétablit tout seul.\n\nVous pouvez aussi choisir quand les enregistrements sont envoyés vers Drive : immédiatement, chaque jour ou chaque semaine. C\'est dans Paramètres ▸ Stockage, avec la Conservation, qui a rejoint la même section.</string>
+    <string name="home_date_today">Aujourd\'hui</string>
+    <string name="home_date_yesterday">Hier</string>
 </resources>
