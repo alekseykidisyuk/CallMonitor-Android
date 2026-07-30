@@ -22,6 +22,16 @@ import com.baba.callvault.services.recording.RecordingForegroundService
 const val RECOMMENDED_AUDIO_BIT_RATE = 24000
 
 /**
+ * The bit rates offered to the user, everywhere they are offered.
+ *
+ * ONE list, because two drifted: the wizard's omitted [RECOMMENDED_AUDIO_BIT_RATE] while Settings'
+ * included it. Since a dropdown falls back to its first entry when the stored value is absent, the
+ * wizard displayed **8 kbps** for a setting that was actually 24 — and touching the field wrote that
+ * 8 back, quietly downgrading every recording that followed. Found on a fresh install, 2026-07-30.
+ */
+val AUDIO_BIT_RATE_OPTIONS = listOf(8000, 16000, RECOMMENDED_AUDIO_BIT_RATE, 32000, 64000, 128000)
+
+/**
  * The audio codecs supported by scrcpy-server, each carrying all container metadata needed
  * by [ScrcpyAudioMuxer] and [RecordingForegroundService].
  *

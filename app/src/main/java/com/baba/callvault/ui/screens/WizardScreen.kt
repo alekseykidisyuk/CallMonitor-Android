@@ -66,6 +66,7 @@ import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.data.SyncScheduleMode
+import com.baba.callvault.integrations.scrcpy.AUDIO_BIT_RATE_OPTIONS
 import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
@@ -91,7 +92,6 @@ import com.baba.callvault.utils.fileNameTemplateExample
 import com.baba.callvault.utils.presetForTemplateOrFirst
 
 /** The audio bit-rate options offered in the wizard (bps), shared with Settings. */
-private val WIZARD_BITRATE_OPTIONS = listOf(8000, 16000, 32000, 64000, 128000)
 
 /** Minute granularity offered in the schedule step. */
 
@@ -824,7 +824,7 @@ private fun AudioStep(
             onOptionSelected = { onSelectCodec(it.key) }
         )
 
-        val bitrateOptions = WIZARD_BITRATE_OPTIONS.map {
+        val bitrateOptions = AUDIO_BIT_RATE_OPTIONS.map {
             OptionItem(it.toString(), stringResource(R.string.audio_bitrate_kbps, it / 1000))
         }
         M3DropdownField(

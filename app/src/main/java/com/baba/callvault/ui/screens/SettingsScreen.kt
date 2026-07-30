@@ -66,6 +66,7 @@ import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.data.RetentionPeriod
+import com.baba.callvault.integrations.scrcpy.AUDIO_BIT_RATE_OPTIONS
 import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.data.StorageTarget
@@ -948,7 +949,7 @@ private fun AudioSection(preferences: AppPreferences, updateTrigger: Int, action
         }
 
         val recommendedLabel = stringResource(R.string.general_recommended)
-        val bitrateOptions = listOf(8000, 16000, 24000, 32000, 64000, 128000)
+        val bitrateOptions = AUDIO_BIT_RATE_OPTIONS
             .map { bps ->
                 val kbpsLabel = stringResource(R.string.audio_bitrate_kbps, bps / 1000)
                 // 24 kbps is the recommended sweet spot for voice — flag it right in the dropdown.
