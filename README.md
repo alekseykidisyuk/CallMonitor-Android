@@ -23,6 +23,8 @@ You pair **once**; after that it's hands-free.
 |:---:|:---:|:---:|
 | <img src="docs/screenshots/home.png" width="240"/> | <img src="docs/screenshots/wizard.png" width="240"/> | <img src="docs/screenshots/settings.png" width="240"/> |
 
+<sub>Screenshots predate 1.5.5 — Settings now opens as a side panel and the wizard has more steps.</sub>
+
 </div>
 
 ## Features
@@ -35,6 +37,7 @@ You pair **once**; after that it's hands-free.
 | 🔓 | **Keeps recording when the screen locks** — on many phones that otherwise stop a recording mid-call, fixed from inside the app in one tap |
 | 🛡️ | **Resilient recording (opt-in)** — makes recording **resistant to interruptions**: a recording already in progress is unaffected if Android stops the background helper mid-call (off by default) |
 | 🤖 | **Automatic** recording with per-call rules — ignore anonymous, cross-country, or specific contacts |
+| 🎚️ | **Record only what you want** — carrier calls and app (VoIP) calls are switched independently, so CallVault can record both, either, or app calls only |
 | ☁️ | Save to **device, a cloud folder, or both**, with optional **scheduled sync** (immediate / daily / weekly) |
 | 🧹 | **Retention / auto-delete** — remove recordings after a chosen age, separately for device & cloud, swept daily at a time you pick (your local time zone) |
 | ▶️ | In-app **recordings list** with playback, **contact-name** resolution, source badges, and filters |
@@ -60,7 +63,7 @@ After a one-time pairing, CallVault runs a **persistent privileged daemon** — 
 
 On many phones (OnePlus, Xiaomi, Samsung…), locking the screen during a call renegotiates the USB connection, which restarts the system's ADB daemon and takes the recorder down with it — mid-call.
 
-The fix is to set the phone's **Default USB Configuration** to **"Charging only"**, and CallVault can do that for you: the setup wizard offers it, **Settings ▸ Experimental** has it, and if USB is on a data mode the Home screen and the recorder notification show a "locking the screen may stop recording — tap to fix" prompt. The trade-off is that plugging into a PC then defaults to charging, so pick *File transfer* manually when you actually want to move files.
+The fix is to set the phone's **Default USB Configuration** to **"Charging only"**, and CallVault can do that for you: the setup wizard offers it, **Settings ▸ General ▸ Experimental** has it, and if USB is on a data mode the Home screen and the recorder notification show a "locking the screen may stop recording — tap to fix" prompt. The trade-off is that plugging into a PC then defaults to charging, so pick *File transfer* manually when you actually want to move files.
 
 ### Resilient recording (opt-in)
 
@@ -68,7 +71,7 @@ Normally the daemon holds the microphone and encodes for the whole call, so if A
 
 With **Resilient recording** on, the daemon only *creates* the capture and then **hands it to the app**, which holds it and does the encoding itself. Because the app is the one Android keeps alive, the daemon can die at any point mid-call and the recording simply carries on to the end.
 
-It doesn't change how a recording *starts* — the daemon is still needed for that — so it's a completeness guarantee, not a replacement for the setup above. Off by default; enable under **Settings ▸ Experimental**.
+It doesn't change how a recording *starts* — the daemon is still needed for that — so it's a completeness guarantee, not a replacement for the setup above. Off by default; enable under **Settings ▸ General ▸ Experimental**.
 
 ### Recording app calls — VoIP (opt-in, experimental)
 
@@ -80,7 +83,15 @@ are written into a single recording, one side per channel.
 
 This is a genuinely new capability: the only other working approach we know of needs **root**.
 
-Off by default; enable under **Settings ▸ Experimental ▸ VoIP calls**, which asks you to confirm first.
+Off by default; enable under **Settings ▸ General ▸ Experimental ▸ VoIP calls**, which asks you to confirm first.
+
+**Using CallVault for app calls only.** Carrier and VoIP recording are controlled separately, so you
+can have one without the other. Turn **both** auto-record switches off under
+**Settings ▸ Recording** (*Incoming calls* and *Outgoing calls*) and leave VoIP recording on:
+carrier calls are then ignored entirely while app calls keep recording. CallVault also stops counting
+carrier calls as "not recorded" on the status card in this mode, so it won't nag you about calls you
+chose to skip. The ADB setup is still required — the background helper is what captures VoIP audio
+too.
 Recording app calls is more tightly regulated than recording phone calls, and in many places every
 participant must agree beforehand.
 
@@ -103,7 +114,7 @@ tested rather than what is assumed to work.
 | Device | Android | OS build | Apps verified | Result | Reported by |
 |---|---|---|---|---|---|
 | OnePlus 12 (CPH2581) | 16 (API 36) | OxygenOS 16.0.8 (`CPH2581_16.0.8.300`, patch 2026-06-01) | WhatsApp 2.26.27.85 · Telegram 12.9.1 · Signal 8.19.2 | ✅ Both sides recorded on all three | maintainer |
-| Samsung Galaxy S24 FE (SM-S721B) | 16 (API 36) | One UI 8.5 (`BP4A.251205.006.S721BXXSCDZF3`, patch 2026-06-05) | WhatsApp 2.26.28.77 | ✅ Both sides recorded, app + contact named correctly (carrier calls also verified) | maintainer |
+| Samsung Galaxy S24 FE (SM-S721B) | 16 (API 36) | One UI 8.5 (`BP4A.251205.006.S721BXXSCDZF3`, patch 2026-06-05) | WhatsApp 2.26.28.77 | ✅ Both sides recorded, app + contact named correctly (carrier calls also verified). **Needs 1.5.5** — before it, One UI intermittently silenced the near side, losing seconds of your own voice | maintainer |
 
 **Please add yours.** If you try VoIP recording, open an issue with your device, Android version, OS
 build, the calling app and its version, and whether both sides were captured — including failures,

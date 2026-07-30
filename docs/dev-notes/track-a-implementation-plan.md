@@ -120,7 +120,7 @@ re-arm-after-call logic is needed.
 
 ### 5. Surfacing it
 
-- Settings ▸ Experimental ▸ **Instant recording**, with the honest description: recording starts
+- Settings ▸ General ▸ Experimental ▸ **Instant recording**, with the honest description: recording starts
   immediately because capture is prepared in advance; if the prepared capture is lost, CallVault falls
   back to the slower path.
 - The readiness notification should distinguish *armed* from merely *daemon alive* — they are no longer
