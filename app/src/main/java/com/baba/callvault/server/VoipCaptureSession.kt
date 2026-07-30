@@ -201,16 +201,71 @@ internal class VoipCaptureSession(
     /** Reads whole chunks from one direction into its queue; drops rather than blocks if the muxer lags. */
     private fun feeder(ar: AudioRecord, q: BlockingQueue<ByteArray>, tag: String) = Thread {
         val buf = ByteArray(CHUNK_BYTES)
+        var record = ar
+        var silentChunks = 0
         while (!stopRequested.get()) {
             var off = 0
             while (off < CHUNK_BYTES && !stopRequested.get()) {
-                val r = ar.read(buf, off, CHUNK_BYTES - off)
+                val r = record.read(buf, off, CHUNK_BYTES - off)
                 if (r <= 0) { AppLogger.d(TAG, "$tag read=$r, feeder ending"); return@Thread }
                 off += r
+            }
+            // Re-take the mic when the platform has silenced us.
+            //
+            // On One UI only one client gets the mic, and the most recent starter wins: when the VoIP
+            // app restarts ITS capture mid-call, ours is silenced — it keeps delivering chunks, but
+            // they are digital zeros, so nothing else notices. Measured on a Galaxy S24 FE: ~6 s of a
+            // 21 s call lost, matching a flat -107 dB stretch in the output.
+            //
+            // Restarting our AudioRecord makes US the most recent starter, and the audio comes back.
+            // Verified safe for the call itself: with the phones in separate rooms the far end still
+            // heard everything while our capture held the mic, so the VoIP app keeps transmitting
+            // regardless of what the arbitration reports. Only the NEAR source needs this — the far
+            // party arrives through the policy submix, outside the mic arbitration entirely.
+            if (tag == "near") {
+                if (isAllZero(buf)) silentChunks++ else silentChunks = 0
+                if (silentChunks >= SILENT_CHUNKS_BEFORE_RETAKE) {
+                    silentChunks = 0
+                    val fresh = retakeMic(record)
+                    if (fresh != null) { record = fresh; nearRecord = fresh }
+                }
             }
             q.offer(buf.copyOf())
         }
     }.apply { isDaemon = true; name = "voip-$tag" }
+
+    /** True when every sample in the chunk is exactly zero — the fingerprint of a silenced capture. */
+    private fun isAllZero(buf: ByteArray): Boolean {
+        for (b in buf) if (b.toInt() != 0) return false
+        return true
+    }
+
+    /**
+     * Closes the silenced capture and opens a fresh one, which makes us the most recent starter.
+     * Returns null (and leaves the old one running) if the new capture cannot be opened, so a failure
+     * here degrades to today's behaviour rather than ending the recording.
+     */
+    private fun retakeMic(current: AudioRecord): AudioRecord? {
+        AppLogger.i(TAG, "near capture silenced by the platform — re-taking the mic")
+        val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+        if (minBuf <= 0) return null
+        @Suppress("MissingPermission")
+        val fresh = runCatching {
+            AudioRecord(
+                MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT, minBuf * BUFFER_FACTOR,
+            )
+        }.getOrNull()
+        if (fresh == null || fresh.state != AudioRecord.STATE_INITIALIZED) {
+            AppLogger.w(TAG, "re-take failed to initialise; keeping the silenced capture")
+            runCatching { fresh?.release() }
+            return null
+        }
+        runCatching { fresh.startRecording() }
+        runCatching { current.stop() }
+        runCatching { current.release() }
+        return fresh
+    }
 
     /** Drains available encoder output into the muxer. Returns whether the muxer is (now) started. */
     private fun drainEncoder(
@@ -266,6 +321,13 @@ internal class VoipCaptureSession(
     }
 
     companion object {
+        /**
+         * Consecutive all-zero chunks before we conclude the platform has silenced us rather than the
+         * room simply being quiet. A real mic never returns exact zeros — even silence carries a noise
+         * floor — so this only needs to outlast a codec-aligned run of them, not real quiet.
+         */
+        private const val SILENT_CHUNKS_BEFORE_RETAKE = 15
+
         private const val TAG = "CV:VoipCapture"
         private const val SAMPLE_RATE = VoipAudioPolicy.SAMPLE_RATE
         private const val ENCODE_CHANNELS = 1
