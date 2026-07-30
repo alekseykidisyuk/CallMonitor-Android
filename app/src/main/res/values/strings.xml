@@ -130,6 +130,8 @@
     <string name="settings_section_audio">Audio configuration</string>
     <string name="settings_section_reliability">Reliability</string>
     <string name="settings_section_experimental">Experimental</string>
+    <string name="settings_subsection_incoming">Incoming calls</string>
+    <string name="settings_subsection_outgoing">Outgoing calls</string>
     <string name="settings_subsection_resilience">Resilience</string>
     <string name="settings_subsection_voip">VoIP calls</string>
     <string name="settings_voip_recording_label">Record VoIP calls</string>

@@ -200,6 +200,8 @@
     <string name="settings_show_toasts">Mostra notifiche toast</string>
     <string name="settings_storage_section">Archiviazione</string>
     <string name="settings_storage_target_label">Dove salvare le registrazioni</string>
+    <string name="settings_subsection_incoming">Chiamate in entrata</string>
+    <string name="settings_subsection_outgoing">Chiamate in uscita</string>
     <string name="settings_subsection_resilience">Resilienza</string>
     <string name="settings_subsection_voip">Chiamate VoIP</string>
     <string name="settings_support_label">Sostieni lo sviluppo</string>

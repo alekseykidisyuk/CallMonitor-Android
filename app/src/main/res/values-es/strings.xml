@@ -200,6 +200,8 @@
     <string name="settings_show_toasts">Mostrar notificaciones emergentes</string>
     <string name="settings_storage_section">Almacenamiento</string>
     <string name="settings_storage_target_label">Dónde guardar las grabaciones</string>
+    <string name="settings_subsection_incoming">Llamadas entrantes</string>
+    <string name="settings_subsection_outgoing">Llamadas salientes</string>
     <string name="settings_subsection_resilience">Resistencia</string>
     <string name="settings_subsection_voip">Llamadas VoIP</string>
     <string name="settings_support_label">Apoyar el desarrollo</string>

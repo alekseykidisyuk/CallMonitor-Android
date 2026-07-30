@@ -390,6 +390,10 @@ private const val SECTION_AUDIO = "audio"
 private const val SECTION_GENERAL = "general"
 
 // Sub-section keys. Scoped to their parent section, so the same value can never collide across two.
+private const val SUB_FILE_NAME = "sub_file_name"
+private const val SUB_INCOMING = "sub_incoming"
+private const val SUB_OUTGOING = "sub_outgoing"
+private const val SUB_WHERE = "sub_where"
 private const val SUB_UPLOAD = "sub_upload"
 private const val SUB_RETENTION = "sub_retention"
 private const val SUB_VISUAL = "sub_visual"
@@ -438,7 +442,20 @@ private fun RecordingSection(
 
     var showFileNameFormatDialog by remember { mutableStateOf(false) }
 
-    SettingsSection(title = stringResource(R.string.settings_section_recording), expanded = expanded, onToggle = onToggle) {
+    // One open sub-section at a time, within this section only, and nothing open on entry.
+    var openSub by rememberSaveable { mutableStateOf<String?>(null) }
+
+    SettingsSection(
+        title = stringResource(R.string.settings_section_recording),
+        expanded = expanded,
+        onToggle = onToggle,
+        wrapInCard = false,
+    ) {
+      SettingsSubSection(
+        title = stringResource(R.string.settings_file_name_template),
+        expanded = openSub == SUB_FILE_NAME,
+        onToggle = { openSub = if (openSub == SUB_FILE_NAME) null else SUB_FILE_NAME },
+      ) {
         NavigationRow(
             icon = Icons.Filled.DriveFileRenameOutline,
             label = stringResource(R.string.settings_file_name_template),
@@ -449,9 +466,13 @@ private fun RecordingSection(
             ),
             onClick = { showFileNameFormatDialog = true }
         )
+      }
 
-        SettingsDivider()
-
+      SettingsSubSection(
+        title = stringResource(R.string.settings_subsection_incoming),
+        expanded = openSub == SUB_INCOMING,
+        onToggle = { openSub = if (openSub == SUB_INCOMING) null else SUB_INCOMING },
+      ) {
         SettingsToggleRow(
             icon = Icons.AutoMirrored.Filled.CallReceived,
             label = stringResource(R.string.settings_auto_record_incoming),
@@ -484,9 +505,13 @@ private fun RecordingSection(
                 )
             }
         }
+      }
 
-        SettingsDivider()
-
+      SettingsSubSection(
+        title = stringResource(R.string.settings_subsection_outgoing),
+        expanded = openSub == SUB_OUTGOING,
+        onToggle = { openSub = if (openSub == SUB_OUTGOING) null else SUB_OUTGOING },
+      ) {
         SettingsToggleRow(
             icon = Icons.AutoMirrored.Filled.CallMade,
             label = stringResource(R.string.settings_auto_record_outgoing),
@@ -513,6 +538,7 @@ private fun RecordingSection(
                 )
             }
         }
+      }
     }
 
     if (showFileNameFormatDialog) {
@@ -573,9 +599,11 @@ private fun StorageSection(
         onToggle = onToggle,
         wrapInCard = false,
     ) {
-      // The target and the two folder pickers are this section's own rows, so they keep a card. The
-      // sub-sections below manage their own.
-      CvCard(contentPadding = PaddingValues(vertical = 8.dp)) {
+      SettingsSubSection(
+        title = stringResource(R.string.settings_storage_target_label),
+        expanded = openSub == SUB_WHERE,
+        onToggle = { openSub = if (openSub == SUB_WHERE) null else SUB_WHERE },
+      ) {
         DropdownRow {
             M3DropdownField(
                 label    = stringResource(R.string.settings_storage_target_label),
@@ -1673,10 +1701,14 @@ private fun SettingsSubSection(
 /** A thin inset divider used to separate row clusters inside a [CvCard]. */
 @Composable
 private fun SettingsDivider() {
+    // outlineVariant is Material's subtlest rule, and against this app's very dark surface it all but
+    // disappears — reported as "barely visible in dark theme". Deriving the colour from
+    // onSurfaceVariant instead keeps it theme-aware (it inverts with the scheme) while guaranteeing
+    // contrast against whatever surface it lands on, in light and dark alike.
     HorizontalDivider(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.28f)
     )
 }
 

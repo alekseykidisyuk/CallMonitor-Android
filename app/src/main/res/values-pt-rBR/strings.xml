@@ -203,6 +203,8 @@
     <string name="settings_show_toasts">Mostrar notificações rápidas</string>
     <string name="settings_storage_section">Armazenamento</string>
     <string name="settings_storage_target_label">Onde salvar as gravações</string>
+    <string name="settings_subsection_incoming">Chamadas recebidas</string>
+    <string name="settings_subsection_outgoing">Chamadas efetuadas</string>
     <string name="settings_subsection_resilience">Resiliência</string>
     <string name="settings_subsection_voip">Chamadas VoIP</string>
     <string name="settings_support_label">Apoiar o desenvolvimento</string>

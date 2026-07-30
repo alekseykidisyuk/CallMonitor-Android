@@ -200,6 +200,8 @@
     <string name="settings_show_toasts">Afficher les notifications Toast</string>
     <string name="settings_storage_section">Stockage</string>
     <string name="settings_storage_target_label">Où enregistrer les enregistrements</string>
+    <string name="settings_subsection_incoming">Appels entrants</string>
+    <string name="settings_subsection_outgoing">Appels sortants</string>
     <string name="settings_subsection_resilience">Résilience</string>
     <string name="settings_subsection_voip">Appels VoIP</string>
     <string name="settings_support_label">Soutenir le développement</string>

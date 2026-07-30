@@ -200,6 +200,8 @@
     <string name="settings_show_toasts">Toast értesítés megjelenítése</string>
     <string name="settings_storage_section">Tárhely</string>
     <string name="settings_storage_target_label">Hová mentse a felvételeket</string>
+    <string name="settings_subsection_incoming">Bejövő hívások</string>
+    <string name="settings_subsection_outgoing">Kimenő hívások</string>
     <string name="settings_subsection_resilience">Ellenállóság</string>
     <string name="settings_subsection_voip">VoIP-hívások</string>
     <string name="settings_support_label">Fejlesztés támogatása</string>

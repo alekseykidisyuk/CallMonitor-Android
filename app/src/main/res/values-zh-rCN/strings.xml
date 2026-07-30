@@ -200,6 +200,8 @@
     <string name="settings_show_toasts">显示一句话消息（Toast）</string>
     <string name="settings_storage_section">存储</string>
     <string name="settings_storage_target_label">录音保存位置</string>
+    <string name="settings_subsection_incoming">来电</string>
+    <string name="settings_subsection_outgoing">去电</string>
     <string name="settings_subsection_resilience">弹性</string>
     <string name="settings_subsection_voip">VoIP 通话</string>
     <string name="settings_support_label">支持开发</string>
