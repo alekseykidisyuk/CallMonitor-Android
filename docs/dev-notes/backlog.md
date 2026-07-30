@@ -338,6 +338,25 @@ The fixed handoff now measures at or below the no-handoff baseline on both.
 instantly and the metrics nearly did not. What discriminated cleanly was **3-6 kHz band energy**, and
 only once a third file gave the scale. Do not read a flat two-way measurement here as "no defect".
 
+### Daemon-kill test passed on One UI, 2026-07-30
+
+The premise of the feature, demonstrated on Samsung for the first time. Mid-call, the daemon that
+created the capture was `kill -9`'d:
+
+- app pid **unchanged**, and the original `cv-handoff-drai` / `cv-handoff-enco` threads carried on
+- the file grew straight through the kill with no stall (281 KB → 344 KB over the following 12 s)
+- the keep-alive relaunched a fresh daemon behind it, as designed
+- finalised as a valid 106 s Opus file
+- **no seam**: only 7 of 300 windows within ±3 s of the kill dipped near the silence floor, and
+  scattered rather than contiguous — ordinary conversational gaps, not a dropout
+
+**A measurement trap, recorded so it is not re-walked.** A first pass compared 3-6 kHz energy before
+(1.06%) and after (15.13%) the kill and looked alarming. It is an artefact: that metric is a
+*proportion*, so it tracks level, not defects — loud passages read 0.1-1.6%, quiet ones 40-89%. A
+per-5s time series showed the spikes at 10-20 s and 25-40 s, long before the kill, with the kill
+window itself at 3.9%. Always plot the metric against time before attributing a difference to an
+event.
+
 **Follow-up worth doing:** derive the guard from the observed `mRear` step (the burst size the device
 actually uses) rather than hardcoding 960.
 
