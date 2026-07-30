@@ -1,229 +1,182 @@
-# Issue #18 — carrier recordings that are the right size and completely silent
+# Issue #18 — carrier recordings that are the right size and play back silent
 
-**Status:** diagnostic run by the reporter on 2026-07-29 — **still silent. The regression hypothesis is
-dead.** See "The diagnostic result" below. Next step is a capture-source sweep, not a code fix.
-
-> **v1.5.3 shipped on 2026-07-29 and contains no fix for this.** Verified, not assumed:
-> `DirectAudioRecorderSession.kt` is byte-identical between `v1.5.2` and `v1.5.3`, and
-> `diag/scrcpy-only` is not merged. There is nothing to fix yet because the cause is still
-> unconfirmed — the diagnostic APK has not been run by anyone.
->
-> Two things 1.5.3 does carry that touch this case without solving it: the setup-health card now
-> reports an **empty recording**, which would have caught his Opus era (0-byte files) at the first
-> call instead of over months; and the capture-path log line now names the route actually taken.
-> Neither catches his *current* symptom — a file of the correct size that plays back silent. That
-> needs the deferred **`SILENT`** detection (all-zeros check on the daemon's PCM), still unbuilt.
->
-> **Open action:** the reporter may reasonably assume 1.5.3 supersedes the debug APK, since it is
-> newer. A comment saying otherwise was offered and not yet sent.
 **Issue:** https://github.com/madkongo/CallVault/issues/18
-**Reporter's device:** Samsung Galaxy Z Fold 6, **SM-F956U** (US model), Android 16, CallVault 1.5.2
+**Device:** Samsung Galaxy Z Fold 6, **SM-F956U** (US model), Android 16 (API 36), Android 16 throughout
+**Status:** three hypotheses live, none confirmed. **One artifact — a single recording file — would
+discriminate between almost all of them.** Do not ship another diagnostic build before reading
+"Why we keep guessing" at the bottom.
+
+> This note has been wrong twice. Both times the error was inferring a fact instead of reading it:
+> once reading "it worked" as "audio was audible", once inferring the OS version from the device's
+> launch OS rather than the issue form. Facts below are cited to where they come from.
 
 ---
 
-## What was reported
+## What is established
 
-Carrier recordings are created, show a plausible byte size, and play back **silent**. Storage target is
-Both, so the local original is intact and untouched. Opus recordings have **always** produced 0-byte
-files on this device; the reporter switched to **AAC 24 kbps**, and AAC **worked** on some earlier
-version he no longer remembers.
+From the **issue form** (not inferred — the reporter's own checklist):
 
-## What the logs prove
+| | |
+|---|---|
+| Experimental features | **VoIP recording ON**, resilient recording OFF, **offline recording ON** |
+| Debug switches | USB debugging ON, Wireless debugging OFF |
+| Call type | Carrier call |
+| Codec | AAC 24 kbps · storage target **Both** |
+| Symptom | "creates a recording that shows it contains data, however the playback is empty" |
 
-Two independent calls, byte counts against capture duration at 24 kbps CBR (3,000 B/s):
+From the **three exported logs**:
 
-| call | capture window | size | implied duration |
-|---|---|---|---|
-| outgoing | 39.9 s | 119,253 B | 39.75 s |
-| incoming | 98.8 s | 296,917 B | 98.97 s |
-| outgoing (later run) | 18.3 s | 52,821 B | 17.6 s |
-| outgoing (later run) | 39.6 s | 119,125 B | 39.7 s |
+- Opus has **always** produced 0-byte files on this device. He switched to AAC because of that.
+- He has been **switching capture sources**: log A has seven calls on `mic-voice-communication`
+  between six on `voice-call`, in the order voice-call → mic → back to voice-call. **He never said
+  which produced audio.** Going back to `voice-call` weakly suggests mic did not help.
+- Every file is full-duration at full rate. Fitting `bytes = R·(T − d)` over all calls:
 
-The encoder ran for the full call every time and wrote a complete payload. No error appears anywhere in
-his logs. **Truncation and container damage are ruled out.**
-
-Critically: **CBR AAC encodes silence at exactly the same bitrate.** These sizes are equally consistent
-with a stream of zeros, so they say nothing about whether audio was captured. That is the whole question.
-
-## The hypothesis
-
-**A regression introduced in v1.4.0** (`7df300a`, 2026-07-23), which added
-`DirectAudioRecorderSession` — the direct `AudioRecord` → `MediaCodec` → `MediaMuxer` path that replaced
-scrcpy for the common case.
-
-The mechanism: that session opens the mic with the legacy constructor and **no package attribution**:
-
-```kotlin
-@Suppress("MissingPermission") // shell uid holds CAPTURE_AUDIO_OUTPUT; the daemon is not an app.
-AudioRecord(androidSource, SAMPLE_RATE, channelMask, ENCODING_PCM_16BIT, minBuf * BUFFER_FACTOR)
-```
-
-AppOps evaluates `OP_RECORD_AUDIO` against the **package**, not merely the uid, and when it answers
-`MODE_IGNORED` Android **feeds the caller silence rather than failing**: `state == STATE_INITIALIZED`,
-reads succeed, every sample is zero. That is precisely the observed fingerprint — full duration, correct
-size, no error, no audio.
-
-scrcpy, the path CallVault used before v1.4.0, works around exactly this by building its `AudioRecord`
-with a fake context whose package is `com.android.shell`. Our direct path dropped that workaround. The
-code comment above shows the assumption behind it — true about the uid, and beside the point.
-
-Why the codecs differ: AAC has an encoder on this device, so `supports()` holds and it takes the direct
-path. Opus is a separate, older failure (0 bytes, never worked) and is **not** explained by this.
-
-Why it was never caught: the OnePlus 12 tolerates the unattributed record. This is ROM-dependent.
-
-## The diagnostic
-
-Published as a **pre-release** so no existing install can be offered it:
-https://github.com/madkongo/CallVault/releases/tag/v1.5.2-diag-scrcpy
-
-- branch `diag/scrcpy-only` (commit `f0e3ba4`) = the `v1.5.2` tag with **one** change:
-  `DirectAudioRecorderSession.supports()` returns `false`, forcing the scrcpy fallback
-- versionCode **10624**, signed with the usual key, installs over 1.5.2 with no uninstall
-- asset deliberately **not** named `CallVault.apk`, which is the only name the updater will download
-
-**Reading the result:**
-
-- **audio returns** → the v1.4.0 direct path is the regression. Fix: attribute the `AudioRecord` the way
-  scrcpy does (`AudioRecord.Builder().setContext(...)` with a shell-package context, public since API
-  31), keeping the scrcpy path as fallback where attribution is still refused.
-- **still silent** → the hypothesis is dead; capture is silent on both paths and the cause is elsewhere
-  (ROM-level block, or something upstream of capture entirely).
-
-## The diagnostic result — 2026-07-29
-
-The reporter ran `1.5.2-diag-scrcpy (10624)` (confirmed in the export header) across six carrier calls
-and reports **the recordings are still silent**. No error appears anywhere in the log.
-
-### First: proving the diagnostic actually ran
-
-This mattered more than the result. The log never names the daemon build, and it shows only
-`Recorder daemon already connected; reusing existing binder` — never a launch line. `supports()` lives
-in the **daemon**, which is a detached `app_process` that survives app updates, so a stale pre-diag
-daemon serving the new app would have produced a false "still broken" while never running the change.
-
-It was provable anyway, from the file sizes. Fitting `bytes = R·(T − d)` over each log's calls
-(`T` = dispatch→release window) separates steady-state byte rate from startup delay:
-
-Measured over every call in all three logs (window = `startRecording dispatched` → `Releasing
-session resources`), grouped by build and selected source:
-
-| log | build | source | path | kbps (calls >10 s) |
+| log | build | source | path | kbps |
 |---|---|---|---|---|
 | A | 1.4.9 / 1.5.2 | `voice-call` | direct | 24.9, 24.1, 24.0, 23.9, 24.1 |
 | A | 1.4.9 / 1.5.2 | `mic-voice-communication` | direct | 25.6, 25.5, 25.6, 25.5 |
-| B | 1.5.2 | `voice-call` | direct | 23.1, 24.1 |
-| C | **1.5.2-diag-scrcpy** | `voice-call` | scrcpy | **25.8, 26.9, 26.9, 26.2, 26.6** |
+| B | 1.5.2 ("VoIP off" test) | `voice-call` | direct | 23.1, 24.1 |
+| C | 1.5.2-diag-scrcpy | `voice-call` | scrcpy | 25.8, 26.9, 26.9, 26.2, 26.6 |
 
-Every diag call sits **above every direct-path call**, including the mic captures. That is what the
-code predicts: the direct path encodes **mono**
-(`DirectAudioRecorderSession.ENCODE_CHANNELS = 1`) and lands on its 24 kbps target; scrcpy-server
-"always outputs stereo" (`ScrcpyConfig.AUDIO_CHANNELS = 2`), and AAC-LC overshoots a 24 kbps target
-with two channels. Fitting `bytes = R·(T − d)` also puts diag startup at 1.36 s against 0.88 s for
-the direct path, consistent with spawning scrcpy.
+  So **the encoder ran the whole call every time and was fed data at full rate.** Whatever is wrong,
+  the capture is *delivering samples* — it is not stalling, erroring, or truncating.
+- **No error appears anywhere in any log.**
 
-So the evidence says **the scrcpy path ran** — contrary to the "the debug version never ran properly"
-read. It is inference, not proof. The **decisive** check is one line of `ffprobe` on any of his files:
-**2 channels = scrcpy ran, 1 channel = it did not.**
+From the **code**:
 
-(Sizes alone still cannot distinguish silence from audio — CBR encodes zeros at the same rate. They
-distinguish *which encoder configuration produced them*, which is a different question.)
+- The direct path (`DirectAudioRecorderSession`) opens `CHANNEL_IN_STEREO` **first**, falls back to
+  mono, and always encodes **mono** — averaging via `PcmDownmix.stereoToMono`, `m = (l + r) / 2`.
+- The scrcpy path is **stereo end to end**, with no downmix (`ScrcpyConfig.AUDIO_CHANNELS = 2`).
+- Both paths run as **shell uid** in the daemon.
+- The diag build's byte rate sits above every direct-path call, which is the mono→stereo signature.
+  Independently: a binder can only reach the app process by a daemon *delivering* it, delivery
+  happens once at daemon startup (`RecorderServer:109`) with no re-delivery, and installing the diag
+  APK killed the app process — so the daemon serving those calls was launched from the diag APK.
+  **The diagnostic did run.**
 
-### So the direct-path hypothesis is dead — but the diagnostic could not test the real suspect
+## What is NOT established
 
-The unattributed `AudioRecord` is **not** the cause: scrcpy's fake-`com.android.shell` context did not
-help. The fault is upstream of the capture path.
+- **That anything ever worked.** "I switched to AAC and it worked" appears in the same breath as
+  "those files are always recorded with zero bytes" and "there's data in it because it shows the byte
+  size". It very plausibly means *"AAC produced non-empty files"*, not *"AAC produced audible audio"*.
+  Every regression hypothesis rests on this sentence.
+- **That the files are digitally silent.** Nobody has decoded one. "Silent" is a playback observation.
+- **Whether the mic source produced audio.**
+- **Whether stereo or mono capture was used** — the daemon logs `captureCh=` but daemon logs never
+  reach the export (see below).
 
-**The diagnostic was built to answer the wrong question.** It swaps *which* capture path runs. The
-leading suspect — an armed VoIP audio policy — sits **above both paths**, so this build was
-structurally incapable of clearing or convicting it. "Still silent" was the guaranteed outcome either
-way. That is a flaw in the diagnostic's design, not (necessarily) in how the reporter ran it.
+---
 
-### The hypothesis that actually fits: the VoIP policy is armed during carrier calls
+## Hypotheses
 
-`VoipAudioPolicy.arm()` registers a **system-wide** dynamic `AudioMix` matching
-`USAGE_VOICE_COMMUNICATION`, routed `ROUTE_FLAG_LOOP_BACK_RENDER`. A **carrier** call's downlink is
-rendered as voice communication too, so the mix matches telephony as well as VoIP apps and reroutes
-that stream through a submix.
+### S1 — The device blocks call capture for the shell uid. Nothing ever worked.
 
-Three properties of the current design make this fit the evidence exactly:
+The boring one, and the most likely. US Samsung models are the notorious case. Both paths run as
+shell, so both are silent; Opus's 0 bytes are an unrelated second bug; the OP12 is unaffected because
+OnePlus does not block it.
 
-1. **It is armed permanently.** `VoipCaptureController`: "armed when the user enables the feature,
-   re-armed whenever the daemon is (re)launched, and left armed" — because a policy registered
-   mid-call attaches to nothing. Deliberate, and correct for VoIP.
-2. **Nothing disarms it for a carrier call.** `sync()` is called from app start, the Settings toggle,
-   and daemon-ready. There is no `MODE_IN_CALL` hook. The mix is live through every carrier call.
-3. **It is invisible.** `sync()` logs only on failure, and `arm`/`disarm` log inside the *daemon*,
-   which cannot write the app's log file at all (shell uid vs app-private cache). No export we have
-   can show whether the policy was armed.
+*Predicts:* every source silent, including plain `mic`. *Killed by:* any source producing audio.
+*Requires:* "it worked" to have meant "non-empty files" — which is the natural reading.
 
-It also explains everything the other hypotheses had to strain for: both paths silent (the policy is
-upstream of both), no error, correctly-sized files, nothing device-specific needed beyond a ROM that
-honours the reroute, and **"AAC worked on an earlier version"** — the VoIP engine shipped in
-**v1.4.7** (`2b50fbe`); he first reported on **1.4.9**. Anything before 1.4.7, or before he switched
-the toggle on, predates the mechanism.
+### S2 — Capture is fine; the failure is at playback.
 
-The open assumption is that he enabled the toggle — it is default-off (`VOIP_RECORDING_ENABLED =
-false`) and he has never confirmed it, despite being asked twice.
+He may be playing the Drive copy, or playing in something that cannot render the file. Note the file
+is **48 kHz mono AAC-LC in m4a** on the direct path — legal but not the most common shape.
 
-### This is reproducible without a Samsung
+*Predicts:* the file decodes to real audio on a PC. *Killed by:* PC playback also silent.
+*Cost:* zero. Already asked once, unanswered.
 
-Turn VoIP recording **on** on any device, make an ordinary carrier call, and check whether the
-recording goes silent. If it reproduces on the OP12, the bug is ours and the reporter is off the
-critical path entirely.
+### A1 — Our downmix cancels the audio (advanced; the one I would test first)
 
-### The fix, if it reproduces
+The direct path prefers **stereo** capture, then averages the channels. `(l + r) / 2` is exactly zero
+whenever the two channels are opposite. Devices do return correlated channel pairs on call/voice
+sources — an echo/AEC reference alongside the primary is common — and a reference that is the
+inverse of the signal averages to silence.
 
-Disarm on carrier-call start and re-arm on IDLE. A carrier call and a VoIP call are mutually
-exclusive, so nothing is lost: the "must arm before the track exists" constraint only binds for VoIP
-calls, and re-arming after the carrier call ends happens with no VoIP track in flight.
+What makes this fit better than it first looks:
 
-### The other unanswered question — did the mic source work?
+- **The downmix only executes where stereo capture initialises.** If the OP12's `voice-call` route is
+  mono, `downmix` is false there and this code path has *never been exercised on a working device*.
+  That is precisely the shape of a bug that survives all local testing.
+- It explains the diag result **without** needing the diagnostic to have failed. scrcpy keeps both
+  channels, so the diag file is not digitally silent — but a phone rendering a stereo file through a
+  **mono** output downmixes L+R itself, and cancels it again at playback. He would report "still
+  silent" for both builds, truthfully, from two different mechanisms.
 
-Log A contains **seven** calls on `mic-voice-communication` alongside six on `voice-call`; he has been
-switching sources all along and never said which produced audio. This single answer splits the
-diagnosis:
+*Predicts:* the direct-path file is all zeros; the **diag file has real audio in L and R that cancels
+only when mixed to mono** — so it plays fine on a PC with headphones. *Killed by:* diag file
+all-zeros in both channels, or direct-path capture reported as `captureCh=1`.
 
-- **mic works, `voice-call` silent** → source-specific block, and he has a workaround today.
-- **both silent** → a global cause: the policy above, or playback.
+### A2 — The armed VoIP audio policy diverts the carrier downlink
 
-`ScrcpyAudioSource` offers eleven sources, all selectable in Settings, so a sweep costs nothing.
+**VoIP recording is confirmed ON** in the issue form. `VoipAudioPolicy.arm()` registers a system-wide
+`AudioMix` on `USAGE_VOICE_COMMUNICATION` routed `ROUTE_FLAG_LOOP_BACK_RENDER` — which a carrier
+downlink also matches. It is armed permanently by design (a policy registered mid-call attaches to
+nothing), and **nothing disarms it for a carrier call**: `sync()` is called only from app start, the
+Settings toggle, and daemon-ready. It sits upstream of both capture paths, so the diagnostic build
+could never have cleared or convicted it.
 
-### Two diagnostic-quality defects this exposed
+Status: **not dead, not confirmed.** Log B was nominally a VoIP-off test, but he never confirmed
+toggling it and never said whether those two files had audio. Carrier calls work on the maintainer's
+OP12 — but only tests A2 if VoIP is enabled there too.
 
-1. **The log cannot identify which daemon build served a call.** The header reports the *app* version;
-   the daemon's is nowhere. Since the daemon outlives app updates, every future diagnostic build has
-   the same false-negative hole — this one only closed by arithmetic. The daemon should report its
-   version on binder delivery, and the export header should carry it.
-2. **The redaction regex eats byte counts.** `AppLogger.redact` matches any bare 7–11 digit integer, so
-   one call's size logged as `[PHONE_REDACTED] bytes`. It destroys precisely the numbers these
-   investigations depend on. It should not redact digits that are not in a phone-number context.
+*Killed by:* an OP12 carrier call recorded cleanly **with VoIP recording enabled**.
+*If confirmed, the fix is small:* disarm on carrier-call start, re-arm on IDLE. A carrier call and a
+VoIP call are mutually exclusive, so the "must arm before the track exists" constraint is not
+violated.
 
-## Honest caveats
+### B1 — Opus 0-byte files (separate, real, and worth fixing regardless)
 
-- **This is a hypothesis, not a finding.** An earlier analysis in this investigation confidently blamed
-  US Samsung firmware and fitted the evidence to it; that was wrong, and it was wrong because the
-  reporter's "and it worked" was read as "produced files" rather than "produced audible recordings".
-  Re-read the primary source before trusting a chain of inference built on it.
-- ~~The diagnostic APK has **not been run** by anyone.~~ Run on 2026-07-29; see the result above. The
-  false-negative risk flagged here was real and nearly unfalsifiable — only the byte-rate fit ruled it
-  out. Do not ship another diagnostic build until the daemon reports its own version.
-- "Silent" is still the **reporter's** word. Nobody has decoded one of these files to confirm the PCM
-  is all zeros rather than very quiet. Asking for one file would settle it — and its channel count
-  would independently corroborate which path ran.
-- Whether VoIP recording was enabled during his tests is **not discernible from the logs**:
-  `VoipCaptureController.sync()` logs only on failure, `VoipCallDetector` logs once at service start,
-  and a carrier call sets `MODE_IN_CALL`, so an armed VoIP feature emits nothing during a carrier call.
+Opus has no encoder on this device → `supports()` returns false → scrcpy fallback → 0 bytes. Whatever
+happens to issue #18, silently writing a 0-byte file is the wrong failure mode.
 
-## What this issue argues for, independently of its outcome
+---
 
-1. **Daemon diagnostics never reach a bug report.** Twice in this investigation the answer lived in
-   `RecorderServer`'s log lines, which exist only in the daemon's process. Design written up in
-   `2026-07-28-daemon-and-system-logs-design.md`.
-2. **The unreleased `EMPTY_FILE` health reporting** would have surfaced his entire Opus era as "your
-   last call produced an empty recording" instead of months of silent accumulation.
-3. **The deferred `SILENT` detection** would have caught the AAC era at the first call — AAC takes the
-   direct path, so PCM is visible in the daemon and an all-zeros check is cheap.
-4. **The log export header carries device and version but not app settings.** Adding a settings snapshot
-   (experimental toggles, storage target, audio source, codec) would have answered the VoIP question at
-   a glance.
+## The one thing that would settle this
+
+**Ask for a file, not for more logs.** A single `.m4a` answers, in one `ffprobe` and one decode:
+
+| observation | conclusion |
+|---|---|
+| 1 channel | direct path ran |
+| 2 channels | scrcpy path ran — settles the "did the diag build run" argument outright |
+| decodes to non-zero PCM | **S2** — capture works, this is a playback problem |
+| all zeros | capture-side; S1 or A2 |
+| 2 channels, L ≈ −R | **A1 confirmed** |
+
+Second cheapest, and free: *did the `mic-voice-communication` calls have audio?* That splits
+source-specific (workaround exists today) from global.
+
+Third: the OP12 repro for A2, with VoIP recording switched **on**.
+
+---
+
+## Why we keep guessing — the actual defect to fix
+
+1. **Daemon logs never reach a bug report.** The daemon runs as shell uid and cannot write the app's
+   private log file, so `Direct capture started: … captureCh=… encodeCh=… rate=…` — the single line
+   that would decide A1 — exists only in a process nobody can read. Every capture decision is
+   invisible. Design: `2026-07-28-daemon-and-system-logs-design.md`; no plan yet.
+2. **No level metric.** A byte count cannot distinguish silence from audio. An RMS/peak over the
+   captured PCM, logged once per call, would have answered this on day one. This is the deferred
+   `SILENT` check, and it should carry **channel count and level**, not just an all-zeros flag.
+3. **The log export carries no settings snapshot.** VoIP on/off, source, codec, storage target — all
+   of it had to be dug out of an issue form or guessed at.
+4. **The redaction regex eats byte counts.** `AppLogger.redact` matches any bare 7–11 digit integer;
+   one call's size logged as `[PHONE_REDACTED] bytes`. It destroys the numbers these investigations
+   run on.
+5. **A diagnostic build must be able to fail.** The `diag/scrcpy-only` build varied the one thing
+   sitting *below* two of the three live hypotheses, so "still silent" was its most likely outcome
+   whether or not the theory was right. Before the next one: state what result would kill the theory.
+
+## Prior dead ends
+
+- **The direct path's unattributed `AudioRecord`** (no package attribution → AppOps answers
+  `MODE_IGNORED` with silence). This motivated `diag/scrcpy-only`. The scrcpy path carries scrcpy's
+  `com.android.shell` fake-context workaround and was **also silent**, so this is dead as a *sole*
+  cause. It remains a real latent wart.
+- **An Android/One UI upgrade.** Dead: the reporter has been on Android 16 the whole time.
+- **US Samsung firmware, fitted to the evidence.** An early analysis asserted this confidently and
+  was wrong. S1 is the disciplined version of the same idea: stated as a hypothesis, with the
+  observation that would kill it.
