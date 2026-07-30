@@ -2,7 +2,7 @@
 
 **Device:** Galaxy S24 FE (SM-S721B), Android 16 / API 36, One UI.
 **Compared against:** OnePlus 12, which records the same call cleanly.
-**Status:** cause established from platform logs. No fix yet; one untried lead.
+**Status:** cause established, **fixed** — the near feeder re-takes the mic when silenced.
 
 ---
 
@@ -88,6 +88,41 @@ predictable or avoidable. Whether any other audio source is exempt.
 
 The code carries the same class of over-generalisation: *"`MIC` is not silenced"* in
 `VoipCaptureSession`'s doc comment. True on ColorOS, false here.
+
+## Fixed 2026-07-30 — re-take the mic
+
+The arbitration is **symmetric and winnable: the most recent starter wins.** Our capture is silenced
+when the VoIP app restarts its own; restarting ours wins it straight back. `feeder()` now watches the
+near source for chunks that are *exactly* zero — a real mic never returns exact zeros, even a silent
+room carries a noise floor — and after `SILENT_CHUNKS_BEFORE_RETAKE` of them reopens the
+`AudioRecord`.
+
+| | before | with re-take |
+|---|---|---|
+| longest silent run | **8.0 s** | **1.5 s** |
+| silence-filled chunks | holes throughout | 6 in a 50 s call |
+
+The re-take fired 10 times in that call and every subsequent capture registered `not silenced`. What
+remains is detection latency; `SILENT_CHUNKS_BEFORE_RETAKE` trades gap length against re-taking more
+eagerly.
+
+**Why this is safe, which is the part that took longest to establish:** with the phones in **separate
+rooms**, the far end still heard everything while our capture held the mic. There is no acoustic path
+between rooms, so the VoIP app was still transmitting — it keeps working regardless of what the
+arbitration reports about it. Winning the mic does not cost the user their conversation.
+
+## Three wrong turns, worth keeping
+
+1. **"No source can survive the arbitration."** Wrong, and worse, untested — it followed one HOTWORD
+   failure. A five-source survey in a single call showed all candidates reading **identical** RMS
+   values second by second: they are the same stream, and the source is irrelevant. Testing one source
+   per call could never have shown this, because the arbitration depends on when the VoIP app restarts
+   its own capture, so no two single-source calls are the same experiment.
+2. **"Taking the mic breaks the call."** Wrong. Derived from `dumpsys` reporting the VoIP app's
+   capture silenced and stopped, without checking it against the separated-rooms evidence that already
+   existed — which showed the far end hearing speech that had no acoustic path to it.
+3. **Acoustic bleed was invoked twice** to explain results the maintainer had already excluded by ear
+   and by experiment. When someone who can hear the recording says it is not bleed, that is data.
 
 ## What to do
 

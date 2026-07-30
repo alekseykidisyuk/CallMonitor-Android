@@ -69,7 +69,7 @@ installer mid-stream, which is worse than the problem — a half-written APK is 
 
 ---
 
-## 🔵 VoIP near-party drops out on One UI — report it, at minimum
+## ✅ VoIP near-party drops out on One UI — FIXED by re-taking the mic
 
 On a Galaxy S24 FE, One UI **silences** our shell-uid MIC capture intermittently while the VoIP app
 holds the mic — logged by the platform itself as `rec update uid:2000 src:MIC silenced
