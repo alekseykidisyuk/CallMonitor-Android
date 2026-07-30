@@ -61,6 +61,23 @@ taps stack (unique work + KEEP, as the install path does).
 
 ---
 
+## 🔴 Keep-alive rewarm latch can permanently stop recording — FIX FIRST
+
+**Found 2026-07-30 on the OP12: the daemon had been dead ~21 hours and the app never retried.**
+`DaemonKeepAliveService.maybeRewarm` guards on a `rewarming` flag that only the worker thread clears.
+The worker calls `ensureServerRunning` → `AdbShell.ensureConnected`, which is unbounded and blocks
+forever on a half-dead (`CLOSE_WAIT`) connection. One hung attempt latches the flag true for the life
+of the process, so the 60 s watchdog returns at its first line forever. Recording is dead until the
+app is force-stopped — which no user will ever think to do.
+
+Shipped in **v1.4.0** (`a2b248e`); any adbd churn triggers it (cable, screen-off restart, toggling a
+debugging switch). Likely behind field reports of "it just stopped recording".
+
+Full diagnosis, evidence and fix plan: `2026-07-30-keepalive-rewarm-latch-wedge.md`.
+Raises the priority of the `ensureConnected` entry below — that is the same bug's root.
+
+---
+
 ## 🟡 Upload schedule is built but stranded in the wizard — issue #20
 
 **Issue:** https://github.com/madkongo/CallVault/issues/20 (CathaEdulis, 2026-07-29)
