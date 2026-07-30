@@ -1,0 +1,100 @@
+# VoIP near-party capture drops out on One UI — the platform silences it
+
+**Device:** Galaxy S24 FE (SM-S721B), Android 16 / API 36, One UI.
+**Compared against:** OnePlus 12, which records the same call cleanly.
+**Status:** cause established from platform logs. No fix yet; one untried lead.
+
+---
+
+## What the platform says, in its own words
+
+`dumpsys audio`, during a WhatsApp call, `uid:2000` = our daemon (`com.android.shell`):
+
+```
+16:56:08.435  rec update  uid:2000   src:MIC  not silenced  pack:com.android.shell
+16:56:08.876  rec update  uid:10030  src:MIC  not silenced  pack:com.whatsapp
+16:56:08.909  rec update  uid:10030  src:MIC  SILENCED      pack:com.whatsapp
+16:56:08.911  rec update  uid:2000   src:MIC  not silenced  pack:com.android.shell
+16:56:12.422  rec stop    uid:10030  src:MIC  SILENCED      pack:com.whatsapp
+16:56:12.446  rec update  uid:2000   src:MIC  SILENCED      pack:com.android.shell
+16:56:12.465  rec update  uid:10030  src:MIC  not silenced  pack:com.whatsapp
+16:56:18.560  rec update  uid:2000   src:MIC  not silenced  pack:com.android.shell
+16:56:21.067  rec stop    uid:2000   src:MIC  not silenced  pack:com.android.shell
+```
+
+**Two mic clients, and One UI silences one of them at a time.** It is not an error and not a refusal:
+the loser keeps receiving buffers, and those buffers are digital zeros. Arbitration re-runs each time
+WhatsApp restarts its capture (note the changing `riid`), and the most recent starter appears to win.
+
+Our capture lost for **~6 s of a 21 s call** — not the whole call.
+
+## It matches the audio exactly
+
+That call started at 16:55:59.8, so the silenced window maps to **file time ~12.6 s - 18.8 s**. The
+recording contains a stretch of perfectly flat **-107.3 dB** (±1 LSB, i.e. decoded digital silence)
+from **11.5 s to 19.5 s**. Same window, within about a second.
+
+Flatness is the tell: a live mic always has a fluctuating noise floor. A dead-constant floor is
+synthesised silence.
+
+## Why `substituted` did not catch it
+
+`VoipCaptureSession.captureLoop` counts only chunks that never arrived:
+
+```kotlin
+val n = qNear.poll(CHUNK_WAIT_MS, ...) ?: silence.also { substituted++ }
+```
+
+A silenced `AudioRecord` still delivers chunks — full of zeros. The log for that call read
+`21s, 2 silence-filled chunks, farPartyHeard=true`, which looks healthy and is not. **We have a
+far-party silence detector (`farPartyHeard`) and no near-party equivalent.**
+
+## The far party is unaffected
+
+It arrives via the policy loopback mix, logged as `src:REMOTE_SUBMIX`, and never appears as silenced.
+Different mechanism, outside the mic arbitration entirely.
+
+## The obvious escape hatch is locked
+
+The platform defines the permission for exactly this:
+
+```
+android.permission.BYPASS_CONCURRENT_RECORD_AUDIO_RESTRICTION
+protectionLevel: signature|privileged
+```
+
+`com.android.shell` does not hold it, and `pm grant` refuses:
+*"not a changeable permission type"*. Shell access does not open it; this needs root or a
+platform signature.
+
+## Established vs not
+
+**Established:** One UI silences the shell-uid MIC capture intermittently while a VoIP app holds the
+mic; the loser gets zeros; the drop-outs correlate with flat silence in the output; the far-party path
+is unaffected; the bypass permission is ungrantable; the OP12 records the same call cleanly.
+
+**Not established:** *why* ColorOS permits what One UI arbitrates. Whether the drop-outs are
+predictable or avoidable. Whether any other audio source is exempt.
+
+## Two corrections worth keeping
+
+1. **"The near party doesn't work on Samsung" was wrong** — it works most of the time and drops out
+   intermittently. The first log excerpt showed a silenced event and it was over-read as a permanent
+   state.
+2. **A same-room result was attributed to acoustic bleed** and the maintainer rejected that from
+   listening — correctly. The intermittency model explains every observation without invoking bleed,
+   including why outcomes varied between tests that looked identical: it depends on whether speech
+   landed inside a silenced window.
+
+The code carries the same class of over-generalisation: *"`MIC` is not silenced"* in
+`VoipCaptureSession`'s doc comment. True on ColorOS, false here.
+
+## What to do
+
+1. **Report it.** Mirror `farPartyHeard` with a near-party silence check, so a recording with holes
+   says so instead of looking fine. Cheapest, and it turns an invisible failure into a visible one.
+2. **Try `HOTWORD` as the near source.** `com.android.shell` holds `CAPTURE_AUDIO_HOTWORD`, and the
+   hidden `HOTWORD` source (1999) exists precisely to capture concurrently. Untested. It may be
+   routed through a DSP path with an unusable format, or refused.
+3. **Do not** re-start our capture on detecting silence to win arbitration back — it would fight the
+   VoIP app for the mic during a call, and losing that fight degrades the user's actual conversation.

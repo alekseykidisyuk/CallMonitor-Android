@@ -69,6 +69,29 @@ installer mid-stream, which is worse than the problem — a half-written APK is 
 
 ---
 
+## 🔵 VoIP near-party drops out on One UI — report it, at minimum
+
+On a Galaxy S24 FE, One UI **silences** our shell-uid MIC capture intermittently while the VoIP app
+holds the mic — logged by the platform itself as `rec update uid:2000 src:MIC silenced
+pack:com.android.shell`. The loser of that arbitration keeps receiving buffers full of zeros, so the
+recording gets silent holes rather than failing. Measured: ~6 s lost from a 21 s call, matching a flat
+-107 dB stretch in the file to within a second. The OnePlus 12 records the same call cleanly.
+
+The platform's own bypass permission (`BYPASS_CONCURRENT_RECORD_AUDIO_RESTRICTION`) is
+`signature|privileged` and `pm grant` refuses it, so shell access cannot open it.
+
+**Minimum viable response: report it.** `VoipCaptureSession` has `farPartyHeard` and no near-party
+equivalent, and `substituted` counts only *missing* chunks — a silenced capture delivers present,
+zero-filled ones, so the log reads `farPartyHeard=true, 2 silence-filled chunks` on a recording with
+a six-second hole. A near-side silence check turns an invisible failure into a visible one.
+
+**One untried lead:** `com.android.shell` holds `CAPTURE_AUDIO_HOTWORD`, and the hidden `HOTWORD`
+source (1999) exists to capture concurrently. Worth one test on a Samsung.
+
+Full evidence: `2026-07-30-voip-near-party-silenced-on-one-ui.md`.
+
+---
+
 ## 🔵 Manual "Check for updates" in Settings
 
 **Why.** A release only surfaces two ways: a check when the app opens, throttled to once per 6 hours
