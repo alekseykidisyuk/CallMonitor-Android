@@ -96,6 +96,46 @@ Full evidence: `2026-07-30-voip-near-party-silenced-on-one-ui.md`.
 
 ---
 
+## 🔵 VoIP-only mode, and coexisting with Shizuku — both user-requested
+
+Investigated 2026-07-30, no code changed. Full write-up:
+`2026-07-30-voip-only-mode-and-shizuku-coexistence.md`.
+
+**VoIP-only recording already works.** The paths are independently gated — carrier by the two
+auto-record toggles, VoIP by `isVoipRecordingEnabled()` alone — so turning both auto-record switches
+off with VoIP on is a VoIP-only recorder today. `CallGapDetector` respects those flags too, so the
+health card will not nag about calls the user chose not to record. What is missing is naming: nothing
+tells anyone the combination is a supported mode. Cheapest fix is documentation; the better one is a
+single "What should CallVault record?" row writing the three existing preferences. **Do not add a
+fourth preference** — duplicated state is what produced the bitrate and schedule-picker drift.
+
+**Shizuku does not crash; we kill it.** Both apps' helpers are children of an `adbd` shell, and any
+`adbd` restart kills every process started over ADB — established here already and quoted from
+Shizuku's maintainer in `transport-and-daemon-architecture.md`. CallVault restarts `adbd` in exactly
+two places that matter: arming loopback (`tcpip:`, always destructive, once per boot) and enabling
+Wireless debugging. The routine WD-off after each daemon launch is harmless *when USB debugging is on*
+(pid measured unchanged), which is why users will report it as intermittent.
+
+Cheapest honest response: detect Shizuku and warn before arming offline recording. The real
+integration — using Shizuku as our privileged provider when present, removing our need for `adbd`
+churn entirely — is an architectural decision that cuts against the "one app, no companion" pitch and
+needs its own design discussion.
+
+**Ask the reporters:** is USB debugging on, is offline recording enabled, does Shizuku stop once or
+repeatedly, and does CallVault stop at the same moment. Those four answers confirm or break the
+analysis without a debug build.
+
+---
+
+## 🔵 README is out of date after 1.5.5
+
+Screenshots predate the Settings panel and the two new wizard steps; **"Settings ▸ Experimental"** is
+referenced throughout but the path is now **Settings ▸ General ▸ Experimental**; and the VoIP
+compatibility table does not know Samsung/One UI works as of 1.5.5. Screenshots were already stale
+before today — regenerating them needs care about real contacts in a public repo.
+
+---
+
 ## 🔵 Manual "Check for updates" in Settings
 
 **Why.** A release only surfaces two ways: a check when the app opens, throttled to once per 6 hours
