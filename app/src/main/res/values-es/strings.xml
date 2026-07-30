@@ -264,6 +264,10 @@
     <string name="wizard_reliability_offline_button">Activar</string>
     <string name="wizard_reliability_offline_done">La grabación sin conexión está activada</string>
     <string name="wizard_reliability_subtitle">Dos ajustes opcionales que mantienen la grabación en condiciones difíciles. Puedes omitirlos y cambiarlos más tarde en Ajustes.</string>
+    <string name="wizard_experimental_title">Extras opcionales</string>
+    <string name="wizard_experimental_subtitle">Dos funciones que aún se están probando. Ambas están desactivadas por defecto: puedes activarlas más tarde en Ajustes.</string>
+    <string name="wizard_updates_title">Mantente al día</string>
+    <string name="wizard_updates_subtitle">CallVault no está en ninguna tienda de aplicaciones, así que busca nuevas versiones en GitHub por su cuenta.</string>
     <string name="wizard_reliability_title">Grabación fiable</string>
     <string name="wizard_reliability_usb_button">Poner USB en Solo carga</string>
     <string name="wizard_reliability_usb_desc">En algunos teléfonos, bloquear la pantalla durante una llamada puede detener la grabación. Poner USB en "Solo carga" lo evita. (El teléfono se quedará en carga al conectarlo a un PC; elige Transferencia de archivos manualmente cuando la necesites.)</string>

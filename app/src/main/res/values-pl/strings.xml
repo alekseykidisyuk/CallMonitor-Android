@@ -264,6 +264,10 @@
     <string name="wizard_reliability_offline_button">Włącz</string>
     <string name="wizard_reliability_offline_done">Nagrywanie offline jest włączone</string>
     <string name="wizard_reliability_subtitle">Dwa opcjonalne ustawienia, które utrzymują nagrywanie w trudnych warunkach. Możesz je pominąć i zmienić później w Ustawieniach.</string>
+    <string name="wizard_experimental_title">Dodatki opcjonalne</string>
+    <string name="wizard_experimental_subtitle">Dwie funkcje wciąż sprawdzane w praktyce. Obie są domyślnie wyłączone — możesz je włączyć później w Ustawieniach.</string>
+    <string name="wizard_updates_title">Bądź na bieżąco</string>
+    <string name="wizard_updates_subtitle">CallVault nie jest w żadnym sklepie z aplikacjami, więc sam sprawdza nowe wersje na GitHubie.</string>
     <string name="wizard_reliability_title">Niezawodne nagrywanie</string>
     <string name="wizard_reliability_usb_button">Ustaw USB na Tylko ładowanie</string>
     <string name="wizard_reliability_usb_desc">W niektórych telefonach zablokowanie ekranu podczas rozmowy może zatrzymać nagrywanie. Ustawienie USB na „Tylko ładowanie“ temu zapobiega. (Telefon po podłączeniu do komputera domyślnie się ładuje — w razie potrzeby wybierz ręcznie Przesyłanie plików.)</string>

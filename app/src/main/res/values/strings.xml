@@ -375,6 +375,10 @@
     <string name="wizard_auto_record_title">Automatic recording</string>
     <string name="wizard_auto_record_subtitle">Choose which calls are recorded automatically. You can fine-tune this later in Settings.</string>
     <!-- Wizard: Audio step -->
+    <string name="wizard_experimental_title">Optional extras</string>
+    <string name="wizard_experimental_subtitle">Two features still being proven. Both are off by default — you can turn them on later in Settings.</string>
+    <string name="wizard_updates_title">Staying up to date</string>
+    <string name="wizard_updates_subtitle">CallVault is not on an app store, so it checks GitHub for new versions itself.</string>
     <string name="wizard_reliability_title">Reliable recording</string>
     <string name="wizard_reliability_subtitle">Two optional settings that keep recording working in tricky conditions. You can skip these and change them later in Settings.</string>
     <string name="wizard_reliability_usb_title">Keep recording when the screen locks</string>

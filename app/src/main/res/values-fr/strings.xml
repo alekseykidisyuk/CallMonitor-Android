@@ -264,6 +264,10 @@
     <string name="wizard_reliability_offline_button">Activer</string>
     <string name="wizard_reliability_offline_done">L\'enregistrement hors ligne est activé</string>
     <string name="wizard_reliability_subtitle">Deux réglages facultatifs qui maintiennent l\'enregistrement dans des conditions difficiles. Tu peux les ignorer et les modifier plus tard dans les Paramètres.</string>
+    <string name="wizard_experimental_title">Options supplémentaires</string>
+    <string name="wizard_experimental_subtitle">Deux fonctionnalités encore à l\'épreuve. Les deux sont désactivées par défaut : vous pourrez les activer plus tard dans les Paramètres.</string>
+    <string name="wizard_updates_title">Rester à jour</string>
+    <string name="wizard_updates_subtitle">CallVault n\'est sur aucune boutique d\'applications : il cherche donc lui-même les nouvelles versions sur GitHub.</string>
     <string name="wizard_reliability_title">Enregistrement fiable</string>
     <string name="wizard_reliability_usb_button">Régler l\'USB sur Charge uniquement</string>
     <string name="wizard_reliability_usb_desc">Sur certains téléphones, verrouiller l\'écran pendant un appel peut arrêter l\'enregistrement. Régler l\'USB sur « Charge uniquement » l\'empêche. (Ton téléphone se met alors en charge par défaut sur un PC — choisis Transfert de fichiers manuellement au besoin.)</string>

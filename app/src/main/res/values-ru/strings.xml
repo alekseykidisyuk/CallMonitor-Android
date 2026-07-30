@@ -264,6 +264,10 @@
     <string name="wizard_reliability_offline_button">Включить</string>
     <string name="wizard_reliability_offline_done">Автономная запись включена</string>
     <string name="wizard_reliability_subtitle">Две необязательные настройки, которые сохраняют запись в сложных условиях. Их можно пропустить и изменить позже в настройках.</string>
+    <string name="wizard_experimental_title">Дополнительно</string>
+    <string name="wizard_experimental_subtitle">Две функции, которые ещё проверяются. Обе выключены по умолчанию — включить их можно позже в настройках.</string>
+    <string name="wizard_updates_title">Быть в курсе обновлений</string>
+    <string name="wizard_updates_subtitle">CallVault не публикуется в магазинах приложений, поэтому сам проверяет новые версии на GitHub.</string>
     <string name="wizard_reliability_title">Надёжная запись</string>
     <string name="wizard_reliability_usb_button">Установить USB «Только зарядка»</string>
     <string name="wizard_reliability_usb_desc">На некоторых телефонах блокировка экрана во время звонка может остановить запись. Режим USB «Только зарядка» это предотвращает. (При подключении к ПК телефон будет только заряжаться — при необходимости выберите «Передача файлов» вручную.)</string>

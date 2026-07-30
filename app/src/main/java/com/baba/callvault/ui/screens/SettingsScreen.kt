@@ -1251,7 +1251,7 @@ private fun SettingsSubHeader(text: String, nested: Boolean = false, modifier: M
  * can only tell once a call is under way.
  */
 @Composable
-private fun VoipRecordingToggle() {
+internal fun VoipRecordingToggle() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
@@ -1327,7 +1327,7 @@ private fun VoipRecordingToggle() {
  * no arming side effects, so — unlike the offline toggle — it writes straight from the switch.
  */
 @Composable
-private fun HandoffPersistToggle() {
+internal fun HandoffPersistToggle() {
     val context = LocalContext.current
     val prefs = remember { AppPreferences(context) }
     var enabled by remember { mutableStateOf(prefs.isHandoffPersistEnabled()) }
@@ -1824,7 +1824,7 @@ private fun NavigationRow(
  * ToggleListItem while matching the redesigned row anatomy.
  */
 @Composable
-private fun SettingsToggleRow(
+internal fun SettingsToggleRow(
     label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,

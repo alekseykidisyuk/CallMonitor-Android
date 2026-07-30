@@ -264,6 +264,10 @@
     <string name="wizard_reliability_offline_button">Bekapcsolás</string>
     <string name="wizard_reliability_offline_done">Az offline rögzítés be van kapcsolva</string>
     <string name="wizard_reliability_subtitle">Két opcionális beállítás, amely nehéz körülmények között is működteti a rögzítést. Kihagyhatod, és később a Beállításokban módosíthatod.</string>
+    <string name="wizard_experimental_title">Választható extrák</string>
+    <string name="wizard_experimental_subtitle">Két funkció, amely még bizonyít. Mindkettő alapból ki van kapcsolva — később a Beállításokban bekapcsolhatja.</string>
+    <string name="wizard_updates_title">Naprakészen tartás</string>
+    <string name="wizard_updates_subtitle">A CallVault nincs alkalmazásboltban, ezért maga keresi az új verziókat a GitHubon.</string>
     <string name="wizard_reliability_title">Megbízható rögzítés</string>
     <string name="wizard_reliability_usb_button">USB beállítása Csak töltésre</string>
     <string name="wizard_reliability_usb_desc">Egyes telefonokon a képernyő zárolása hívás közben leállíthatja a rögzítést. A „Csak töltés“ USB-beállítás megakadályozza ezt. (A telefon PC-hez csatlakoztatva ekkor töltésre vált – szükség esetén válaszd kézzel a Fájlátvitelt.)</string>
