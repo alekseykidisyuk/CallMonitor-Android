@@ -85,8 +85,12 @@ equivalent, and `substituted` counts only *missing* chunks — a silenced captur
 zero-filled ones, so the log reads `farPartyHeard=true, 2 silence-filled chunks` on a recording with
 a six-second hole. A near-side silence check turns an invisible failure into a visible one.
 
-**One untried lead:** `com.android.shell` holds `CAPTURE_AUDIO_HOTWORD`, and the hidden `HOTWORD`
-source (1999) exists to capture concurrently. Worth one test on a Samsung.
+**HOTWORD was tried and is dead** — it constructs, reports `STATE_INITIALIZED`, then `read()` returns
+0 and the platform never registers the capture at all. Reverted.
+
+**Separate bug it exposed, worth fixing on its own:** when the near feeder dies, `captureLoop` is
+paced by `CHUNK_WAIT_MS` poll timeouts and encodes slower than real time — an 11 s call became ~6 s of
+audio. Losing one source should cost that source, not the recording's length.
 
 Full evidence: `2026-07-30-voip-near-party-silenced-on-one-ui.md`.
 

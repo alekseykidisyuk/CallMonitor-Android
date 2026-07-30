@@ -93,8 +93,25 @@ The code carries the same class of over-generalisation: *"`MIC` is not silenced"
 
 1. **Report it.** Mirror `farPartyHeard` with a near-party silence check, so a recording with holes
    says so instead of looking fine. Cheapest, and it turns an invisible failure into a visible one.
-2. **Try `HOTWORD` as the near source.** `com.android.shell` holds `CAPTURE_AUDIO_HOTWORD`, and the
-   hidden `HOTWORD` source (1999) exists precisely to capture concurrently. Untested. It may be
-   routed through a DSP path with an unusable format, or refused.
-3. **Do not** re-start our capture on detecting silence to win arbitration back — it would fight the
+2. ~~**Try `HOTWORD` as the near source.**~~ **TRIED 2026-07-30 — DEAD.** It is refused *silently*:
+   the `AudioRecord` constructs and reports `STATE_INITIALIZED`, so it looks fine, but the first
+   `read()` returns 0 and `dumpsys audio` never shows a `rec start` for it at all. The platform
+   accepted the object and never registered the capture.
+
+   ```
+   17:26:09.478  VoIP near-party source: hotword     <- opened, STATE_INITIALIZED
+   17:26:09.723  near read=0, feeder ending          <- read() returned 0 immediately
+   17:26:25.443  finished: 2s, 127 silence-filled chunks
+   ```
+
+   Reverted. Do not retry without a way to verify the capture actually registers — `STATE_INITIALIZED`
+   is not that verification.
+3. **A dead near feeder truncates the WHOLE recording — fix this regardless.** Found by the HOTWORD
+   experiment, but independent of it. When the near feeder ends, every `captureLoop` cycle waits
+   `CHUNK_WAIT_MS` for a chunk that will never arrive, and the loop is paced by those timeouts — so it
+   encodes **slower than real time**. An 11 s call came out as ~6 s of audio with 127 silence-filled
+   chunks. Losing one source should cost that source, not the recording's length or the far party's
+   audio. One UI's arbitration is exactly the kind of thing that could kill that feeder mid-call.
+
+4. **Do not** re-start our capture on detecting silence to win arbitration back — it would fight the
    VoIP app for the mic during a call, and losing that fight degrades the user's actual conversation.
