@@ -2,7 +2,7 @@
 
 **Issue:** https://github.com/madkongo/CallVault/issues/18
 **Device:** Samsung Galaxy Z Fold 6, **SM-F956U** (US model), Android 16 (API 36), Android 16 throughout
-**Status:** three hypotheses live, none confirmed. **One artifact — a single recording file — would
+**Status:** two hypotheses live (S1, S2) plus one advanced (A1); A2 killed 2026-07-30. **One artifact — a single recording file — would
 discriminate between almost all of them.** Do not ship another diagnostic build before reading
 "Why we keep guessing" at the bottom.
 
@@ -117,14 +117,16 @@ nothing), and **nothing disarms it for a carrier call**: `sync()` is called only
 Settings toggle, and daemon-ready. It sits upstream of both capture paths, so the diagnostic build
 could never have cleared or convicted it.
 
-Status: **not dead, not confirmed.** Log B was nominally a VoIP-off test, but he never confirmed
-toggling it and never said whether those two files had audio. Carrier calls work on the maintainer's
-OP12 — but only tests A2 if VoIP is enabled there too.
+**DEAD — 2026-07-30.** Carrier recording works on the maintainer's OP12 **with VoIP both on and
+off**, which is exactly the test this hypothesis needed. An armed policy does not break carrier
+capture.
 
-*Killed by:* an OP12 carrier call recorded cleanly **with VoIP recording enabled**.
-*If confirmed, the fix is small:* disarm on carrier-call start, re-arm on IDLE. A carrier call and a
-VoIP call are mutually exclusive, so the "must arm before the track exists" constraint is not
-violated.
+Two things survive it and are worth keeping:
+
+- **Nothing disarms the policy for a carrier call**, which is still untidy even though it is
+  harmless. Not a bug to chase; note it and move on.
+- The reason this took a round to kill is that the policy's state is unobservable from any log. See
+  "Why we keep guessing".
 
 ### B1 — Opus 0-byte files (separate, real, and worth fixing regardless)
 

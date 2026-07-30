@@ -61,6 +61,39 @@ taps stack (unique work + KEEP, as the install path does).
 
 ---
 
+## 🟡 Upload schedule is built but stranded in the wizard — issue #20
+
+**Issue:** https://github.com/madkongo/CallVault/issues/20 (CathaEdulis, 2026-07-29)
+
+**The feature already exists and works end to end.** `SyncScheduleMode` is `IMMEDIATE | DAILY |
+WEEKLY`, with `SYNC_TIME_HOUR`/`SYNC_TIME_MINUTE`/`SYNC_DAY_OF_WEEK` alongside it.
+`StorageRouter.route()` checks the mode and, for DAILY/WEEKLY, skips the immediate copy entirely and
+hands off to `SyncScheduler`'s periodic sweep. Verified in code, not assumed.
+
+**The bug is reachability.** The picker is rendered *only* in `WizardScreen`, and there is no way to
+re-run the wizard. So the mode is decided once, during onboarding, defaulting to `IMMEDIATE` — and
+after that no user can ever change it. That is exactly what the reporter hit: "I couldn't find it
+anywhere."
+
+**What.** Surface the existing picker in Settings. Cheap, because nothing new has to be built:
+
+- The composable and its `scheduleModeTitleRes`/`scheduleModeDescRes` helpers exist in `WizardScreen`
+  — extract them to a shared component rather than duplicating.
+- The strings exist too (`wizard_schedule_*`, `wizard_ui_schedule_*`) and are **already translated in
+  all ten locales**, so `checkTranslations` will not bite. Reusing a `wizard_`-prefixed key outside
+  the wizard is slightly off; renaming means re-translating, so prefer keeping the keys and noting why.
+- `SettingsScreen` already has the time-picker pattern (it borrows those same wizard strings for the
+  retention sweep, around `SettingsScreen.kt:687`).
+- Call `SyncScheduler.apply(context)` on change — `WizardViewModel:137` is the reference.
+
+**Fits with** the General-section restructure below; do them together if that one lands first.
+
+**Note for the reply.** Deferring uploads batches the Drive app's "uploaded" notifications into one
+run per day/week rather than one per call. It reduces the noise, it does not remove it — say so
+plainly rather than letting him expect silence.
+
+---
+
 ## 🔵 Settings restructure: a "General" section
 
 **Why.** Settings has grown top-level sections that are really peers of each other, so the screen reads
