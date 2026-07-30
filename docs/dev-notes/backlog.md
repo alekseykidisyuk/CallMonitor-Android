@@ -116,10 +116,20 @@ two places that matter: arming loopback (`tcpip:`, always destructive, once per 
 Wireless debugging. The routine WD-off after each daemon launch is harmless *when USB debugging is on*
 (pid measured unchanged), which is why users will report it as intermittent.
 
-Cheapest honest response: detect Shizuku and warn before arming offline recording. The real
-integration — using Shizuku as our privileged provider when present, removing our need for `adbd`
-churn entirely — is an architectural decision that cuts against the "one app, no companion" pitch and
-needs its own design discussion.
+Cheapest honest response: detect Shizuku and warn before arming offline recording.
+
+**Full Shizuku support researched 2026-07-30** — `2026-07-30-shizuku-support-feasibility.md`. It fits
+better than expected (Shizuku's `UserService` *is* our daemon: our code, uid 2000, and the daemon
+already runs its own shell commands via `ProcessBuilder`, so it needs no ADB), and the app touches the
+daemon through one AIDL from five files, so most of the work is in how it starts.
+
+**But the reliability argument fails.** Shizuku's server is itself an `adbd` child, so a screen-off
+`adbd` restart kills it exactly as it kills ours — this repo already quotes Shizuku's maintainer on
+that. Shizuku stops CallVault *causing* churn; it does not survive it. And it costs hands-free
+operation after reboot, which is a stated differentiator.
+
+Recommendation: warn first, extract a `PrivilegedProvider` abstraction regardless (worth it alone),
+and treat full support as a product decision rather than a fix.
 
 **Ask the reporters:** is USB debugging on, is offline recording enabled, does Shizuku stop once or
 repeatedly, and does CallVault stop at the same moment. Those four answers confirm or break the
