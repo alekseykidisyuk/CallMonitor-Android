@@ -3,6 +3,32 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.5.5] - 2026-07-30
+
+### Fixed
+
+- **VoIP calls on Samsung lost one side of the conversation.** On One UI only one app gets the
+  microphone, and when the calling app restarts its own capture ours is silenced — it keeps
+  delivering audio, but silent audio, so nothing noticed. CallVault now detects that and takes the
+  microphone back. Measured on a Galaxy S24 FE: the longest silent gap fell from 8 seconds to 1.5.
+- **Resilient recording sounded crackly on some phones.** It held back far too little audio while the
+  system was still writing it, so partly-written sound was being read. Inaudible on some devices and
+  constant on others.
+- **Recording could stall and stay stalled.** A second connection path could hang with no timeout,
+  freezing every other connection attempt behind it. Both paths are now bounded.
+- The setup wizard offered no **24 kbps** option — the recommended setting, and the default — so it
+  displayed 8 kbps instead and writing that back quietly downgraded recordings.
+
+### Added
+
+- **Settings opens as a panel** over the app instead of replacing it, so closing it is instant.
+- **Settings is grouped**: a General section, and sub-sections throughout, each collapsed on entry so
+  the screen is a short list rather than everything at once.
+- **Recordings show when the call happened and how long it lasted** — "Yesterday 14:30 · 12:41" —
+  replacing a timestamp too cramped to read.
+- The wizard now asks about **resilient recording**, **VoIP recording** and **update checking**, which
+  had shipped without ever being offered during setup.
+
 ## [1.5.4] - 2026-07-30
 
 ### Fixed

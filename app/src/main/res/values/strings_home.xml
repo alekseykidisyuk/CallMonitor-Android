@@ -45,6 +45,8 @@
     <!-- Post-update note: one entry per release, newest first. Keep in sync with CHANGELOG.md. -->
     <string name="home_whatsnew_settings_cta">Open Settings</string>
     <string name="whatsnew_153_title">Your setup, checked by your own calls</string>
+    <string name="whatsnew_155_title">Settings in a panel, and calls that record more reliably</string>
+    <string name="whatsnew_155_body">Settings now slides in over the app instead of replacing it, grouped so each screen is a short list rather than everything at once. Recordings show when the call happened and how long it lasted.\n\nUnderneath: several ways a recording could be lost or spoiled have been fixed, including crackly audio with Resilient recording, and one side going missing from VoIP calls on Samsung phones.</string>
     <string name="whatsnew_154_title">Recording that recovers on its own</string>
     <string name="whatsnew_154_body">A rare stall in the connection to the recorder could leave recording silently switched off until the app was restarted — with nothing on screen to say so. It now times out and recovers by itself.\n\nYou can also choose when recordings upload to Drive: immediately, daily or weekly. Find it under Settings ▸ Storage, together with Retention, which has moved into the same section.</string>
     <string name="whatsnew_153_body">The status card now tells you whether recording actually worked, based on your real calls rather than a green light that only means the app started. If a call was not recorded, it says so and why — a folder that was never set, Developer options switched off, a permission lost to an update.\n\nAlso: CallVault now speaks Brazilian Portuguese, and every other language has been brought up to date.</string>
