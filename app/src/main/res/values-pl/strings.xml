@@ -192,6 +192,7 @@
     <string name="settings_section_security">Bezpieczeństwo</string>
     <string name="settings_section_storage">Pamięć</string>
     <string name="settings_section_updates">Aktualizacje</string>
+    <string name="settings_section_general">Ogólne</string>
     <string name="settings_section_visual">Ustawienia graficzne</string>
     <string name="settings_select_contacts">Wybierz kontakty (%1$d)</string>
     <string name="settings_select_contacts_incoming">Wybierz przychodzące kontakty</string>

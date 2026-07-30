@@ -192,6 +192,7 @@
     <string name="settings_section_security">Безопасность</string>
     <string name="settings_section_storage">Хранилище</string>
     <string name="settings_section_updates">Обновления</string>
+    <string name="settings_section_general">Общие</string>
     <string name="settings_section_visual">Визуальные настройки</string>
     <string name="settings_select_contacts">Выбрать контакты (%1$d)</string>
     <string name="settings_select_contacts_incoming">Выбрать входящие контакты</string>

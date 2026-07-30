@@ -125,6 +125,7 @@
     <string name="retention_confirm_message">Recordings older than the selected period will be permanently deleted from your device and/or Google Drive. This can\'t be undone.</string>
     <string name="retention_confirm_enable">Enable</string>
     <string name="settings_section_recording_storage">Recording &amp; storage</string>
+    <string name="settings_section_general">General</string>
     <string name="settings_section_visual">Visual settings</string>
     <string name="settings_section_audio">Audio configuration</string>
     <string name="settings_section_reliability">Reliability</string>

@@ -192,6 +192,7 @@
     <string name="settings_section_security">Bảo mật</string>
     <string name="settings_section_storage">Bộ nhớ</string>
     <string name="settings_section_updates">Cập nhật</string>
+    <string name="settings_section_general">Chung</string>
     <string name="settings_section_visual">Cài đặt trực quan</string>
     <string name="settings_select_contacts">Chọn danh bạ (%1$d)</string>
     <string name="settings_select_contacts_incoming">Chọn liên hệ gọi đến</string>

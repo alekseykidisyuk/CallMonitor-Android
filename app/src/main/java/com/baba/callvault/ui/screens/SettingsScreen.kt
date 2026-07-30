@@ -296,16 +296,14 @@ fun SettingsContent(
                 )
             }
             item {
-                VisualSection(
-                    preferences, updateTrigger, actions,
-                    expanded = openSection == SECTION_VISUAL,
-                    onToggle = { onToggleSection(SECTION_VISUAL) }
-                )
-            }
-            item {
-                ExperimentalSection(
-                    expanded = openSection == SECTION_EXPERIMENTAL,
-                    onToggle = { onToggleSection(SECTION_EXPERIMENTAL) }
+                GeneralSection(
+                    preferences = preferences,
+                    updateTrigger = updateTrigger,
+                    actions = actions,
+                    // Old keys still open General, so a user whose saved section was Visual,
+                    // Experimental or Updates lands on the section that now contains it.
+                    expanded = openSection in setOf(SECTION_GENERAL, SECTION_VISUAL, SECTION_EXPERIMENTAL, SECTION_UPDATES),
+                    onToggle = { onToggleSection(SECTION_GENERAL) }
                 )
             }
             // Debug section: always visible so anyone can enable logging and share logs to report an issue.
@@ -314,13 +312,6 @@ fun SettingsContent(
                     preferences, updateTrigger, actions, onShareLogs,
                     expanded = openSection == SECTION_BUG_REPORT,
                     onToggle = { onToggleSection(SECTION_BUG_REPORT) }
-                )
-            }
-            item {
-                UpdatesSection(
-                    preferences, updateTrigger, actions,
-                    expanded = openSection == SECTION_UPDATES,
-                    onToggle = { onToggleSection(SECTION_UPDATES) }
                 )
             }
             // About moved to the bottom; the fork attribution stays visible (GPLv3 §7 requirement).
@@ -393,6 +384,7 @@ private const val SECTION_RECORDING = "recording"
 private const val SECTION_STORAGE = "storage"
 private const val SECTION_RETENTION = "retention"
 private const val SECTION_AUDIO = "audio"
+private const val SECTION_GENERAL = "general"
 private const val SECTION_VISUAL = "visual"
 private const val SECTION_EXPERIMENTAL = "reliability"   // key kept so a user's open-section state survives the rename
 private const val SECTION_BUG_REPORT = "bug_report"
@@ -928,8 +920,33 @@ private fun AudioSection(preferences: AppPreferences, updateTrigger: Int, action
  * @param updateTrigger Trigger value to force recomposition when settings change.
  * @param actions       Implementation of [SettingsActions] to handle user interaction.
  */
+/**
+ * **General** — the settings that are about the app itself rather than about a recording: how it
+ * looks, what is switched on experimentally, and how it updates.
+ *
+ * These were three top-level accordions, which made Settings read as a flat list of everything
+ * instead of having a shape. They keep their own section keys as sub-headers so nothing about the
+ * user's stored state changes.
+ */
 @Composable
-private fun VisualSection(preferences: AppPreferences, updateTrigger: Int, actions: SettingsActions, expanded: Boolean, onToggle: () -> Unit) {
+private fun GeneralSection(
+    preferences: AppPreferences,
+    updateTrigger: Int,
+    actions: SettingsActions,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
+    SettingsSection(title = stringResource(R.string.settings_section_general), expanded = expanded, onToggle = onToggle) {
+        VisualSubSection(preferences, updateTrigger, actions)
+        SettingsDivider()
+        ExperimentalSubSection()
+        SettingsDivider()
+        UpdatesSubSection(preferences, updateTrigger, actions)
+    }
+}
+
+@Composable
+private fun VisualSubSection(preferences: AppPreferences, updateTrigger: Int, actions: SettingsActions) {
     val currentThemeMode = remember(updateTrigger) { preferences.getThemeMode() }
     val isDynamicColorEnabled = remember(updateTrigger) { preferences.isDynamicColorEnabled() }
     val isShowToastsEnabled = remember(updateTrigger) { preferences.isShowToastsEnabled() }
@@ -974,7 +991,8 @@ private fun VisualSection(preferences: AppPreferences, updateTrigger: Int, actio
         options.distinctBy { it.key }
     }
 
-    SettingsSection(title = stringResource(R.string.settings_section_visual), expanded = expanded, onToggle = onToggle) {
+    SettingsSubHeader(stringResource(R.string.settings_section_visual))
+    Column {
         DropdownRow {
             M3DropdownField(
                 label = stringResource(R.string.settings_language),
@@ -1107,9 +1125,10 @@ private fun BugReportSection(
  * mid-call. Grouped together so users have one place to make recording robust.
  */
 @Composable
-private fun ExperimentalSection(expanded: Boolean, onToggle: () -> Unit) {
-    SettingsSection(title = stringResource(R.string.settings_section_experimental), expanded = expanded, onToggle = onToggle) {
-        SettingsSubHeader(stringResource(R.string.settings_subsection_resilience))
+private fun ExperimentalSubSection() {
+    SettingsSubHeader(stringResource(R.string.settings_section_experimental))
+    Column {
+        SettingsSubHeader(stringResource(R.string.settings_subsection_resilience), nested = true)
         HandoffPersistToggle()
         SettingsDivider()
         OfflineRecordingToggle()
@@ -1118,7 +1137,7 @@ private fun ExperimentalSection(expanded: Boolean, onToggle: () -> Unit) {
         SettingsDivider()
         UsbDefaultConfigRow()
 
-        SettingsSubHeader(stringResource(R.string.settings_subsection_voip))
+        SettingsSubHeader(stringResource(R.string.settings_subsection_voip), nested = true)
         VoipRecordingToggle()
     }
 }
@@ -1136,12 +1155,19 @@ private fun SettingsHint(text: String) {
 
 /** Small label separating groups of related rows inside one collapsible section. */
 @Composable
-private fun SettingsSubHeader(text: String) {
+private fun SettingsSubHeader(text: String, nested: Boolean = false) {
+    // General ▸ Experimental ▸ Resilience is three levels deep. Rendering the inner grouping at the
+    // same weight as its parent makes the two read as siblings, so a nested header is quieter and
+    // indented instead of introducing a second component.
     Text(
         text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, top = 14.dp, bottom = 2.dp)
+        style = if (nested) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
+        color = if (nested) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(
+            start = if (nested) 16.dp else 4.dp,
+            top = if (nested) 10.dp else 14.dp,
+            bottom = 2.dp,
+        )
     )
 }
 
@@ -1482,20 +1508,15 @@ private fun AboutSection(
  * Home banner, and installs only on an explicit tap.
  */
 @Composable
-private fun UpdatesSection(
+private fun UpdatesSubSection(
     preferences: AppPreferences,
     updateTrigger: Int,
-    actions: SettingsActions,
-    expanded: Boolean,
-    onToggle: () -> Unit
+    actions: SettingsActions
 ) {
     val isCheckEnabled = remember(updateTrigger) { preferences.isUpdateCheckEnabled() }
 
-    SettingsSection(
-        title = stringResource(R.string.settings_section_updates),
-        expanded = expanded,
-        onToggle = onToggle
-    ) {
+    SettingsSubHeader(stringResource(R.string.settings_section_updates))
+    Column {
         SettingsToggleRow(
             icon = Icons.Filled.SystemUpdate,
             label = stringResource(R.string.settings_update_check_label),

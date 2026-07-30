@@ -192,6 +192,7 @@
     <string name="settings_section_security">Biztonság</string>
     <string name="settings_section_storage">Tárhely</string>
     <string name="settings_section_updates">Frissítések</string>
+    <string name="settings_section_general">Általános</string>
     <string name="settings_section_visual">Megjelenítési beállítások</string>
     <string name="settings_select_contacts">Névjegyek kiválasztása (%1$d)</string>
     <string name="settings_select_contacts_incoming">Bejövő névjegyek kiválasztása</string>
