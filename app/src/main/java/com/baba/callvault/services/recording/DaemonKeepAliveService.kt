@@ -64,8 +64,8 @@ class DaemonKeepAliveService : Service() {
     }
     private var lastReady: Boolean? = null
 
-    @Volatile private var rewarming = false
-    private var lastRewarmAtMs = 0L
+    /** Serialises and throttles relaunch attempts, and expires one that never came back. */
+    private val rewarmGate = RewarmGate(stuckAfterMs = REWARM_STUCK_MS, throttleMs = REWARM_THROTTLE_MS)
     /** Consecutive "daemon down" readings — we only relaunch after a couple, to not churn on a blip. */
     private var downStreak = 0
 
@@ -279,13 +279,10 @@ class DaemonKeepAliveService : Service() {
      * calls this, so an active recording is implicitly skipped and never churned.
      */
     private fun maybeRewarm(force: Boolean = false) {
-        if (rewarming) return
-        val now = SystemClock.elapsedRealtime()
-        if (!force && now - lastRewarmAtMs < REWARM_THROTTLE_MS) return
         val offline = runCatching { AppPreferences(this).isOfflineRecordingEnabled() }.getOrDefault(false)
         if (!offline && !isWifiConnected()) return // the WD relaunch path needs Wi-Fi; loopback doesn't
-        lastRewarmAtMs = now
-        rewarming = true
+        // Checked AFTER the Wi-Fi guard so a relaunch we never attempt does not consume the throttle.
+        if (!rewarmGate.tryEnter(SystemClock.elapsedRealtime(), force)) return
         Thread {
             AppLogger.i(TAG, "keep-alive: daemon down — relaunching (force=$force offline=$offline)")
             // Restore a transport FIRST, explicitly. `adbd` only runs while USB debugging or Wireless
@@ -302,15 +299,54 @@ class DaemonKeepAliveService : Service() {
                 runCatching { AdbShell.enableWirelessDebugging(applicationContext) }
                     .onFailure { AppLogger.w(TAG, "keep-alive: could not re-enable Wireless debugging: ${it.message}") }
             }
-            val ok = runCatching { RecorderServerLauncher.ensureServerRunning(applicationContext) }
-                .onFailure { AppLogger.w(TAG, "keep-alive relaunch failed: ${it.message}") }
-                .getOrDefault(false)
-            rewarming = false
+            val ok = try {
+                launchDaemonBounded()
+            } finally {
+                // ALWAYS release, even if the bounded launch threw. The gate expiring is the safety net;
+                // this is the normal path, and leaving it to the net would cost a whole stuck window.
+                rewarmGate.leave()
+            }
             // Flip the notification to "ready" the INSTANT the relaunch succeeds — don't wait for the next
             // 60s watchdog tick. Without this the daemon reconnects in seconds but the user would still see
             // "starting up" for up to a minute (a perceived-but-false slow recovery).
             if (ok) watchdogHandler.post { lastReady = true; updateNotification(true) }
         }.apply { isDaemon = true; name = "cv-keepalive-rewarm" }.start()
+    }
+
+    /**
+     * Runs [RecorderServerLauncher.ensureServerRunning] under a hard time bound, so this service can
+     * never be left waiting on it forever.
+     *
+     * `ensureServerRunning` takes `AdbShell.heavyOperationLock` and then `AdbShell.ensureConnected`,
+     * which is unbounded: on a `CLOSE_WAIT` socket it blocks with no timeout. On 2026-07-30 that cost a
+     * device ~21 hours of silently missed recordings — one hung call latched the old `rewarming` flag
+     * and the watchdog never relaunched again.
+     *
+     * On timeout the worker is abandoned (it is a daemon thread) and the ADB connection is dropped, which
+     * unblocks its read so it can die and release the lock. Without that drop the abandoned thread keeps
+     * `heavyOperationLock` and every later attempt piles up behind it — bounded, but never succeeding.
+     */
+    private fun launchDaemonBounded(): Boolean {
+        val ok = java.util.concurrent.atomic.AtomicBoolean(false)
+        val worker = Thread {
+            ok.set(
+                runCatching { RecorderServerLauncher.ensureServerRunning(applicationContext) }
+                    .onFailure { AppLogger.w(TAG, "keep-alive relaunch failed: ${it.message}") }
+                    .getOrDefault(false)
+            )
+        }.apply { isDaemon = true; name = "cv-keepalive-launch" }
+        worker.start()
+        runCatching { worker.join(LAUNCH_BUDGET_MS) }
+        if (worker.isAlive) {
+            AppLogger.w(
+                TAG,
+                "keep-alive: relaunch still blocked after ${LAUNCH_BUDGET_MS}ms — abandoning it and " +
+                    "dropping the ADB connection so it can unwind and free the lock",
+            )
+            AdbShell.dropConnection(applicationContext)
+            return false
+        }
+        return ok.get()
     }
 
     private fun isWifiConnected(): Boolean = runCatching {
@@ -421,6 +457,20 @@ class DaemonKeepAliveService : Service() {
          * shortly after a prior relaunch, as it does on every OnePlus screen transition).
          */
         private const val REWARM_THROTTLE_MS = 20_000L
+
+        /**
+         * Hard bound on one relaunch attempt. `ensureServerRunning` budgets 24 s across three attempts,
+         * so this leaves comfortable headroom for a slow-but-healthy launch while still capping a wedged
+         * one. Exceeding it means the ADB connection is half-dead, not that the daemon is slow.
+         */
+        private const val LAUNCH_BUDGET_MS = 45_000L
+
+        /**
+         * Age past which an in-flight relaunch is presumed abandoned and may be superseded. Must exceed
+         * [LAUNCH_BUDGET_MS] — otherwise a launch that is merely slow gets a second one racing it — and
+         * is the backstop for a bounded attempt that somehow still fails to return. See [RewarmGate].
+         */
+        private const val REWARM_STUCK_MS = 90_000L
 
         /** Consecutive down reads before relaunching — debounces a transient binder blip into no action. */
         private const val DOWN_STREAK_THRESHOLD = 2

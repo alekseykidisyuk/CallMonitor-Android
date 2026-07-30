@@ -61,7 +61,7 @@ taps stack (unique work + KEEP, as the install path does).
 
 ---
 
-## 🔴 Keep-alive rewarm latch can permanently stop recording — FIX FIRST
+## 🟡 Keep-alive rewarm latch can permanently stop recording — FIXED, NOT YET ON A DEVICE
 
 **Found 2026-07-30 on the OP12: the daemon had been dead ~21 hours and the app never retried.**
 `DaemonKeepAliveService.maybeRewarm` guards on a `rewarming` flag that only the worker thread clears.
@@ -73,8 +73,13 @@ app is force-stopped — which no user will ever think to do.
 Shipped in **v1.4.0** (`a2b248e`); any adbd churn triggers it (cable, screen-off restart, toggling a
 debugging switch). Likely behind field reports of "it just stopped recording".
 
-Full diagnosis, evidence and fix plan: `2026-07-30-keepalive-rewarm-latch-wedge.md`.
-Raises the priority of the `ensureConnected` entry below — that is the same bug's root.
+**Fixed 2026-07-30** by `RewarmGate` (expiring latch, unit-tested) plus a bounded relaunch that drops
+the half-dead connection so the abandoned thread frees `heavyOperationLock`. **Still to do: run it on
+a device, and ship it** — every user has been exposed since v1.4.0.
+
+Full diagnosis and the fix's shape: `2026-07-30-keepalive-rewarm-latch-wedge.md`.
+The `ensureConnected` entry below is the same bug's root and is still open — layers 1-2 contain it
+rather than remove it.
 
 ---
 

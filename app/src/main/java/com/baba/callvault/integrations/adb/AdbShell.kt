@@ -190,6 +190,23 @@ object AdbShell {
      * @return true if a live connection is up after the reconnect attempt.
      */
     @Synchronized
+    /**
+     * Drops the ADB connection WITHOUT reconnecting, to unblock a caller wedged on a half-dead socket.
+     *
+     * A socket in `CLOSE_WAIT` (adbd hung up, we never closed our end) leaves a stream read blocked with
+     * no timeout, and if that read happens to be inside [RecorderServerLauncher.ensureServerRunning] the
+     * thread also holds [heavyOperationLock] — so every later ADB operation queues behind it forever.
+     * Closing the connection from another thread is what lets the blocked one unwind and release the
+     * lock; it is the same technique [probeShellOnce] uses on its own hung read.
+     *
+     * Deliberately does NOT reconnect: the caller that needs a connection will build a fresh one through
+     * [ensureConnected], and reconnecting here would just re-enter the code we are trying to escape.
+     */
+    fun dropConnection(context: Context) {
+        runCatching { AdbConnectionManager.getInstance(context).disconnect() }
+            .onFailure { AppLogger.d(TAG, "dropConnection ignored: ${it.message}") }
+    }
+
     fun forceReconnect(context: Context): Boolean {
         runCatching { AdbConnectionManager.getInstance(context).disconnect() }
             .onFailure { AppLogger.d(TAG, "forceReconnect disconnect ignored: ${it.message}") }

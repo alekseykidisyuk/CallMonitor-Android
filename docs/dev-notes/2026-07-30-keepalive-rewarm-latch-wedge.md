@@ -71,19 +71,29 @@ The latch bug is from v1.4.0. Any adbd churn can trigger it — a cable, a scree
 debugging-switch toggle. **This has almost certainly been happening to users in the field**, reported
 as "it just stopped recording", and is a strong candidate for reports we have already dismissed.
 
-## The fix
+## The fix — implemented 2026-07-30
 
-Three layers, in priority order:
+Layers 1 and 2 are done; layer 3 stays on the backlog.
 
-1. **The latch must not be able to stick.** Record `rewarmStartedAtMs` alongside the flag and treat
-   `rewarming` as expired past a deadline (~2× the `ensureServerRunning` budget, so ~60 s), so a
-   wedged attempt cannot veto every future one. Cheapest correct fix; do this first.
-2. **Bound `ensureServerRunning` at the call site.** Run it on a thread and `join(timeout)`,
-   abandoning it exactly as `probeShellOnce` already abandons a hung probe. That pattern is present
-   and proven in this codebase — apply it here.
-3. **Bound `AdbShell.ensureConnected` itself**, and make `isConnected` prove liveness rather than
-   trusting a flag. This is the existing backlog entry, now demonstrated to cause a total outage
-   rather than a delay — reprioritise it accordingly.
+1. ✅ **The latch cannot stick.** The two fields became `RewarmGate` (`RewarmGate.kt`), a small
+   synchronized class that expires an in-flight attempt after `REWARM_STUCK_MS` (90 s) so a wedged
+   one can be superseded instead of vetoing every future attempt. Pure logic, so it is unit-tested
+   directly — nine cases in `RewarmGateTest`, including the wedge itself.
+2. ✅ **`ensureServerRunning` is bounded.** `launchDaemonBounded()` runs it on a worker and
+   `join(LAUNCH_BUDGET_MS)` (45 s), abandoning it on timeout exactly as `probeShellOnce` abandons a
+   hung probe. On timeout it also calls the new `AdbShell.dropConnection()`, which closes the
+   half-dead socket so the abandoned thread unwinds and **releases `heavyOperationLock`** — without
+   that, every later attempt would queue behind it: bounded, but never succeeding.
+3. ⬜ **Bound `AdbShell.ensureConnected` itself**, and make `isConnected` prove liveness rather than
+   trusting a flag. Still open; this is the root, and layers 1-2 contain it rather than remove it.
+
+Two things the tests caught that review had not:
+
+- A `Long.MIN_VALUE` sentinel for "never attempted" **overflowed** `now - lastAttemptAtMs`, so the
+  throttle silently blocked the very *first* warm-up. Replaced with an explicit flag.
+- `tryEnter` runs on the watchdog's handler thread while `leave` runs on the worker it spawned, so
+  the state crosses threads — the field it replaced was `@Volatile` for that reason. Both methods are
+  synchronized.
 
 Worth adding regardless: a **stuck-rewarm** signal in the setup-health card. The status card added in
 1.5.3 reports an empty recording; it cannot report "the daemon has been down for 21 hours", which is
