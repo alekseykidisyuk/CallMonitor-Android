@@ -9,6 +9,11 @@
 package com.baba.callvault
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.rememberCoroutineScope
+import com.baba.callvault.ui.common.SettingsSidebar
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -152,12 +157,33 @@ fun AppNavigationScreen() {
                 onFinished = { appNavViewModel.refresh() }
             )
 
-            AppScreen.Home -> HomeScreen(
-                onOpenSettings = { appNavViewModel.navigateTo(AppScreen.Settings) }
-            )
+            // Settings is a PANEL over Home, not a destination: Home stays composed underneath, so
+            // closing is instant and nothing behind is rebuilt. SettingsSidebar owns back, the scrim
+            // tap and the swipe; the gear only has to open it.
+            AppScreen.Home -> {
+                val scope = rememberCoroutineScope()
+                val drawerState = rememberDrawerState(DrawerValue.Closed)
+                SettingsSidebar(
+                    drawerState = drawerState,
+                    onClose = { scope.launch { drawerState.close() } },
+                    settings = {
+                        SettingsScreen(
+                            viewModel = settingsViewModel,
+                            onBack = { scope.launch { drawerState.close() } }
+                        )
+                    },
+                ) {
+                    HomeScreen(
+                        onOpenSettings = { scope.launch { drawerState.open() } }
+                    )
+                }
+            }
 
+            // Kept so an in-flight manual navigation (or a restored state that still names Settings)
+            // resolves to something rather than falling through the `when`. It is no longer reachable
+            // from the UI — nothing calls navigateTo(Settings) — and comes out once the panel has run
+            // on a device.
             AppScreen.Settings -> {
-                // Settings is reached only via manual nav; provide a back affordance that returns to Home.
                 BackHandler { appNavViewModel.navigateBack() }
                 SettingsScreen(
                     viewModel = settingsViewModel,
