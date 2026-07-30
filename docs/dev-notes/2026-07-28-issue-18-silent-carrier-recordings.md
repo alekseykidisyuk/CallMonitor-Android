@@ -1,6 +1,7 @@
 # Issue #18 — carrier recordings that are the right size and completely silent
 
-**Status:** hypothesis formed, diagnostic build published, **awaiting the reporter's result**
+**Status:** diagnostic run by the reporter on 2026-07-29 — **still silent. The regression hypothesis is
+dead.** See "The diagnostic result" below. Next step is a capture-source sweep, not a code fix.
 
 > **v1.5.3 shipped on 2026-07-29 and contains no fix for this.** Verified, not assumed:
 > `DirectAudioRecorderSession.kt` is byte-identical between `v1.5.2` and `v1.5.3`, and
@@ -89,14 +90,79 @@ https://github.com/madkongo/CallVault/releases/tag/v1.5.2-diag-scrcpy
 - **still silent** → the hypothesis is dead; capture is silent on both paths and the cause is elsewhere
   (ROM-level block, or something upstream of capture entirely).
 
+## The diagnostic result — 2026-07-29
+
+The reporter ran `1.5.2-diag-scrcpy (10624)` (confirmed in the export header) across six carrier calls
+and reports **the recordings are still silent**. No error appears anywhere in the log.
+
+### First: proving the diagnostic actually ran
+
+This mattered more than the result. The log never names the daemon build, and it shows only
+`Recorder daemon already connected; reusing existing binder` — never a launch line. `supports()` lives
+in the **daemon**, which is a detached `app_process` that survives app updates, so a stale pre-diag
+daemon serving the new app would have produced a false "still broken" while never running the change.
+
+It was provable anyway, from the file sizes. Fitting `bytes = R·(T − d)` over each log's calls
+(`T` = dispatch→release window) separates steady-state byte rate from startup delay:
+
+| build | fit across | byte rate | startup delay | worst residual |
+|---|---|---|---|---|
+| `v1.5.2` (direct path) | 4 calls | 3032 B/s = **24.26 kbps** | 0.88 s | 1.4% |
+| `1.5.2-diag-scrcpy` | 5 calls | 3381 B/s = **27.04 kbps** | 1.36 s | 0.9% |
+
+Both fits are tight, and the bitrate shift is **predicted by the code**: the direct path encodes
+**mono** (`DirectAudioRecorderSession.ENCODE_CHANNELS = 1`), which hits the 24 kbps target almost
+exactly; scrcpy-server "always outputs stereo" (`ScrcpyConfig.AUDIO_CHANNELS = 2`), and AAC-LC
+overshoots a 24 kbps target with two channels. The longer startup matches spawning scrcpy. Two
+independent signatures both move as predicted, so **the scrcpy path genuinely ran.**
+
+(Sizes alone still cannot distinguish silence from audio — CBR encodes zeros at the same rate. They
+distinguish *which encoder configuration produced them*, which is a different question.)
+
+### So the hypothesis is dead
+
+Both capture paths produce correctly-sized silent files on this device. The unattributed `AudioRecord`
+in the direct path is **not** the cause — scrcpy's fake-`com.android.shell` context did not help. The
+fault is upstream of the capture path: `AudioSource.VOICE_CALL` appears to hand back zeros on this
+device rather than failing.
+
+That also reframes "AAC worked on an earlier version". Both paths fail now, so the change is unlikely
+to be an app version at all. The device is on **Android 16 (API 36)** — a Fold 6 that shipped on
+Android 14 — which makes an OS/One UI upgrade the better-fitting suspect than any CallVault release.
+
+### What to try next — capture source, not code
+
+`ScrcpyAudioSource` already offers eleven sources. Nothing needs building to test whether any of them
+returns audio on this ROM: `voice-call-uplink`, `voice-call-downlink`, `mic-voice-communication`,
+`mic`, and `output`/`playback` are all selectable in Settings today. A sweep by the reporter is the
+cheapest next evidence, and if one works it is also his workaround.
+
+If every source is silent, capture is blocked at the HAL for this ROM and the honest answer is that
+the device is unsupported for carrier calls — the VoIP path ([[voip-recording-feasibility]]) would be
+the only route left.
+
+### Two diagnostic-quality defects this exposed
+
+1. **The log cannot identify which daemon build served a call.** The header reports the *app* version;
+   the daemon's is nowhere. Since the daemon outlives app updates, every future diagnostic build has
+   the same false-negative hole — this one only closed by arithmetic. The daemon should report its
+   version on binder delivery, and the export header should carry it.
+2. **The redaction regex eats byte counts.** `AppLogger.redact` matches any bare 7–11 digit integer, so
+   one call's size logged as `[PHONE_REDACTED] bytes`. It destroys precisely the numbers these
+   investigations depend on. It should not redact digits that are not in a phone-number context.
+
 ## Honest caveats
 
 - **This is a hypothesis, not a finding.** An earlier analysis in this investigation confidently blamed
   US Samsung firmware and fitted the evidence to it; that was wrong, and it was wrong because the
   reporter's "and it worked" was read as "produced files" rather than "produced audible recordings".
   Re-read the primary source before trusting a chain of inference built on it.
-- The diagnostic APK has **not been run** by anyone. If the scrcpy-only path has its own fault on that
-  device, the reporter will report "still broken" for the wrong reason — a false negative.
+- ~~The diagnostic APK has **not been run** by anyone.~~ Run on 2026-07-29; see the result above. The
+  false-negative risk flagged here was real and nearly unfalsifiable — only the byte-rate fit ruled it
+  out. Do not ship another diagnostic build until the daemon reports its own version.
+- "Silent" is still the **reporter's** word. Nobody has decoded one of these files to confirm the PCM
+  is all zeros rather than very quiet. Asking for one file would settle it — and its channel count
+  would independently corroborate which path ran.
 - Whether VoIP recording was enabled during his tests is **not discernible from the logs**:
   `VoipCaptureController.sync()` logs only on failure, `VoipCallDetector` logs once at service start,
   and a carrier call sets `MODE_IN_CALL`, so an armed VoIP feature emits nothing during a carrier call.
