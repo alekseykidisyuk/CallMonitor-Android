@@ -42,6 +42,33 @@ test at all).
 
 ---
 
+## 🔵 Don't install an update while a call is being recorded
+
+**Found the hard way, 2026-07-30.** An APK installed over the running app kills the app process, and
+any recording in flight dies with it. Observed on the OP12: one call became two files, and the second
+was mislabelled `out_` with no contact name, because on restart the app saw the already-running call
+as a fresh outgoing one. Nothing was lost — the first file closed cleanly and the second picked up —
+but the call is split, and the seam is silent for as long as the app takes to come back.
+
+**Why it is not just an adb mishap.** `UpdateInstaller` installs over ADB exactly the same way. It is
+tap-to-install, so a user initiates it, but nothing stops them tapping Install mid-call — and an
+update notification is precisely the kind of thing people poke at idly. Sideloads and Obtainium
+updates do it too. So the app can truncate the recording it exists to make.
+
+**What.** Before `UpdateInstaller` takes `AdbShell.heavyOperationLock` and starts streaming the APK,
+check whether a call is in progress; if it is, defer and say so ("Update will install after your
+call"). Checking, downloading and notifying are unaffected — only the install step waits.
+
+**Notes.** Small: a state check plus a deferral. The app already tracks call state in
+`CallSessionManager`, so no new permission is needed. Re-trigger the deferred install from the IDLE
+transition `PhoneStateReceiver` already sees.
+
+**Known limit, worth stating rather than pretending otherwise.** A call that starts *during* an
+install is a few seconds a pre-check cannot close. Closing it properly would mean aborting the
+installer mid-stream, which is worse than the problem — a half-written APK is a broken app.
+
+---
+
 ## 🔵 Manual "Check for updates" in Settings
 
 **Why.** A release only surfaces two ways: a check when the app opens, throttled to once per 6 hours
