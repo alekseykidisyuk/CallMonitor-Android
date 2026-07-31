@@ -131,6 +131,16 @@ object UpdateManager {
                 )
                 false
             }
+            // A call is in progress. Do NOT fall back to the interactive installer — that would kill
+            // the app mid-recording just as surely. Clear the pending tag and leave the "update
+            // available" notification standing so the user (or the next scheduled check) can install
+            // once the call is over.
+            UpdateInstaller.ShellResult.DEFERRED_CALL_IN_PROGRESS -> {
+                preferences.setPendingUpdateTag(null)
+                AppLogger.i(TAG, "Update install deferred: a call is in progress")
+                UpdateNotifications.cancelProgress(context)
+                false
+            }
             UpdateInstaller.ShellResult.UNAVAILABLE -> {
                 if (allowInteractiveFallback && UpdateInstaller.installViaPackageInstaller(context, apk)) {
                     true
