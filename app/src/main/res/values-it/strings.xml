@@ -300,7 +300,7 @@
     <string name="voip_prompt_text_named">Chiamata %1$s. Tocca Registra per registrarla.</string>
     <string name="settings_subsection_phone_calls">Chiamate telefoniche</string>
     <string name="home_bulk_delete_message">Questa azione non può essere annullata.</string>
-    <string name="home_bulk_delete_scope_message">Alcune di queste sono salvate sia su questo dispositivo sia su Drive. Quali copie vuoi eliminare?</string>
+    <string name="home_bulk_delete_scope_message">Alcune sono salvate sia su questo dispositivo sia su Drive.</string>
     <string name="home_bulk_delete_device_only">Solo dispositivo</string>
     <string name="home_bulk_delete_drive_only">Solo Drive</string>
     <string name="home_bulk_delete_both">Entrambe le copie</string>

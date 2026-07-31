@@ -300,7 +300,7 @@
     <string name="voip_prompt_text_named">Połączenie %1$s. Dotknij Nagrywaj, aby je nagrać.</string>
     <string name="settings_subsection_phone_calls">Połączenia telefoniczne</string>
     <string name="home_bulk_delete_message">Tej operacji nie można cofnąć.</string>
-    <string name="home_bulk_delete_scope_message">Część z nich jest zapisana zarówno na tym urządzeniu, jak i na Dysku. Które kopie usunąć?</string>
+    <string name="home_bulk_delete_scope_message">Część jest zapisana i na tym urządzeniu, i na Dysku.</string>
     <string name="home_bulk_delete_device_only">Tylko urządzenie</string>
     <string name="home_bulk_delete_drive_only">Tylko Dysk</string>
     <string name="home_bulk_delete_both">Obie kopie</string>

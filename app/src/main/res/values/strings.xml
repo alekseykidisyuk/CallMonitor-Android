@@ -445,7 +445,7 @@
     <string name="support_paypal" translatable="false">PayPal</string>
     <string name="support_not_now">Not now</string>
     <string name="home_bulk_delete_message">This cannot be undone.</string>
-    <string name="home_bulk_delete_scope_message">Some of these are saved both on this device and in Drive. Which copies should be deleted?</string>
+    <string name="home_bulk_delete_scope_message">Some are saved both on this device and in Drive.</string>
     <string name="home_bulk_delete_device_only">Device only</string>
     <string name="home_bulk_delete_drive_only">Drive only</string>
     <string name="home_bulk_delete_both">Both copies</string>

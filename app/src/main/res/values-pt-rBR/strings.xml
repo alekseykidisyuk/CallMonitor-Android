@@ -303,7 +303,7 @@
     <string name="voip_prompt_text_named">Chamada do %1$s. Toque em Gravar para gravá-la.</string>
     <string name="settings_subsection_phone_calls">Chamadas telefônicas</string>
     <string name="home_bulk_delete_message">Isso não pode ser desfeito.</string>
-    <string name="home_bulk_delete_scope_message">Algumas destas estão salvas neste dispositivo e no Drive. Quais cópias devem ser excluídas?</string>
+    <string name="home_bulk_delete_scope_message">Algumas estão salvas neste dispositivo e no Drive.</string>
     <string name="home_bulk_delete_device_only">Só no dispositivo</string>
     <string name="home_bulk_delete_drive_only">Só no Drive</string>
     <string name="home_bulk_delete_both">As duas cópias</string>

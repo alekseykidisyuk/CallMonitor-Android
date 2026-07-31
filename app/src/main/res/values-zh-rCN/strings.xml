@@ -300,7 +300,7 @@
     <string name="voip_prompt_text_named">%1$s 通话。点按“录制”即可录制。</string>
     <string name="settings_subsection_phone_calls">电话通话</string>
     <string name="home_bulk_delete_message">此操作无法撤销。</string>
-    <string name="home_bulk_delete_scope_message">其中一些同时保存在本机和云端硬盘中。要删除哪些副本？</string>
+    <string name="home_bulk_delete_scope_message">其中一些同时保存在本机和云端硬盘中。</string>
     <string name="home_bulk_delete_device_only">仅本机</string>
     <string name="home_bulk_delete_drive_only">仅云端硬盘</string>
     <string name="home_bulk_delete_both">两份副本</string>

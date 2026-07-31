@@ -300,7 +300,7 @@
     <string name="voip_prompt_text_named">%1$s hívás. Koppintson a Rögzítés gombra a rögzítéséhez.</string>
     <string name="settings_subsection_phone_calls">Telefonhívások</string>
     <string name="home_bulk_delete_message">Ez a művelet nem vonható vissza.</string>
-    <string name="home_bulk_delete_scope_message">Néhányuk ezen az eszközön és a Drive-ban is el van mentve. Mely másolatokat töröljük?</string>
+    <string name="home_bulk_delete_scope_message">Néhány ezen az eszközön és a Drive-ban is el van mentve.</string>
     <string name="home_bulk_delete_device_only">Csak az eszközön</string>
     <string name="home_bulk_delete_drive_only">Csak a Drive-ban</string>
     <string name="home_bulk_delete_both">Mindkét másolat</string>

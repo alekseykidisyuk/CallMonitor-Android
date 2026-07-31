@@ -300,7 +300,7 @@
     <string name="voip_prompt_text_named">%1$s-Anruf. Auf „Aufnehmen“ tippen, um ihn aufzunehmen.</string>
     <string name="settings_subsection_phone_calls">Telefonanrufe</string>
     <string name="home_bulk_delete_message">Dies kann nicht rückgängig gemacht werden.</string>
-    <string name="home_bulk_delete_scope_message">Einige davon sind sowohl auf diesem Gerät als auch in Drive gespeichert. Welche Kopien sollen gelöscht werden?</string>
+    <string name="home_bulk_delete_scope_message">Einige sind sowohl auf diesem Gerät als auch in Drive gespeichert.</string>
     <string name="home_bulk_delete_device_only">Nur Gerät</string>
     <string name="home_bulk_delete_drive_only">Nur Drive</string>
     <string name="home_bulk_delete_both">Beide Kopien</string>

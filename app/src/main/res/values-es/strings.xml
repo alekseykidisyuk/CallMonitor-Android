@@ -300,7 +300,7 @@
     <string name="voip_prompt_text_named">Llamada de %1$s. Toca Grabar para grabarla.</string>
     <string name="settings_subsection_phone_calls">Llamadas telefónicas</string>
     <string name="home_bulk_delete_message">Esta acción no se puede deshacer.</string>
-    <string name="home_bulk_delete_scope_message">Algunas de estas están guardadas tanto en este dispositivo como en Drive. ¿Qué copias quieres eliminar?</string>
+    <string name="home_bulk_delete_scope_message">Algunas están guardadas en este dispositivo y en Drive.</string>
     <string name="home_bulk_delete_device_only">Solo el dispositivo</string>
     <string name="home_bulk_delete_drive_only">Solo Drive</string>
     <string name="home_bulk_delete_both">Ambas copias</string>

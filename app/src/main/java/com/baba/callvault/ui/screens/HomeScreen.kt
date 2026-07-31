@@ -1136,7 +1136,8 @@ private fun BulkDeleteDialog(
                     )
                 )
                 if (needsScopeChoice) {
-                    Spacer(Modifier.height(12.dp))
+                    // No spacer: M3DropdownField carries its own vertical padding, and the two
+                    // together left an empty band that made the card taller than its content.
                     M3DropdownField(
                         label = stringResource(R.string.home_bulk_delete_scope_label),
                         selected = options.first { it.key == scope.name },
@@ -1146,13 +1147,20 @@ private fun BulkDeleteDialog(
                 }
             }
         },
+        // Both buttons live in the confirm slot as one centred row. AlertDialog otherwise packs its
+        // two slots into the bottom-right corner, which left the actions hanging off one edge of a
+        // wide card.
         confirmButton = {
-            TextButton(onClick = { onConfirm(scope) }) {
-                Text(stringResource(R.string.home_delete))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_cancel)) }
+                Spacer(Modifier.width(8.dp))
+                TextButton(onClick = { onConfirm(scope) }) {
+                    Text(stringResource(R.string.home_delete))
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_cancel)) }
         },
     )
 }
