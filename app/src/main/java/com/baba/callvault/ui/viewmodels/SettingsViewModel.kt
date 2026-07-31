@@ -11,6 +11,7 @@ package com.baba.callvault.ui.viewmodels
 import android.app.Application
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.AndroidViewModel
 import com.baba.callvault.BuildConfig
 import com.baba.callvault.services.debug.DebugNotificationHelper
@@ -24,7 +25,9 @@ import com.baba.callvault.system.updates.UpdateScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.update
+import com.baba.callvault.system.diagnostics.SystemLogCollector
 import com.baba.callvault.utils.AppLogger
 
 // -------- Screen state & action types owned by this ViewModel
@@ -435,5 +438,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         preferences.setLoggingEnabled(enabled)
         DebugNotificationHelper.sync(appContext)
         refresh()
+
+        // Grow logcat's ring while logging runs, and put it back afterwards. The daemon logs nowhere
+        // else, and the default 256 KiB buffer holds about a minute on a busy phone — long enough to
+        // lose the evidence between reproducing a bug and reaching this screen to share it.
+        //
+        // Deliberately after the preference is written and the UI has refreshed: this talks to the
+        // shell, and the toggle must never wait on it or fail because of it.
+        viewModelScope.launch {
+            runCatching {
+                if (enabled) SystemLogCollector.onLoggingEnabled(appContext)
+                else SystemLogCollector.onLoggingDisabled(appContext)
+            }.onFailure { AppLogger.w("CV:Settings", "Logcat ring adjustment failed: ${it.message}") }
+        }
     }
 }

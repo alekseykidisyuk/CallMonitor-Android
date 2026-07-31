@@ -27,9 +27,11 @@ scoped bulk delete, PayPal alongside Ko-fi, and the debug-log controls.
 **Device-verified 2026-07-31 (OnePlus 12, build `1.5.6-encoder` / 10661):** encoder validation does
 *not* divert recording to the scrcpy fallback — output was mono 48 kHz, full duration, −16.9 dB mean.
 The mid-call guard's device path is covered by unit tests only. **Known gap:** the new
-`CV:EncoderLimits` log line runs in the *daemon*, so it reaches neither the app's debug log nor
-ColorOS's filtered logcat — the diagnostic is unreadable on exactly the ROM family that filed issue
-#18. Another argument for `2026-07-28-daemon-and-system-logs-design.md`.
+`CV:EncoderLimits` line runs in the *daemon*, so it never reaches the app's debug log; it does reach
+logcat, but logcat's default 256 KiB ring holds barely a minute on this phone (measured 2026-07-31:
+123 KiB consumed in 26 s), so it had aged out before it could be read. An earlier note here blamed
+ColorOS for filtering third-party logs — that was wrong, and re-tested: our lines are present. The
+fix is the ring growth in `2026-07-28-daemon-and-system-logs-design.md`.
 
 **Blocked on other people:** nothing.
 
@@ -162,7 +164,8 @@ logs `encoder=… bitrate=[min..max] requested=… resolved=… sampleRate=… s
 supported=…`; `supports()` additionally requires `EncoderLimits.supportsFormat()`. Six unit tests.
 Verified on the OP12 (`1.5.6-encoder`): the direct path is still chosen — mono output proves it, since
 the scrcpy fallback is stereo. **But the log line is written by the daemon**, so it reaches neither the
-app debug log nor ColorOS's filtered logcat; on OnePlus it is invisible. It works on Samsung. Until the
+app debug log nor a shareable report; it reaches logcat, but the default ring ages it out within about
+a minute of a busy phone. Until the
 daemon-logging design lands, this diagnostic cannot answer the bug reports it was built for.
 
 `DirectAudioRecorderSession.hasEncoder()` checks only that an encoder for the MIME **exists** —

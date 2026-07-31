@@ -219,6 +219,7 @@ class AppPreferences(context: Context) {
         
         // --- Developer & Debug ---
         LOGGING_ENABLED("logging_enabled"),
+        LOGCAT_RING_PREVIOUS_KIB("logcat_ring_previous_kib"),
         DEBUG_ENABLED("debug_enabled"),
         DEBUG_CALLER_NUMBER("debug_caller_number"),
         DEVELOPER_MODE_UNLOCKED("developer_mode_unlocked"),
@@ -637,6 +638,23 @@ class AppPreferences(context: Context) {
     // -------- Debug --------
 
     /** Checks if logging features are enabled. */
+    /**
+     * The logcat ring size (KiB) as it was before debug logging grew it, or null when it was never
+     * successfully read.
+     *
+     * Null is load-bearing: restoring a size we only guessed at would shrink a buffer the user or the
+     * OEM had deliberately enlarged, so an unreadable reading leaves the ring alone instead.
+     */
+    fun getLogcatRingPreviousKib(): Int? =
+        getInt(Key.LOGCAT_RING_PREVIOUS_KIB, -1).takeIf { it > 0 }
+
+    fun setLogcatRingPreviousKib(kib: Int?) {
+        prefs.edit {
+            if (kib == null) remove(Key.LOGCAT_RING_PREVIOUS_KIB.id)
+            else putInt(Key.LOGCAT_RING_PREVIOUS_KIB.id, kib)
+        }
+    }
+
     fun isLoggingEnabled() = getBoolean(Key.LOGGING_ENABLED, DefaultsValue.LOGGING_ENABLED)
 
     /** Sets whether logging features are enabled. */
