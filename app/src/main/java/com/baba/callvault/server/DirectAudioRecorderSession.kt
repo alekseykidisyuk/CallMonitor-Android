@@ -78,8 +78,13 @@ internal class DirectAudioRecorderSession(
         // ~12 kbps per side and audibly degrades the FAR party (their downlink channel gets starved).
         // Downmixing to one channel gives the whole bitrate to the (mono) call, restoring quality at the
         // same setting. See [captureLoop]'s downmix.
+        // Ask the encoder what it will accept before handing it a bit rate. An out-of-range value is
+        // not reliably rejected — MediaCodec can clamp it, or emit frames that decode to nothing,
+        // which is a full-length recording that plays silent. Also logs the encoder and its limits,
+        // so a future bug report can answer in one line what issue #18 never could.
+        val effectiveBitRate = EncoderLimits.resolveBitRate(mime, bitRate, SAMPLE_RATE, ENCODE_CHANNELS)
         val format = MediaFormat.createAudioFormat(mime, SAMPLE_RATE, ENCODE_CHANNELS).apply {
-            setInteger(MediaFormat.KEY_BIT_RATE, bitRate)
+            setInteger(MediaFormat.KEY_BIT_RATE, effectiveBitRate)
             if (mime == MediaFormat.MIMETYPE_AUDIO_AAC) {
                 setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
             }
@@ -240,7 +245,13 @@ internal class DirectAudioRecorderSession(
          */
         fun supports(source: ScrcpyAudioSource, codec: ScrcpyAudioCodec): Boolean {
             if (source.androidAudioSource == null) return false
-            return runCatching { hasEncoder(encoderMimeFor(codec)) }.getOrDefault(false)
+            val mime = encoderMimeFor(codec)
+            return runCatching {
+                // An encoder EXISTING is not the same as it accepting our format. Recording 48 kHz
+                // mono into an encoder that advertises neither is how a full-length silent file is
+                // produced; better to fall back to scrcpy, which brings its own pipeline.
+                hasEncoder(mime) && EncoderLimits.supportsFormat(mime, SAMPLE_RATE, ENCODE_CHANNELS)
+            }.getOrDefault(false)
         }
 
         private fun encoderMimeFor(codec: ScrcpyAudioCodec): String = when (codec) {
