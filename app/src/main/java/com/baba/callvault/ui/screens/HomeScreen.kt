@@ -241,7 +241,7 @@ fun HomeScreen(
     ) { innerPadding ->
         if (showBulkDelete) {
             BulkDeleteDialog(
-                count = selectedItems.size,
+                items = selectedItems,
                 needsScopeChoice = RecordingSelection.needsScopeChoice(selectedItems),
                 onConfirm = { scope ->
                     showBulkDelete = false
@@ -1106,7 +1106,7 @@ private fun RecordingRowMenu(shareUri: Uri, shareName: String, onDelete: () -> U
  */
 @Composable
 private fun BulkDeleteDialog(
-    count: Int,
+    items: List<RecordingItem>,
     needsScopeChoice: Boolean,
     onConfirm: (DeleteScope) -> Unit,
     onDismiss: () -> Unit,
@@ -1117,16 +1117,38 @@ private fun BulkDeleteDialog(
     //
     // Defaults to both copies, matching what deleting a single row has always done for a recording
     // held in two places. Nothing is destroyed until Delete is pressed either way.
-    val options = listOf(
-        OptionItem(DeleteScope.BOTH.name, stringResource(R.string.home_bulk_delete_both)),
-        OptionItem(DeleteScope.DEVICE.name, stringResource(R.string.home_bulk_delete_device_only)),
-        OptionItem(DeleteScope.DRIVE.name, stringResource(R.string.home_bulk_delete_drive_only)),
-    )
     var scope by remember { mutableStateOf(DeleteScope.BOTH) }
+
+    // Each option carries what it would actually do — "Device only (2 of 3)" — so the consequence
+    // is visible while choosing rather than discovered afterwards from a recording that survived.
+    val options = listOf(
+        DeleteScope.BOTH to R.string.home_bulk_delete_both,
+        DeleteScope.DEVICE to R.string.home_bulk_delete_device_only,
+        DeleteScope.DRIVE to R.string.home_bulk_delete_drive_only,
+    ).map { (s, labelRes) ->
+        OptionItem(
+            key = s.name,
+            label = stringResource(
+                R.string.home_bulk_delete_option_count,
+                stringResource(labelRes),
+                RecordingSelection.affectedCount(items, s),
+                items.size,
+            ),
+        )
+    }
+
+    // Which recordings the chosen scope leaves alone, named where there are few enough to name.
+    val skipped = RecordingSelection.skipped(items, scope)
+    val keptSubject = when {
+        skipped.isEmpty() -> null
+        skipped.size <= MAX_NAMED_SKIPPED ->
+            skipped.joinToString(", ") { it.contactName ?: it.number ?: it.displayName }
+        else -> pluralStringResource(R.plurals.home_bulk_delete_kept_count, skipped.size, skipped.size)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(pluralStringResource(R.plurals.home_bulk_delete_title, count, count)) },
+        title = { Text(pluralStringResource(R.plurals.home_bulk_delete_title, items.size, items.size)) },
         text = {
             Column {
                 Text(
@@ -1144,6 +1166,20 @@ private fun BulkDeleteDialog(
                         options = options,
                         onOptionSelected = { scope = DeleteScope.valueOf(it.key) },
                     )
+                    // Names what survives. A recording the user selected for deletion and did not
+                    // get is the one outcome they must never have to discover for themselves.
+                    if (keptSubject != null) {
+                        Text(
+                            text = stringResource(
+                                if (scope == DeleteScope.DEVICE) R.string.home_bulk_delete_kept_drive
+                                else R.string.home_bulk_delete_kept_device,
+                                keptSubject,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
                 }
             }
         },
@@ -1164,6 +1200,9 @@ private fun BulkDeleteDialog(
         },
     )
 }
+
+/** Above this many skipped recordings the dialog says "3 recordings" instead of listing them. */
+private const val MAX_NAMED_SKIPPED = 2
 
 private sealed interface DeleteTarget {
     data object All : DeleteTarget

@@ -85,24 +85,53 @@ class RecordingSelectionTest {
     }
 
     @Test
-    fun `a single-copy recording is deleted whatever the scope says`() {
-        // THE DANGEROUS CASE: choosing "Drive only" over a mixed selection must not spare, or
-        // silently destroy, the recordings that only exist in one place. Each contributes its one
-        // file, because the scope question was never about them.
-        val selection = listOf(device("a"), drive("b"))
-        for (scope in DeleteScope.entries) {
-            assertEquals(
-                "scope $scope",
-                listOf("content://dev/a".toUri(), "content://drv/b".toUri()),
-                RecordingSelection.urisToDelete(selection, scope),
-            )
-        }
+    fun `device-only scope never touches a Drive-only recording`() {
+        // THE CASE THAT NEARLY COST A FILE. This asserted the opposite until 2026-07-31: the scope
+        // governed two-copy recordings only, and a Drive-only recording was deleted whatever was
+        // chosen. Picking the most restrictive option must not destroy a file that option says
+        // nothing about — when a delete is ambiguous, the reading that removes less wins.
+        val uris = RecordingSelection.urisToDelete(listOf(drive("a")), DeleteScope.DEVICE)
+        assertEquals(emptyList<Uri>(), uris)
     }
 
     @Test
-    fun `a mixed selection deletes the right files per recording`() {
+    fun `drive-only scope never touches a device-only recording`() {
+        val uris = RecordingSelection.urisToDelete(listOf(device("a")), DeleteScope.DRIVE)
+        assertEquals(emptyList<Uri>(), uris)
+    }
+
+    @Test
+    fun `a mixed selection deletes only what the scope names`() {
+        // device("a") has no Drive copy, so "Drive only" leaves it entirely alone.
         val uris = RecordingSelection.urisToDelete(listOf(device("a"), both("b")), DeleteScope.DRIVE)
-        assertEquals(listOf("content://dev/a".toUri(), "content://drv/b".toUri()), uris)
+        assertEquals(listOf("content://drv/b".toUri()), uris)
+    }
+
+    // ---- Telling the user what will survive ----
+
+    @Test
+    fun `counts how many recordings a scope actually affects`() {
+        val selection = listOf(drive("a"), both("b"), both("c"))
+        assertEquals(2, RecordingSelection.affectedCount(selection, DeleteScope.DEVICE))
+        assertEquals(3, RecordingSelection.affectedCount(selection, DeleteScope.DRIVE))
+        assertEquals(3, RecordingSelection.affectedCount(selection, DeleteScope.BOTH))
+    }
+
+    @Test
+    fun `names the recordings a scope would leave alone`() {
+        // The exact selection from the device on 2026-07-31: one Drive-only and two held in both
+        // places. "Device only" keeps the Drive-only one, and the dialog has to say so.
+        val selection = listOf(drive("Feroza"), both("b"), both("c"))
+        assertEquals(listOf("Feroza"), RecordingSelection.skipped(selection, DeleteScope.DEVICE).map { it.displayName })
+        assertEquals(emptyList<String>(), RecordingSelection.skipped(selection, DeleteScope.DRIVE).map { it.displayName })
+        assertEquals(emptyList<String>(), RecordingSelection.skipped(selection, DeleteScope.BOTH).map { it.displayName })
+    }
+
+    @Test
+    fun `both copies never skips anything`() {
+        val selection = listOf(device("a"), drive("b"), both("c"))
+        assertEquals(emptyList<RecordingItem>(), RecordingSelection.skipped(selection, DeleteScope.BOTH))
+        assertEquals(3, RecordingSelection.affectedCount(selection, DeleteScope.BOTH))
     }
 
     @Test

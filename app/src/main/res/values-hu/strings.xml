@@ -318,4 +318,11 @@
         <item quantity="other">Töröl %1$d felvételt?</item>
     </plurals>
     <string name="home_bulk_delete_scope_label">Törlendő másolatok</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d / %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s megmarad – csak a Drive-ban van.</string>
+    <string name="home_bulk_delete_kept_device">%1$s megmarad – csak ezen az eszközön van.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d felvétel</item>
+        <item quantity="other">%1$d felvétel</item>
+    </plurals>
 </resources>

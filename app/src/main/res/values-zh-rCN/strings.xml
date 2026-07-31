@@ -318,4 +318,11 @@
         <item quantity="other">删除 %1$d 条录音？</item>
     </plurals>
     <string name="home_bulk_delete_scope_label">要删除的副本</string>
+    <string name="home_bulk_delete_option_count">%1$s（%2$d/%3$d）</string>
+    <string name="home_bulk_delete_kept_drive">%1$s 将保留——只在云端硬盘中。</string>
+    <string name="home_bulk_delete_kept_device">%1$s 将保留——只在本机中。</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d 条录音</item>
+        <item quantity="other">%1$d 条录音</item>
+    </plurals>
 </resources>

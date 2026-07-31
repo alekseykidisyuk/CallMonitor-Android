@@ -321,4 +321,11 @@
         <item quantity="other">Excluir %1$d gravações?</item>
     </plurals>
     <string name="home_bulk_delete_scope_label">Cópias a excluir</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d de %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s será mantida: está só no Drive.</string>
+    <string name="home_bulk_delete_kept_device">%1$s será mantida: está só neste dispositivo.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d gravações</item>
+        <item quantity="other">%1$d gravações</item>
+    </plurals>
 </resources>

@@ -37,22 +37,45 @@ object RecordingSelection {
     /**
      * The files a delete should remove, given the user's [scope] choice.
      *
-     * [scope] governs the two-copy recordings; single-copy ones always contribute their one file, so
-     * choosing "Drive only" over a selection that also holds device-only recordings does **not**
-     * silently delete those. Anything else would destroy files the user did not point at.
+     * **[scope] is a filter on location, and it applies to every selected recording** — not only to
+     * the two-copy ones. "Device only" therefore leaves a Drive-only recording completely untouched,
+     * because there is no device copy of it to delete.
+     *
+     * An earlier version made the scope govern two-copy recordings alone and deleted single-copy
+     * ones whatever was chosen, on the reasoning that the user had selected them. That is wrong in
+     * the way that matters: picking the *most restrictive* option would have destroyed a file the
+     * option said nothing about. When a delete is ambiguous, the reading that removes less wins.
+     *
+     * A recording carrying neither URI is a shape the repository does not produce; it falls back to
+     * the primary URI under [DeleteScope.BOTH] so a selection can never silently delete nothing.
      */
     fun urisToDelete(selected: List<RecordingItem>, scope: DeleteScope): List<Uri> =
-        selected.flatMap { item ->
-            when (item.source) {
-                RecordingSource.BOTH -> when (scope) {
-                    DeleteScope.DEVICE -> listOfNotNull(item.localUri)
-                    DeleteScope.DRIVE -> listOfNotNull(item.driveUri)
-                    DeleteScope.BOTH -> listOfNotNull(item.localUri, item.driveUri)
-                }
-                // A recording that exists in one place only: the scope question was never about it.
-                RecordingSource.LOCAL, RecordingSource.DRIVE -> listOf(item.uri)
-            }
-        }.distinct()
+        selected.flatMap { item -> urisFor(item, scope) }.distinct()
+
+    private fun urisFor(item: RecordingItem, scope: DeleteScope): List<Uri> {
+        if (item.localUri == null && item.driveUri == null) {
+            return if (scope == DeleteScope.BOTH) listOf(item.uri) else emptyList()
+        }
+        return when (scope) {
+            DeleteScope.DEVICE -> listOfNotNull(item.localUri)
+            DeleteScope.DRIVE -> listOfNotNull(item.driveUri)
+            DeleteScope.BOTH -> listOfNotNull(item.localUri, item.driveUri)
+        }
+    }
+
+    /** How many of [selected] lose at least one file under [scope] — the "2 of 3" in the picker. */
+    fun affectedCount(selected: List<RecordingItem>, scope: DeleteScope): Int =
+        selected.count { urisFor(it, scope).isNotEmpty() }
+
+    /**
+     * The recordings [scope] would leave completely alone.
+     *
+     * Named rather than merely counted, so the dialog can say *which* recording survives. Silently
+     * skipping a file the user selected for deletion is the failure this exists to prevent: they
+     * would walk away believing it was gone.
+     */
+    fun skipped(selected: List<RecordingItem>, scope: DeleteScope): List<RecordingItem> =
+        selected.filter { urisFor(it, scope).isEmpty() }
 
     /**
      * One URI per selected recording, for sharing.

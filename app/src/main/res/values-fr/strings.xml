@@ -318,4 +318,11 @@
         <item quantity="other">Supprimer %1$d enregistrements ?</item>
     </plurals>
     <string name="home_bulk_delete_scope_label">Copies à supprimer</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d sur %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s sera conservé : uniquement dans Drive.</string>
+    <string name="home_bulk_delete_kept_device">%1$s sera conservé : uniquement sur cet appareil.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d enregistrements</item>
+        <item quantity="other">%1$d enregistrements</item>
+    </plurals>
 </resources>

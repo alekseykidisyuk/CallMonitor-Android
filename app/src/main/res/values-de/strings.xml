@@ -318,4 +318,11 @@
         <item quantity="other">%1$d Aufnahmen löschen?</item>
     </plurals>
     <string name="home_bulk_delete_scope_label">Zu löschende Kopien</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d von %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s bleibt erhalten – nur in Drive.</string>
+    <string name="home_bulk_delete_kept_device">%1$s bleibt erhalten – nur auf diesem Gerät.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d Aufnahmen</item>
+        <item quantity="other">%1$d Aufnahmen</item>
+    </plurals>
 </resources>

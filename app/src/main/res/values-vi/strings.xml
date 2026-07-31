@@ -318,4 +318,11 @@
         <item quantity="other">Xóa %1$d bản ghi?</item>
     </plurals>
     <string name="home_bulk_delete_scope_label">Bản sao cần xóa</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d trên %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s sẽ được giữ lại — chỉ có trên Drive.</string>
+    <string name="home_bulk_delete_kept_device">%1$s sẽ được giữ lại — chỉ có trên thiết bị này.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d bản ghi</item>
+        <item quantity="other">%1$d bản ghi</item>
+    </plurals>
 </resources>

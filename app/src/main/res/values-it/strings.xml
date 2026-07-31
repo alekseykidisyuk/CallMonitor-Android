@@ -318,4 +318,11 @@
         <item quantity="other">Eliminare %1$d registrazioni?</item>
     </plurals>
     <string name="home_bulk_delete_scope_label">Copie da eliminare</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d di %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s verrà conservata: solo su Drive.</string>
+    <string name="home_bulk_delete_kept_device">%1$s verrà conservata: solo su questo dispositivo.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d registrazioni</item>
+        <item quantity="other">%1$d registrazioni</item>
+    </plurals>
 </resources>
