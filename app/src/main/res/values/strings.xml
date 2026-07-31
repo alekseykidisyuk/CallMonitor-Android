@@ -136,6 +136,11 @@
     <string name="settings_subsection_voip">VoIP calls</string>
     <string name="settings_voip_recording_label">Record VoIP calls</string>
     <string name="settings_voip_recording_description">Also record calls made in apps like WhatsApp, Signal and Telegram. Experimental — some apps block recording, and this cannot be known until a call is under way.</string>
+    <string name="settings_voip_auto_start_label">Start automatically</string>
+    <string name="settings_voip_auto_start_description">Off means CallVault asks first: a notification with a Record button appears when an app call starts.</string>
+    <string name="voip_prompt_title">App call in progress</string>
+    <string name="voip_prompt_text">Tap Record to record this call.</string>
+    <string name="voip_prompt_text_named">%1$s call. Tap Record to record it.</string>
     <string name="voip_recording_warning_title">Record VoIP calls?</string>
     <string name="voip_recording_warning_message">Recording app calls is more tightly regulated than recording phone calls, and in many places every participant must agree first. Please make sure you are allowed to.\n\nThis is experimental: it works with some apps and not others, and an app can block recording at any time in an update.</string>
     <string name="voip_recording_warning_continue">I understand, turn it on</string>
@@ -215,6 +220,9 @@
     <string name="placeholder_contact_name_desc">The contact name, if available</string>
     <string name="placeholder_cross_country_desc">Indicates if the call is cross-country (true/false)</string>
 
+    <string name="settings_subsection_phone_calls">Phone calls</string>
+    <string name="settings_carrier_recording">Record phone calls</string>
+    <string name="settings_carrier_recording_description">Off: phone calls are ignored completely — no recording, no notification. App calls are unaffected.</string>
     <string name="settings_auto_record_incoming">Automatically record incoming calls</string>
     <string name="settings_auto_record_outgoing">Automatically record outgoing calls</string>
     <string name="settings_ignore_anonymous_incoming">Ignore anonymous incoming calls</string>
@@ -420,10 +428,41 @@
     <string name="home_player_error">Couldn\'t play this file.</string>
 
     <!-- Home: delete recording -->
+    <string name="home_share">Share</string>
+    <string name="home_share_chooser">Share recording</string>
+    <string name="home_row_menu">More options</string>
     <string name="home_delete">Delete</string>
     <string name="home_delete_confirm_title">Delete recording?</string>
     <string name="home_delete_confirm_message">This permanently deletes %1$s.</string>
     <string name="settings_section_updates">Updates</string>
     <string name="settings_update_check_label">Check for updates</string>
     <string name="settings_update_check_description">Once a day, look for a new version on GitHub.</string>
+    <string name="support_appeal_title">Made by one person 👋</string>
+    <string name="support_appeal_body">I build CallVault on my own, in my free time — free, open source, no ads, no tracking. ☕ If it\'s useful to you, a small tip keeps me going. Either way, thanks! 🙏</string>
+    <string name="support_choose_title">Support development</string>
+    <string name="support_choose_body">Thank you. Either link opens in your browser.</string>
+    <string name="support_kofi" translatable="false">Ko-fi</string>
+    <string name="support_paypal" translatable="false">PayPal</string>
+    <string name="support_not_now">Not now</string>
+    <string name="home_bulk_delete_message">This cannot be undone.</string>
+    <string name="home_bulk_delete_scope_message">Some are saved both on this device and in Drive.</string>
+    <string name="home_bulk_delete_device_only">Device only</string>
+    <string name="home_bulk_delete_drive_only">Drive only</string>
+    <string name="home_bulk_delete_both">Both copies</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Delete %1$d recording?</item>
+        <item quantity="other">Delete %1$d recordings?</item>
+    </plurals>
+    <string name="home_bulk_delete_scope_label">Copies to delete</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d of %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s will be kept — only in Drive.</string>
+    <string name="home_bulk_delete_kept_device">%1$s will be kept — only on this device.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d recordings</item>
+        <item quantity="other">%1$d recordings</item>
+    </plurals>
 </resources>

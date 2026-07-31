@@ -54,6 +54,10 @@ class AppPreferences(context: Context) {
         const val VIBRATION_ENABLED = true
         
         // --- Automation ---
+        // True keeps CallVault's behaviour for carrier calls exactly as it has always been: record
+        // when the rules below say so, otherwise offer a Record button. False is the opt-in
+        // "app calls only" mode — no recording AND no standby notification for phone calls.
+        const val CARRIER_RECORDING_ENABLED = true
         const val AUTO_RECORD_INCOMING = false
         const val AUTO_RECORD_OUTGOING = false
         
@@ -124,6 +128,10 @@ class AppPreferences(context: Context) {
         // the ring + encodes — so a recording SURVIVES the daemon being killed mid-call.
         const val HANDOFF_PERSIST_ENABLED = false
         const val VOIP_RECORDING_ENABLED = false
+        // True = start an app call's recording by itself, which is what VoIP recording has always
+        // done. False = detect the call and offer a Record button instead. Only consulted when
+        // VOIP_RECORDING_ENABLED is on.
+        const val VOIP_AUTO_START = true
 
         // --- Audio/Scrcpy Quality ---
         val AUDIO_SOURCE = ScrcpyAudioSource.VOICE_CALL.cliKey
@@ -193,8 +201,10 @@ class AppPreferences(context: Context) {
         WD_DISABLE_WHEN_IDLE("wd_disable_when_idle"),
         HANDOFF_PERSIST_ENABLED("handoff_persist_enabled"),
         VOIP_RECORDING_ENABLED("voip_recording_enabled"),
+        VOIP_AUTO_START("voip_auto_start"),
         
         // --- Automation ---
+        CARRIER_RECORDING_ENABLED("carrier_recording_enabled"),
         AUTO_RECORD_INCOMING("auto_record_incoming"),
         AUTO_RECORD_OUTGOING("auto_record_outgoing"),
         
@@ -449,6 +459,16 @@ class AppPreferences(context: Context) {
     fun setVoipRecordingEnabled(enabled: Boolean) = setBoolean(Key.VOIP_RECORDING_ENABLED, enabled)
 
     /**
+     * Whether a detected app call starts recording by itself (true, the long-standing behaviour) or
+     * only offers a Record button (false — "Ask me").
+     *
+     * Meaningless unless [isVoipRecordingEnabled] is on: with VoIP recording off nothing watches for
+     * app calls at all, so there is nothing to ask about.
+     */
+    fun isVoipAutoStartEnabled() = getBoolean(Key.VOIP_AUTO_START, DefaultsValue.VOIP_AUTO_START)
+    fun setVoipAutoStartEnabled(enabled: Boolean) = setBoolean(Key.VOIP_AUTO_START, enabled)
+
+    /**
      * Whether "Resilient recording" (the audio-capture handoff, Option B) is enabled. Default false =
      * the recording path is byte-identical to daemon mode. When true and the source is handoff-compatible,
      * the app holds the live capture and a recording survives the daemon dying mid-call.
@@ -545,6 +565,20 @@ class AppPreferences(context: Context) {
     // -------- Automation --------
 
     /** Checks if auto-recording for incoming calls is enabled. */
+    /**
+     * Whether CallVault handles carrier calls at all.
+     *
+     * This is the master switch that makes "app calls only" a real mode rather than a combination
+     * users have to infer. Turning the two auto-record switches off does NOT achieve it: that is the
+     * "Ask me" state, and CallVault still posts a standby notification with a Record button on every
+     * single phone call. With this off, a carrier call is ignored end to end — no recording, no
+     * notification, nothing on the status card.
+     *
+     * Defaults to **on**, so no existing install changes behaviour; the quiet mode is opted into.
+     */
+    fun isCarrierRecordingEnabled() = getBoolean(Key.CARRIER_RECORDING_ENABLED, DefaultsValue.CARRIER_RECORDING_ENABLED)
+    fun setCarrierRecordingEnabled(enabled: Boolean) = setBoolean(Key.CARRIER_RECORDING_ENABLED, enabled)
+
     fun isAutoRecordIncomingEnabled() = getBoolean(Key.AUTO_RECORD_INCOMING, DefaultsValue.AUTO_RECORD_INCOMING)
     
     /** Sets whether auto-recording for incoming calls is enabled. */

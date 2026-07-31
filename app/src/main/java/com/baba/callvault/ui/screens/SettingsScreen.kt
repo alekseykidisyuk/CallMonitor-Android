@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.ColorLens
@@ -55,6 +56,7 @@ import com.baba.callvault.system.PersistentFolderPickerContract
 import com.baba.callvault.system.copyToClipboard
 import com.baba.callvault.system.openOriginalProjectRepo
 import com.baba.callvault.system.openKofi
+import com.baba.callvault.ui.common.SupportDialog
 import com.baba.callvault.system.shareLogFile
 import com.baba.callvault.utils.AppLogger
 import kotlinx.coroutines.Dispatchers
@@ -392,6 +394,7 @@ private const val SECTION_GENERAL = "general"
 
 // Sub-section keys. Scoped to their parent section, so the same value can never collide across two.
 private const val SUB_FILE_NAME = "sub_file_name"
+private const val SUB_PHONE_CALLS = "sub_phone_calls"
 private const val SUB_INCOMING = "sub_incoming"
 private const val SUB_OUTGOING = "sub_outgoing"
 private const val SUB_WHERE = "sub_where"
@@ -431,6 +434,7 @@ private fun RecordingSection(
 ) {
     // Evaluate these here so they are fetched on every recomposition.
     val fileNameFormat = remember(updateTrigger) { preferences.getFileNameTemplate() }
+    val carrierRecording = remember(updateTrigger) { preferences.isCarrierRecordingEnabled() }
     val autoRecordIncoming = remember(updateTrigger) { preferences.isAutoRecordIncomingEnabled() }
     val autoRecordOutgoing = remember(updateTrigger) { preferences.isAutoRecordOutgoingEnabled() }
     val ignoreAnonymousIncoming = remember(updateTrigger) { preferences.isIgnoreAnonymousIncomingEnabled() }
@@ -469,6 +473,29 @@ private fun RecordingSection(
         )
       }
 
+      // The master switch for phone calls, in its own sub-section above the per-direction ones it
+      // governs. Turning the two direction switches off is NOT the same thing: that is "ask me", and
+      // it still puts a Record prompt on every call. This is the "app calls only" mode.
+      SettingsSubSection(
+        title = stringResource(R.string.settings_subsection_phone_calls),
+        expanded = openSub == SUB_PHONE_CALLS,
+        onToggle = { openSub = if (openSub == SUB_PHONE_CALLS) null else SUB_PHONE_CALLS },
+      ) {
+        SettingsToggleRow(
+            icon = Icons.Filled.Smartphone,
+            label = stringResource(R.string.settings_carrier_recording),
+            description = stringResource(R.string.settings_carrier_recording_description),
+            checked = carrierRecording,
+            onCheckedChange = { actions.setCarrierRecording(it) }
+        )
+      }
+
+      AnimatedVisibility(
+          visible = carrierRecording,
+          enter   = fadeIn() +  expandVertically(),
+          exit    = fadeOut() + shrinkVertically()
+      ) {
+        Column {
       SettingsSubSection(
         title = stringResource(R.string.settings_subsection_incoming),
         expanded = openSub == SUB_INCOMING,
@@ -538,6 +565,8 @@ private fun RecordingSection(
                     onSelectContacts = onOpenContactsOutgoing
                 )
             }
+        }
+      }
         }
       }
     }
@@ -1256,6 +1285,7 @@ internal fun VoipRecordingToggle() {
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
     var enabled by remember { mutableStateOf(prefs.isVoipRecordingEnabled()) }
+    var autoStart by remember { mutableStateOf(prefs.isVoipAutoStartEnabled()) }
     var showWarning by remember { mutableStateOf(false) }
     var arming by remember { mutableStateOf(false) }
     var unavailable by remember { mutableStateOf(false) }
@@ -1297,6 +1327,26 @@ internal fun VoipRecordingToggle() {
         // name, so an app denied notification permission produces correct but nameless recordings.
         // Worth saying out loud: it looks like a bug in CallVault and is not one.
         SettingsHint(stringResource(R.string.voip_recording_names_hint))
+    }
+
+    // Auto-start vs "ask me", nested under the feature it qualifies: with VoIP recording off there is
+    // no detection running, so there would be nothing to ask about.
+    AnimatedVisibility(
+        visible = enabled,
+        enter   = fadeIn() +  expandVertically(),
+        exit    = fadeOut() + shrinkVertically()
+    ) {
+        NestedGroup {
+            SettingsToggleRow(
+                label = stringResource(R.string.settings_voip_auto_start_label),
+                description = stringResource(R.string.settings_voip_auto_start_description),
+                checked = autoStart,
+                onCheckedChange = { on ->
+                    autoStart = on
+                    prefs.setVoipAutoStartEnabled(on)
+                }
+            )
+        }
     }
 
     if (showWarning) {
@@ -1510,6 +1560,11 @@ private fun AboutSection(
 ) {
     val context = LocalContext.current
     val serverVersion = ScrcpyConfig.SCRCPY_VERSION
+    var showSupportDialog by remember { mutableStateOf(false) }
+
+    if (showSupportDialog) {
+        SupportDialog(appeal = false, onDismiss = { showSupportDialog = false })
+    }
 
     SettingsSection(title = stringResource(R.string.settings_section_about), expanded = expanded, onToggle = onToggle) {
         NavigationRow(
@@ -1533,13 +1588,13 @@ private fun AboutSection(
 
         SettingsDivider()
 
-        // Optional "support development" link. Opens the maintainer's Ko-fi page in the browser.
+        // Optional "support development" link. Offers Ko-fi and PayPal; both open in the browser.
         NavigationRow(
             icon = Icons.Filled.Favorite,
             label = stringResource(R.string.settings_support_label),
             value = stringResource(R.string.settings_support_value),
             supporting = stringResource(R.string.settings_support_supporting),
-            onClick = { context.openKofi() }
+            onClick = { showSupportDialog = true }
         )
 
         Row(
@@ -1937,6 +1992,7 @@ private fun SettingsScreenPreview() {
         val mockContext = LocalContext.current
         val dummyPreferences = AppPreferences(mockContext)
         val dummyActions = object : SettingsActions {
+            override fun setCarrierRecording(enabled: Boolean) {}
             override fun setAutoRecordIncoming(enabled: Boolean) {}
             override fun setAutoRecordOutgoing(enabled: Boolean) {}
             override fun setVibrationEnabled(enabled: Boolean) {}

@@ -43,6 +43,9 @@
     <string name="general_system_limitation">Systemeinschränkung</string>
     <string name="general_system_limitation_message">CallVault wird nicht an diesem Gerät funktionieren, da Ihre Shell-Anwendung nicht die erforderlichen Berechtigungen hat:\n\n%1$s\n\nDieses Problem kann von Ihnen nicht behoben werden. Die App kann auf Ihrem Gerät nicht funktionieren und wird jetzt geschlossen.</string>
     <string name="home_all_set_message">Alles bereit. CallVault ist bereit, Ihre Anrufe aufzuzeichnen.</string>
+    <string name="home_share">Teilen</string>
+    <string name="home_share_chooser">Aufnahme teilen</string>
+    <string name="home_row_menu">Weitere Optionen</string>
     <string name="home_delete">Löschen</string>
     <string name="home_delete_confirm_message">Dadurch wird %1$s dauerhaft gelöscht.</string>
     <string name="home_delete_confirm_title">Aufnahme löschen?</string>
@@ -288,4 +291,38 @@
     <string name="wizard_storage_subtitle">Wählen Sie, wo Ihre Aufnahmen gespeichert werden. Sie können dies später in den Einstellungen ändern.</string>
     <string name="wizard_storage_title">Speicherort für Aufnahmen</string>
     <string name="wizard_title">CallVault einrichten</string>
+    <string name="settings_carrier_recording">Telefonanrufe aufnehmen</string>
+    <string name="settings_carrier_recording_description">Aus: Telefonanrufe werden vollständig ignoriert – keine Aufnahme, keine Benachrichtigung. App-Anrufe bleiben unberührt.</string>
+    <string name="settings_voip_auto_start_label">Automatisch starten</string>
+    <string name="settings_voip_auto_start_description">Aus bedeutet, dass CallVault zuerst fragt: Bei einem App-Anruf erscheint eine Benachrichtigung mit einer Schaltfläche „Aufnehmen“.</string>
+    <string name="voip_prompt_title">App-Anruf läuft</string>
+    <string name="voip_prompt_text">Auf „Aufnehmen“ tippen, um diesen Anruf aufzunehmen.</string>
+    <string name="voip_prompt_text_named">%1$s-Anruf. Auf „Aufnehmen“ tippen, um ihn aufzunehmen.</string>
+    <string name="settings_subsection_phone_calls">Telefonanrufe</string>
+    <string name="home_bulk_delete_message">Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="home_bulk_delete_scope_message">Einige sind sowohl auf diesem Gerät als auch in Drive gespeichert.</string>
+    <string name="home_bulk_delete_device_only">Nur Gerät</string>
+    <string name="home_bulk_delete_drive_only">Nur Drive</string>
+    <string name="home_bulk_delete_both">Beide Kopien</string>
+    <string name="support_appeal_title">Von einer Person gemacht 👋</string>
+    <string name="support_appeal_body">Ich entwickle CallVault allein, in meiner Freizeit – kostenlos, quelloffen, ohne Werbung, ohne Tracking. ☕ Wenn es dir nützt, hält mich eine kleine Spende am Ball. So oder so: danke! 🙏</string>
+    <string name="support_choose_title">Entwicklung unterstützen</string>
+    <string name="support_choose_body">Danke. Beide Links öffnen sich im Browser.</string>
+    <string name="support_not_now">Jetzt nicht</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">%1$d Aufnahme löschen?</item>
+        <item quantity="other">%1$d Aufnahmen löschen?</item>
+    </plurals>
+    <string name="home_bulk_delete_scope_label">Zu löschende Kopien</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d von %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s bleibt erhalten – nur in Drive.</string>
+    <string name="home_bulk_delete_kept_device">%1$s bleibt erhalten – nur auf diesem Gerät.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d Aufnahmen</item>
+        <item quantity="other">%1$d Aufnahmen</item>
+    </plurals>
 </resources>

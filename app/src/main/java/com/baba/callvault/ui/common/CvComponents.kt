@@ -9,6 +9,8 @@
 package com.baba.callvault.ui.common
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -114,6 +116,7 @@ fun CvScaffold(
 fun CvCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     color: Color = MaterialTheme.colorScheme.surface,
     border: Boolean = true,
     contentPadding: PaddingValues = PaddingValues(18.dp),
@@ -121,6 +124,25 @@ fun CvCard(
 ) {
     val shape = MaterialTheme.shapes.large
     val borderStroke = if (border) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
+
+    // Long-press needs `combinedClickable`, which Surface's own onClick cannot express. Only cards
+    // that ask for it take this path, so every existing caller keeps the Surface-click behaviour it
+    // had — including its ripple and its disabled state when onClick is null.
+    if (onLongClick != null) {
+        Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .combinedClickable(onClick = { onClick?.invoke() }, onLongClick = onLongClick),
+            color = color,
+            shape = shape,
+            border = borderStroke,
+        ) {
+            Column(Modifier.padding(contentPadding), content = content)
+        }
+        return
+    }
+
     val base = Modifier
         .fillMaxWidth()
         .then(if (onClick != null) Modifier.clip(shape) else Modifier)

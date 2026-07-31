@@ -21,6 +21,7 @@ import com.baba.callvault.data.health.SetupFingerprint
 import com.baba.callvault.data.health.SetupHealth
 import com.baba.callvault.data.health.SetupHealthDeriver
 import com.baba.callvault.data.health.SetupHealthStore
+import com.baba.callvault.services.recording.RecordingPolicy
 import com.baba.callvault.data.health.Prerequisite
 import com.baba.callvault.data.health.SetupPrerequisites
 import com.baba.callvault.data.recordings.RecordingDirection
@@ -491,8 +492,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val result = CallGapDetector.sweep(
             entries = CallLogReader.entriesSince(appContext, facts.sweepWatermark),
             observedCallEnds = facts.observedCallEnds,
-            autoRecordIncoming = preferences.isAutoRecordIncomingEnabled(),
-            autoRecordOutgoing = preferences.isAutoRecordOutgoingEnabled(),
+            // Both are ANDed with the carrier master switch: the sweep's question is "did the user
+            // expect this call recorded?", and in app-calls-only mode the answer is no for every
+            // phone call, whatever the per-direction switches were left at. Without this, turning
+            // phone recording off would fill the status card with gaps for calls deliberately
+            // ignored.
+            autoRecordIncoming = RecordingPolicy.expectsCarrierRecording(
+                carrierEnabled = preferences.isCarrierRecordingEnabled(),
+                autoRecordForDirection = preferences.isAutoRecordIncomingEnabled(),
+            ),
+            autoRecordOutgoing = RecordingPolicy.expectsCarrierRecording(
+                carrierEnabled = preferences.isCarrierRecordingEnabled(),
+                autoRecordForDirection = preferences.isAutoRecordOutgoingEnabled(),
+            ),
             watermark = facts.sweepWatermark,
             ringCapacity = SetupHealthStore.RING_SIZE,
             windowStart = windowStart
@@ -537,6 +549,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             withContext(Dispatchers.IO) { RecordingsRepository.deleteFile(appContext, uri) }
             refresh()
             _uiState.update { it.copy(deletingUris = it.deletingUris - uri) }
+        }
+    }
+
+    /**
+     * Deletes every file in [uris] — a bulk delete from a multi-selection — then reloads the list
+     * once at the end rather than after each file.
+     *
+     * The whole set is marked as deleting up front so every affected row shows its spinner together;
+     * refreshing per file would make the list jump under the user's finger while the rest run.
+     */
+    fun deleteUris(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        if (playback.value.activeUri in uris) playbackController.stop()
+        _uiState.update { it.copy(deletingUris = it.deletingUris + uris) }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                uris.forEach { RecordingsRepository.deleteFile(appContext, it) }
+            }
+            refresh()
+            _uiState.update { it.copy(deletingUris = it.deletingUris - uris.toSet()) }
         }
     }
 

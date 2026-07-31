@@ -43,6 +43,9 @@
     <string name="general_system_limitation">Ograniczenia systemu</string>
     <string name="general_system_limitation_message">CallVault nie będzie działać na tym urządzeniu, ponieważ Twoja aplikacja powłoki nie posiada wymaganych uprawnień:\n\n%1$s\n\nNie można nic z tym zrobić – aplikacja nie może działać i zostanie teraz zamknięta.</string>
     <string name="home_all_set_message">Wszystko gotowe. CallVault jest gotowy do nagrywania Twoich rozmów.</string>
+    <string name="home_share">Udostępnij</string>
+    <string name="home_share_chooser">Udostępnij nagranie</string>
+    <string name="home_row_menu">Więcej opcji</string>
     <string name="home_delete">Usuń</string>
     <string name="home_delete_confirm_message">Spowoduje to trwałe usunięcie %1$s.</string>
     <string name="home_delete_confirm_title">Usunąć nagranie?</string>
@@ -288,4 +291,38 @@
     <string name="wizard_storage_subtitle">Wybierz, gdzie przechowywane są Twoje nagrania. Możesz to zmienić później w Ustawieniach.</string>
     <string name="wizard_storage_title">Gdzie zapisywać nagrania</string>
     <string name="wizard_title">Skonfiguruj CallVault</string>
+    <string name="settings_carrier_recording">Nagrywaj połączenia telefoniczne</string>
+    <string name="settings_carrier_recording_description">Wyłączone: połączenia telefoniczne są całkowicie ignorowane – bez nagrywania i bez powiadomienia. Nie dotyczy połączeń w aplikacjach.</string>
+    <string name="settings_voip_auto_start_label">Uruchamiaj automatycznie</string>
+    <string name="settings_voip_auto_start_description">Wyłączone oznacza, że CallVault najpierw zapyta: na początku połączenia w aplikacji pojawi się powiadomienie z przyciskiem Nagrywaj.</string>
+    <string name="voip_prompt_title">Trwa połączenie w aplikacji</string>
+    <string name="voip_prompt_text">Dotknij Nagrywaj, aby nagrać to połączenie.</string>
+    <string name="voip_prompt_text_named">Połączenie %1$s. Dotknij Nagrywaj, aby je nagrać.</string>
+    <string name="settings_subsection_phone_calls">Połączenia telefoniczne</string>
+    <string name="home_bulk_delete_message">Tej operacji nie można cofnąć.</string>
+    <string name="home_bulk_delete_scope_message">Część jest zapisana i na tym urządzeniu, i na Dysku.</string>
+    <string name="home_bulk_delete_device_only">Tylko urządzenie</string>
+    <string name="home_bulk_delete_drive_only">Tylko Dysk</string>
+    <string name="home_bulk_delete_both">Obie kopie</string>
+    <string name="support_appeal_title">Tworzy to jedna osoba 👋</string>
+    <string name="support_appeal_body">Tworzę CallVault sam, po godzinach — za darmo, otwartoźródłowo, bez reklam i śledzenia. ☕ Jeśli aplikacja Ci się przydaje, drobne wsparcie pomaga mi działać dalej. Tak czy inaczej — dzięki! 🙏</string>
+    <string name="support_choose_title">Wesprzyj rozwój</string>
+    <string name="support_choose_body">Dziękuję. Oba odnośniki otworzą się w przeglądarce.</string>
+    <string name="support_not_now">Nie teraz</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">Wybrano: %1$d</item>
+        <item quantity="other">Wybrano: %1$d</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Usunąć nagrania (%1$d)?</item>
+        <item quantity="other">Usunąć nagrania (%1$d)?</item>
+    </plurals>
+    <string name="home_bulk_delete_scope_label">Kopie do usunięcia</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d z %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s zostanie zachowane — tylko na Dysku.</string>
+    <string name="home_bulk_delete_kept_device">%1$s zostanie zachowane — tylko na tym urządzeniu.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">nagrania: %1$d</item>
+        <item quantity="other">nagrania: %1$d</item>
+    </plurals>
 </resources>

@@ -43,6 +43,9 @@
     <string name="general_system_limitation">Giới hạn hệ thống</string>
     <string name="general_system_limitation_message">CallVault sẽ không hoạt động trên thiết bị này vì ứng dụng shell của bạn không có các quyền cần thiết:\n\n%1$s\n\nBạn không thể làm gì được nữa, ứng dụng không thể hoạt động và sẽ tự động đóng.</string>
     <string name="home_all_set_message">Mọi thứ đã sẵn sàng. CallVault đã sẵn sàng ghi âm các cuộc gọi của bạn.</string>
+    <string name="home_share">Chia sẻ</string>
+    <string name="home_share_chooser">Chia sẻ bản ghi</string>
+    <string name="home_row_menu">Tùy chọn khác</string>
     <string name="home_delete">Xóa</string>
     <string name="home_delete_confirm_message">Thao tác này sẽ xóa vĩnh viễn %1$s.</string>
     <string name="home_delete_confirm_title">Xóa bản ghi âm?</string>
@@ -288,4 +291,38 @@
     <string name="wizard_storage_subtitle">Chọn nơi lưu các bản ghi âm. Bạn có thể thay đổi sau trong Cài đặt.</string>
     <string name="wizard_storage_title">Nơi lưu bản ghi âm</string>
     <string name="wizard_title">Thiết lập CallVault</string>
+    <string name="settings_carrier_recording">Ghi âm cuộc gọi điện thoại</string>
+    <string name="settings_carrier_recording_description">Tắt: cuộc gọi điện thoại bị bỏ qua hoàn toàn — không ghi âm, không thông báo. Cuộc gọi trong ứng dụng không bị ảnh hưởng.</string>
+    <string name="settings_voip_auto_start_label">Tự động bắt đầu</string>
+    <string name="settings_voip_auto_start_description">Tắt nghĩa là CallVault sẽ hỏi trước: một thông báo có nút Ghi âm xuất hiện khi cuộc gọi trong ứng dụng bắt đầu.</string>
+    <string name="voip_prompt_title">Đang có cuộc gọi trong ứng dụng</string>
+    <string name="voip_prompt_text">Nhấn Ghi âm để ghi lại cuộc gọi này.</string>
+    <string name="voip_prompt_text_named">Cuộc gọi %1$s. Nhấn Ghi âm để ghi lại.</string>
+    <string name="settings_subsection_phone_calls">Cuộc gọi điện thoại</string>
+    <string name="home_bulk_delete_message">Không thể hoàn tác.</string>
+    <string name="home_bulk_delete_scope_message">Một số được lưu cả trên thiết bị này và trên Drive.</string>
+    <string name="home_bulk_delete_device_only">Chỉ trên thiết bị</string>
+    <string name="home_bulk_delete_drive_only">Chỉ trên Drive</string>
+    <string name="home_bulk_delete_both">Cả hai bản sao</string>
+    <string name="support_appeal_title">Do một người làm 👋</string>
+    <string name="support_appeal_body">Tôi tự phát triển CallVault trong thời gian rảnh — miễn phí, mã nguồn mở, không quảng cáo, không theo dõi. ☕ Nếu thấy hữu ích, một khoản nhỏ giúp tôi tiếp tục. Dù sao thì, cảm ơn bạn! 🙏</string>
+    <string name="support_choose_title">Ủng hộ việc phát triển</string>
+    <string name="support_choose_body">Cảm ơn bạn. Cả hai liên kết đều mở trong trình duyệt.</string>
+    <string name="support_not_now">Để sau</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">Đã chọn %1$d</item>
+        <item quantity="other">Đã chọn %1$d</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Xóa %1$d bản ghi?</item>
+        <item quantity="other">Xóa %1$d bản ghi?</item>
+    </plurals>
+    <string name="home_bulk_delete_scope_label">Bản sao cần xóa</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d trên %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s sẽ được giữ lại — chỉ có trên Drive.</string>
+    <string name="home_bulk_delete_kept_device">%1$s sẽ được giữ lại — chỉ có trên thiết bị này.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d bản ghi</item>
+        <item quantity="other">%1$d bản ghi</item>
+    </plurals>
 </resources>

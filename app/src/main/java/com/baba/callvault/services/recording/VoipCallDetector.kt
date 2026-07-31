@@ -74,11 +74,34 @@ class VoipCallDetector(private val context: Context) {
         if (callActive) {
             callActive = false
             AppLogger.i(TAG, "VoIP call ended")
+            // Take the prompt down with the call. Leaving it would offer to record a call that is
+            // over, and tapping it would start a recording of nothing.
+            VoipRecordPrompt.cancel(context)
             runCatching { VoipRecordingCoordinator.onCallEnded(context) }
                 .onFailure { AppLogger.w(TAG, "VoIP stop failed: ${it.message}") }
             isRecording = false
             onRecordingStateChanged?.invoke()
         }
+    }
+
+    /**
+     * Starts recording a call already under way — the answer to the "Ask me" prompt.
+     *
+     * Ignored unless a call is actually up: the prompt is dismissable and the action could arrive
+     * late, and starting a capture with no call would produce a file of silence.
+     */
+    fun startNow() {
+        if (!callActive || isRecording) {
+            AppLogger.i(TAG, "Manual app-call start ignored (callActive=$callActive recording=$isRecording)")
+            VoipRecordPrompt.cancel(context)
+            return
+        }
+        AppLogger.i(TAG, "Recording this app call on the user's request")
+        VoipRecordPrompt.cancel(context)
+        runCatching { VoipRecordingCoordinator.onCallStarted(context) }
+            .onFailure { AppLogger.w(TAG, "Manual VoIP start failed: ${it.message}") }
+        isRecording = VoipRecordingCoordinator.isRecording
+        onRecordingStateChanged?.invoke()
     }
 
     private fun evaluate(mode: Int) {
@@ -87,6 +110,20 @@ class VoipCallDetector(private val context: Context) {
             handler.removeCallbacks(endCallRunnable)
             callActive = true
             AppLogger.i(TAG, "VoIP call detected (mode=IN_COMMUNICATION)")
+
+            // "Ask me": arm, but let the user decide. The detector still runs — it has to, or there
+            // would be nothing to prompt about — and only the automatic start is withheld.
+            val prefs = AppPreferences(context)
+            val action = RecordingPolicy.forVoipCall(
+                voipEnabled = prefs.isVoipRecordingEnabled(),
+                autoStart = prefs.isVoipAutoStartEnabled(),
+            )
+            if (action == RecordingPolicy.VoipAction.OFFER) {
+                AppLogger.i(TAG, "App-call auto-start is off — offering to record instead")
+                VoipRecordPrompt.show(context, VoipRecordingCoordinator.currentCallAppLabel(context))
+                onRecordingStateChanged?.invoke()
+                return
+            }
             runCatching { VoipRecordingCoordinator.onCallStarted(context) }
                 .onFailure { AppLogger.w(TAG, "VoIP start failed: ${it.message}") }
             isRecording = VoipRecordingCoordinator.isRecording

@@ -46,6 +46,9 @@
     <string name="general_system_limitation">Limitação do sistema</string>
     <string name="general_system_limitation_message">O CallVault não vai funcionar neste dispositivo porque o aplicativo de shell não tem as permissões necessárias:\n\n%1$s\n\nNão há nada que você possa fazer a respeito; o app não tem como funcionar e será fechado agora.</string>
     <string name="home_all_set_message">Tudo pronto. O CallVault está pronto para gravar suas chamadas.</string>
+    <string name="home_share">Compartilhar</string>
+    <string name="home_share_chooser">Compartilhar gravação</string>
+    <string name="home_row_menu">Mais opções</string>
     <string name="home_delete">Excluir</string>
     <string name="home_delete_confirm_message">Isto exclui %1$s permanentemente.</string>
     <string name="home_delete_confirm_title">Excluir a gravação?</string>
@@ -291,4 +294,38 @@
     <string name="wizard_storage_subtitle">Escolha onde as suas gravações ficam guardadas. Você pode mudar isso depois nas Configurações.</string>
     <string name="wizard_storage_title">Onde salvar as gravações</string>
     <string name="wizard_title">Configurar o CallVault</string>
+    <string name="settings_carrier_recording">Gravar chamadas telefônicas</string>
+    <string name="settings_carrier_recording_description">Desativado: as chamadas telefônicas são totalmente ignoradas, sem gravação nem notificação. As chamadas de apps não são afetadas.</string>
+    <string name="settings_voip_auto_start_label">Iniciar automaticamente</string>
+    <string name="settings_voip_auto_start_description">Desativado significa que o CallVault pergunta antes: uma notificação com um botão Gravar aparece quando uma chamada de app começa.</string>
+    <string name="voip_prompt_title">Chamada de app em andamento</string>
+    <string name="voip_prompt_text">Toque em Gravar para gravar esta chamada.</string>
+    <string name="voip_prompt_text_named">Chamada do %1$s. Toque em Gravar para gravá-la.</string>
+    <string name="settings_subsection_phone_calls">Chamadas telefônicas</string>
+    <string name="home_bulk_delete_message">Isso não pode ser desfeito.</string>
+    <string name="home_bulk_delete_scope_message">Algumas estão salvas neste dispositivo e no Drive.</string>
+    <string name="home_bulk_delete_device_only">Só no dispositivo</string>
+    <string name="home_bulk_delete_drive_only">Só no Drive</string>
+    <string name="home_bulk_delete_both">As duas cópias</string>
+    <string name="support_appeal_title">Feito por uma pessoa só 👋</string>
+    <string name="support_appeal_body">Eu desenvolvo o CallVault sozinho, no meu tempo livre — grátis, código aberto, sem anúncios nem rastreamento. ☕ Se ele te é útil, uma pequena contribuição me ajuda a continuar. De todo modo, obrigado! 🙏</string>
+    <string name="support_choose_title">Apoiar o desenvolvimento</string>
+    <string name="support_choose_body">Obrigado. Os dois links abrem no seu navegador.</string>
+    <string name="support_not_now">Agora não</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d selecionada</item>
+        <item quantity="other">%1$d selecionadas</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Excluir %1$d gravação?</item>
+        <item quantity="other">Excluir %1$d gravações?</item>
+    </plurals>
+    <string name="home_bulk_delete_scope_label">Cópias a excluir</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d de %3$d)</string>
+    <string name="home_bulk_delete_kept_drive">%1$s será mantida: está só no Drive.</string>
+    <string name="home_bulk_delete_kept_device">%1$s será mantida: está só neste dispositivo.</string>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d gravações</item>
+        <item quantity="other">%1$d gravações</item>
+    </plurals>
 </resources>

@@ -20,6 +20,7 @@ import com.baba.callvault.data.health.recordMissedForMissingPrerequisite
 import com.baba.callvault.data.recordings.RecordingDirection
 import com.baba.callvault.data.recordings.RecordingMetadata
 import com.baba.callvault.services.recording.RecordingForegroundService
+import com.baba.callvault.services.recording.RecordingPolicy
 import com.baba.callvault.system.permissions.PermissionChecks
 import com.baba.callvault.utils.AppLogger
 import com.baba.callvault.utils.PhoneNumberManager
@@ -276,13 +277,26 @@ class CallSessionManager private constructor(context: Context) {
         }
         val sessionMetadata = session.currentMetadata ?: throw IllegalStateException("Metadata should have been determined by now. There is a logic error.")
 
-        if (shouldAutoRecord(sessionMetadata)) {
-            reportGapIfPrerequisiteMissing(sessionMetadata)
-            AppLogger.i(TAG, "Sending start INTENT for ${sessionMetadata.direction} call to RecordingForegroundService.")
-            sendServiceCommand(RecordingForegroundService.ACTION_START_RECORDING, sessionMetadata)
-        } else {
-            AppLogger.i(TAG, "Sending standby INTENT for ${sessionMetadata.direction} call to RecordingForegroundService.")
-            sendServiceCommand(RecordingForegroundService.ACTION_STANDBY, sessionMetadata)
+        // IGNORE is genuinely "do nothing" — note that the OFFER branch is not: it posts a standby
+        // notification with a Record button, on every call. Someone who turned phone-call recording
+        // off wants silence, not a prompt each time.
+        when (RecordingPolicy.forCarrierCall(
+            carrierEnabled = preferences.isCarrierRecordingEnabled(),
+            autoRecord = shouldAutoRecord(sessionMetadata),
+        )) {
+            RecordingPolicy.CarrierAction.IGNORE ->
+                AppLogger.i(TAG, "Phone-call recording is off — ignoring this ${sessionMetadata.direction} call entirely.")
+
+            RecordingPolicy.CarrierAction.RECORD -> {
+                reportGapIfPrerequisiteMissing(sessionMetadata)
+                AppLogger.i(TAG, "Sending start INTENT for ${sessionMetadata.direction} call to RecordingForegroundService.")
+                sendServiceCommand(RecordingForegroundService.ACTION_START_RECORDING, sessionMetadata)
+            }
+
+            RecordingPolicy.CarrierAction.OFFER -> {
+                AppLogger.i(TAG, "Sending standby INTENT for ${sessionMetadata.direction} call to RecordingForegroundService.")
+                sendServiceCommand(RecordingForegroundService.ACTION_STANDBY, sessionMetadata)
+            }
         }
         session.wasRecordingServiceStartIntentSend = true
     }
