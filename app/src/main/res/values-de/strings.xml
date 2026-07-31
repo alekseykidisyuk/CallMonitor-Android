@@ -291,4 +291,11 @@
     <string name="wizard_storage_subtitle">Wählen Sie, wo Ihre Aufnahmen gespeichert werden. Sie können dies später in den Einstellungen ändern.</string>
     <string name="wizard_storage_title">Speicherort für Aufnahmen</string>
     <string name="wizard_title">CallVault einrichten</string>
+    <string name="settings_carrier_recording">Telefonanrufe aufnehmen</string>
+    <string name="settings_carrier_recording_description">Aus bedeutet, dass CallVault Telefonanrufe vollständig ignoriert – keine Aufnahme und keine Benachrichtigung während des Anrufs. App-Anrufe bleiben unberührt.</string>
+    <string name="settings_voip_auto_start_label">Automatisch starten</string>
+    <string name="settings_voip_auto_start_description">Aus bedeutet, dass CallVault zuerst fragt: Bei einem App-Anruf erscheint eine Benachrichtigung mit einer Schaltfläche „Aufnehmen“.</string>
+    <string name="voip_prompt_title">App-Anruf läuft</string>
+    <string name="voip_prompt_text">Auf „Aufnehmen“ tippen, um diesen Anruf aufzunehmen.</string>
+    <string name="voip_prompt_text_named">%1$s-Anruf. Auf „Aufnehmen“ tippen, um ihn aufzunehmen.</string>
 </resources>

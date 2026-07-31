@@ -291,4 +291,11 @@
     <string name="wizard_storage_subtitle">Scelga dove archiviare le registrazioni. Potrà modificarlo in seguito nelle Impostazioni.</string>
     <string name="wizard_storage_title">Dove salvare le registrazioni</string>
     <string name="wizard_title">Configura CallVault</string>
+    <string name="settings_carrier_recording">Registra le chiamate telefoniche</string>
+    <string name="settings_carrier_recording_description">Se disattivato, CallVault ignora completamente le chiamate telefoniche: nessuna registrazione e nessuna notifica durante la chiamata. Le chiamate nelle app non sono interessate.</string>
+    <string name="settings_voip_auto_start_label">Avvia automaticamente</string>
+    <string name="settings_voip_auto_start_description">Se disattivato, CallVault chiede prima: all\'inizio di una chiamata in un\'app compare una notifica con un pulsante Registra.</string>
+    <string name="voip_prompt_title">Chiamata in un\'app in corso</string>
+    <string name="voip_prompt_text">Tocca Registra per registrare questa chiamata.</string>
+    <string name="voip_prompt_text_named">Chiamata %1$s. Tocca Registra per registrarla.</string>
 </resources>

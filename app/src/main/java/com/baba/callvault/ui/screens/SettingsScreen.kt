@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.ColorLens
@@ -431,6 +432,7 @@ private fun RecordingSection(
 ) {
     // Evaluate these here so they are fetched on every recomposition.
     val fileNameFormat = remember(updateTrigger) { preferences.getFileNameTemplate() }
+    val carrierRecording = remember(updateTrigger) { preferences.isCarrierRecordingEnabled() }
     val autoRecordIncoming = remember(updateTrigger) { preferences.isAutoRecordIncomingEnabled() }
     val autoRecordOutgoing = remember(updateTrigger) { preferences.isAutoRecordOutgoingEnabled() }
     val ignoreAnonymousIncoming = remember(updateTrigger) { preferences.isIgnoreAnonymousIncomingEnabled() }
@@ -469,6 +471,23 @@ private fun RecordingSection(
         )
       }
 
+      // The master switch for phone calls, above the per-direction sub-sections it governs.
+      // Turning the two direction switches off is NOT the same thing: that is "ask me", and it still
+      // puts a Record prompt on every call. This is the "app calls only" mode.
+      SettingsToggleRow(
+          icon = Icons.Filled.Smartphone,
+          label = stringResource(R.string.settings_carrier_recording),
+          description = stringResource(R.string.settings_carrier_recording_description),
+          checked = carrierRecording,
+          onCheckedChange = { actions.setCarrierRecording(it) }
+      )
+
+      AnimatedVisibility(
+          visible = carrierRecording,
+          enter   = fadeIn() +  expandVertically(),
+          exit    = fadeOut() + shrinkVertically()
+      ) {
+        Column {
       SettingsSubSection(
         title = stringResource(R.string.settings_subsection_incoming),
         expanded = openSub == SUB_INCOMING,
@@ -538,6 +557,8 @@ private fun RecordingSection(
                     onSelectContacts = onOpenContactsOutgoing
                 )
             }
+        }
+      }
         }
       }
     }
@@ -1256,6 +1277,7 @@ internal fun VoipRecordingToggle() {
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
     var enabled by remember { mutableStateOf(prefs.isVoipRecordingEnabled()) }
+    var autoStart by remember { mutableStateOf(prefs.isVoipAutoStartEnabled()) }
     var showWarning by remember { mutableStateOf(false) }
     var arming by remember { mutableStateOf(false) }
     var unavailable by remember { mutableStateOf(false) }
@@ -1297,6 +1319,26 @@ internal fun VoipRecordingToggle() {
         // name, so an app denied notification permission produces correct but nameless recordings.
         // Worth saying out loud: it looks like a bug in CallVault and is not one.
         SettingsHint(stringResource(R.string.voip_recording_names_hint))
+    }
+
+    // Auto-start vs "ask me", nested under the feature it qualifies: with VoIP recording off there is
+    // no detection running, so there would be nothing to ask about.
+    AnimatedVisibility(
+        visible = enabled,
+        enter   = fadeIn() +  expandVertically(),
+        exit    = fadeOut() + shrinkVertically()
+    ) {
+        NestedGroup {
+            SettingsToggleRow(
+                label = stringResource(R.string.settings_voip_auto_start_label),
+                description = stringResource(R.string.settings_voip_auto_start_description),
+                checked = autoStart,
+                onCheckedChange = { on ->
+                    autoStart = on
+                    prefs.setVoipAutoStartEnabled(on)
+                }
+            )
+        }
     }
 
     if (showWarning) {
@@ -1937,6 +1979,7 @@ private fun SettingsScreenPreview() {
         val mockContext = LocalContext.current
         val dummyPreferences = AppPreferences(mockContext)
         val dummyActions = object : SettingsActions {
+            override fun setCarrierRecording(enabled: Boolean) {}
             override fun setAutoRecordIncoming(enabled: Boolean) {}
             override fun setAutoRecordOutgoing(enabled: Boolean) {}
             override fun setVibrationEnabled(enabled: Boolean) {}

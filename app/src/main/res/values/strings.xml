@@ -136,6 +136,11 @@
     <string name="settings_subsection_voip">VoIP calls</string>
     <string name="settings_voip_recording_label">Record VoIP calls</string>
     <string name="settings_voip_recording_description">Also record calls made in apps like WhatsApp, Signal and Telegram. Experimental — some apps block recording, and this cannot be known until a call is under way.</string>
+    <string name="settings_voip_auto_start_label">Start automatically</string>
+    <string name="settings_voip_auto_start_description">Off means CallVault asks first: a notification with a Record button appears when an app call starts.</string>
+    <string name="voip_prompt_title">App call in progress</string>
+    <string name="voip_prompt_text">Tap Record to record this call.</string>
+    <string name="voip_prompt_text_named">%1$s call. Tap Record to record it.</string>
     <string name="voip_recording_warning_title">Record VoIP calls?</string>
     <string name="voip_recording_warning_message">Recording app calls is more tightly regulated than recording phone calls, and in many places every participant must agree first. Please make sure you are allowed to.\n\nThis is experimental: it works with some apps and not others, and an app can block recording at any time in an update.</string>
     <string name="voip_recording_warning_continue">I understand, turn it on</string>
@@ -215,6 +220,8 @@
     <string name="placeholder_contact_name_desc">The contact name, if available</string>
     <string name="placeholder_cross_country_desc">Indicates if the call is cross-country (true/false)</string>
 
+    <string name="settings_carrier_recording">Record phone calls</string>
+    <string name="settings_carrier_recording_description">Off means CallVault ignores phone calls completely — no recording, and no notification during the call. App calls are unaffected.</string>
     <string name="settings_auto_record_incoming">Automatically record incoming calls</string>
     <string name="settings_auto_record_outgoing">Automatically record outgoing calls</string>
     <string name="settings_ignore_anonymous_incoming">Ignore anonymous incoming calls</string>

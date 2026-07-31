@@ -34,6 +34,8 @@ import com.baba.callvault.utils.AppLogger
  * This abstraction allows Compose overloads without concrete ViewModels, allowing Previews of the Stateless UI.
  */
 interface SettingsActions {
+    /** Master switch for carrier calls; off is the "app calls only" mode. */
+    fun setCarrierRecording(enabled: Boolean)
     fun setAutoRecordIncoming(enabled: Boolean)
     fun setAutoRecordOutgoing(enabled: Boolean)
     fun setVibrationEnabled(enabled: Boolean)
@@ -140,6 +142,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     // -------- Recording settings
+
+    /** Handle carrier calls at all, or ignore them entirely ("app calls only").
+     *
+     * @param enabled `false` to ignore phone calls — no recording and no standby prompt.
+     */
+    override fun setCarrierRecording(enabled: Boolean) {
+        preferences.setCarrierRecordingEnabled(enabled)
+        refresh()
+    }
 
     /** Turn automatic recording of incoming calls on or off.
      *

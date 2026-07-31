@@ -236,6 +236,12 @@ class DaemonKeepAliveService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        // The Record button on the "Ask me" prompt. Handled after startForeground above, so the
+        // service is always in a legal foreground state before any work begins.
+        if (intent?.action == ACTION_VOIP_RECORD_NOW) {
+            voipDetector.startNow()
+        }
+
         // Recover the INSTANT the daemon dies (binder linkToDeath) — don't wait for the next poll.
         // On a real incoming call this is what races (and hopefully beats) the call after a long idle.
         RecorderConnection.onDeath = { onDaemonDiedImmediate() }
@@ -441,6 +447,13 @@ class DaemonKeepAliveService : Service() {
     companion object {
         private const val TAG = "CV:DaemonKeepAlive"
         private const val CHANNEL_ID = "recorder_keepalive"
+
+        /**
+         * Sent by the "Ask me" prompt's Record button. Handled here because this service owns the
+         * [VoipCallDetector] instance that knows a call is up — routing it anywhere else would mean
+         * a second component tracking the same call state.
+         */
+        const val ACTION_VOIP_RECORD_NOW = "com.baba.callvault.VOIP_RECORD_NOW"
 
         /** Low-importance channel for one-off explanations, kept apart from the permanent status note. */
         private const val INFO_CHANNEL_ID = "callvault_info"

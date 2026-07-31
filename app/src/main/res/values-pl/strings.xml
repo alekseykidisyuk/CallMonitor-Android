@@ -291,4 +291,11 @@
     <string name="wizard_storage_subtitle">Wybierz, gdzie przechowywane są Twoje nagrania. Możesz to zmienić później w Ustawieniach.</string>
     <string name="wizard_storage_title">Gdzie zapisywać nagrania</string>
     <string name="wizard_title">Skonfiguruj CallVault</string>
+    <string name="settings_carrier_recording">Nagrywaj połączenia telefoniczne</string>
+    <string name="settings_carrier_recording_description">Wyłączone oznacza, że CallVault całkowicie ignoruje połączenia telefoniczne – bez nagrywania i bez powiadomienia w trakcie rozmowy. Nie dotyczy połączeń w aplikacjach.</string>
+    <string name="settings_voip_auto_start_label">Uruchamiaj automatycznie</string>
+    <string name="settings_voip_auto_start_description">Wyłączone oznacza, że CallVault najpierw zapyta: na początku połączenia w aplikacji pojawi się powiadomienie z przyciskiem Nagrywaj.</string>
+    <string name="voip_prompt_title">Trwa połączenie w aplikacji</string>
+    <string name="voip_prompt_text">Dotknij Nagrywaj, aby nagrać to połączenie.</string>
+    <string name="voip_prompt_text_named">Połączenie %1$s. Dotknij Nagrywaj, aby je nagrać.</string>
 </resources>

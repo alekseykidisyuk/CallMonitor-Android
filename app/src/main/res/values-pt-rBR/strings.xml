@@ -294,4 +294,11 @@
     <string name="wizard_storage_subtitle">Escolha onde as suas gravações ficam guardadas. Você pode mudar isso depois nas Configurações.</string>
     <string name="wizard_storage_title">Onde salvar as gravações</string>
     <string name="wizard_title">Configurar o CallVault</string>
+    <string name="settings_carrier_recording">Gravar chamadas telefônicas</string>
+    <string name="settings_carrier_recording_description">Desativado significa que o CallVault ignora completamente as chamadas telefônicas: sem gravação e sem notificação durante a chamada. As chamadas de apps não são afetadas.</string>
+    <string name="settings_voip_auto_start_label">Iniciar automaticamente</string>
+    <string name="settings_voip_auto_start_description">Desativado significa que o CallVault pergunta antes: uma notificação com um botão Gravar aparece quando uma chamada de app começa.</string>
+    <string name="voip_prompt_title">Chamada de app em andamento</string>
+    <string name="voip_prompt_text">Toque em Gravar para gravar esta chamada.</string>
+    <string name="voip_prompt_text_named">Chamada do %1$s. Toque em Gravar para gravá-la.</string>
 </resources>

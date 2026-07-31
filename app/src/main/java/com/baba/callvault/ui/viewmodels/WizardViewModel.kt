@@ -91,6 +91,12 @@ class WizardViewModel(application: Application) : AndroidViewModel(application) 
     // ------ Step 3: auto-record
 
     /** Persists whether incoming calls are auto-recorded. */
+    /** Persists whether CallVault handles carrier calls at all; false is "app calls only". */
+    fun setCarrierRecording(enabled: Boolean) {
+        preferences.setCarrierRecordingEnabled(enabled)
+        bump()
+    }
+
     fun setAutoRecordIncoming(enabled: Boolean) {
         preferences.setAutoRecordIncomingEnabled(enabled)
         bump()

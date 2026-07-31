@@ -291,4 +291,11 @@
     <string name="wizard_storage_subtitle">Выберите, где будут храниться ваши записи. Это можно изменить позже в настройках.</string>
     <string name="wizard_storage_title">Куда сохранять записи</string>
     <string name="wizard_title">Настройка CallVault</string>
+    <string name="settings_carrier_recording">Записывать телефонные звонки</string>
+    <string name="settings_carrier_recording_description">Если выключено, CallVault полностью игнорирует телефонные звонки: без записи и без уведомления во время разговора. На звонки в приложениях это не влияет.</string>
+    <string name="settings_voip_auto_start_label">Запускать автоматически</string>
+    <string name="settings_voip_auto_start_description">Если выключено, CallVault сначала спросит: в начале звонка в приложении появится уведомление с кнопкой «Записать».</string>
+    <string name="voip_prompt_title">Идёт звонок в приложении</string>
+    <string name="voip_prompt_text">Нажмите «Записать», чтобы записать этот звонок.</string>
+    <string name="voip_prompt_text_named">Звонок в %1$s. Нажмите «Записать», чтобы записать его.</string>
 </resources>

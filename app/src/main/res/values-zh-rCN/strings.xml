@@ -291,4 +291,11 @@
     <string name="wizard_storage_subtitle">选择录音的存储位置。你之后可以在设置中更改。</string>
     <string name="wizard_storage_title">录音保存位置</string>
     <string name="wizard_title">设置 CallVault</string>
+    <string name="settings_carrier_recording">录制电话通话</string>
+    <string name="settings_carrier_recording_description">关闭后，CallVault 将完全忽略电话通话：不录音，通话期间也不显示通知。不影响应用内通话。</string>
+    <string name="settings_voip_auto_start_label">自动开始</string>
+    <string name="settings_voip_auto_start_description">关闭后，CallVault 会先询问：应用内通话开始时会显示带“录制”按钮的通知。</string>
+    <string name="voip_prompt_title">应用内通话进行中</string>
+    <string name="voip_prompt_text">点按“录制”即可录制此通话。</string>
+    <string name="voip_prompt_text_named">%1$s 通话。点按“录制”即可录制。</string>
 </resources>

@@ -205,6 +205,19 @@ object VoipRecordingCoordinator {
      * it stays correct for shared uids and for work profiles, where the uid encodes the user id.
      * Several packages can share a uid, in which case the launchable one is the app the user is in.
      */
+    /**
+     * The name of the app whose call is currently up, or null when it cannot be told.
+     *
+     * Used by the "Ask me" prompt so it can say *which* app is calling. Resolution goes through the
+     * daemon (only it can see who owns the call audio), so this returns null whenever the daemon is
+     * not connected — the prompt then falls back to generic wording rather than not appearing.
+     */
+    fun currentCallAppLabel(context: Context): String? {
+        val service = RecorderConnection.service ?: return null
+        val pkg = runCatching { resolveCallPackage(context, service) }.getOrNull() ?: return null
+        return appLabelFor(context, pkg)
+    }
+
     private fun resolveCallPackage(context: Context, service: IRecorderService): String? {
         val uid = runCatching { service.voipCallAppUid() }
             .onFailure { AppLogger.d(TAG, "call-uid lookup failed: ${it.message}") }

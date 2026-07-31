@@ -152,6 +152,7 @@ fun WizardScreen(
     val syncHour = remember(updateTrigger) { viewModel.preferences.getSyncTimeHour() }
     val syncMinute = remember(updateTrigger) { viewModel.preferences.getSyncTimeMinute() }
     val syncDayOfWeek = remember(updateTrigger) { viewModel.preferences.getSyncDayOfWeek() }
+    val carrierRecording = remember(updateTrigger) { viewModel.preferences.isCarrierRecordingEnabled() }
     val autoRecordIncoming = remember(updateTrigger) { viewModel.preferences.isAutoRecordIncomingEnabled() }
     val autoRecordOutgoing = remember(updateTrigger) { viewModel.preferences.isAutoRecordOutgoingEnabled() }
     val audioCodec = remember(updateTrigger) { viewModel.preferences.getAudioCodec() }
@@ -256,8 +257,10 @@ fun WizardScreen(
                         onSelectDayOfWeek = viewModel::setSyncDayOfWeek
                     )
                     WizardStep.AUTO_RECORD -> AutoRecordStep(
+                        carrier = carrierRecording,
                         incoming = autoRecordIncoming,
                         outgoing = autoRecordOutgoing,
+                        onCarrierChange = viewModel::setCarrierRecording,
                         onIncomingChange = viewModel::setAutoRecordIncoming,
                         onOutgoingChange = viewModel::setAutoRecordOutgoing
                     )
@@ -674,24 +677,37 @@ private fun ScheduleStep(
 
 @Composable
 private fun AutoRecordStep(
+    carrier: Boolean,
     incoming: Boolean,
     outgoing: Boolean,
+    onCarrierChange: (Boolean) -> Unit,
     onIncomingChange: (Boolean) -> Unit,
     onOutgoingChange: (Boolean) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Offered here and not only in Settings because the wizard cannot be re-run, and someone
+        // installing CallVault for app calls alone wants this on day one — otherwise their first
+        // week is a Record prompt on every phone call they take.
         ToggleCard(
-            title = stringResource(R.string.settings_auto_record_incoming),
-            description = stringResource(R.string.wizard_ui_auto_incoming_desc),
-            checked = incoming,
-            onCheckedChange = onIncomingChange
+            title = stringResource(R.string.settings_carrier_recording),
+            description = stringResource(R.string.settings_carrier_recording_description),
+            checked = carrier,
+            onCheckedChange = onCarrierChange
         )
-        ToggleCard(
-            title = stringResource(R.string.settings_auto_record_outgoing),
-            description = stringResource(R.string.wizard_ui_auto_outgoing_desc),
-            checked = outgoing,
-            onCheckedChange = onOutgoingChange
-        )
+        if (carrier) {
+            ToggleCard(
+                title = stringResource(R.string.settings_auto_record_incoming),
+                description = stringResource(R.string.wizard_ui_auto_incoming_desc),
+                checked = incoming,
+                onCheckedChange = onIncomingChange
+            )
+            ToggleCard(
+                title = stringResource(R.string.settings_auto_record_outgoing),
+                description = stringResource(R.string.wizard_ui_auto_outgoing_desc),
+                checked = outgoing,
+                onCheckedChange = onOutgoingChange
+            )
+        }
     }
 }
 

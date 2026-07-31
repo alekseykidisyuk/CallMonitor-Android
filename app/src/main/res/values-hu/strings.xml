@@ -291,4 +291,11 @@
     <string name="wizard_storage_subtitle">Válassza ki, hová mentse a felvételeit. Ezt később a Beállításokban módosíthatja.</string>
     <string name="wizard_storage_title">Hová mentse a felvételeket</string>
     <string name="wizard_title">CallVault beállítása</string>
+    <string name="settings_carrier_recording">Telefonhívások rögzítése</string>
+    <string name="settings_carrier_recording_description">Kikapcsolva a CallVault teljesen figyelmen kívül hagyja a telefonhívásokat – nincs rögzítés és nincs értesítés a hívás alatt. Az alkalmazáshívásokat ez nem érinti.</string>
+    <string name="settings_voip_auto_start_label">Automatikus indítás</string>
+    <string name="settings_voip_auto_start_description">Kikapcsolva a CallVault először rákérdez: alkalmazáshívás kezdetekor értesítés jelenik meg egy Rögzítés gombbal.</string>
+    <string name="voip_prompt_title">Alkalmazáshívás folyamatban</string>
+    <string name="voip_prompt_text">Koppintson a Rögzítés gombra a hívás rögzítéséhez.</string>
+    <string name="voip_prompt_text_named">%1$s hívás. Koppintson a Rögzítés gombra a rögzítéséhez.</string>
 </resources>
