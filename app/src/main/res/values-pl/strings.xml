@@ -325,4 +325,10 @@
         <item quantity="one">nagrania: %1$d</item>
         <item quantity="other">nagrania: %1$d</item>
     </plurals>
+    <string name="settings_debug_log_file">Plik dziennika</string>
+    <string name="settings_debug_log_view_hint">Dotknij, aby przeczytać najnowsze wpisy.</string>
+    <string name="settings_debug_log_delete">Usuń dziennik</string>
+    <string name="settings_debug_log_delete_title">Usunąć dziennik?</string>
+    <string name="settings_debug_log_delete_message">Zebrane dotąd wpisy zostaną usunięte. Jeśli rejestrowanie nadal działa, od razu zacznie się nowy dziennik.</string>
+    <string name="settings_debug_log_empty">Dziennik jest pusty.</string>
 </resources>

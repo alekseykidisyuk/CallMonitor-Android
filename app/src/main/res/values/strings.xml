@@ -465,4 +465,10 @@
         <item quantity="one">%1$d recordings</item>
         <item quantity="other">%1$d recordings</item>
     </plurals>
+    <string name="settings_debug_log_file">Log file</string>
+    <string name="settings_debug_log_view_hint">Tap to read the most recent entries.</string>
+    <string name="settings_debug_log_delete">Delete log</string>
+    <string name="settings_debug_log_delete_title">Delete the log?</string>
+    <string name="settings_debug_log_delete_message">The entries collected so far are removed. If logging is still on, a new log starts immediately.</string>
+    <string name="settings_debug_log_empty">The log is empty.</string>
 </resources>

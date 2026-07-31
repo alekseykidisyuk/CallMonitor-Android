@@ -34,6 +34,9 @@ import com.baba.callvault.utils.AppLogger
  * This abstraction allows Compose overloads without concrete ViewModels, allowing Previews of the Stateless UI.
  */
 interface SettingsActions {
+    /** Re-reads settings-derived state (e.g. the debug log's size after it is cleared). */
+    fun refreshSettings()
+
     /** Master switch for carrier calls; off is the "app calls only" mode. */
     fun setCarrierRecording(enabled: Boolean)
     fun setAutoRecordIncoming(enabled: Boolean)
@@ -142,6 +145,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     // -------- Recording settings
+
+    /** Re-reads settings-derived state, e.g. the debug log's size after it has been cleared. */
+    override fun refreshSettings() = refresh()
 
     /** Handle carrier calls at all, or ignore them entirely ("app calls only").
      *

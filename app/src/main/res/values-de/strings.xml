@@ -325,4 +325,10 @@
         <item quantity="one">%1$d Aufnahmen</item>
         <item quantity="other">%1$d Aufnahmen</item>
     </plurals>
+    <string name="settings_debug_log_file">Protokolldatei</string>
+    <string name="settings_debug_log_view_hint">Tippen, um die neuesten Einträge zu lesen.</string>
+    <string name="settings_debug_log_delete">Protokoll löschen</string>
+    <string name="settings_debug_log_delete_title">Protokoll löschen?</string>
+    <string name="settings_debug_log_delete_message">Die bisher gesammelten Einträge werden entfernt. Wenn die Protokollierung noch läuft, beginnt sofort ein neues Protokoll.</string>
+    <string name="settings_debug_log_empty">Das Protokoll ist leer.</string>
 </resources>

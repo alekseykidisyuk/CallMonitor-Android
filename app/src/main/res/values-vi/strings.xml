@@ -325,4 +325,10 @@
         <item quantity="one">%1$d bản ghi</item>
         <item quantity="other">%1$d bản ghi</item>
     </plurals>
+    <string name="settings_debug_log_file">Tệp nhật ký</string>
+    <string name="settings_debug_log_view_hint">Nhấn để đọc các mục gần đây nhất.</string>
+    <string name="settings_debug_log_delete">Xóa nhật ký</string>
+    <string name="settings_debug_log_delete_title">Xóa nhật ký?</string>
+    <string name="settings_debug_log_delete_message">Các mục đã thu thập sẽ bị xóa. Nếu ghi nhật ký vẫn bật, một nhật ký mới sẽ bắt đầu ngay.</string>
+    <string name="settings_debug_log_empty">Nhật ký trống.</string>
 </resources>

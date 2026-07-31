@@ -17,6 +17,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
@@ -149,6 +150,38 @@ object AppLogger {
     fun hasLogs(): Boolean {
         val file = logFile
         return file != null && file.exists() && file.length() > 0L
+    }
+
+    /** The log's size on disk in bytes, or 0 when there is no log. */
+    fun logSizeBytes(): Long {
+        val file = logFile ?: return 0L
+        return runCatching { if (file.exists()) file.length() else 0L }.getOrDefault(0L)
+    }
+
+    /**
+     * The last [maxLines] lines of the log, for reading inside the app.
+     *
+     * Tail rather than head: a log is read to find out what just happened. Bounded because the file
+     * grows to megabytes and handing all of it to a Compose `Text` would stall the frame that drew
+     * it — the size is shown separately, so a truncated view is not a hidden one.
+     *
+     * Runs on IO and returns null when there is nothing to show, so the caller can distinguish "no
+     * log" from "an empty read".
+     */
+    suspend fun readTail(maxLines: Int): String? = withContext(Dispatchers.IO) {
+        val file = logFile ?: return@withContext null
+        runCatching {
+            if (!file.exists() || file.length() == 0L) return@withContext null
+            // Flush first: without it the newest lines sit in the writer's buffer and the view shows
+            // a log that is stale exactly where the user is looking.
+            flushSync()
+            val lines = file.readLines()
+            val tail = if (lines.size <= maxLines) lines else lines.takeLast(maxLines)
+            tail.joinToString("\n")
+        }.getOrElse {
+            Log.w(TAG, "Could not read the log for viewing: ${it.message}")
+            null
+        }
     }
 
     /**

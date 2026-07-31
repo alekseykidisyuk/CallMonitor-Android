@@ -325,4 +325,10 @@
         <item quantity="one">записей: %1$d</item>
         <item quantity="other">записей: %1$d</item>
     </plurals>
+    <string name="settings_debug_log_file">Файл журнала</string>
+    <string name="settings_debug_log_view_hint">Нажмите, чтобы прочитать последние записи.</string>
+    <string name="settings_debug_log_delete">Удалить журнал</string>
+    <string name="settings_debug_log_delete_title">Удалить журнал?</string>
+    <string name="settings_debug_log_delete_message">Собранные записи будут удалены. Если запись журнала всё ещё включена, сразу начнётся новый журнал.</string>
+    <string name="settings_debug_log_empty">Журнал пуст.</string>
 </resources>
