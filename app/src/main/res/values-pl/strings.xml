@@ -317,4 +317,5 @@
         <item quantity="one">Usunąć nagrania (%1$d)?</item>
         <item quantity="other">Usunąć nagrania (%1$d)?</item>
     </plurals>
+    <string name="home_bulk_delete_scope_label">Kopie do usunięcia</string>
 </resources>

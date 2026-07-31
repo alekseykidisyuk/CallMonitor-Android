@@ -317,4 +317,5 @@
         <item quantity="one">Удалить записи (%1$d)?</item>
         <item quantity="other">Удалить записи (%1$d)?</item>
     </plurals>
+    <string name="home_bulk_delete_scope_label">Какие копии удалить</string>
 </resources>

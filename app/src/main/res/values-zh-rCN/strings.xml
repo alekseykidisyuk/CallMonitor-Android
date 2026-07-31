@@ -317,4 +317,5 @@
         <item quantity="one">删除 %1$d 条录音？</item>
         <item quantity="other">删除 %1$d 条录音？</item>
     </plurals>
+    <string name="home_bulk_delete_scope_label">要删除的副本</string>
 </resources>

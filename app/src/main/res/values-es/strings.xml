@@ -317,4 +317,5 @@
         <item quantity="one">¿Eliminar %1$d grabación?</item>
         <item quantity="other">¿Eliminar %1$d grabaciones?</item>
     </plurals>
+    <string name="home_bulk_delete_scope_label">Copias que eliminar</string>
 </resources>

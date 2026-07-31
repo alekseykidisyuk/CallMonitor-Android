@@ -317,4 +317,5 @@
         <item quantity="one">Supprimer %1$d enregistrement ?</item>
         <item quantity="other">Supprimer %1$d enregistrements ?</item>
     </plurals>
+    <string name="home_bulk_delete_scope_label">Copies à supprimer</string>
 </resources>

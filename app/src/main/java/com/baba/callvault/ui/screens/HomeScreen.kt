@@ -21,6 +21,8 @@ import com.baba.callvault.system.openWirelessDebugging
 import com.baba.callvault.data.recordings.DeleteScope
 import com.baba.callvault.data.recordings.RecordingSelection
 import com.baba.callvault.system.openKofi
+import com.baba.callvault.ui.common.M3DropdownField
+import com.baba.callvault.ui.common.OptionItem
 import com.baba.callvault.ui.common.SupportDialog
 import com.baba.callvault.system.shareRecordings
 import com.baba.callvault.system.shareRecording
@@ -1109,6 +1111,19 @@ private fun BulkDeleteDialog(
     onConfirm: (DeleteScope) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // Which copies to remove is ONE choice, so it is one field. Laying the three out as buttons —
+    // whether beside Cancel or stacked down the dialog — turned a single decision into a wall of
+    // actions, and put a destructive option next to the safe one.
+    //
+    // Defaults to both copies, matching what deleting a single row has always done for a recording
+    // held in two places. Nothing is destroyed until Delete is pressed either way.
+    val options = listOf(
+        OptionItem(DeleteScope.BOTH.name, stringResource(R.string.home_bulk_delete_both)),
+        OptionItem(DeleteScope.DEVICE.name, stringResource(R.string.home_bulk_delete_device_only)),
+        OptionItem(DeleteScope.DRIVE.name, stringResource(R.string.home_bulk_delete_drive_only)),
+    )
+    var scope by remember { mutableStateOf(DeleteScope.BOTH) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(pluralStringResource(R.plurals.home_bulk_delete_title, count, count)) },
@@ -1120,46 +1135,26 @@ private fun BulkDeleteDialog(
                         else R.string.home_bulk_delete_message
                     )
                 )
-                // The three choices live in the BODY, as full-width rows, rather than in the button
-                // slot. As buttons the dialog flowed them beside Cancel — "Cancel   Device only" on
-                // one line, the rest wrapping below — which puts the safe action and a destructive
-                // one shoulder to shoulder and reads as if Cancel were part of the choice.
                 if (needsScopeChoice) {
-                    Spacer(Modifier.height(8.dp))
-                    ScopeChoice(R.string.home_bulk_delete_device_only) { onConfirm(DeleteScope.DEVICE) }
-                    ScopeChoice(R.string.home_bulk_delete_drive_only) { onConfirm(DeleteScope.DRIVE) }
-                    ScopeChoice(R.string.home_bulk_delete_both) { onConfirm(DeleteScope.BOTH) }
+                    Spacer(Modifier.height(12.dp))
+                    M3DropdownField(
+                        label = stringResource(R.string.home_bulk_delete_scope_label),
+                        selected = options.first { it.key == scope.name },
+                        options = options,
+                        onOptionSelected = { scope = DeleteScope.valueOf(it.key) },
+                    )
                 }
             }
         },
         confirmButton = {
-            // Nothing to confirm when the body already carries the three choices.
-            if (!needsScopeChoice) {
-                TextButton(onClick = { onConfirm(DeleteScope.BOTH) }) {
-                    Text(stringResource(R.string.home_delete))
-                }
+            TextButton(onClick = { onConfirm(scope) }) {
+                Text(stringResource(R.string.home_delete))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_cancel)) }
         },
     )
-}
-
-/** One full-width row in the delete-scope list, so the three read as a list and not as buttons. */
-@Composable
-private fun ScopeChoice(labelRes: Int, onClick: () -> Unit) {
-    TextButton(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(vertical = 12.dp, horizontal = 8.dp),
-    ) {
-        Text(
-            text = stringResource(labelRes),
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Start,
-        )
-    }
 }
 
 private sealed interface DeleteTarget {

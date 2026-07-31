@@ -320,4 +320,5 @@
         <item quantity="one">Excluir %1$d gravação?</item>
         <item quantity="other">Excluir %1$d gravações?</item>
     </plurals>
+    <string name="home_bulk_delete_scope_label">Cópias a excluir</string>
 </resources>

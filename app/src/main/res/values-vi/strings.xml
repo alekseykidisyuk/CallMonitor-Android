@@ -317,4 +317,5 @@
         <item quantity="one">Xóa %1$d bản ghi?</item>
         <item quantity="other">Xóa %1$d bản ghi?</item>
     </plurals>
+    <string name="home_bulk_delete_scope_label">Bản sao cần xóa</string>
 </resources>

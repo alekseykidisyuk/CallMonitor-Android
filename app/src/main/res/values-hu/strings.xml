@@ -317,4 +317,5 @@
         <item quantity="one">Töröl %1$d felvételt?</item>
         <item quantity="other">Töröl %1$d felvételt?</item>
     </plurals>
+    <string name="home_bulk_delete_scope_label">Törlendő másolatok</string>
 </resources>
