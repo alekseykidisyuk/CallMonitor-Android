@@ -43,6 +43,9 @@
     <string name="general_system_limitation">Systemeinschränkung</string>
     <string name="general_system_limitation_message">CallVault wird nicht an diesem Gerät funktionieren, da Ihre Shell-Anwendung nicht die erforderlichen Berechtigungen hat:\n\n%1$s\n\nDieses Problem kann von Ihnen nicht behoben werden. Die App kann auf Ihrem Gerät nicht funktionieren und wird jetzt geschlossen.</string>
     <string name="home_all_set_message">Alles bereit. CallVault ist bereit, Ihre Anrufe aufzuzeichnen.</string>
+    <string name="home_share">Teilen</string>
+    <string name="home_share_chooser">Aufnahme teilen</string>
+    <string name="home_row_menu">Weitere Optionen</string>
     <string name="home_delete">Löschen</string>
     <string name="home_delete_confirm_message">Dadurch wird %1$s dauerhaft gelöscht.</string>
     <string name="home_delete_confirm_title">Aufnahme löschen?</string>

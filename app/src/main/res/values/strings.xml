@@ -420,6 +420,9 @@
     <string name="home_player_error">Couldn\'t play this file.</string>
 
     <!-- Home: delete recording -->
+    <string name="home_share">Share</string>
+    <string name="home_share_chooser">Share recording</string>
+    <string name="home_row_menu">More options</string>
     <string name="home_delete">Delete</string>
     <string name="home_delete_confirm_title">Delete recording?</string>
     <string name="home_delete_confirm_message">This permanently deletes %1$s.</string>

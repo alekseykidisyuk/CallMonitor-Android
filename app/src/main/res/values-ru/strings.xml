@@ -43,6 +43,9 @@
     <string name="general_system_limitation">Системное ограничение</string>
     <string name="general_system_limitation_message">Приложение CallVault не будет работать на этом устройстве, так как у вашей системной оболочки (shell) нет необходимых разрешений:\n\n%1$s\n\nВы ничего не можете с этим поделать – приложение не может функционировать и сейчас закроется.</string>
     <string name="home_all_set_message">Всё готово. CallVault готов записывать ваши звонки.</string>
+    <string name="home_share">Отправить</string>
+    <string name="home_share_chooser">Отправить запись</string>
+    <string name="home_row_menu">Другие действия</string>
     <string name="home_delete">Удалить</string>
     <string name="home_delete_confirm_message">Это безвозвратно удалит «%1$s».</string>
     <string name="home_delete_confirm_title">Удалить запись?</string>

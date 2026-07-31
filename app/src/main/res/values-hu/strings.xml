@@ -43,6 +43,9 @@
     <string name="general_system_limitation">Rendszerkorlát</string>
     <string name="general_system_limitation_message">CallVault nem tud működni ezen a készüléken mivel a shell alkalmazás nem rendelkezik a megfelelő jogosultságokkal.\n\n%1$s\n\nA helyzettel nem lehet mit csinálni, az alkalmazás nem tud működni és most bezáródik.</string>
     <string name="home_all_set_message">Minden készen áll. A CallVault készen áll a hívásai rögzítésére.</string>
+    <string name="home_share">Megosztás</string>
+    <string name="home_share_chooser">Felvétel megosztása</string>
+    <string name="home_row_menu">További lehetőségek</string>
     <string name="home_delete">Törlés</string>
     <string name="home_delete_confirm_message">Ez véglegesen törli a következőt: %1$s.</string>
     <string name="home_delete_confirm_title">Törli a felvételt?</string>

@@ -43,6 +43,9 @@
     <string name="general_system_limitation">系统限制</string>
     <string name="general_system_limitation_message">很抱歉，CallVault无法在您的设备上运行，因为您设备的shell权限不足。\n\n%1$s\n\n对于您厂商添加的限制，我们无能为力。CallVault现在将退出。</string>
     <string name="home_all_set_message">一切就绪。CallVault 已准备好录制你的通话。</string>
+    <string name="home_share">分享</string>
+    <string name="home_share_chooser">分享录音</string>
+    <string name="home_row_menu">更多选项</string>
     <string name="home_delete">删除</string>
     <string name="home_delete_confirm_message">这将永久删除 %1$s。</string>
     <string name="home_delete_confirm_title">删除录音？</string>

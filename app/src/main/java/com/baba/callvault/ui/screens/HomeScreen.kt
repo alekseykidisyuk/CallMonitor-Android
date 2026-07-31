@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Surface
 import com.baba.callvault.system.openWirelessDebugging
 import com.baba.callvault.system.openKofi
+import com.baba.callvault.system.shareRecording
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -58,6 +59,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Tune
@@ -972,6 +975,48 @@ private fun EmptyRecordings() {
  *  - [DeviceCopy] — only the Device copy of a BOTH recording.
  *  - [DriveCopy]  — only the Drive copy of a BOTH recording.
  */
+/**
+ * The per-row overflow menu: Share, then Delete.
+ *
+ * Delete costs one more tap than it did as a bare icon. That is the right trade for the only
+ * destructive action in the list — and it leaves somewhere to put the next row action without
+ * squeezing the name further.
+ */
+@Composable
+private fun RecordingRowMenu(shareUri: Uri, shareName: String, onDelete: () -> Unit) {
+    val context = LocalContext.current
+    var open by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(
+                imageVector = Icons.Filled.MoreVert,
+                contentDescription = stringResource(R.string.home_row_menu),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.home_share)) },
+                leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                onClick = {
+                    open = false
+                    context.shareRecording(shareUri, shareName)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.home_delete)) },
+                leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                onClick = {
+                    open = false
+                    onDelete()
+                }
+            )
+        }
+    }
+}
+
 private sealed interface DeleteTarget {
     data object All : DeleteTarget
     data class Single(val uri: Uri) : DeleteTarget
@@ -1108,26 +1153,26 @@ private fun RecordingRow(
                     )
                 }
             }
-            // Main-row delete: BOTH rows delete every copy; single-source rows delete their one file.
-            // While the delete (and any cloud-copy removal) is in flight, show a live spinner in the
-            // delete button's place — the row then vanishes on the list refresh. No modal.
+            // Main-row overflow: Share, then Delete. A single icon rather than one per action —
+            // the row is width-bound (the meta line had to move below it for the same reason), and a
+            // BOTH row already spends a slot on its chevron.
+            //
+            // While a delete (and any cloud-copy removal) is in flight, a live spinner takes the
+            // menu button's place — the row then vanishes on the list refresh. No modal.
             if (deleting) {
                 Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 }
             } else {
-                IconButton(
-                    onClick = {
+                RecordingRowMenu(
+                    // Share the device copy when there is one: it needs no network to read, and for a
+                    // BOTH row the two copies are the same audio.
+                    shareUri = item.localUri ?: item.driveUri ?: item.uri,
+                    shareName = item.displayName,
+                    onDelete = {
                         deleteTarget = if (isBoth) DeleteTarget.All else DeleteTarget.Single(item.uri)
                     }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.home_delete),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                )
             }
         }
 

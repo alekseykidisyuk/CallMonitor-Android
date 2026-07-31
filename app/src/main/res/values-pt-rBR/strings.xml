@@ -46,6 +46,9 @@
     <string name="general_system_limitation">Limitação do sistema</string>
     <string name="general_system_limitation_message">O CallVault não vai funcionar neste dispositivo porque o aplicativo de shell não tem as permissões necessárias:\n\n%1$s\n\nNão há nada que você possa fazer a respeito; o app não tem como funcionar e será fechado agora.</string>
     <string name="home_all_set_message">Tudo pronto. O CallVault está pronto para gravar suas chamadas.</string>
+    <string name="home_share">Compartilhar</string>
+    <string name="home_share_chooser">Compartilhar gravação</string>
+    <string name="home_row_menu">Mais opções</string>
     <string name="home_delete">Excluir</string>
     <string name="home_delete_confirm_message">Isto exclui %1$s permanentemente.</string>
     <string name="home_delete_confirm_title">Excluir a gravação?</string>

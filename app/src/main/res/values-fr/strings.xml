@@ -43,6 +43,9 @@
     <string name="general_system_limitation">Limitation Système</string>
     <string name="general_system_limitation_message">CallVault ne fonctionnera pas sur cet appareil car votre application shell ne dispose pas des autorisations requises :\n\n%1$s\n\nVous ne pouvez rien y faire, l’application ne peut pas fonctionner et va se fermer.</string>
     <string name="home_all_set_message">Tout est prêt. CallVault est prêt à enregistrer vos appels.</string>
+    <string name="home_share">Partager</string>
+    <string name="home_share_chooser">Partager l\'enregistrement</string>
+    <string name="home_row_menu">Plus d\'options</string>
     <string name="home_delete">Supprimer</string>
     <string name="home_delete_confirm_message">Cela supprime définitivement %1$s.</string>
     <string name="home_delete_confirm_title">Supprimer l\'enregistrement ?</string>

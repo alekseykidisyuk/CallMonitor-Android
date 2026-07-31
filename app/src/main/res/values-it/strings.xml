@@ -43,6 +43,9 @@
     <string name="general_system_limitation">Limitazioni di sistema</string>
     <string name="general_system_limitation_message">CallVault non funzionerà su questo dispositivo perché la sua applicazione shell non dispone delle autorizzazioni necessarie:\n\n%1$s\n\nNon è possibile fare nulla al riguardo: l\'app non può funzionare e ora verrà chiusa.</string>
     <string name="home_all_set_message">Tutto pronto. CallVault è pronto a registrare le Sue chiamate.</string>
+    <string name="home_share">Condividi</string>
+    <string name="home_share_chooser">Condividi registrazione</string>
+    <string name="home_row_menu">Altre opzioni</string>
     <string name="home_delete">Elimina</string>
     <string name="home_delete_confirm_message">Questa operazione elimina definitivamente %1$s.</string>
     <string name="home_delete_confirm_title">Eliminare la registrazione?</string>

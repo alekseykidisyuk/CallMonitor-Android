@@ -43,6 +43,9 @@
     <string name="general_system_limitation">Ograniczenia systemu</string>
     <string name="general_system_limitation_message">CallVault nie będzie działać na tym urządzeniu, ponieważ Twoja aplikacja powłoki nie posiada wymaganych uprawnień:\n\n%1$s\n\nNie można nic z tym zrobić – aplikacja nie może działać i zostanie teraz zamknięta.</string>
     <string name="home_all_set_message">Wszystko gotowe. CallVault jest gotowy do nagrywania Twoich rozmów.</string>
+    <string name="home_share">Udostępnij</string>
+    <string name="home_share_chooser">Udostępnij nagranie</string>
+    <string name="home_row_menu">Więcej opcji</string>
     <string name="home_delete">Usuń</string>
     <string name="home_delete_confirm_message">Spowoduje to trwałe usunięcie %1$s.</string>
     <string name="home_delete_confirm_title">Usunąć nagranie?</string>
