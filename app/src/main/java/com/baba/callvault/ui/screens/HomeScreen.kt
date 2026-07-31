@@ -23,6 +23,7 @@ import com.baba.callvault.data.recordings.RecordingSelection
 import com.baba.callvault.system.openKofi
 import com.baba.callvault.ui.common.M3DropdownField
 import com.baba.callvault.ui.common.OptionItem
+import com.baba.callvault.ui.common.formatByteSize
 import com.baba.callvault.ui.common.SupportDialog
 import com.baba.callvault.system.shareRecordings
 import com.baba.callvault.system.shareRecording
@@ -1829,13 +1830,7 @@ private fun formatDuration(seconds: Long): String {
 }
 
 /** Formats a byte count as a compact human-readable size (e.g. "1.2 MB"). */
-private fun formatSize(bytes: Long): String {
-    if (bytes <= 0) return "—"
-    val kb = bytes / 1024.0
-    if (kb < 1024) return String.format(Locale.US, "%.0f KB", kb)
-    val mb = kb / 1024.0
-    return String.format(Locale.US, "%.1f MB", mb)
-}
+private fun formatSize(bytes: Long): String = formatByteSize(bytes)
 
 /**
  * A thin, thumbless progress bar for the inline player — cleaner than a Slider but still

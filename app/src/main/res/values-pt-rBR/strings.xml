@@ -328,4 +328,10 @@
         <item quantity="one">%1$d gravações</item>
         <item quantity="other">%1$d gravações</item>
     </plurals>
+    <string name="settings_debug_log_file">Arquivo de log</string>
+    <string name="settings_debug_log_view_hint">Toque para ler as entradas mais recentes.</string>
+    <string name="settings_debug_log_delete">Excluir log</string>
+    <string name="settings_debug_log_delete_title">Excluir o log?</string>
+    <string name="settings_debug_log_delete_message">As entradas coletadas até agora são removidas. Se o registro ainda estiver ligado, um novo log começa imediatamente.</string>
+    <string name="settings_debug_log_empty">O log está vazio.</string>
 </resources>

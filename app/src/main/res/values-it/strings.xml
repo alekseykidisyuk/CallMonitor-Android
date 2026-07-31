@@ -325,4 +325,10 @@
         <item quantity="one">%1$d registrazioni</item>
         <item quantity="other">%1$d registrazioni</item>
     </plurals>
+    <string name="settings_debug_log_file">File di log</string>
+    <string name="settings_debug_log_view_hint">Tocca per leggere le voci più recenti.</string>
+    <string name="settings_debug_log_delete">Elimina log</string>
+    <string name="settings_debug_log_delete_title">Eliminare il log?</string>
+    <string name="settings_debug_log_delete_message">Le voci raccolte finora vengono rimosse. Se il log è ancora attivo, ne inizia subito uno nuovo.</string>
+    <string name="settings_debug_log_empty">Il log è vuoto.</string>
 </resources>

@@ -325,4 +325,10 @@
         <item quantity="one">%1$d felvétel</item>
         <item quantity="other">%1$d felvétel</item>
     </plurals>
+    <string name="settings_debug_log_file">Naplófájl</string>
+    <string name="settings_debug_log_view_hint">Koppintson a legutóbbi bejegyzések elolvasásához.</string>
+    <string name="settings_debug_log_delete">Napló törlése</string>
+    <string name="settings_debug_log_delete_title">Törli a naplót?</string>
+    <string name="settings_debug_log_delete_message">Az eddig gyűjtött bejegyzések törlődnek. Ha a naplózás még be van kapcsolva, azonnal új napló indul.</string>
+    <string name="settings_debug_log_empty">A napló üres.</string>
 </resources>

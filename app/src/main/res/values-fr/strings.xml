@@ -325,4 +325,10 @@
         <item quantity="one">%1$d enregistrements</item>
         <item quantity="other">%1$d enregistrements</item>
     </plurals>
+    <string name="settings_debug_log_file">Fichier journal</string>
+    <string name="settings_debug_log_view_hint">Appuyez pour lire les entrées les plus récentes.</string>
+    <string name="settings_debug_log_delete">Supprimer le journal</string>
+    <string name="settings_debug_log_delete_title">Supprimer le journal ?</string>
+    <string name="settings_debug_log_delete_message">Les entrées collectées jusqu\'ici sont supprimées. Si la journalisation est toujours active, un nouveau journal démarre aussitôt.</string>
+    <string name="settings_debug_log_empty">Le journal est vide.</string>
 </resources>

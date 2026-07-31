@@ -325,4 +325,10 @@
         <item quantity="one">%1$d 条录音</item>
         <item quantity="other">%1$d 条录音</item>
     </plurals>
+    <string name="settings_debug_log_file">日志文件</string>
+    <string name="settings_debug_log_view_hint">点按可查看最近的条目。</string>
+    <string name="settings_debug_log_delete">删除日志</string>
+    <string name="settings_debug_log_delete_title">删除日志？</string>
+    <string name="settings_debug_log_delete_message">已收集的条目将被移除。如果日志记录仍处于开启状态，将立即开始新的日志。</string>
+    <string name="settings_debug_log_empty">日志为空。</string>
 </resources>

@@ -16,6 +16,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -43,6 +47,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,12 +55,14 @@ import androidx.compose.ui.unit.dp
 import android.widget.Toast
 import com.baba.callvault.services.recording.DaemonKeepAliveService
 import com.baba.callvault.services.recording.VoipCaptureController
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import com.baba.callvault.R
 import com.baba.callvault.system.PersistentFolderPickerContract
 import com.baba.callvault.system.copyToClipboard
 import com.baba.callvault.system.openOriginalProjectRepo
 import com.baba.callvault.system.openKofi
+import com.baba.callvault.ui.common.formatByteSize
 import com.baba.callvault.ui.common.SupportDialog
 import com.baba.callvault.system.shareLogFile
 import com.baba.callvault.utils.AppLogger
@@ -1177,6 +1184,9 @@ private fun BugReportSection(
     // Re-checked on every settings change (e.g. right after the toggle flips off) so the Share
     // button appears as soon as a capture is frozen on disk.
     val hasLogs = remember(updateTrigger) { AppLogger.hasLogs() }
+    val logSize = remember(updateTrigger) { AppLogger.logSizeBytes() }
+    var showLogViewer by remember { mutableStateOf(false) }
+    var confirmClearLog by remember { mutableStateOf(false) }
 
     SettingsSection(title = stringResource(R.string.settings_section_debug), expanded = expanded, onToggle = onToggle) {
         SettingsToggleRow(
@@ -1217,8 +1227,101 @@ private fun BugReportSection(
             }
         }
 
+        // The log file itself — visible whether or not logging is currently running. Until now the
+        // file was invisible and the only way to clear it was to toggle logging off and on again,
+        // which is a side effect nobody would guess at.
+        if (hasLogs) {
+            SettingsDivider()
+            NavigationRow(
+                icon = Icons.AutoMirrored.Filled.ListAlt,
+                label = stringResource(R.string.settings_debug_log_file),
+                value = formatByteSize(logSize),
+                supporting = stringResource(R.string.settings_debug_log_view_hint),
+                onClick = { showLogViewer = true }
+            )
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                CvSecondaryButton(
+                    text = stringResource(R.string.settings_debug_log_delete),
+                    onClick = { confirmClearLog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+        }
+    }
+
+    if (showLogViewer) {
+        DebugLogViewer(onDismiss = { showLogViewer = false })
+    }
+
+    if (confirmClearLog) {
+        AlertDialog(
+            onDismissRequest = { confirmClearLog = false },
+            title = { Text(stringResource(R.string.settings_debug_log_delete_title)) },
+            text = { Text(stringResource(R.string.settings_debug_log_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClearLog = false
+                    AppLogger.clearLogs()
+                    // Logging may still be running, so the file is recreated immediately and empty.
+                    // Refreshing re-reads hasLogs/size rather than leaving a stale figure on screen.
+                    actions.refreshSettings()
+                }) { Text(stringResource(R.string.settings_debug_log_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearLog = false }) {
+                    Text(stringResource(R.string.general_cancel))
+                }
+            },
+        )
     }
 }
+
+/** How much of the log the in-app viewer shows. The file self-trims at 1000 lines. */
+private const val LOG_VIEW_LINES = 500
+
+/**
+ * Reads the tail of the debug log into a scrollable dialog.
+ *
+ * Reading happens off the main thread and only while the dialog is open, so opening Settings never
+ * pays for a file read the user did not ask for.
+ */
+@Composable
+private fun DebugLogViewer(onDismiss: () -> Unit) {
+    var text by remember { mutableStateOf<String?>(null) }
+    var loaded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        text = AppLogger.readTail(LOG_VIEW_LINES)
+        loaded = true
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_debug_log_file)) },
+        text = {
+            when {
+                !loaded -> CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                text.isNullOrBlank() -> Text(stringResource(R.string.settings_debug_log_empty))
+                else -> Text(
+                    text = text!!,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    modifier = Modifier
+                        .heightIn(max = LOG_VIEW_MAX_HEIGHT)
+                        .verticalScroll(rememberScrollState())
+                        .horizontalScroll(rememberScrollState()),
+                    softWrap = false,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_close)) }
+        },
+    )
+}
+
+/** Caps the viewer so a long log cannot push the dialog's buttons off the screen. */
+private val LOG_VIEW_MAX_HEIGHT = 420.dp
 
 /**
  * "Reliability" — controls that keep recording working in tricky conditions: recording without Wi-Fi
@@ -1992,6 +2095,7 @@ private fun SettingsScreenPreview() {
         val mockContext = LocalContext.current
         val dummyPreferences = AppPreferences(mockContext)
         val dummyActions = object : SettingsActions {
+            override fun refreshSettings() {}
             override fun setCarrierRecording(enabled: Boolean) {}
             override fun setAutoRecordIncoming(enabled: Boolean) {}
             override fun setAutoRecordOutgoing(enabled: Boolean) {}
