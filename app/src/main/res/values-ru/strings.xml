@@ -304,8 +304,8 @@
     <string name="home_bulk_delete_device_only">Только на устройстве</string>
     <string name="home_bulk_delete_drive_only">Только в Диске</string>
     <string name="home_bulk_delete_both">Обе копии</string>
-    <string name="support_appeal_title">CallVault делает один человек</string>
-    <string name="support_appeal_body">Я разрабатываю и поддерживаю CallVault один, в своё свободное время. Приложение бесплатное и с открытым исходным кодом — без рекламы, без слежки и без платной версии, и так и останется. Если оно вам пригодилось, небольшая поддержка помогает мне продолжать. В любом случае — спасибо, что пользуетесь.</string>
+    <string name="support_appeal_title">Делает один человек 👋</string>
+    <string name="support_appeal_body">Я разрабатываю CallVault один, в свободное время — бесплатно, с открытым кодом, без рекламы и слежки. ☕ Если приложение полезно, небольшая поддержка помогает продолжать. В любом случае — спасибо! 🙏</string>
     <string name="support_choose_title">Поддержать разработку</string>
     <string name="support_choose_body">Спасибо. Обе ссылки откроются в браузере.</string>
     <string name="support_not_now">Не сейчас</string>

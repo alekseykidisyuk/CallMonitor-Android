@@ -307,8 +307,8 @@
     <string name="home_bulk_delete_device_only">Só no dispositivo</string>
     <string name="home_bulk_delete_drive_only">Só no Drive</string>
     <string name="home_bulk_delete_both">As duas cópias</string>
-    <string name="support_appeal_title">O CallVault é uma pessoa só</string>
-    <string name="support_appeal_body">Eu desenvolvo e mantenho o CallVault sozinho, no meu próprio tempo. Ele é gratuito e de código aberto — sem anúncios, sem rastreamento, sem versão paga, e isso não vai mudar. Se ele foi útil para você, uma pequena contribuição me ajuda a continuar. De todo modo, obrigado por usar.</string>
+    <string name="support_appeal_title">Feito por uma pessoa só 👋</string>
+    <string name="support_appeal_body">Eu desenvolvo o CallVault sozinho, no meu tempo livre — grátis, código aberto, sem anúncios nem rastreamento. ☕ Se ele te é útil, uma pequena contribuição me ajuda a continuar. De todo modo, obrigado! 🙏</string>
     <string name="support_choose_title">Apoiar o desenvolvimento</string>
     <string name="support_choose_body">Obrigado. Os dois links abrem no seu navegador.</string>
     <string name="support_not_now">Agora não</string>

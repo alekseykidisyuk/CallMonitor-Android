@@ -304,8 +304,8 @@
     <string name="home_bulk_delete_device_only">仅本机</string>
     <string name="home_bulk_delete_drive_only">仅云端硬盘</string>
     <string name="home_bulk_delete_both">两份副本</string>
-    <string name="support_appeal_title">CallVault 只有一个人</string>
-    <string name="support_appeal_body">CallVault 由我一个人利用业余时间开发和维护。它免费且开源——没有广告、没有追踪、没有付费版本，今后也不会有。如果它对你有帮助，一点小小的支持能让我继续做下去。无论如何，谢谢你使用它。</string>
+    <string name="support_appeal_title">由一个人开发 👋</string>
+    <string name="support_appeal_body">CallVault 由我一个人利用业余时间开发——免费、开源、无广告、无追踪。☕ 如果它对你有用，一点小小的支持能让我继续做下去。无论如何，谢谢！🙏</string>
     <string name="support_choose_title">支持开发</string>
     <string name="support_choose_body">谢谢。两个链接都会在浏览器中打开。</string>
     <string name="support_not_now">以后再说</string>

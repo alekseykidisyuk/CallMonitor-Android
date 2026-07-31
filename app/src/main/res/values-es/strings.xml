@@ -304,8 +304,8 @@
     <string name="home_bulk_delete_device_only">Solo el dispositivo</string>
     <string name="home_bulk_delete_drive_only">Solo Drive</string>
     <string name="home_bulk_delete_both">Ambas copias</string>
-    <string name="support_appeal_title">CallVault es una sola persona</string>
-    <string name="support_appeal_body">Desarrollo y mantengo CallVault por mi cuenta, en mi propio tiempo. Es gratuito y de código abierto: sin anuncios, sin rastreo y sin versión de pago, y eso no va a cambiar. Si te ha resultado útil, una pequeña contribución me ayuda a seguir. En cualquier caso, gracias por usarlo.</string>
+    <string name="support_appeal_title">Hecho por una sola persona 👋</string>
+    <string name="support_appeal_body">Desarrollo CallVault por mi cuenta, en mi tiempo libre: gratis, de código abierto, sin anuncios ni rastreo. ☕ Si te resulta útil, una pequeña aportación me ayuda a seguir. En cualquier caso, ¡gracias! 🙏</string>
     <string name="support_choose_title">Apoyar el desarrollo</string>
     <string name="support_choose_body">Gracias. Ambos enlaces se abren en tu navegador.</string>
     <string name="support_not_now">Ahora no</string>

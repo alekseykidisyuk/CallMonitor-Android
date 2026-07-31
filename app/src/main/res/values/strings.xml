@@ -437,8 +437,8 @@
     <string name="settings_section_updates">Updates</string>
     <string name="settings_update_check_label">Check for updates</string>
     <string name="settings_update_check_description">Once a day, look for a new version on GitHub.</string>
-    <string name="support_appeal_title">CallVault is one person</string>
-    <string name="support_appeal_body">I build and maintain CallVault on my own, in my own time. It is free and open source — no ads, no tracking, no paid tier, and that will not change. If it has been useful to you, a small contribution helps me keep going. Either way, thank you for using it.</string>
+    <string name="support_appeal_title">Made by one person 👋</string>
+    <string name="support_appeal_body">I build CallVault on my own, in my free time — free, open source, no ads, no tracking. ☕ If it\'s useful to you, a small tip keeps me going. Either way, thanks! 🙏</string>
     <string name="support_choose_title">Support development</string>
     <string name="support_choose_body">Thank you. Either link opens in your browser.</string>
     <string name="support_kofi" translatable="false">Ko-fi</string>

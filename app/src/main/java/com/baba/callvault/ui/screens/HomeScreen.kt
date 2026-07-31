@@ -101,6 +101,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -1112,29 +1113,28 @@ private fun BulkDeleteDialog(
         onDismissRequest = onDismiss,
         title = { Text(pluralStringResource(R.plurals.home_bulk_delete_title, count, count)) },
         text = {
-            Text(
-                stringResource(
-                    if (needsScopeChoice) R.string.home_bulk_delete_scope_message
-                    else R.string.home_bulk_delete_message
+            Column {
+                Text(
+                    stringResource(
+                        if (needsScopeChoice) R.string.home_bulk_delete_scope_message
+                        else R.string.home_bulk_delete_message
+                    )
                 )
-            )
+                // The three choices live in the BODY, as full-width rows, rather than in the button
+                // slot. As buttons the dialog flowed them beside Cancel — "Cancel   Device only" on
+                // one line, the rest wrapping below — which puts the safe action and a destructive
+                // one shoulder to shoulder and reads as if Cancel were part of the choice.
+                if (needsScopeChoice) {
+                    Spacer(Modifier.height(8.dp))
+                    ScopeChoice(R.string.home_bulk_delete_device_only) { onConfirm(DeleteScope.DEVICE) }
+                    ScopeChoice(R.string.home_bulk_delete_drive_only) { onConfirm(DeleteScope.DRIVE) }
+                    ScopeChoice(R.string.home_bulk_delete_both) { onConfirm(DeleteScope.BOTH) }
+                }
+            }
         },
         confirmButton = {
-            if (needsScopeChoice) {
-                // Stacked, not a Row: three labels side by side truncate, and mistaking "Drive only"
-                // for "Both" costs the user files.
-                Column(horizontalAlignment = Alignment.End) {
-                    TextButton(onClick = { onConfirm(DeleteScope.DEVICE) }) {
-                        Text(stringResource(R.string.home_bulk_delete_device_only))
-                    }
-                    TextButton(onClick = { onConfirm(DeleteScope.DRIVE) }) {
-                        Text(stringResource(R.string.home_bulk_delete_drive_only))
-                    }
-                    TextButton(onClick = { onConfirm(DeleteScope.BOTH) }) {
-                        Text(stringResource(R.string.home_bulk_delete_both))
-                    }
-                }
-            } else {
+            // Nothing to confirm when the body already carries the three choices.
+            if (!needsScopeChoice) {
                 TextButton(onClick = { onConfirm(DeleteScope.BOTH) }) {
                     Text(stringResource(R.string.home_delete))
                 }
@@ -1144,6 +1144,22 @@ private fun BulkDeleteDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_cancel)) }
         },
     )
+}
+
+/** One full-width row in the delete-scope list, so the three read as a list and not as buttons. */
+@Composable
+private fun ScopeChoice(labelRes: Int, onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(vertical = 12.dp, horizontal = 8.dp),
+    ) {
+        Text(
+            text = stringResource(labelRes),
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Start,
+        )
+    }
 }
 
 private sealed interface DeleteTarget {
@@ -1225,7 +1241,10 @@ private fun RecordingRow(
     }
 
     val cardColor = when {
-        selected -> MaterialTheme.colorScheme.secondaryContainer
+        // primaryContainer, NOT secondaryContainer: the secondary role in this theme is CoralDeep,
+        // so selected rows came out maroon and read as an error or a pending deletion. Selection is
+        // neutral, and the brand colour is teal — the same teal as the tick.
+        selected -> MaterialTheme.colorScheme.primaryContainer
         isRowActive -> MaterialTheme.colorScheme.surfaceContainerHigh
         else -> MaterialTheme.colorScheme.surface
     }
