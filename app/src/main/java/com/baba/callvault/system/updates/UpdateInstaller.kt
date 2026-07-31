@@ -47,7 +47,9 @@ object UpdateInstaller {
         /** pm rejected the install (bad signature, downgrade, storage, …) — reported promptly. */
         FAILED,
         /** The embedded ADB shell could not be brought up (e.g. Developer options off). */
-        UNAVAILABLE
+        UNAVAILABLE,
+        /** A call is in progress; installing would kill the app and split the recording. Try later. */
+        DEFERRED_CALL_IN_PROGRESS
     }
 
     /**
@@ -59,6 +61,9 @@ object UpdateInstaller {
     fun installSilentlyViaShell(context: Context, apkFile: File): ShellResult {
         val size = apkFile.length()
         if (size <= 0L) return ShellResult.FAILED
+        // Checked BEFORE taking heavyOperationLock: installing replaces the app, which kills the
+        // process and takes any in-flight recording with it. See [CallInProgressGate].
+        if (!CallInProgressGate.mayInstall(context)) return ShellResult.DEFERRED_CALL_IN_PROGRESS
         // Hold the shared ADB lock for the whole connect+stream so a concurrent daemon launch can't
         // reconnect the transport out from under the in-flight install stream (the "Stream closed
         // mid-send" collision). A daemon launch requested meanwhile simply waits for this to finish.
