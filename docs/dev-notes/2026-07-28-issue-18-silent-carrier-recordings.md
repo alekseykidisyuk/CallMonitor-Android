@@ -2,9 +2,9 @@
 
 **Issue:** https://github.com/madkongo/CallVault/issues/18
 **Device:** Samsung Galaxy Z Fold 6, **SM-F956U** (US model), Android 16 (API 36), Android 16 throughout
-**Status:** CLOSED 2026-07-31 — reporter says it works. **Cause never established.** **One artifact — a single recording file — would
-discriminate between almost all of them.** Do not ship another diagnostic build before reading
-"Why we keep guessing" at the bottom.
+**Status:** **CLOSED 2026-07-31** — the reporter says it works; the cause was never established. See
+"Closed 2026-07-31" at the bottom for what that does and does not mean. The hypotheses below are kept
+as they stood, because none was ever disproved and the symptom could return.
 
 > This note has been wrong twice. Both times the error was inferring a fact instead of reading it:
 > once reading "it worked" as "audio was audible", once inferring the OS version from the device's
