@@ -146,6 +146,27 @@ before today — regenerating them needs care about real contacts in a public re
 
 ---
 
+## 🔵 Validate the encoder before recording into it
+
+`DirectAudioRecorderSession.hasEncoder()` checks only that an encoder for the MIME **exists** —
+nothing verifies it supports our sample rate, channel count or bitrate, and `KEY_BIT_RATE` is set to
+whatever the user picked. `MediaCodec` given an out-of-range combination does not reliably throw: it
+can clamp or emit frames that decode to nothing, i.e. a correctly-sized file that plays silent.
+
+Measured on a OnePlus 12: the software AAC encoder allows 8000-960000 bps and ≤6 channels, the
+Qualcomm hardware one 4000-192000 and ≤2. The hardware encoder is gated behind
+`special-codec required`, so it is not selected here — but a vendor that does not gate it would hand
+us an encoder with different limits and nothing would notice.
+
+**What.** Query the selected encoder's `AudioCapabilities`: clamp the bitrate into range, refuse the
+direct path when the sample rate or channel count is unsupported (so it falls back to scrcpy rather
+than producing silence), and **log the encoder name and its ranges once per recording**.
+
+Raised by issue #18, which closed unexplained — see
+`2026-07-28-issue-18-silent-carrier-recordings.md`. That log line would have answered it on day one.
+
+---
+
 ## 🔵 Manual "Check for updates" in Settings
 
 **Why.** A release only surfaces two ways: a check when the app opens, throttled to once per 6 hours

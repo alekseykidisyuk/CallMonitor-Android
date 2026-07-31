@@ -2,7 +2,7 @@
 
 **Issue:** https://github.com/madkongo/CallVault/issues/18
 **Device:** Samsung Galaxy Z Fold 6, **SM-F956U** (US model), Android 16 (API 36), Android 16 throughout
-**Status:** two hypotheses live (S1, S2) plus one advanced (A1); A2 killed 2026-07-30. **One artifact — a single recording file — would
+**Status:** CLOSED 2026-07-31 — reporter says it works. **Cause never established.** **One artifact — a single recording file — would
 discriminate between almost all of them.** Do not ship another diagnostic build before reading
 "Why we keep guessing" at the bottom.
 
@@ -182,3 +182,67 @@ Third: the OP12 repro for A2, with VoIP recording switched **on**.
 - **US Samsung firmware, fitted to the evidence.** An early analysis asserted this confidently and
   was wrong. S1 is the disciplined version of the same idea: stated as a hypothesis, with the
   observation that would kill it.
+
+
+---
+
+# Closed 2026-07-31 — working, cause unknown
+
+The reporter says everything works now and did not say what changed. The one detail he volunteered:
+he **set the bitrate to 8 kbps**. He did not confirm what it was before, or whether he also moved to
+1.5.5.
+
+**This is not a solved bug. It is an abandoned one**, and the distinction matters if it comes back.
+
+## Why 1.5.5 probably did not fix it
+
+Of the capture fixes in 1.5.5, none should reach his case:
+
+- the handoff guard needs **Resilient recording**, which his issue form says was **off**
+- the mic re-take is **VoIP-only**; his reports were carrier calls
+- the bounded ADB connects fix stalls, not silence
+
+So the bitrate change is the more likely variable — but it is a single uncontrolled change with a
+confound, which is exactly the evidence shape that produced three wrong conclusions earlier in this
+investigation.
+
+## What the bitrate lead did expose: we never validate the encoder
+
+Real and independent of whether it explains #18.
+
+`DirectAudioRecorderSession.hasEncoder()` checks only that *an encoder for the MIME exists*. Nothing
+checks that the chosen encoder supports our **sample rate, channel count, or bitrate**;
+`KEY_BIT_RATE` is set to whatever the user picked. `MediaCodec` handed an out-of-range combination
+does not reliably throw — it can clamp or emit frames that decode to nothing, which is precisely
+"right-sized file, plays silent".
+
+Measured on a OnePlus 12 (2026-07-31), two AAC encoders with materially different limits:
+
+| encoder | bitrate | sample rate | channels |
+|---|---|---|---|
+| `c2.android.aac.encoder` (software) | 8000-960000 | discrete list incl. 48000 | ≤ 6 |
+| `c2.qti.aac.hw.encoder` (hardware) | **4000-192000** | 8000-48000 | **≤ 2** |
+
+The hardware one declares `special-codec required="true"`, so `createEncoderByType` does not select it
+here — which is why 24 kbps works on this device. **A vendor that does not gate its hardware encoder
+that way would hand us one with different limits and we would never notice.** The reporter's device is
+a Samsung; its encoder table was never inspected.
+
+## If it returns
+
+1. Ask for the **encoder name and its supported ranges** on the failing device, not just the bitrate.
+2. The fix worth having regardless: query the selected encoder's `AudioCapabilities`, clamp the
+   bitrate into range, refuse the direct path when the sample rate or channel count is unsupported so
+   it falls back to scrcpy, and **log the encoder name and ranges once per recording**. That one line
+   would have answered this issue on day one.
+
+## What this investigation cost, and why
+
+Six days, three wrong conclusions, and a diagnostic build that could not have proved anything because
+it varied the capture path while the suspects sat above it. The recurring failure was **inferring
+instead of reading**: the OS version came from the device's launch year rather than the issue form,
+"it worked" was read as "audio was audible" when the reporter meant "files were not 0 bytes", and a
+capture path was blamed from a periodicity test that only ruled out geometry.
+
+The single cheapest thing that would have shortened it: **asking for one recording**, not more logs.
+Nobody ever decoded a file. Channel count alone would have said which capture path ran.
