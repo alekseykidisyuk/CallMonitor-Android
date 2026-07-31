@@ -48,6 +48,14 @@ const val ORIGINAL_PROJECT_URL = "https://github.com/kitsumed/ShizuCallRecorder"
 const val KOFI_SUPPORT_URL = "https://ko-fi.com/madkongo"
 
 /**
+ * The maintainer's PayPal page, offered next to [KOFI_SUPPORT_URL] because the two are not
+ * interchangeable for everyone: Ko-fi's card processing is unavailable or awkward in some countries,
+ * and plenty of people simply already have a PayPal balance. Same arrangement — the browser opens
+ * their site, no payment SDK ships in the app.
+ */
+const val PAYPAL_SUPPORT_URL = "https://paypal.me/MadKongo"
+
+/**
  * A folder-picker that asks for long-term read and write access to the chosen folder.
  *
  * Android normally only grants temporary access to a folder. This contract also requests
@@ -161,6 +169,11 @@ fun Context.openOriginalProjectRepo() {
 /** Opens the maintainer's Ko-fi page in the browser so the user can support development. */
 fun Context.openKofi() {
     launchSmartIntent(Intent(Intent.ACTION_VIEW).apply { data = KOFI_SUPPORT_URL.toUri() })
+}
+
+/** Opens the maintainer's PayPal page in the browser. The alternative to [openKofi], not a successor. */
+fun Context.openPayPal() {
+    launchSmartIntent(Intent(Intent.ACTION_VIEW).apply { data = PAYPAL_SUPPORT_URL.toUri() })
 }
 
 /**

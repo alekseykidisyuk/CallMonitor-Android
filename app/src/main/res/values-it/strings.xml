@@ -292,10 +292,29 @@
     <string name="wizard_storage_title">Dove salvare le registrazioni</string>
     <string name="wizard_title">Configura CallVault</string>
     <string name="settings_carrier_recording">Registra le chiamate telefoniche</string>
-    <string name="settings_carrier_recording_description">Se disattivato, CallVault ignora completamente le chiamate telefoniche: nessuna registrazione e nessuna notifica durante la chiamata. Le chiamate nelle app non sono interessate.</string>
+    <string name="settings_carrier_recording_description">Disattivato: le chiamate telefoniche vengono ignorate del tutto, senza registrazione né notifica. Le chiamate nelle app non sono interessate.</string>
     <string name="settings_voip_auto_start_label">Avvia automaticamente</string>
     <string name="settings_voip_auto_start_description">Se disattivato, CallVault chiede prima: all\'inizio di una chiamata in un\'app compare una notifica con un pulsante Registra.</string>
     <string name="voip_prompt_title">Chiamata in un\'app in corso</string>
     <string name="voip_prompt_text">Tocca Registra per registrare questa chiamata.</string>
     <string name="voip_prompt_text_named">Chiamata %1$s. Tocca Registra per registrarla.</string>
+    <string name="settings_subsection_phone_calls">Chiamate telefoniche</string>
+    <string name="home_bulk_delete_message">Questa azione non può essere annullata.</string>
+    <string name="home_bulk_delete_scope_message">Alcune di queste sono salvate sia su questo dispositivo sia su Drive. Quali copie vuoi eliminare?</string>
+    <string name="home_bulk_delete_device_only">Solo dispositivo</string>
+    <string name="home_bulk_delete_drive_only">Solo Drive</string>
+    <string name="home_bulk_delete_both">Entrambe le copie</string>
+    <string name="support_appeal_title">CallVault è una sola persona</string>
+    <string name="support_appeal_body">Sviluppo e mantengo CallVault da solo, nel mio tempo libero. È gratuita e open source: nessuna pubblicità, nessun tracciamento, nessuna versione a pagamento, e non cambierà. Se ti è stata utile, un piccolo contributo mi aiuta ad andare avanti. In ogni caso, grazie per averla usata.</string>
+    <string name="support_choose_title">Sostieni lo sviluppo</string>
+    <string name="support_choose_body">Grazie. Entrambi i link si aprono nel browser.</string>
+    <string name="support_not_now">Non ora</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d selezionata</item>
+        <item quantity="other">%1$d selezionate</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Eliminare %1$d registrazione?</item>
+        <item quantity="other">Eliminare %1$d registrazioni?</item>
+    </plurals>
 </resources>

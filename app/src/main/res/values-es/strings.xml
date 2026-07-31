@@ -292,10 +292,29 @@
     <string name="wizard_storage_title">Dónde guardar las grabaciones</string>
     <string name="wizard_title">Configurar CallVault</string>
     <string name="settings_carrier_recording">Grabar llamadas telefónicas</string>
-    <string name="settings_carrier_recording_description">Desactivado significa que CallVault ignora por completo las llamadas telefónicas: sin grabación y sin notificación durante la llamada. Las llamadas de apps no se ven afectadas.</string>
+    <string name="settings_carrier_recording_description">Desactivado: las llamadas telefónicas se ignoran por completo, sin grabación ni notificación. Las llamadas de apps no se ven afectadas.</string>
     <string name="settings_voip_auto_start_label">Iniciar automáticamente</string>
     <string name="settings_voip_auto_start_description">Desactivado significa que CallVault pregunta primero: aparece una notificación con un botón Grabar cuando empieza una llamada de app.</string>
     <string name="voip_prompt_title">Llamada de app en curso</string>
     <string name="voip_prompt_text">Toca Grabar para grabar esta llamada.</string>
     <string name="voip_prompt_text_named">Llamada de %1$s. Toca Grabar para grabarla.</string>
+    <string name="settings_subsection_phone_calls">Llamadas telefónicas</string>
+    <string name="home_bulk_delete_message">Esta acción no se puede deshacer.</string>
+    <string name="home_bulk_delete_scope_message">Algunas de estas están guardadas tanto en este dispositivo como en Drive. ¿Qué copias quieres eliminar?</string>
+    <string name="home_bulk_delete_device_only">Solo el dispositivo</string>
+    <string name="home_bulk_delete_drive_only">Solo Drive</string>
+    <string name="home_bulk_delete_both">Ambas copias</string>
+    <string name="support_appeal_title">CallVault es una sola persona</string>
+    <string name="support_appeal_body">Desarrollo y mantengo CallVault por mi cuenta, en mi propio tiempo. Es gratuito y de código abierto: sin anuncios, sin rastreo y sin versión de pago, y eso no va a cambiar. Si te ha resultado útil, una pequeña contribución me ayuda a seguir. En cualquier caso, gracias por usarlo.</string>
+    <string name="support_choose_title">Apoyar el desarrollo</string>
+    <string name="support_choose_body">Gracias. Ambos enlaces se abren en tu navegador.</string>
+    <string name="support_not_now">Ahora no</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d seleccionada</item>
+        <item quantity="other">%1$d seleccionadas</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">¿Eliminar %1$d grabación?</item>
+        <item quantity="other">¿Eliminar %1$d grabaciones?</item>
+    </plurals>
 </resources>

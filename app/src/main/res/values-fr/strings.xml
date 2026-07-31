@@ -292,10 +292,29 @@
     <string name="wizard_storage_title">Où enregistrer les enregistrements</string>
     <string name="wizard_title">Configurer CallVault</string>
     <string name="settings_carrier_recording">Enregistrer les appels téléphoniques</string>
-    <string name="settings_carrier_recording_description">Désactivé signifie que CallVault ignore complètement les appels téléphoniques : aucun enregistrement et aucune notification pendant l\'appel. Les appels dans les applis ne sont pas concernés.</string>
+    <string name="settings_carrier_recording_description">Désactivé : les appels téléphoniques sont totalement ignorés, sans enregistrement ni notification. Les appels dans les applis ne sont pas concernés.</string>
     <string name="settings_voip_auto_start_label">Démarrer automatiquement</string>
     <string name="settings_voip_auto_start_description">Désactivé signifie que CallVault demande d\'abord : une notification avec un bouton Enregistrer apparaît au début d\'un appel dans une appli.</string>
     <string name="voip_prompt_title">Appel en cours dans une appli</string>
     <string name="voip_prompt_text">Appuyez sur Enregistrer pour enregistrer cet appel.</string>
     <string name="voip_prompt_text_named">Appel %1$s. Appuyez sur Enregistrer pour l\'enregistrer.</string>
+    <string name="settings_subsection_phone_calls">Appels téléphoniques</string>
+    <string name="home_bulk_delete_message">Cette action est irréversible.</string>
+    <string name="home_bulk_delete_scope_message">Certains de ces enregistrements sont conservés à la fois sur cet appareil et dans Drive. Quelles copies faut-il supprimer ?</string>
+    <string name="home_bulk_delete_device_only">Appareil uniquement</string>
+    <string name="home_bulk_delete_drive_only">Drive uniquement</string>
+    <string name="home_bulk_delete_both">Les deux copies</string>
+    <string name="support_appeal_title">CallVault, c\'est une seule personne</string>
+    <string name="support_appeal_body">Je développe et maintiens CallVault seul, sur mon temps libre. L\'application est gratuite et open source : sans publicité, sans pistage, sans version payante, et cela ne changera pas. Si elle vous a été utile, une petite contribution m\'aide à continuer. Dans tous les cas, merci de l\'utiliser.</string>
+    <string name="support_choose_title">Soutenir le développement</string>
+    <string name="support_choose_body">Merci. Les deux liens s\'ouvrent dans votre navigateur.</string>
+    <string name="support_not_now">Pas maintenant</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="other">%1$d sélectionnés</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Supprimer %1$d enregistrement ?</item>
+        <item quantity="other">Supprimer %1$d enregistrements ?</item>
+    </plurals>
 </resources>

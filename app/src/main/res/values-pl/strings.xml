@@ -292,10 +292,29 @@
     <string name="wizard_storage_title">Gdzie zapisywać nagrania</string>
     <string name="wizard_title">Skonfiguruj CallVault</string>
     <string name="settings_carrier_recording">Nagrywaj połączenia telefoniczne</string>
-    <string name="settings_carrier_recording_description">Wyłączone oznacza, że CallVault całkowicie ignoruje połączenia telefoniczne – bez nagrywania i bez powiadomienia w trakcie rozmowy. Nie dotyczy połączeń w aplikacjach.</string>
+    <string name="settings_carrier_recording_description">Wyłączone: połączenia telefoniczne są całkowicie ignorowane – bez nagrywania i bez powiadomienia. Nie dotyczy połączeń w aplikacjach.</string>
     <string name="settings_voip_auto_start_label">Uruchamiaj automatycznie</string>
     <string name="settings_voip_auto_start_description">Wyłączone oznacza, że CallVault najpierw zapyta: na początku połączenia w aplikacji pojawi się powiadomienie z przyciskiem Nagrywaj.</string>
     <string name="voip_prompt_title">Trwa połączenie w aplikacji</string>
     <string name="voip_prompt_text">Dotknij Nagrywaj, aby nagrać to połączenie.</string>
     <string name="voip_prompt_text_named">Połączenie %1$s. Dotknij Nagrywaj, aby je nagrać.</string>
+    <string name="settings_subsection_phone_calls">Połączenia telefoniczne</string>
+    <string name="home_bulk_delete_message">Tej operacji nie można cofnąć.</string>
+    <string name="home_bulk_delete_scope_message">Część z nich jest zapisana zarówno na tym urządzeniu, jak i na Dysku. Które kopie usunąć?</string>
+    <string name="home_bulk_delete_device_only">Tylko urządzenie</string>
+    <string name="home_bulk_delete_drive_only">Tylko Dysk</string>
+    <string name="home_bulk_delete_both">Obie kopie</string>
+    <string name="support_appeal_title">CallVault to jedna osoba</string>
+    <string name="support_appeal_body">Tworzę i utrzymuję CallVault samodzielnie, w wolnym czasie. Aplikacja jest darmowa i otwartoźródłowa — bez reklam, bez śledzenia, bez wersji płatnej, i tak zostanie. Jeśli okazała się przydatna, drobne wsparcie pomaga mi działać dalej. Tak czy inaczej — dziękuję, że z niej korzystasz.</string>
+    <string name="support_choose_title">Wesprzyj rozwój</string>
+    <string name="support_choose_body">Dziękuję. Oba odnośniki otworzą się w przeglądarce.</string>
+    <string name="support_not_now">Nie teraz</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">Wybrano: %1$d</item>
+        <item quantity="other">Wybrano: %1$d</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Usunąć nagrania (%1$d)?</item>
+        <item quantity="other">Usunąć nagrania (%1$d)?</item>
+    </plurals>
 </resources>

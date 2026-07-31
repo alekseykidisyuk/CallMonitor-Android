@@ -220,8 +220,9 @@
     <string name="placeholder_contact_name_desc">The contact name, if available</string>
     <string name="placeholder_cross_country_desc">Indicates if the call is cross-country (true/false)</string>
 
+    <string name="settings_subsection_phone_calls">Phone calls</string>
     <string name="settings_carrier_recording">Record phone calls</string>
-    <string name="settings_carrier_recording_description">Off means CallVault ignores phone calls completely — no recording, and no notification during the call. App calls are unaffected.</string>
+    <string name="settings_carrier_recording_description">Off: phone calls are ignored completely — no recording, no notification. App calls are unaffected.</string>
     <string name="settings_auto_record_incoming">Automatically record incoming calls</string>
     <string name="settings_auto_record_outgoing">Automatically record outgoing calls</string>
     <string name="settings_ignore_anonymous_incoming">Ignore anonymous incoming calls</string>
@@ -436,4 +437,24 @@
     <string name="settings_section_updates">Updates</string>
     <string name="settings_update_check_label">Check for updates</string>
     <string name="settings_update_check_description">Once a day, look for a new version on GitHub.</string>
+    <string name="support_appeal_title">CallVault is one person</string>
+    <string name="support_appeal_body">I build and maintain CallVault on my own, in my own time. It is free and open source — no ads, no tracking, no paid tier, and that will not change. If it has been useful to you, a small contribution helps me keep going. Either way, thank you for using it.</string>
+    <string name="support_choose_title">Support development</string>
+    <string name="support_choose_body">Thank you. Either link opens in your browser.</string>
+    <string name="support_kofi" translatable="false">Ko-fi</string>
+    <string name="support_paypal" translatable="false">PayPal</string>
+    <string name="support_not_now">Not now</string>
+    <string name="home_bulk_delete_message">This cannot be undone.</string>
+    <string name="home_bulk_delete_scope_message">Some of these are saved both on this device and in Drive. Which copies should be deleted?</string>
+    <string name="home_bulk_delete_device_only">Device only</string>
+    <string name="home_bulk_delete_drive_only">Drive only</string>
+    <string name="home_bulk_delete_both">Both copies</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Delete %1$d recording?</item>
+        <item quantity="other">Delete %1$d recordings?</item>
+    </plurals>
 </resources>

@@ -292,10 +292,29 @@
     <string name="wizard_storage_title">录音保存位置</string>
     <string name="wizard_title">设置 CallVault</string>
     <string name="settings_carrier_recording">录制电话通话</string>
-    <string name="settings_carrier_recording_description">关闭后，CallVault 将完全忽略电话通话：不录音，通话期间也不显示通知。不影响应用内通话。</string>
+    <string name="settings_carrier_recording_description">关闭：完全忽略电话通话，不录音也不显示通知。不影响应用内通话。</string>
     <string name="settings_voip_auto_start_label">自动开始</string>
     <string name="settings_voip_auto_start_description">关闭后，CallVault 会先询问：应用内通话开始时会显示带“录制”按钮的通知。</string>
     <string name="voip_prompt_title">应用内通话进行中</string>
     <string name="voip_prompt_text">点按“录制”即可录制此通话。</string>
     <string name="voip_prompt_text_named">%1$s 通话。点按“录制”即可录制。</string>
+    <string name="settings_subsection_phone_calls">电话通话</string>
+    <string name="home_bulk_delete_message">此操作无法撤销。</string>
+    <string name="home_bulk_delete_scope_message">其中一些同时保存在本机和云端硬盘中。要删除哪些副本？</string>
+    <string name="home_bulk_delete_device_only">仅本机</string>
+    <string name="home_bulk_delete_drive_only">仅云端硬盘</string>
+    <string name="home_bulk_delete_both">两份副本</string>
+    <string name="support_appeal_title">CallVault 只有一个人</string>
+    <string name="support_appeal_body">CallVault 由我一个人利用业余时间开发和维护。它免费且开源——没有广告、没有追踪、没有付费版本，今后也不会有。如果它对你有帮助，一点小小的支持能让我继续做下去。无论如何，谢谢你使用它。</string>
+    <string name="support_choose_title">支持开发</string>
+    <string name="support_choose_body">谢谢。两个链接都会在浏览器中打开。</string>
+    <string name="support_not_now">以后再说</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">已选择 %1$d 项</item>
+        <item quantity="other">已选择 %1$d 项</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">删除 %1$d 条录音？</item>
+        <item quantity="other">删除 %1$d 条录音？</item>
+    </plurals>
 </resources>

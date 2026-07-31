@@ -292,10 +292,29 @@
     <string name="wizard_storage_title">Nơi lưu bản ghi âm</string>
     <string name="wizard_title">Thiết lập CallVault</string>
     <string name="settings_carrier_recording">Ghi âm cuộc gọi điện thoại</string>
-    <string name="settings_carrier_recording_description">Tắt nghĩa là CallVault bỏ qua hoàn toàn các cuộc gọi điện thoại: không ghi âm và không có thông báo trong cuộc gọi. Cuộc gọi trong ứng dụng không bị ảnh hưởng.</string>
+    <string name="settings_carrier_recording_description">Tắt: cuộc gọi điện thoại bị bỏ qua hoàn toàn — không ghi âm, không thông báo. Cuộc gọi trong ứng dụng không bị ảnh hưởng.</string>
     <string name="settings_voip_auto_start_label">Tự động bắt đầu</string>
     <string name="settings_voip_auto_start_description">Tắt nghĩa là CallVault sẽ hỏi trước: một thông báo có nút Ghi âm xuất hiện khi cuộc gọi trong ứng dụng bắt đầu.</string>
     <string name="voip_prompt_title">Đang có cuộc gọi trong ứng dụng</string>
     <string name="voip_prompt_text">Nhấn Ghi âm để ghi lại cuộc gọi này.</string>
     <string name="voip_prompt_text_named">Cuộc gọi %1$s. Nhấn Ghi âm để ghi lại.</string>
+    <string name="settings_subsection_phone_calls">Cuộc gọi điện thoại</string>
+    <string name="home_bulk_delete_message">Không thể hoàn tác.</string>
+    <string name="home_bulk_delete_scope_message">Một số bản ghi được lưu cả trên thiết bị này và trên Drive. Bạn muốn xóa bản sao nào?</string>
+    <string name="home_bulk_delete_device_only">Chỉ trên thiết bị</string>
+    <string name="home_bulk_delete_drive_only">Chỉ trên Drive</string>
+    <string name="home_bulk_delete_both">Cả hai bản sao</string>
+    <string name="support_appeal_title">CallVault chỉ có một người</string>
+    <string name="support_appeal_body">Tôi tự phát triển và duy trì CallVault, bằng thời gian của mình. Ứng dụng miễn phí và mã nguồn mở — không quảng cáo, không theo dõi, không bản trả phí, và điều đó sẽ không thay đổi. Nếu nó hữu ích với bạn, một đóng góp nhỏ giúp tôi tiếp tục. Dù thế nào, cảm ơn bạn đã sử dụng.</string>
+    <string name="support_choose_title">Ủng hộ việc phát triển</string>
+    <string name="support_choose_body">Cảm ơn bạn. Cả hai liên kết đều mở trong trình duyệt.</string>
+    <string name="support_not_now">Để sau</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">Đã chọn %1$d</item>
+        <item quantity="other">Đã chọn %1$d</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Xóa %1$d bản ghi?</item>
+        <item quantity="other">Xóa %1$d bản ghi?</item>
+    </plurals>
 </resources>

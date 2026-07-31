@@ -292,10 +292,29 @@
     <string name="wizard_storage_title">Куда сохранять записи</string>
     <string name="wizard_title">Настройка CallVault</string>
     <string name="settings_carrier_recording">Записывать телефонные звонки</string>
-    <string name="settings_carrier_recording_description">Если выключено, CallVault полностью игнорирует телефонные звонки: без записи и без уведомления во время разговора. На звонки в приложениях это не влияет.</string>
+    <string name="settings_carrier_recording_description">Выключено: телефонные звонки полностью игнорируются — без записи и без уведомления. На звонки в приложениях это не влияет.</string>
     <string name="settings_voip_auto_start_label">Запускать автоматически</string>
     <string name="settings_voip_auto_start_description">Если выключено, CallVault сначала спросит: в начале звонка в приложении появится уведомление с кнопкой «Записать».</string>
     <string name="voip_prompt_title">Идёт звонок в приложении</string>
     <string name="voip_prompt_text">Нажмите «Записать», чтобы записать этот звонок.</string>
     <string name="voip_prompt_text_named">Звонок в %1$s. Нажмите «Записать», чтобы записать его.</string>
+    <string name="settings_subsection_phone_calls">Телефонные звонки</string>
+    <string name="home_bulk_delete_message">Это действие нельзя отменить.</string>
+    <string name="home_bulk_delete_scope_message">Некоторые из них сохранены и на этом устройстве, и в Диске. Какие копии удалить?</string>
+    <string name="home_bulk_delete_device_only">Только на устройстве</string>
+    <string name="home_bulk_delete_drive_only">Только в Диске</string>
+    <string name="home_bulk_delete_both">Обе копии</string>
+    <string name="support_appeal_title">CallVault делает один человек</string>
+    <string name="support_appeal_body">Я разрабатываю и поддерживаю CallVault один, в своё свободное время. Приложение бесплатное и с открытым исходным кодом — без рекламы, без слежки и без платной версии, и так и останется. Если оно вам пригодилось, небольшая поддержка помогает мне продолжать. В любом случае — спасибо, что пользуетесь.</string>
+    <string name="support_choose_title">Поддержать разработку</string>
+    <string name="support_choose_body">Спасибо. Обе ссылки откроются в браузере.</string>
+    <string name="support_not_now">Не сейчас</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">Выбрано: %1$d</item>
+        <item quantity="other">Выбрано: %1$d</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Удалить записи (%1$d)?</item>
+        <item quantity="other">Удалить записи (%1$d)?</item>
+    </plurals>
 </resources>

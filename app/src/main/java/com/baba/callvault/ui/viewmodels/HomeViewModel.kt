@@ -552,6 +552,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Deletes every file in [uris] — a bulk delete from a multi-selection — then reloads the list
+     * once at the end rather than after each file.
+     *
+     * The whole set is marked as deleting up front so every affected row shows its spinner together;
+     * refreshing per file would make the list jump under the user's finger while the rest run.
+     */
+    fun deleteUris(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        if (playback.value.activeUri in uris) playbackController.stop()
+        _uiState.update { it.copy(deletingUris = it.deletingUris + uris) }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                uris.forEach { RecordingsRepository.deleteFile(appContext, it) }
+            }
+            refresh()
+            _uiState.update { it.copy(deletingUris = it.deletingUris - uris.toSet()) }
+        }
+    }
+
     /** Starts inline playback of [item]'s primary copy. */
     fun play(item: RecordingItem) = playbackController.play(appContext, item.uri)
 

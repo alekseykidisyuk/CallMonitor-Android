@@ -292,10 +292,29 @@
     <string name="wizard_storage_title">Hová mentse a felvételeket</string>
     <string name="wizard_title">CallVault beállítása</string>
     <string name="settings_carrier_recording">Telefonhívások rögzítése</string>
-    <string name="settings_carrier_recording_description">Kikapcsolva a CallVault teljesen figyelmen kívül hagyja a telefonhívásokat – nincs rögzítés és nincs értesítés a hívás alatt. Az alkalmazáshívásokat ez nem érinti.</string>
+    <string name="settings_carrier_recording_description">Kikapcsolva: a telefonhívásokat teljesen figyelmen kívül hagyja – nincs rögzítés, nincs értesítés. Az alkalmazáshívásokat ez nem érinti.</string>
     <string name="settings_voip_auto_start_label">Automatikus indítás</string>
     <string name="settings_voip_auto_start_description">Kikapcsolva a CallVault először rákérdez: alkalmazáshívás kezdetekor értesítés jelenik meg egy Rögzítés gombbal.</string>
     <string name="voip_prompt_title">Alkalmazáshívás folyamatban</string>
     <string name="voip_prompt_text">Koppintson a Rögzítés gombra a hívás rögzítéséhez.</string>
     <string name="voip_prompt_text_named">%1$s hívás. Koppintson a Rögzítés gombra a rögzítéséhez.</string>
+    <string name="settings_subsection_phone_calls">Telefonhívások</string>
+    <string name="home_bulk_delete_message">Ez a művelet nem vonható vissza.</string>
+    <string name="home_bulk_delete_scope_message">Néhányuk ezen az eszközön és a Drive-ban is el van mentve. Mely másolatokat töröljük?</string>
+    <string name="home_bulk_delete_device_only">Csak az eszközön</string>
+    <string name="home_bulk_delete_drive_only">Csak a Drive-ban</string>
+    <string name="home_bulk_delete_both">Mindkét másolat</string>
+    <string name="support_appeal_title">A CallVault egyetlen ember</string>
+    <string name="support_appeal_body">A CallVaultot egyedül fejlesztem és tartom karban, a saját szabadidőmben. Ingyenes és nyílt forráskódú – nincs benne hirdetés, nyomkövetés vagy fizetős verzió, és ez nem is fog változni. Ha hasznosnak találtad, egy kis támogatás segít folytatni. Így is, úgy is: köszönöm, hogy használod.</string>
+    <string name="support_choose_title">A fejlesztés támogatása</string>
+    <string name="support_choose_body">Köszönöm. Mindkét hivatkozás a böngészőben nyílik meg.</string>
+    <string name="support_not_now">Most nem</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d kijelölve</item>
+        <item quantity="other">%1$d kijelölve</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Töröl %1$d felvételt?</item>
+        <item quantity="other">Töröl %1$d felvételt?</item>
+    </plurals>
 </resources>

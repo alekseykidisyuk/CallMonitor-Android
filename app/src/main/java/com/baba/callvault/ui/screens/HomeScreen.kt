@@ -13,11 +13,16 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Surface
 import com.baba.callvault.system.openWirelessDebugging
+import com.baba.callvault.data.recordings.DeleteScope
+import com.baba.callvault.data.recordings.RecordingSelection
 import com.baba.callvault.system.openKofi
+import com.baba.callvault.ui.common.SupportDialog
+import com.baba.callvault.system.shareRecordings
 import com.baba.callvault.system.shareRecording
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -59,6 +64,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
@@ -92,6 +98,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -154,6 +161,26 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val playback by viewModel.playback.collectAsState()
 
+    // Two separate flags, not one: the chooser is opened by the user tapping Support, the appeal
+    // arrives on its own after a release note. Sharing a flag would let dismissing one suppress the
+    // other in the same session.
+    var showSupport by remember { mutableStateOf(false) }
+    var showSupportAppeal by remember { mutableStateOf(false) }
+
+    // Multi-selection, keyed by each row's primary Uri. Empty means normal browsing; the moment it
+    // holds anything the screen is in selection mode, so there is no second flag to keep in step.
+    var selection by remember { mutableStateOf<Set<Uri>>(emptySet()) }
+    var showBulkDelete by remember { mutableStateOf(false) }
+    val selectionMode = selection.isNotEmpty()
+    val selectedItems = remember(selection, uiState.recordings) {
+        uiState.recordings.filter { it.uri in selection }
+    }
+    val clearSelection = { selection = emptySet() }
+
+    // Back leaves selection mode rather than the screen — the standard behaviour, and without it the
+    // only way out would be the close button.
+    BackHandler(enabled = selectionMode) { clearSelection() }
+
     // Refresh status + recordings whenever the user returns to the screen (e.g. after a new call).
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -174,24 +201,68 @@ fun HomeScreen(
 
     CvScaffold(
         modifier = modifier.fillMaxSize(),
-        title = stringResource(R.string.app_name),
-        titleTrailing = { SupportPill(onClick = { context.openKofi() }) },
+        title =
+            if (selectionMode) pluralStringResource(R.plurals.home_selected_count, selection.size, selection.size)
+            else stringResource(R.string.app_name),
+        onBack = if (selectionMode) clearSelection else null,
+        titleTrailing = if (selectionMode) null else ({ SupportPill(onClick = { showSupport = true }) }),
         actions = {
-            IconButton(onClick = onOpenSettings) {
-                Icon(
-                    imageVector = Icons.Filled.Tune,
-                    contentDescription = stringResource(R.string.home_open_settings),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            if (selectionMode) {
+                IconButton(onClick = {
+                    context.shareRecordings(RecordingSelection.urisToShare(selectedItems))
+                    clearSelection()
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Share,
+                        contentDescription = stringResource(R.string.home_share),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = { showBulkDelete = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.home_delete),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        imageVector = Icons.Filled.Tune,
+                        contentDescription = stringResource(R.string.home_open_settings),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     ) { innerPadding ->
+        if (showBulkDelete) {
+            BulkDeleteDialog(
+                count = selectedItems.size,
+                needsScopeChoice = RecordingSelection.needsScopeChoice(selectedItems),
+                onConfirm = { scope ->
+                    showBulkDelete = false
+                    viewModel.deleteUris(RecordingSelection.urisToDelete(selectedItems, scope))
+                    clearSelection()
+                },
+                onDismiss = { showBulkDelete = false },
+            )
+        }
+        if (showSupport) {
+            SupportDialog(appeal = false, onDismiss = { showSupport = false })
+        }
+        // The appeal follows the release note rather than replacing it: the note is the reason the
+        // user has the app open, and asking mid-note would bury what changed.
+        if (showSupportAppeal) {
+            SupportDialog(appeal = true, onDismiss = { showSupportAppeal = false })
+        }
         if (uiState.showWhatsNew) {
             // Persist the version so the note never reappears for this build, and clear the small
             // "updated" banner too.
             val dismiss = {
                 viewModel.markWhatsNewSeen()
                 viewModel.dismissUpdatedBanner()
+                showSupportAppeal = true
             }
             WhatsNewDialog(onDismiss = dismiss, onOpenSettings = { dismiss(); onOpenSettings() })
         }
@@ -294,6 +365,12 @@ fun HomeScreen(
                         item = item,
                         playback = playback,
                         deleting = item.uri in uiState.deletingUris,
+                        selectionMode = selectionMode,
+                        selected = item.uri in selection,
+                        onToggleSelected = {
+                            selection = if (item.uri in selection) selection - item.uri
+                                        else selection + item.uri
+                        },
                         onPlayUri = { uri -> viewModel.play(uri) },
                         onPause = { viewModel.pausePlayback() },
                         onResume = { viewModel.resumePlayback() },
@@ -1017,6 +1094,58 @@ private fun RecordingRowMenu(shareUri: Uri, shareName: String, onDelete: () -> U
     }
 }
 
+/**
+ * Confirms a bulk delete, and asks which copies when the answer is not obvious.
+ *
+ * The scope question only appears when the selection actually holds a recording kept both on the
+ * device and in Drive. Asking every time would put a three-way choice in front of an unambiguous
+ * delete; never asking would guess, and guessing here destroys files.
+ */
+@Composable
+private fun BulkDeleteDialog(
+    count: Int,
+    needsScopeChoice: Boolean,
+    onConfirm: (DeleteScope) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(pluralStringResource(R.plurals.home_bulk_delete_title, count, count)) },
+        text = {
+            Text(
+                stringResource(
+                    if (needsScopeChoice) R.string.home_bulk_delete_scope_message
+                    else R.string.home_bulk_delete_message
+                )
+            )
+        },
+        confirmButton = {
+            if (needsScopeChoice) {
+                // Stacked, not a Row: three labels side by side truncate, and mistaking "Drive only"
+                // for "Both" costs the user files.
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(onClick = { onConfirm(DeleteScope.DEVICE) }) {
+                        Text(stringResource(R.string.home_bulk_delete_device_only))
+                    }
+                    TextButton(onClick = { onConfirm(DeleteScope.DRIVE) }) {
+                        Text(stringResource(R.string.home_bulk_delete_drive_only))
+                    }
+                    TextButton(onClick = { onConfirm(DeleteScope.BOTH) }) {
+                        Text(stringResource(R.string.home_bulk_delete_both))
+                    }
+                }
+            } else {
+                TextButton(onClick = { onConfirm(DeleteScope.BOTH) }) {
+                    Text(stringResource(R.string.home_delete))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_cancel)) }
+        },
+    )
+}
+
 private sealed interface DeleteTarget {
     data object All : DeleteTarget
     data class Single(val uri: Uri) : DeleteTarget
@@ -1046,6 +1175,9 @@ private fun RecordingRow(
     item: RecordingItem,
     playback: RecordingPlaybackController.PlaybackState,
     deleting: Boolean,
+    selectionMode: Boolean,
+    selected: Boolean,
+    onToggleSelected: () -> Unit,
     onPlayUri: (Uri) -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -1092,13 +1224,18 @@ private fun RecordingRow(
         )
     }
 
-    val cardColor =
-        if (isRowActive) MaterialTheme.colorScheme.surfaceContainerHigh
-        else MaterialTheme.colorScheme.surface
+    val cardColor = when {
+        selected -> MaterialTheme.colorScheme.secondaryContainer
+        isRowActive -> MaterialTheme.colorScheme.surfaceContainerHigh
+        else -> MaterialTheme.colorScheme.surface
+    }
 
-    // Single-source rows play on tap; BOTH rows toggle the expanded copy list on tap.
+    // While selecting, a tap picks the row instead of playing it or expanding its copies — otherwise
+    // building a selection would start playback of everything on the way past.
     val onCardClick: () -> Unit = {
-        if (isBoth) {
+        if (selectionMode) {
+            onToggleSelected()
+        } else if (isBoth) {
             expanded = !expanded
         } else if (!isRowActive) {
             onPlayUri(item.uri)
@@ -1107,6 +1244,7 @@ private fun RecordingRow(
 
     CvCard(
         onClick = onCardClick,
+        onLongClick = onToggleSelected,
         color = cardColor,
         contentPadding = PaddingValues(14.dp)
     ) {
@@ -1159,7 +1297,17 @@ private fun RecordingRow(
             //
             // While a delete (and any cloud-copy removal) is in flight, a live spinner takes the
             // menu button's place — the row then vanishes on the list refresh. No modal.
-            if (deleting) {
+            if (selectionMode) {
+                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = if (selected) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            } else if (deleting) {
                 Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 }

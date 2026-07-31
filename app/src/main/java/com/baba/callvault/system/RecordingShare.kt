@@ -57,3 +57,36 @@ fun Context.shareRecording(uri: Uri, displayName: String) {
     runCatching { startActivity(chooser) }
         .onFailure { AppLogger.w(TAG, "Could not open the share sheet for $displayName: ${it.message}") }
 }
+
+/**
+ * Sends several recordings at once, from a multi-selection.
+ *
+ * `ACTION_SEND_MULTIPLE` rather than a loop of single shares: one chooser, one destination, one
+ * message with every recording attached. The MIME is the shared type where all the files agree and
+ * the generic audio type ([FALLBACK_MIME]) otherwise, since a selection can mix Opus and AAC.
+ *
+ * The grant has to reach every URI, so each is added to the [ClipData] — the flag alone covers only
+ * what the clip data and extras name. A selection of one still uses this path; the chooser handles
+ * it identically.
+ */
+fun Context.shareRecordings(uris: List<Uri>) {
+    if (uris.isEmpty()) return
+
+    val types = uris.mapNotNull { runCatching { contentResolver.getType(it) }.getOrNull() }.distinct()
+    val mime = types.singleOrNull() ?: FALLBACK_MIME
+
+    val clip = ClipData.newRawUri(null, uris.first()).apply {
+        uris.drop(1).forEach { addItem(ClipData.Item(it)) }
+    }
+    val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+        type = mime
+        putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        clipData = clip
+    }
+    val chooser = Intent.createChooser(intent, getString(R.string.home_share_chooser)).apply {
+        if (this@shareRecordings !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    runCatching { startActivity(chooser) }
+        .onFailure { AppLogger.w(TAG, "Could not open the share sheet for ${uris.size} recordings: ${it.message}") }
+}
