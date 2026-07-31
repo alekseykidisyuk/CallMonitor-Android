@@ -8,28 +8,35 @@ Status key: 🔵 agreed, not started · 🟡 in progress · ✅ done (kept brief
 
 ---
 
-## Current state — 2026-07-29 (after the 1.5.3 release)
+## Current state — 2026-07-31 (after the 1.5.5 release)
 
 Kept at the top so a session can start from disk instead of from recall. **Update it whenever a
 release is cut, a branch lands, or something starts or stops being blocked.**
 
-**Released:** `v1.5.3` is the latest release users can get (versionCode **10630**, tag `v1.5.3`, asset `CallVault.apk`). Also published: `v1.5.2-diag-scrcpy`, a
-**pre-release** debug build for issue #18 — invisible to the in-app updater, on branch
-`diag/scrcpy-only`, **never to be merged**.
+**Released:** `v1.5.5` is the latest release users can get (versionCode **10660**, tag `v1.5.5`, asset
+`CallVault.apk`). Also published: `v1.5.2-diag-scrcpy`, a **pre-release** debug build for issue #18 —
+invisible to the in-app updater, on branch `diag/scrcpy-only`, **never to be merged**.
 
-**Unreleased:** nothing. `main` is level with `origin/main` and with the `v1.5.3` tag. The setup-health
-feature, the SAF delete fix, the capture-path log fix and the i18n work all shipped in 1.5.3.
+**Unreleased, sitting on `main`:** the mid-call update guard and the encoder validation
+(`fix/midcall-guard-and-encoder-validation`, merged as `2e5c0dc`, **not pushed**). `main` is 3 commits
+ahead of `origin/main`. Deliberately accumulating rather than cutting 1.5.6 yet — `ciVersionName` still
+reads 1.5.5 and must be bumped before any release.
 
-**Hard constraint on the next release:** versionCode must exceed **10630**, which 1.5.3 used. See the `release-version-bump` memory for why a lower number is unrecoverable
-without an uninstall.
+**Hard constraint on the next release:** versionCode must exceed **10660**, which 1.5.5 used. See the
+`release-version-bump` memory for why a lower number is unrecoverable without an uninstall.
+
+**Device-verified 2026-07-31 (OnePlus 12, build `1.5.6-encoder` / 10661):** encoder validation does
+*not* divert recording to the scrcpy fallback — output was mono 48 kHz, full duration, −16.9 dB mean.
+The mid-call guard's device path is covered by unit tests only. **Known gap:** the new
+`CV:EncoderLimits` log line runs in the *daemon*, so it reaches neither the app's debug log nor
+ColorOS's filtered logcat — the diagnostic is unreadable on exactly the ROM family that filed issue
+#18. Another argument for `2026-07-28-daemon-and-system-logs-design.md`.
 
 **Blocked on other people:**
 
 | Waiting for | Who | Unblocks |
 |---|---|---|
-| Diagnostic APK result on a real call | issue #18 reporter | Confirms or kills the v1.4.0 `DirectAudioRecorderSession` regression hypothesis — see `2026-07-28-issue-18-silent-carrier-recordings.md` |
-| A carrier call with VoIP recording switched off | maintainer | Rules VoIP in or out as a factor in issue #18 |
-| A Galaxy S24 FE in hand | maintainer | **Confirming** the resilient-recording ring-geometry fix, which already **shipped in v1.5.2** (`5244411`) and has never been run on the device it was written for. It is not awaiting release — it is awaiting proof. Shipping it unconfirmed was bounded by Resilient recording being **default-off**, so only opt-in users run that code. |
+| Four questions about USB debugging, offline recording and whether Shizuku stops once or repeatedly | the two Shizuku reporters | Confirms or breaks the "we kill it, it does not crash" analysis without needing a debug build |
 
 **Written but unplanned:** `2026-07-28-daemon-and-system-logs-design.md` — a design for getting daemon
 diagnostics into a bug report, with no implementation plan yet. Issue #18 is the standing argument for
@@ -42,7 +49,14 @@ test at all).
 
 ---
 
-## 🔵 Don't install an update while a call is being recorded
+## ✅ Don't install an update while a call is being recorded — DONE (`4e46948`, merged `2e5c0dc`)
+
+`CallInProgressGate.mayInstall()` is checked in `UpdateInstaller.installSilentlyViaShell` *before* the
+heavy-operation lock; a blocked attempt returns `ShellResult.DEFERRED_CALL_IN_PROGRESS`, which clears
+the pending tag and cancels the progress notification **without** falling back to the interactive
+installer. It guards VoIP as well as telephony, because a VoIP call never sets the telephony call
+state. Six unit tests. Known limit: a call that *starts* mid-install is not covered — aborting the
+installer would leave a half-written APK, which is worse.
 
 **Found the hard way, 2026-07-30.** An APK installed over the running app kills the app process, and
 any recording in flight dies with it. Observed on the OP12: one call became two files, and the second
@@ -146,7 +160,15 @@ before today — regenerating them needs care about real contacts in a public re
 
 ---
 
-## 🔵 Validate the encoder before recording into it
+## ✅ Validate the encoder before recording into it — DONE (`1ee77af`, merged `2e5c0dc`)
+
+`EncoderLimits.resolveBitRate()` clamps the requested rate into the encoder's advertised range and
+logs `encoder=… bitrate=[min..max] requested=… resolved=… sampleRate=… supported=… channels=…
+supported=…`; `supports()` additionally requires `EncoderLimits.supportsFormat()`. Six unit tests.
+Verified on the OP12 (`1.5.6-encoder`): the direct path is still chosen — mono output proves it, since
+the scrcpy fallback is stereo. **But the log line is written by the daemon**, so it reaches neither the
+app debug log nor ColorOS's filtered logcat; on OnePlus it is invisible. It works on Samsung. Until the
+daemon-logging design lands, this diagnostic cannot answer the bug reports it was built for.
 
 `DirectAudioRecorderSession.hasEncoder()` checks only that an encoder for the MIME **exists** —
 nothing verifies it supports our sample rate, channel count or bitrate, and `KEY_BIT_RATE` is set to
@@ -350,16 +372,22 @@ failure re-enables it and never retries. That still leaves OnePlus-class devices
 
 Three related asks, all about the user deciding rather than the rules deciding:
 
-- **Manual VoIP recording** — start/stop an app call's recording by hand. The plumbing exists
-  (`VoipRecordingCoordinator.start/stop`); what's missing is a control surface and a mode where the
-  detector arms but does not auto-start.
-- **Choose when to record** — per-call rather than by rule, including a prompt at call start. The
-  carrier path already has a standby notification with a "Record" action
-  (`ACTION_MANUAL_START`) — that pattern extends to VoIP rather than needing a new one.
-- **Turn cellular recording off independently.** Today carrier recording is governed by the automatic
-  rules and VoIP is a separate opt-in; there is no way to say "app calls only". Careful: this is not
-  the same as the existing per-contact ignore rules, and it must not silently disable recording for
-  someone who expected it — default on, and state clearly what it does.
+- **Decide per call, including app calls.** These were listed as two items ("manual VoIP recording" and
+  "choose when to record") until 2026-07-31; the code says they are one. **Carrier already has it:**
+  `RecordingNotificationHelper` posts a standby notification whose action is `ACTION_MANUAL_START`,
+  plus pause/resume once running. **VoIP has nothing:** `VoipRecordingCoordinator` exposes only
+  `onCallStarted`/`onCallEnded`, which are lifecycle callbacks the detector fires — there is no
+  user-invocable entry point and no arm-without-starting mode. (An earlier version of this entry named
+  the plumbing `VoipRecordingCoordinator.start/stop`. Those symbols do not exist.) The work is the
+  arm-without-starting mode plus the carrier control surface extended to VoIP.
+- **Undecided, deliberately kept separate:** a *prompt* at the start of a call. A dialog over a live
+  call screen is a much more intrusive interaction than a notification you can ignore, it applies to
+  both paths equally, and nothing has established it is wanted.
+- **~~Turn cellular recording off independently~~ — already possible; see the VoIP-only entry above.**
+  Both auto-record switches off with VoIP on *is* an app-calls-only recorder today, and
+  `CallGapDetector` respects those flags so the health card will not nag. What is missing is only the
+  naming. Careful when naming it: it must not silently disable recording for someone who expected it —
+  default on, and state clearly what it does.
 
 ---
 

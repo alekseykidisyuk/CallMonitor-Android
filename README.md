@@ -139,10 +139,13 @@ OnePlus had happily hidden them:
   so the carrier recorder also tried to record it — producing an empty second file (named from the call
   log, so with an unrelated contact's name) and an error notification, while the VoIP recording itself
   was perfectly fine. The carrier path now stands down when the VoIP recorder owns the call.
-- **Resilient recording is not confirmed working on One UI.** Its audio handoff is rejected on this
-  device (`geometry doesn't fit ashmem`). It fails *safely* — CallVault falls back to the normal path
-  and the call is still recorded — but the extra protection it offers is not active there. Under
-  investigation; see `docs/dev-notes/backlog.md`.
+- **A reported audio buffer size need not match the real one.** Resilient recording sized its shared
+  ring from `AudioRecord.getBufferSizeInFrames()`. That is a *logical* value the client rewrites on
+  every attach, not the physical allocation — on a Galaxy S24 FE the two diverged, 8192 frames
+  reported against a 4096-frame ring, and CallVault refused the handoff rather than read past the end.
+  The size is now derived from the mapping itself, which is ground truth on every device, and
+  resilient recording is confirmed working on One UI. This was never a Samsung quirk: the two
+  quantities happen to agree on OnePlus, which hid it.
 
 ## Requirements
 
@@ -189,17 +192,31 @@ OnePlus had happily hidden them:
 
 Planned, in rough priority order. Nothing here is promised by a date, and anything marked *investigating*
 may turn out not to be possible — this is what is actually being worked on, not a wish list.
+**Last checked against the code on 2026-07-31 (1.5.5).**
 
 **Control over what gets recorded**
 
-- **Manual VoIP recording** — start and stop an app call's recording yourself, instead of it always
-  being automatic.
-- **Choose when to record** — decide per call rather than by rule alone, including a prompt at the start
-  of a call for people who want to make that decision each time.
-- **Turn cellular recording off independently** — today the automatic rules cover carrier calls; VoIP is
-  a separate opt-in. Someone who only wants app calls recorded should be able to say so.
+- **Decide per call, including app calls** — carrier calls already offer this: with auto-record off, a
+  standby notification carries a **Record** action, and a running recording can be paused and resumed.
+  App calls have no equivalent — the detector either records automatically or not at all. The work is a
+  mode where VoIP detection arms without starting, plus the same control surface.
+- **Name "app calls only" as a mode** — the combination already works today (both auto-record switches
+  off, VoIP recording on), but nothing in the app says it is supported, so you have to work it out. One
+  clear choice should replace that.
 
-**Debug bypass — no debugging switch after boot**
+**Working alongside Shizuku** *(investigating)*
+
+CallVault and Shizuku both run their helper as a child of an ADB shell, and restarting `adbd` kills
+every such process — so whichever app restarts it last takes the other one down. That is why reports of
+"Shizuku crashes when CallVault is active" are intermittent. CallVault restarts `adbd` in two places:
+arming offline recording, and enabling Wireless debugging. The first step is to detect Shizuku and warn
+before doing either.
+
+Running *on* Shizuku instead of embedded ADB has been researched. It fits better than expected — but
+Shizuku's own server is an `adbd` child too, so it does not survive the screen-off restart either, and
+adopting it would cost hands-free operation after a reboot.
+
+**Debug bypass — no debugging switch after boot** *(on hold)*
 
 The goal: CallVault needs a debugging switch **once, at boot**, and never again — no Wireless Debugging,
 no USB debugging while you use the phone. Capture is prepared in advance, so calls record without the
@@ -208,15 +225,14 @@ background helper being reachable at all.
 Two thirds of this is proven on real calls: a carrier-call capture can be prepared once and started by
 the app with the helper killed, recording normally. What is missing is the same treatment for **app
 calls (VoIP)**, which still run their capture inside the helper — so until that is solved, keeping VoIP
-recording means keeping a switch on.
+recording means keeping a switch on. One test remains before the approach is adopted or abandoned; it is
+not being actively worked on meanwhile.
 
 **Getting Wireless Debugging off**
 
-**Enabling USB debugging already does this today** — see [How it works](#how-it-works). The remaining
-work is to make it obvious rather than something you have to know:
+**Enabling USB debugging already does this today** — see [How it works](#how-it-works) — and Settings
+offers the switch with the trade explained. What remains:
 
-- **Offer it in the app** — explain the trade and, with your agreement, enable USB debugging so
-  Wireless Debugging can be switched off. Shizuku's manager does this silently; asking first is better.
 - **Adopt `adb_allowed_connection_time = 0`** — the documented fix for ADB's authorization timeout,
   which Shizuku sets for the same reason.
 
@@ -228,21 +244,24 @@ dev notes.
 
 **Reliability and honesty about it**
 
-- **"Test my setup"** — one action that runs the whole pipeline and reports which step fails. This app
-  fails silently, and the failure is usually discovered after the call that mattered.
+- **"Test my setup"** — one action that runs the whole pipeline and reports which step fails. Today
+  CallVault only checks that the prerequisites are in place (folder, pairing, developer options,
+  permission grant); it cannot tell you the path actually works. This app fails silently, and the
+  failure is usually discovered after the call that mattered.
 - **Per-app VoIP support** — show which of your installed calling apps actually work, instead of a
   blanket "experimental, may not work".
-- **Resilient recording on One UI** *(investigating)* — the audio handoff is rejected on Samsung; it
-  falls back safely, but the protection is inactive there.
-- **Faster, bounded startup** — one ADB call on the recording path is still unbounded and can stall.
+- **Faster, bounded startup** — the connection handshake has been bounded since 1.5.4, but the connect
+  routine on the recording path still has no overall budget and can stall.
 
 **Smaller things already agreed**
 
 - A manual **"Check for updates"** button — a release published just after you opened the app is
   currently unreachable for up to six hours.
-- A **General** settings section grouping Visual settings, Experimental and Updates.
-- Translations for the VoIP feature (it is English-only today).
 - Protection against losing the ADB pairing — uninstalling wipes it with no recovery path.
+
+Recently shipped in 1.5.4–1.5.5: Settings as a panel with a **General** section, the upload schedule
+outside the wizard, VoIP translated into all ten languages, and resilient recording confirmed on One UI.
+See the [changelog](CHANGELOG.md).
 
 Engineering detail for each of these lives in [`docs/dev-notes/backlog.md`](docs/dev-notes/backlog.md).
 
