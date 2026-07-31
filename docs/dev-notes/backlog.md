@@ -31,11 +31,7 @@ The mid-call guard's device path is covered by unit tests only. **Known gap:** t
 ColorOS's filtered logcat — the diagnostic is unreadable on exactly the ROM family that filed issue
 #18. Another argument for `2026-07-28-daemon-and-system-logs-design.md`.
 
-**Blocked on other people:**
-
-| Waiting for | Who | Unblocks |
-|---|---|---|
-| Four questions about USB debugging, offline recording and whether Shizuku stops once or repeatedly | the two Shizuku reporters | Confirms or breaks the "we kill it, it does not crash" analysis without needing a debug build |
+**Blocked on other people:** nothing.
 
 **Written but unplanned:** `2026-07-28-daemon-and-system-logs-design.md` — a design for getting daemon
 diagnostics into a bug report, with no implementation plan yet. Issue #18 is the standing argument for
@@ -143,9 +139,10 @@ operation after reboot, which is a stated differentiator.
 Recommendation: warn first, extract a `PrivilegedProvider` abstraction regardless (worth it alone),
 and treat full support as a product decision rather than a fix.
 
-**Ask the reporters:** is USB debugging on, is offline recording enabled, does Shizuku stop once or
-repeatedly, and does CallVault stop at the same moment. Those four answers confirm or break the
-analysis without a debug build.
+**Not chasing the reporters.** A set of diagnostic questions used to live here (USB debugging on?
+offline recording on? does Shizuku stop once or repeatedly?). Dropped 2026-07-31: when Shizuku is
+actually picked up, it gets tested properly on our own devices rather than reconstructed from
+second-hand answers. The analysis above stands as a hypothesis until then.
 
 ---
 
