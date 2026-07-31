@@ -73,4 +73,7 @@
     <string name="whatsnew_154_body">Un blocage rare de la connexion à l\'enregistreur pouvait désactiver l\'enregistrement en silence jusqu\'au redémarrage de l\'application, sans rien afficher à l\'écran. Le délai expire désormais et tout se rétablit tout seul.\n\nVous pouvez aussi choisir quand les enregistrements sont envoyés vers Drive : immédiatement, chaque jour ou chaque semaine. C\'est dans Paramètres ▸ Stockage, avec la Conservation, qui a rejoint la même section.</string>
     <string name="home_date_today">Aujourd\'hui</string>
     <string name="home_date_yesterday">Hier</string>
+    <string name="whatsnew_156_title">Choisir ce qui est enregistré, et faire le ménage</string>
+    <string name="whatsnew_156_body">Les appels téléphoniques et les appels dans les applis peuvent chacun s\'enregistrer automatiquement, demander d\'abord, ou être totalement ignorés : « appels dans les applis uniquement » est donc un vrai réglage, et non une combinaison à deviner.\n\nUn enregistrement peut être partagé, et un appui long permet d\'en sélectionner plusieurs à partager ou supprimer. Supprimer un enregistrement présent à la fois sur l\'appareil et dans Drive demande désormais quelles copies retirer.</string>
+    <string name="whatsnew_156_where">Paramètres ▸ Enregistrement ▸ Appels téléphoniques</string>
 </resources>

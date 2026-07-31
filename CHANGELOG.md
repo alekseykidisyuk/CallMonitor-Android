@@ -3,6 +3,49 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.5.6] - 2026-07-31
+
+### Added
+
+- **Choose what CallVault records, for each kind of call.** Phone calls and app calls now each offer
+  three settings: record automatically, ask first, or ignore completely.
+  - **Phone calls can be switched off entirely** (Settings ▸ Recording ▸ Phone calls). This is what
+    "record app calls only" needed: turning the two auto-record toggles off never stopped CallVault
+    offering a **Record** button on every single call, which is the nagging the mode is meant to
+    avoid.
+  - **App calls can ask first** (Settings ▸ General ▸ Experimental ▸ VoIP calls ▸ *Start
+    automatically*). A notification names the calling app and offers **Record**; it disappears when
+    recording starts or the call ends.
+  - Both default to what they did before, so nothing changes until you choose otherwise.
+- **Share a recording** from the list, and **select several at once** by holding one down. A
+  selection can be shared or deleted together.
+- **Deleting several at once asks which copies to remove** when any of them is saved both on the
+  device and in Drive, and says what it will keep — "Device only (1 of 2)", "Feroza will be kept —
+  only in Drive". A recording you asked to delete and did not get is not something you should have to
+  discover for yourself.
+- **PayPal alongside Ko-fi** for supporting development. Ko-fi's card payments are unavailable or
+  awkward in some countries.
+- **The debug log can be read and deleted from Settings ▸ Debug**, and shows its size. Previously it
+  was invisible, and clearing it meant switching logging off and on again.
+
+### Fixed
+
+- **An update could install in the middle of a call and cut the recording in two.** Installing over
+  the running app kills it, and the recording with it — seen on a real call, where the second half
+  came back mislabelled. Updates now wait, including during app calls, which never register as
+  telephony calls at all.
+- **Nothing checked that your bit rate was one the phone's encoder accepts.** Handed a rate outside
+  its range, an encoder can quietly emit audio that decodes to silence — a correctly-sized recording
+  that plays as nothing. The rate is now brought inside the supported range, and what the encoder
+  accepts is written to the log.
+
+### Changed
+
+- The **Record phone calls** switch groups the incoming and outgoing settings under it, and the
+  setup wizard now offers it too — the wizard cannot be re-run, and someone installing CallVault for
+  app calls alone wants it on day one.
+- The release note is followed once per release by a short note about supporting development.
+
 ## [1.5.5] - 2026-07-30
 
 ### Fixed

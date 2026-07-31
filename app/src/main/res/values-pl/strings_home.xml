@@ -72,4 +72,7 @@
     <string name="whatsnew_154_body">Rzadka blokada połączenia z rejestratorem mogła po cichu wyłączyć nagrywanie aż do ponownego uruchomienia aplikacji – bez żadnej informacji na ekranie. Teraz upływa limit czasu i wszystko wraca samo.\n\nMożesz też wybrać, kiedy nagrania trafiają na Dysk: od razu, codziennie albo co tydzień. Znajdziesz to w Ustawienia ▸ Pamięć, razem z Przechowywaniem, które przeniosło się do tej samej sekcji.</string>
     <string name="home_date_today">Dziś</string>
     <string name="home_date_yesterday">Wczoraj</string>
+    <string name="whatsnew_156_title">Zdecyduj, co ma być nagrywane, i uporządkuj nagrania</string>
+    <string name="whatsnew_156_body">Połączenia telefoniczne i te w aplikacjach mogą osobno nagrywać się automatycznie, najpierw pytać albo być całkiem pomijane — „tylko połączenia w aplikacjach” to teraz prawdziwe ustawienie, a nie kombinacja do odgadnięcia.\n\nNagrania można udostępniać, a przytrzymanie pozwala zaznaczyć kilka naraz do udostępnienia lub usunięcia. Usuwanie nagrania zapisanego i na urządzeniu, i na Dysku pyta teraz, które kopie usunąć.</string>
+    <string name="whatsnew_156_where">Ustawienia ▸ Nagrywanie ▸ Połączenia telefoniczne</string>
 </resources>

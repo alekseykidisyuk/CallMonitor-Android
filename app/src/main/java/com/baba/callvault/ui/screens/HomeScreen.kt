@@ -253,12 +253,12 @@ fun HomeScreen(
             )
         }
         if (showSupport) {
-            SupportDialog(appeal = false, onDismiss = { showSupport = false })
+            SupportDialog(onDismiss = { showSupport = false })
         }
         // The appeal follows the release note rather than replacing it: the note is the reason the
         // user has the app open, and asking mid-note would bury what changed.
         if (showSupportAppeal) {
-            SupportDialog(appeal = true, onDismiss = { showSupportAppeal = false })
+            SupportDialog(onDismiss = { showSupportAppeal = false })
         }
         if (uiState.showWhatsNew) {
             // Persist the version so the note never reappears for this build, and clear the small

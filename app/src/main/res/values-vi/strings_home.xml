@@ -72,4 +72,7 @@
     <string name="whatsnew_154_body">Một lỗi hiếm gặp ở kết nối tới bộ ghi có thể âm thầm tắt việc ghi âm cho đến khi khởi động lại ứng dụng, mà không hiển thị bất cứ điều gì. Giờ đây kết nối sẽ hết thời gian chờ và tự khôi phục.\n\nBạn cũng có thể chọn thời điểm tải bản ghi lên Drive: ngay lập tức, hằng ngày hoặc hằng tuần. Xem trong Cài đặt ▸ Bộ nhớ, cùng với Thời gian lưu giữ đã chuyển vào cùng mục.</string>
     <string name="home_date_today">Hôm nay</string>
     <string name="home_date_yesterday">Hôm qua</string>
+    <string name="whatsnew_156_title">Quyết định những gì được ghi âm, và dọn dẹp bản ghi</string>
+    <string name="whatsnew_156_body">Cuộc gọi điện thoại và cuộc gọi trong ứng dụng đều có thể tự động ghi âm, hỏi trước, hoặc bị bỏ qua hoàn toàn — nên «chỉ cuộc gọi trong ứng dụng» giờ là một cài đặt thật sự, không còn là tổ hợp phải tự suy ra.\n\nCó thể chia sẻ bản ghi, và nhấn giữ để chọn nhiều bản ghi cùng lúc để chia sẻ hoặc xóa. Khi xóa bản ghi có cả trên thiết bị và trên Drive, ứng dụng sẽ hỏi bạn muốn xóa bản sao nào.</string>
+    <string name="whatsnew_156_where">Cài đặt ▸ Ghi âm ▸ Cuộc gọi điện thoại</string>
 </resources>

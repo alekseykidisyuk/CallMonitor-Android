@@ -125,7 +125,7 @@ val extractLibphonenumberMetadata = tasks.register<ExtractMetadataTask>("extract
 // that would destroy the device's ADB pairing — so a versionCode that goes backwards is not a
 // cosmetic mistake, it strands that device on the old build.
 val ciVersionCode = providers.gradleProperty("versionCode").map { it.toIntOrNull() }.orElse(10660)
-val ciVersionName = providers.gradleProperty("versionName").orElse("1.5.5")
+val ciVersionName = providers.gradleProperty("versionName").orElse("1.5.6")
 val ciBuildNumber = providers.gradleProperty("ciBuildNumber").orElse("Local")
 
 android {

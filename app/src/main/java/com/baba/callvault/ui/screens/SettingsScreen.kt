@@ -1666,7 +1666,7 @@ private fun AboutSection(
     var showSupportDialog by remember { mutableStateOf(false) }
 
     if (showSupportDialog) {
-        SupportDialog(appeal = false, onDismiss = { showSupportDialog = false })
+        SupportDialog(onDismiss = { showSupportDialog = false })
     }
 
     SettingsSection(title = stringResource(R.string.settings_section_about), expanded = expanded, onToggle = onToggle) {

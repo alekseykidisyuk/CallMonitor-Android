@@ -29,29 +29,20 @@ import com.baba.callvault.system.openPayPal
  * people simply already hold a PayPal balance. Both open in the browser — no payment SDK is in the
  * app, and nothing about the user leaves the device.
  *
- * @param appeal `true` after a release note, where the dialog arrives unrequested and has to explain
- *               itself. `false` when the user tapped Support, who needs a destination, not a pitch.
+ * **One dialog, wherever it is opened from.** An earlier version showed a shorter, businesslike
+ * variant when the user tapped Support and the fuller note only after a release, on the reasoning
+ * that someone who went looking needs a destination rather than a pitch. Two dialogs saying the same
+ * thing in two voices is worse than one: whichever route you arrive by, the reason for asking is the
+ * same, and the person tapping Support deliberately is the one most likely to want to read it.
  */
 @Composable
-fun SupportDialog(appeal: Boolean, onDismiss: () -> Unit) {
+fun SupportDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(
-                stringResource(
-                    if (appeal) R.string.support_appeal_title else R.string.support_choose_title
-                )
-            )
-        },
-        text = {
-            Text(
-                stringResource(
-                    if (appeal) R.string.support_appeal_body else R.string.support_choose_body
-                )
-            )
-        },
+        title = { Text(stringResource(R.string.support_appeal_title)) },
+        text = { Text(stringResource(R.string.support_appeal_body)) },
         confirmButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 TextButton(onClick = { onDismiss(); context.openKofi() }) {
@@ -63,13 +54,7 @@ fun SupportDialog(appeal: Boolean, onDismiss: () -> Unit) {
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    stringResource(
-                        if (appeal) R.string.support_not_now else R.string.general_cancel
-                    )
-                )
-            }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.support_not_now)) }
         },
     )
 }

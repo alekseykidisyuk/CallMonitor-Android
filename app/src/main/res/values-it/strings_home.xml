@@ -72,4 +72,7 @@
     <string name="whatsnew_154_body">Un raro blocco della connessione al registratore poteva lasciare la registrazione disattivata in silenzio fino al riavvio dell\'app, senza nulla a schermo che lo segnalasse. Ora scade il tempo di attesa e tutto si ripristina da solo.\n\nPuoi anche scegliere quando le registrazioni vengono caricate su Drive: subito, ogni giorno o ogni settimana. Lo trovi in Impostazioni ▸ Archiviazione, insieme alla Conservazione, che si è spostata nella stessa sezione.</string>
     <string name="home_date_today">Oggi</string>
     <string name="home_date_yesterday">Ieri</string>
+    <string name="whatsnew_156_title">Decidi cosa registrare e metti ordine</string>
+    <string name="whatsnew_156_body">Le chiamate telefoniche e quelle nelle app possono registrarsi automaticamente, chiedere prima o essere ignorate del tutto: «solo chiamate nelle app» è ora un\'impostazione vera e propria, non una combinazione da indovinare.\n\nLe registrazioni si possono condividere e, tenendone premuta una, selezionarne più di una da condividere o eliminare. Eliminare una registrazione presente sia sul dispositivo sia su Drive ora chiede quali copie rimuovere.</string>
+    <string name="whatsnew_156_where">Impostazioni ▸ Registrazione ▸ Chiamate telefoniche</string>
 </resources>

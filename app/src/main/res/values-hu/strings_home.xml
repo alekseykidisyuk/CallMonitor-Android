@@ -72,4 +72,7 @@
     <string name="whatsnew_154_body">A rögzítővel való kapcsolat ritka elakadása csendben kikapcsolva hagyhatta a felvételt az alkalmazás újraindításáig – anélkül, hogy a képernyőn bármi jelezte volna. Ez most időtúllépéssel magától helyreáll.\n\nAzt is megválaszthatja, mikor töltődjenek fel a felvételek a Drive-ra: azonnal, naponta vagy hetente. A Beállítások ▸ Tárhely alatt található, a Megőrzéssel együtt, amely ugyanide került át.</string>
     <string name="home_date_today">Ma</string>
     <string name="home_date_yesterday">Tegnap</string>
+    <string name="whatsnew_156_title">Eldöntheted, mi kerüljön rögzítésre – és rendet tehetsz</string>
+    <string name="whatsnew_156_body">A telefon- és az alkalmazáshívások külön-külön rögzülhetnek automatikusan, rákérdezhetnek, vagy teljesen figyelmen kívül maradhatnak – így a „csak alkalmazáshívások” valódi beállítás lett.\n\nA felvételek megoszthatók, és hosszan nyomva több is kijelölhető megosztásra vagy törlésre. Ha egy felvétel az eszközön és a Drive-ban is megvan, a törlés rákérdez, melyik másolatot távolítsa el.</string>
+    <string name="whatsnew_156_where">Beállítások ▸ Rögzítés ▸ Telefonhívások</string>
 </resources>

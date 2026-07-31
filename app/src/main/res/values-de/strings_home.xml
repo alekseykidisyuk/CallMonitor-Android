@@ -72,4 +72,7 @@
     <string name="whatsnew_154_body">Eine seltene Störung der Verbindung zum Recorder konnte die Aufnahme stillschweigend deaktivieren, bis die App neu gestartet wurde – ohne jeden Hinweis auf dem Bildschirm. Das läuft jetzt in eine Zeitüberschreitung und stellt sich selbst wieder her.\n\nAußerdem können Sie wählen, wann Aufnahmen zu Drive hochgeladen werden: sofort, täglich oder wöchentlich. Zu finden unter Einstellungen ▸ Speicher, zusammen mit der Aufbewahrung, die in denselben Bereich umgezogen ist.</string>
     <string name="home_date_today">Heute</string>
     <string name="home_date_yesterday">Gestern</string>
+    <string name="whatsnew_156_title">Entscheiden, was aufgenommen wird – und Aufnahmen aufräumen</string>
+    <string name="whatsnew_156_body">Telefon- und App-Anrufe können jeweils automatisch aufnehmen, vorher fragen oder ganz ignoriert werden – „nur App-Anrufe“ ist damit eine echte Einstellung statt einer Kombination, die man sich zusammenreimen musste.\n\nAufnahmen lassen sich teilen und per Gedrückthalten mehrfach auswählen, um sie zu teilen oder zu löschen. Beim Löschen einer Aufnahme, die auf dem Gerät und in Drive liegt, wird gefragt, welche Kopien entfernt werden.</string>
+    <string name="whatsnew_156_where">Einstellungen ▸ Aufnahme ▸ Telefonanrufe</string>
 </resources>

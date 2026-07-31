@@ -72,4 +72,7 @@
     <string name="whatsnew_154_body">Uma falha rara na conexão com o gravador podia deixar a gravação desligada em silêncio até o app ser reiniciado — sem nada na tela avisando. Agora ela expira e se recupera sozinha.\n\nVocê também pode escolher quando as gravações são enviadas ao Drive: na hora, diariamente ou semanalmente. Fica em Configurações ▸ Armazenamento, junto com a Retenção, que passou para a mesma seção.</string>
     <string name="home_date_today">Hoje</string>
     <string name="home_date_yesterday">Ontem</string>
+    <string name="whatsnew_156_title">Escolha o que é gravado e organize as gravações</string>
+    <string name="whatsnew_156_body">Chamadas telefônicas e de apps podem gravar automaticamente, perguntar antes ou ser ignoradas por completo — então «somente chamadas de apps» agora é uma configuração de verdade, e não uma combinação a deduzir.\n\nAs gravações podem ser compartilhadas e, mantendo uma pressionada, dá para selecionar várias para compartilhar ou excluir. Excluir uma gravação salva no aparelho e no Drive agora pergunta quais cópias remover.</string>
+    <string name="whatsnew_156_where">Configurações ▸ Gravação ▸ Chamadas telefônicas</string>
 </resources>

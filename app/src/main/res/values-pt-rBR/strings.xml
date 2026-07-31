@@ -309,8 +309,6 @@
     <string name="home_bulk_delete_both">As duas cópias</string>
     <string name="support_appeal_title">Feito por uma pessoa só 👋</string>
     <string name="support_appeal_body">Eu desenvolvo o CallVault sozinho, no meu tempo livre — grátis, código aberto, sem anúncios nem rastreamento. ☕ Se ele te é útil, uma pequena contribuição me ajuda a continuar. De todo modo, obrigado! 🙏</string>
-    <string name="support_choose_title">Apoiar o desenvolvimento</string>
-    <string name="support_choose_body">Obrigado. Os dois links abrem no seu navegador.</string>
     <string name="support_not_now">Agora não</string>
     <plurals name="home_selected_count">
         <item quantity="one">%1$d selecionada</item>

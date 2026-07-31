@@ -439,8 +439,6 @@
     <string name="settings_update_check_description">Once a day, look for a new version on GitHub.</string>
     <string name="support_appeal_title">Made by one person 👋</string>
     <string name="support_appeal_body">I build CallVault on my own, in my free time — free, open source, no ads, no tracking. ☕ If it\'s useful to you, a small tip keeps me going. Either way, thanks! 🙏</string>
-    <string name="support_choose_title">Support development</string>
-    <string name="support_choose_body">Thank you. Either link opens in your browser.</string>
     <string name="support_kofi" translatable="false">Ko-fi</string>
     <string name="support_paypal" translatable="false">PayPal</string>
     <string name="support_not_now">Not now</string>

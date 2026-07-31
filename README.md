@@ -85,13 +85,15 @@ This is a genuinely new capability: the only other working approach we know of n
 
 Off by default; enable under **Settings ▸ General ▸ Experimental ▸ VoIP calls**, which asks you to confirm first.
 
-**Using CallVault for app calls only.** Carrier and VoIP recording are controlled separately, so you
-can have one without the other. Turn **both** auto-record switches off under
-**Settings ▸ Recording** (*Incoming calls* and *Outgoing calls*) and leave VoIP recording on:
-carrier calls are then ignored entirely while app calls keep recording. CallVault also stops counting
-carrier calls as "not recorded" on the status card in this mode, so it won't nag you about calls you
-chose to skip. The ADB setup is still required — the background helper is what captures VoIP audio
-too.
+**Using CallVault for app calls only.** Turn **Record phone calls** off under
+**Settings ▸ Recording ▸ Phone calls** and leave VoIP recording on. Phone calls are then ignored
+completely — not recorded, and no notification during the call — while app calls keep recording.
+CallVault also stops counting phone calls as "not recorded" on the status card in this mode, so it
+won't nag you about calls you chose to skip. The ADB setup is still required — the background helper
+is what captures VoIP audio too.
+
+Note that switching the two auto-record toggles off is *not* the same thing: that is the "ask me"
+state, and CallVault still offers a **Record** button on every call.
 Recording app calls is more tightly regulated than recording phone calls, and in many places every
 participant must agree beforehand.
 
@@ -194,16 +196,6 @@ Planned, in rough priority order. Nothing here is promised by a date, and anythi
 may turn out not to be possible — this is what is actually being worked on, not a wish list.
 **Last checked against the code on 2026-07-31 (1.5.5).**
 
-**Control over what gets recorded**
-
-- **Decide per call, including app calls** — carrier calls already offer this: with auto-record off, a
-  standby notification carries a **Record** action, and a running recording can be paused and resumed.
-  App calls have no equivalent — the detector either records automatically or not at all. The work is a
-  mode where VoIP detection arms without starting, plus the same control surface.
-- **Name "app calls only" as a mode** — the combination already works today (both auto-record switches
-  off, VoIP recording on), but nothing in the app says it is supported, so you have to work it out. One
-  clear choice should replace that.
-
 **Working alongside Shizuku** *(investigating)*
 
 CallVault and Shizuku both run their helper as a child of an ADB shell, and restarting `adbd` kills
@@ -259,9 +251,10 @@ dev notes.
   currently unreachable for up to six hours.
 - Protection against losing the ADB pairing — uninstalling wipes it with no recovery path.
 
-Recently shipped in 1.5.4–1.5.5: Settings as a panel with a **General** section, the upload schedule
-outside the wizard, VoIP translated into all ten languages, and resilient recording confirmed on One UI.
-See the [changelog](CHANGELOG.md).
+Recently shipped in 1.5.6: **Off / Ask me / Automatic** for both phone and app calls (which completes
+the "decide per call" and "app calls only" items that were here), sharing a recording, selecting
+several at once to share or delete, PayPal alongside Ko-fi, and debug-log controls. See the
+[changelog](CHANGELOG.md).
 
 Engineering detail for each of these lives in [`docs/dev-notes/backlog.md`](docs/dev-notes/backlog.md).
 

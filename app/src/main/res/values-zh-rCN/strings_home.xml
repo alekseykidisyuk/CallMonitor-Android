@@ -72,4 +72,7 @@
     <string name="whatsnew_154_body">与录音器的连接偶尔会出现罕见的卡顿，可能在无任何提示的情况下悄悄停止录音，直到重启应用。现在它会超时并自行恢复。\n\n你还可以选择录音上传到云端硬盘的时间：立即、每天或每周。请前往「设置 ▸ 存储」，「保留时长」也已移至同一板块。</string>
     <string name="home_date_today">今天</string>
     <string name="home_date_yesterday">昨天</string>
+    <string name="whatsnew_156_title">决定录制什么，并整理录音</string>
+    <string name="whatsnew_156_body">电话通话和应用内通话现在可以分别设置为自动录制、先询问，或完全忽略——“仅录制应用内通话”成了一项真正的设置，而不再是需要自己摸索的组合。\n\n录音可以分享，长按还能一次选中多条来分享或删除。删除同时保存在本机和云端硬盘中的录音时，会先询问要删除哪些副本。</string>
+    <string name="whatsnew_156_where">设置 ▸ 录制 ▸ 电话通话</string>
 </resources>

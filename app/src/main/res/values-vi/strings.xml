@@ -306,8 +306,6 @@
     <string name="home_bulk_delete_both">Cả hai bản sao</string>
     <string name="support_appeal_title">Do một người làm 👋</string>
     <string name="support_appeal_body">Tôi tự phát triển CallVault trong thời gian rảnh — miễn phí, mã nguồn mở, không quảng cáo, không theo dõi. ☕ Nếu thấy hữu ích, một khoản nhỏ giúp tôi tiếp tục. Dù sao thì, cảm ơn bạn! 🙏</string>
-    <string name="support_choose_title">Ủng hộ việc phát triển</string>
-    <string name="support_choose_body">Cảm ơn bạn. Cả hai liên kết đều mở trong trình duyệt.</string>
     <string name="support_not_now">Để sau</string>
     <plurals name="home_selected_count">
         <item quantity="one">Đã chọn %1$d</item>

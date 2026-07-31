@@ -306,8 +306,6 @@
     <string name="home_bulk_delete_both">Mindkét másolat</string>
     <string name="support_appeal_title">Egyetlen ember készíti 👋</string>
     <string name="support_appeal_body">A CallVaultot egyedül fejlesztem, a szabadidőmben – ingyenes, nyílt forráskódú, nincs hirdetés és nyomkövetés. ☕ Ha hasznos neked, egy kis támogatás segít folytatni. Így is, úgy is: köszönöm! 🙏</string>
-    <string name="support_choose_title">A fejlesztés támogatása</string>
-    <string name="support_choose_body">Köszönöm. Mindkét hivatkozás a böngészőben nyílik meg.</string>
     <string name="support_not_now">Most nem</string>
     <plurals name="home_selected_count">
         <item quantity="one">%1$d kijelölve</item>

@@ -8,21 +8,20 @@ Status key: 🔵 agreed, not started · 🟡 in progress · ✅ done (kept brief
 
 ---
 
-## Current state — 2026-07-31 (after the 1.5.5 release)
+## Current state — 2026-07-31 (after the 1.5.6 release)
 
 Kept at the top so a session can start from disk instead of from recall. **Update it whenever a
 release is cut, a branch lands, or something starts or stops being blocked.**
 
-**Released:** `v1.5.5` is the latest release users can get (versionCode **10660**, tag `v1.5.5`, asset
+**Released:** `v1.5.6` is the latest release users can get (versionCode **10670**, tag `v1.5.6`, asset
 `CallVault.apk`). Also published: `v1.5.2-diag-scrcpy`, a **pre-release** debug build for issue #18 —
 invisible to the in-app updater, on branch `diag/scrcpy-only`, **never to be merged**.
 
-**Unreleased, sitting on `main`:** the mid-call update guard and the encoder validation
-(`fix/midcall-guard-and-encoder-validation`, merged as `2e5c0dc`, **not pushed**). `main` is 3 commits
-ahead of `origin/main`. Deliberately accumulating rather than cutting 1.5.6 yet — `ciVersionName` still
-reads 1.5.5 and must be bumped before any release.
+**Unreleased:** nothing. 1.5.6 shipped the mid-call update guard, encoder validation, the three-state
+recording control (Off / Ask me / Automatic for both phone and app calls), share + multi-select with a
+scoped bulk delete, PayPal alongside Ko-fi, and the debug-log controls.
 
-**Hard constraint on the next release:** versionCode must exceed **10660**, which 1.5.5 used. See the
+**Hard constraint on the next release:** versionCode must exceed **10670**, which 1.5.6 used. See the
 `release-version-bump` memory for why a lower number is unrecoverable without an uninstall.
 
 **Device-verified 2026-07-31 (OnePlus 12, build `1.5.6-encoder` / 10661):** encoder validation does
@@ -110,18 +109,17 @@ Full evidence: `2026-07-30-voip-near-party-silenced-on-one-ui.md`.
 
 ---
 
-## 🔵 VoIP-only mode, and coexisting with Shizuku — both user-requested
+## 🟡 VoIP-only mode SHIPPED in 1.5.6; Shizuku coexistence still open
 
 Investigated 2026-07-30, no code changed. Full write-up:
 `2026-07-30-voip-only-mode-and-shizuku-coexistence.md`.
 
-**VoIP-only recording already works.** The paths are independently gated — carrier by the two
-auto-record toggles, VoIP by `isVoipRecordingEnabled()` alone — so turning both auto-record switches
-off with VoIP on is a VoIP-only recorder today. `CallGapDetector` respects those flags too, so the
-health card will not nag about calls the user chose not to record. What is missing is naming: nothing
-tells anyone the combination is a supported mode. Cheapest fix is documentation; the better one is a
-single "What should CallVault record?" row writing the three existing preferences. **Do not add a
-fourth preference** — duplicated state is what produced the bitrate and schedule-picker drift.
+**✅ Done in 1.5.6.** The naming became a real switch instead: `CARRIER_RECORDING_ENABLED`, off =
+phone calls ignored end to end. That turned out to be necessary rather than cosmetic — the
+combination this entry described (both auto-record toggles off) is the **Ask me** state, and
+`CallSessionManager` still sent `ACTION_STANDBY`, so an app-calls-only user was prompted on every
+phone call. One new preference each side (`VOIP_AUTO_START` too), both defaulting to the old
+behaviour; no existing state was duplicated.
 
 **Shizuku does not crash; we kill it.** Both apps' helpers are children of an `adbd` shell, and any
 `adbd` restart kills every process started over ADB — established here already and quoted from
@@ -368,7 +366,7 @@ failure re-enables it and never retries. That still leaves OnePlus-class devices
 
 ---
 
-## 🔵 Control over what gets recorded
+## ✅ Control over what gets recorded — SHIPPED in 1.5.6
 
 Three related asks, all about the user deciding rather than the rules deciding:
 
