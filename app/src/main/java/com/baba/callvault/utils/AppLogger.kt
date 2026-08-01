@@ -306,6 +306,14 @@ object AppLogger {
      * Redacts highly sensitive personal information (e.g. phone numbers) from the given text
      * before it gets committed to physical storage.
      */
+    /**
+     * Applies the same phone-number redaction to a line that did not come from us.
+     *
+     * System log lines carry numbers too — the telephony stack logs them — and a report built from
+     * logcat goes into the same public issue as our own log. One rule for both.
+     */
+    fun redactForReport(line: String): String = redact(line)
+
     private fun redact(msg: String): String {
         val phoneRedactionRegex = Regex(
             "(?<!\\d)" +              // Negative Lookbehind: Don't start in the middle of another number

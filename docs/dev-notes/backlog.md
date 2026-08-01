@@ -21,15 +21,20 @@ invisible to the in-app updater, on branch `diag/scrcpy-only`, **never to be mer
 recording control (Off / Ask me / Automatic for both phone and app calls), share + multi-select with a
 scoped bulk delete, PayPal alongside Ko-fi, and the debug-log controls.
 
-**Hard constraint on the next release:** versionCode must exceed **10670**, which 1.5.6 used. See the
-`release-version-bump` memory for why a lower number is unrecoverable without an uninstall.
+**Hard constraint on the next release:** versionCode must exceed **10678**, not 10670. 1.5.6 shipped as
+10670, but the maintainer's OP12 carries a locally-rebuilt 1.5.6 at **10678** — the published APK could
+not be installed back over a 10677 test build, because `adb install -d` refuses a downgrade on a
+non-debuggable app and uninstalling would wipe the ADB pairing. Anything at or below 10678 will install
+for users and silently fail on the maintainer's own phone. See the `release-version-bump` memory.
 
 **Device-verified 2026-07-31 (OnePlus 12, build `1.5.6-encoder` / 10661):** encoder validation does
 *not* divert recording to the scrcpy fallback — output was mono 48 kHz, full duration, −16.9 dB mean.
 The mid-call guard's device path is covered by unit tests only. **Known gap:** the new
-`CV:EncoderLimits` log line runs in the *daemon*, so it reaches neither the app's debug log nor
-ColorOS's filtered logcat — the diagnostic is unreadable on exactly the ROM family that filed issue
-#18. Another argument for `2026-07-28-daemon-and-system-logs-design.md`.
+`CV:EncoderLimits` line runs in the *daemon*, so it never reaches the app's debug log; it does reach
+logcat, but logcat's default 256 KiB ring holds barely a minute on this phone (measured 2026-07-31:
+123 KiB consumed in 26 s), so it had aged out before it could be read. An earlier note here blamed
+ColorOS for filtering third-party logs — that was wrong, and re-tested: our lines are present. The
+fix is the ring growth in `2026-07-28-daemon-and-system-logs-design.md`.
 
 **Blocked on other people:** nothing.
 
@@ -162,7 +167,8 @@ logs `encoder=… bitrate=[min..max] requested=… resolved=… sampleRate=… s
 supported=…`; `supports()` additionally requires `EncoderLimits.supportsFormat()`. Six unit tests.
 Verified on the OP12 (`1.5.6-encoder`): the direct path is still chosen — mono output proves it, since
 the scrcpy fallback is stereo. **But the log line is written by the daemon**, so it reaches neither the
-app debug log nor ColorOS's filtered logcat; on OnePlus it is invisible. It works on Samsung. Until the
+app debug log nor a shareable report; it reaches logcat, but the default ring ages it out within about
+a minute of a busy phone. Until the
 daemon-logging design lands, this diagnostic cannot answer the bug reports it was built for.
 
 `DirectAudioRecorderSession.hasEncoder()` checks only that an encoder for the MIME **exists** —

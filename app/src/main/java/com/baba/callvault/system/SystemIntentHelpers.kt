@@ -185,15 +185,40 @@ fun Context.openPayPal() {
  *
  * @param file The report file produced by `AppLogger.buildShareableReport`.
  */
-fun Context.shareLogFile(file: File) {
-    val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        putExtra(Intent.EXTRA_SUBJECT, "CallVault debug logs")
-        // Grant the chosen app temporary read access to the report URI.
+fun Context.shareLogFile(file: File) = shareLogFiles(listOf(file))
+
+/**
+ * Shares the diagnostic report and, when one was collected, the system-log slice beside it.
+ *
+ * Two files rather than one concatenated: they come from different places and answer different
+ * questions — the app's own log is what CallVault believes happened, and the logcat slice is what the
+ * daemon and the platform actually reported. Keeping them apart means a reader can tell which is
+ * which, and a failure to collect the second one costs nothing but the second one.
+ */
+fun Context.shareLogFiles(files: List<File>) {
+    if (files.isEmpty()) return
+    val uris = ArrayList(files.map { FileProvider.getUriForFile(this, "$packageName.fileprovider", it) })
+    val subject = "CallVault debug logs"
+
+    val sendIntent = if (uris.size == 1) {
+        Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_STREAM, uris.first())
+        }
+    } else {
+        Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "text/plain"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+        }
+    }
+    sendIntent.apply {
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        // Grant the chosen app temporary read access to every attached URI. The flag alone covers
+        // only what the clip data and extras name, so each URI has to be in the clip data too.
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        clipData = android.content.ClipData.newRawUri("CallVault debug logs", uri)
+        clipData = android.content.ClipData.newRawUri(subject, uris.first()).apply {
+            uris.drop(1).forEach { addItem(android.content.ClipData.Item(it)) }
+        }
     }
     launchSmartIntent(Intent.createChooser(sendIntent, getString(R.string.settings_bugreport_share_chooser)))
 }

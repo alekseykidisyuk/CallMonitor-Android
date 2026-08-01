@@ -61,6 +61,8 @@ import com.baba.callvault.R
 import com.baba.callvault.system.PersistentFolderPickerContract
 import com.baba.callvault.system.copyToClipboard
 import com.baba.callvault.system.openOriginalProjectRepo
+import com.baba.callvault.system.diagnostics.SystemLogCollector
+import com.baba.callvault.system.shareLogFiles
 import com.baba.callvault.system.openKofi
 import com.baba.callvault.ui.common.formatByteSize
 import com.baba.callvault.ui.common.SupportDialog
@@ -200,8 +202,12 @@ fun SettingsScreen(
         onShareLogs = {
             scope.launch {
                 val report = withContext(Dispatchers.IO) { AppLogger.buildShareableReport(context) }
+                // The system slice carries the daemon's lines and the platform's — the half no bug
+                // report has ever contained. Null when logcat gave nothing usable, in which case the
+                // app's own report still goes on its own.
+                val systemReport = SystemLogCollector.buildReport(context)
                 if (report != null) {
-                    context.shareLogFile(report)
+                    context.shareLogFiles(listOfNotNull(report, systemReport))
                 } else {
                     Toast.makeText(context, R.string.settings_bugreport_share_empty, Toast.LENGTH_LONG).show()
                 }
