@@ -32,6 +32,9 @@ import com.baba.callvault.utils.AppLogger
  * matching would not.
  */
 internal object VoipAppIdentity {
+    /** The shell, by absolute path: a bare "sh" resolves through PATH, which we do not control. */
+    private const val SHELL = "/system/bin/sh"
+
     private const val TAG = "CV:VoipIdentity"
 
     const val UID_UNKNOWN = -1
@@ -206,7 +209,11 @@ internal object VoipAppIdentity {
     private val MODE_OWNER_UID_REGEX = Regex("""mUid=(\d+)""")
 
     private fun readAudioDump(): String? {
-        val process = ProcessBuilder("sh", "-c", "dumpsys audio").redirectErrorStream(true).start()
+        // Absolute path, not "sh": a bare name resolves through PATH, and the daemon should not
+        // depend on an environment it does not own. Safe to hard-code — the caller already treats a
+        // failure to start as "owner unknown", so a device without it behaves as one without a
+        // usable `sh` does today.
+        val process = ProcessBuilder(SHELL, "-c", "dumpsys audio").redirectErrorStream(true).start()
         return try {
             val text = process.inputStream.bufferedReader().readText()
             if (!process.waitFor(DUMP_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) {

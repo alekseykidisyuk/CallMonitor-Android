@@ -27,6 +27,9 @@ import com.baba.callvault.utils.AppLogger
  * recording is named by time alone. Nothing depends on it.
  */
 internal object VoipCallerName {
+    /** The shell, by absolute path — see [VoipAppIdentity]. */
+    private const val SHELL = "/system/bin/sh"
+
     private const val TAG = "CV:VoipName"
 
     private const val DUMP_TIMEOUT_MS = 1_500L
@@ -105,7 +108,9 @@ internal object VoipCallerName {
     private val GENERIC_PACKAGE_PARTS = setOf("com", "org", "net", "android", "messenger", "app", "mobile")
 
     private fun readNotificationDump(): String? {
-        val proc = ProcessBuilder("sh", "-c", "dumpsys notification --noredact")
+        // Absolute path — see VoipAppIdentity. resolve() already returns null on any failure, so a
+        // missing shell costs the caller name and nothing else.
+        val proc = ProcessBuilder(SHELL, "-c", "dumpsys notification --noredact")
             .redirectErrorStream(true).start()
         return try {
             val text = proc.inputStream.bufferedReader().readText()

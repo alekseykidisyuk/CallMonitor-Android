@@ -47,6 +47,9 @@ internal class RecorderSession(
 ) : RecordingSession {
 
     private companion object {
+    /** Absolute path, so the binary cannot be picked from a PATH we do not control. */
+    private const val PKILL = "/system/bin/pkill"
+
         private const val TAG = "CV:RecorderServer"
 
         /** scrcpy-server main-class needle, used to pkill stale servers locally (NOT over ADB). */
@@ -218,7 +221,10 @@ internal class RecorderSession(
      */
     private fun killStaleServersLocally() {
         runCatching {
-            val p = Runtime.getRuntime().exec(arrayOf("pkill", "-f", SERVER_MAIN_CLASS_NEEDLE))
+            // Absolute path so the lookup cannot go through PATH. This whole call is best-effort
+            // (wrapped in runCatching), so a ROM without it degrades exactly as one without pkill
+            // on PATH already does: stale-server cleanup no-ops.
+            val p = Runtime.getRuntime().exec(arrayOf(PKILL, "-f", SERVER_MAIN_CLASS_NEEDLE))
             p.waitFor(2, TimeUnit.SECONDS)
             AppLogger.d(TAG, "pkill stale scrcpy-server done (exit=${runCatching { p.exitValue() }.getOrNull()})")
         }.onFailure { AppLogger.w(TAG, "killStaleServersLocally failed: ${it.message}") }
