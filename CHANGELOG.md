@@ -3,6 +3,22 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [Unreleased]
+
+### Added
+
+- **Bug reports now include the background helper's own log, and the system's.** Everything the
+  recorder helper says goes to the Android log and nowhere else — it runs as a separate process that
+  cannot write CallVault's log file — so a debug report showed only the app's half of the story.
+  Issue [#18](https://github.com/madkongo/CallVault/issues/18) spent a week there: the log the
+  reporter sent was clean end to end, because the failure lived in the half nobody could see.
+  - Turning debug logging on now also enlarges Android's log buffer, and restores it when you turn
+    logging off. The default holds barely a minute on a busy phone — less time than it takes to
+    reproduce a problem and reach Settings to share it.
+  - **Share debug logs** attaches a second file with those lines, filtered to CallVault and to the
+    Android audio, security and process services, with phone numbers redacted. Other applications'
+    lines are not included, and the file says at the top what was collected and what was left out.
+
 ## [1.5.6] - 2026-07-31
 
 ### Added

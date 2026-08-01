@@ -17,7 +17,12 @@ release is cut, a branch lands, or something starts or stops being blocked.**
 `CallVault.apk`). Also published: `v1.5.2-diag-scrcpy`, a **pre-release** debug build for issue #18 —
 invisible to the in-app updater, on branch `diag/scrcpy-only`, **never to be merged**.
 
-**Unreleased:** nothing. 1.5.6 shipped the mid-call update guard, encoder validation, the three-state
+**Unreleased, merged to `main` and NOT pushed:** daemon + system log collection
+(`2026-07-28-daemon-and-system-logs-design.md`, implemented 2026-07-31). Ring grows on logging-enable
+and restores on disable; Share attaches a filtered, redacted logcat slice. Verified on the OP12 —
+six `CV:RecorderServer` lines in a shareable report, which no bug report has ever carried before.
+
+**Previously:** 1.5.6 shipped the mid-call update guard, encoder validation, the three-state
 recording control (Off / Ask me / Automatic for both phone and app calls), share + multi-select with a
 scoped bulk delete, PayPal alongside Ko-fi, and the debug-log controls.
 
