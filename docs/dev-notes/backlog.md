@@ -21,8 +21,11 @@ invisible to the in-app updater, on branch `diag/scrcpy-only`, **never to be mer
 recording control (Off / Ask me / Automatic for both phone and app calls), share + multi-select with a
 scoped bulk delete, PayPal alongside Ko-fi, and the debug-log controls.
 
-**Hard constraint on the next release:** versionCode must exceed **10670**, which 1.5.6 used. See the
-`release-version-bump` memory for why a lower number is unrecoverable without an uninstall.
+**Hard constraint on the next release:** versionCode must exceed **10678**, not 10670. 1.5.6 shipped as
+10670, but the maintainer's OP12 carries a locally-rebuilt 1.5.6 at **10678** — the published APK could
+not be installed back over a 10677 test build, because `adb install -d` refuses a downgrade on a
+non-debuggable app and uninstalling would wipe the ADB pairing. Anything at or below 10678 will install
+for users and silently fail on the maintainer's own phone. See the `release-version-bump` memory.
 
 **Device-verified 2026-07-31 (OnePlus 12, build `1.5.6-encoder` / 10661):** encoder validation does
 *not* divert recording to the scrcpy fallback — output was mono 48 kHz, full duration, −16.9 dB mean.
