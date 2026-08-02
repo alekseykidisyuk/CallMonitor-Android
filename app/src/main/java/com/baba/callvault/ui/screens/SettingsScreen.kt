@@ -1614,6 +1614,7 @@ private fun UsbDefaultConfigRow() {
 @StringRes
 private fun usbModeLabelRes(mode: UsbDefaultMode): Int = when (mode) {
     UsbDefaultMode.CHARGING -> R.string.usb_mode_charging
+    UsbDefaultMode.DEBUGGING_ONLY -> R.string.usb_mode_debugging_only
     UsbDefaultMode.FILE_TRANSFER -> R.string.usb_mode_file_transfer
     UsbDefaultMode.PTP -> R.string.usb_mode_ptp
     UsbDefaultMode.TETHERING -> R.string.usb_mode_tethering

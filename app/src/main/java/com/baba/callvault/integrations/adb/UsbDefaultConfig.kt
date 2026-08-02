@@ -39,8 +39,28 @@ enum class UsbDefaultMode(
     TETHERING("rndis"),
     /** "MIDI". */
     MIDI("midi"),
+    /**
+     * "Debugging only" — One UI 8 / Android 16's new default, which carries no data function.
+     *
+     * Safe for the same reason [CHARGING] is: nothing renegotiates when the screen unlocks. Recognised
+     * because issue #22 showed the cost of not recognising it — an unknown value is treated as "we
+     * don't know", which silences the advice this screen exists to give.
+     */
+    DEBUGGING_ONLY("adb"),
     /** Couldn't read / unrecognised value. */
     UNKNOWN(""),
+}
+
+/** What, if anything, the user should be told about the current Default USB Configuration. */
+enum class UsbNotice {
+    /** Nothing to say: a known-safe mode. */
+    NONE,
+
+    /** A data mode is set — locking the screen mid-call can kill the recorder. */
+    DATA_MODE_RISK,
+
+    /** We could not read the setting, and the recorder is not coming up. Worth suggesting. */
+    COULD_NOT_CHECK,
 }
 
 object UsbDefaultConfig {
@@ -53,11 +73,15 @@ object UsbDefaultConfig {
     /** Modes offered to the user in the picker (UNKNOWN is never a choice). */
     val SELECTABLE = listOf(
         UsbDefaultMode.CHARGING,
+        UsbDefaultMode.DEBUGGING_ONLY,
         UsbDefaultMode.FILE_TRANSFER,
         UsbDefaultMode.PTP,
         UsbDefaultMode.TETHERING,
         UsbDefaultMode.MIDI,
     )
+
+    /** Modes in which nothing renegotiates on a screen transition, so the daemon survives one. */
+    private val SAFE = setOf(UsbDefaultMode.CHARGING, UsbDefaultMode.DEBUGGING_ONLY)
 
     /**
      * Reads the current Default USB Configuration over the ADB shell (`dumpsys usb`). Returns null when
@@ -90,12 +114,43 @@ object UsbDefaultConfig {
 
     /**
      * True when the cached Default USB Configuration is a DATA mode (File transfer, etc.) — i.e. locking
-     * the screen mid-call may restart adbd and kill the recorder. CHARGING and UNKNOWN return false, so we
-     * never warn without a confirmed data value.
+     * the screen mid-call may restart adbd and kill the recorder. Safe modes and UNKNOWN return false, so
+     * we never warn without a confirmed data value.
      */
-    fun isScreenLockRisk(context: Context): Boolean = when (cached(context)) {
-        UsbDefaultMode.CHARGING, UsbDefaultMode.UNKNOWN -> false
-        else -> true
+    fun isScreenLockRisk(context: Context): Boolean = cached(context).let { it !in SAFE && it != UsbDefaultMode.UNKNOWN }
+
+    /**
+     * What to tell the user, given the USB mode we last read and whether the recorder is up.
+     *
+     * **Why [recorderReady] is an input, and why it no longer gates everything.** The warning used to be
+     * shown only when the recorder was ready. That inverted it: a data USB mode kills the daemon, a dead
+     * daemon means not-ready, and not-ready hid the very warning that explained the death. Issue #22's
+     * reporter sat on "Connecting the recorder…" across two calls and was never told about the setting.
+     * A risk is now stated whether or not the recorder is up — it is more urgent when it is not.
+     *
+     * [UsbNotice.COULD_NOT_CHECK] is the other half of that lesson. An unreadable setting used to resolve
+     * to silence, indistinguishable to the user from "checked, you're fine". It is now said out loud —
+     * but only while the recorder is failing to come up, so a working phone is never nagged about a
+     * check that did not matter.
+     */
+    fun noticeFor(mode: UsbDefaultMode, recorderReady: Boolean): UsbNotice = when {
+        mode in SAFE -> UsbNotice.NONE
+        mode == UsbDefaultMode.UNKNOWN -> if (recorderReady) UsbNotice.NONE else UsbNotice.COULD_NOT_CHECK
+        else -> UsbNotice.DATA_MODE_RISK
+    }
+
+    /**
+     * Re-reads the setting over a fresh, retrying shell, but ONLY when nothing was ever read.
+     *
+     * The opportunistic refresh on the recording path gets one un-retried attempt over a connection that
+     * is busy starting a recording; on the device in issue #22 it failed with "Stream closed" and the
+     * value stayed unknown forever. This is the calm path — called when the daemon has just come up, with
+     * nothing else competing for the shell. No-op once a value is known, so it costs one read per install
+     * in the normal case. Call OFF the main thread.
+     */
+    fun readIfUnknown(context: Context): UsbDefaultMode? {
+        if (cached(context) != UsbDefaultMode.UNKNOWN) return null
+        return readViaShell(context)
     }
 
     /**
@@ -120,13 +175,19 @@ object UsbDefaultConfig {
         return ok
     }
 
-    private fun parse(dumpsysLine: String): UsbDefaultMode {
+    /**
+     * Classifies a `screen_unlocked_functions=` line. Data functions win: the value is a comma-separated
+     * list, and `mtp,adb` is a file-transfer default that happens to include adb — still a data mode.
+     */
+    internal fun parse(dumpsysLine: String): UsbDefaultMode {
         val v = dumpsysLine.substringAfter("screen_unlocked_functions=", "").trim().lowercase()
         return when {
             v.contains("mtp") -> UsbDefaultMode.FILE_TRANSFER
             v.contains("ptp") -> UsbDefaultMode.PTP
             v.contains("rndis") -> UsbDefaultMode.TETHERING
             v.contains("midi") -> UsbDefaultMode.MIDI
+            // adb alone carries no data function — One UI 8's "Debugging only".
+            v == "adb" -> UsbDefaultMode.DEBUGGING_ONLY
             v.isEmpty() || v == "none" -> UsbDefaultMode.CHARGING
             else -> UsbDefaultMode.UNKNOWN
         }
