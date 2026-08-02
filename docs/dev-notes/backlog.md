@@ -35,11 +35,14 @@ alert itself.
 recording control (Off / Ask me / Automatic for both phone and app calls), share + multi-select with a
 scoped bulk delete, PayPal alongside Ko-fi, and the debug-log controls.
 
-**Hard constraint on the next release:** versionCode must exceed **10680**, not 10670. 1.5.6 shipped as
+**Hard constraint on the next release:** versionCode must exceed **10690**, not 10670. 1.5.6 shipped as
 10670, but the maintainer's OP12 carries a locally-rebuilt 1.5.6 at **10678** — the published APK could
 not be installed back over a 10677 test build, because `adb install -d` refuses a downgrade on a
-non-debuggable app and uninstalling would wipe the ADB pairing. Test builds since have reached **10680**. Anything at or below 10680 will install
-for users and silently fail on the maintainer's own phone. See the `release-version-bump` memory.
+non-debuggable app and uninstalling would wipe the ADB pairing. Test builds since reached **10680**, and
+on 2026-08-02 the `v1.5.7-loopbackdiag` pre-release for issue #22 was published at **10690** — so the
+floor is now public, not just local: anyone who installed that diagnostic build stays on it until a
+release outruns it. Anything at or below 10690 will install for most users and silently fail on the two
+devices that matter most, the maintainer's phone and the reporter's. See the `release-version-bump` memory.
 
 **Device-verified 2026-07-31 (OnePlus 12, build `1.5.6-encoder` / 10661):** encoder validation does
 *not* divert recording to the scrcpy fallback — output was mono 48 kHz, full duration, −16.9 dB mean.
