@@ -385,6 +385,7 @@ object AdbShell {
      * @return true if the loopback listener is armed and reachable after the call.
      */
     fun armLoopbackIfNeeded(context: Context): Boolean = synchronized(heavyOperationLock) {
+        LoopbackDiagnostics.snapshot(context, "pre-arm")
         if (connectLoopback(context)) {
             AppLogger.i(TAG, "Loopback already armed & reachable — nothing to do")
             return@synchronized true
@@ -396,10 +397,17 @@ object AdbShell {
             AppLogger.i(TAG, "Cannot arm loopback — no base connection (needs WiFi + Wireless debugging once)")
             return@synchronized false
         }
-        // ensureConnected may itself have landed us on loopback already (nothing left to arm).
-        if (connectLoopback(context)) return@synchronized true
-
         val port = AppPreferences(context).getLoopbackAdbPort()
+        // We may already be ON loopback (nothing left to arm) — but only ask when there is something to
+        // answer. A failed `connect` TEARS DOWN the base connection we just built: issue #22 caught it
+        // red-handed, the arm one millisecond later failing with "connect() must be called first", so the
+        // tcpip: request was never sent and arming could never have worked on that device. A raw port
+        // probe answers the same question without touching the connection.
+        if (LoopbackDiagnostics.isRawPortOpen(port) && connectLoopback(context)) return@synchronized true
+
+        // Ask the device about the property while a connection still exists — firing the arm drops it.
+        LoopbackDiagnostics.shellProbe(context)
+
         val mgr = AdbConnectionManager.getInstance(context)
         AppLogger.i(TAG, "Arming loopback tcpip on :$port (adbd will restart)…")
         // Fire the tcpip: arm WITHOUT blocking. adbd restarts on receiving the OPEN and kills this very
@@ -412,8 +420,15 @@ object AdbShell {
         runCatching { mgr.disconnect() }.onFailure { AppLogger.d(TAG, "post-arm disconnect ignored: ${it.message}") }
         Thread.sleep(POST_DISCONNECT_WAIT_MS)
 
-        val armed = connectLoopback(context)
+        // Wait for adbd to come back on its own schedule rather than assuming 2 s is enough, and record
+        // when (or whether) the property and the socket appear — see [LoopbackDiagnostics].
+        val listening = LoopbackDiagnostics.watchForListener(context)
+        val armed = listening && connectLoopback(context)
+        if (listening && !armed) {
+            AppLogger.w(TAG, "Port :$port IS listening but the ADB handshake failed — key not authorised for classic tcpip?")
+        }
         AppLogger.i(TAG, "Loopback arm result on :$port = $armed")
+        LoopbackDiagnostics.snapshot(context, "post-arm")
         armed
     }
 
@@ -497,6 +512,20 @@ object AdbShell {
     private fun markOwnWirelessDebuggingWrite(value: Int) {
         ownWdWriteValue = value
         ownWdWriteAtMs = android.os.SystemClock.elapsedRealtime()
+    }
+
+    /**
+     * The last Wireless-debugging write CallVault made, as (value, milliseconds ago), or null if it has
+     * not written one this process.
+     *
+     * Read when the daemon dies. Turning Wireless debugging off restarts `adbd` on some ROMs and takes
+     * the daemon with it — but so does the screen going off, and the two are indistinguishable in the
+     * app log. Knowing that our own write landed 40 ms earlier (rather than 40 seconds) is what tells
+     * the two apart. See issue #22.
+     */
+    fun lastOwnWirelessDebuggingWrite(): Pair<Int, Long>? {
+        if (ownWdWriteValue < 0) return null
+        return ownWdWriteValue to (android.os.SystemClock.elapsedRealtime() - ownWdWriteAtMs)
     }
 
     /** True when the current Wireless-debugging state is one CallVault itself just set. */

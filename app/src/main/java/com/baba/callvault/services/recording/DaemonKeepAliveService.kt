@@ -266,6 +266,7 @@ class DaemonKeepAliveService : Service() {
     private fun onDaemonDiedImmediate() {
         watchdogHandler.post {
             AppLogger.i(TAG, "keep-alive: binder-death signal — relaunching immediately")
+            logDeathCircumstances()
             lastReady = false
             updateNotification(false)
             downStreak = DOWN_STREAK_THRESHOLD // death confirmed — no debounce needed
@@ -275,6 +276,31 @@ class DaemonKeepAliveService : Service() {
             // relaunch was being throttled — the cause of a long "starting up" window a call would race.
             maybeRewarm(force = true)
         }
+    }
+
+    /**
+     * Records what was true at the instant the daemon died, so the cause can be told from the log.
+     *
+     * The daemon is a child of an `adbd` shell, so anything that restarts `adbd` kills it. Two things
+     * do that, and the app log has never distinguished them: our own Wireless-debugging write, and the
+     * screen going off (which happens on every call when the phone reaches the user's ear). Issue #22
+     * has a death 5.2 s after we disabled Wireless debugging — too slow to look like the 50-90 ms
+     * measured on a Galaxy S24 FE, and exactly when a caller would be raising the phone. One line here
+     * settles it: if the screen went off milliseconds earlier, it was not our write.
+     */
+    private fun logDeathCircumstances() {
+        val interactive = runCatching {
+            getSystemService(android.os.PowerManager::class.java).isInteractive
+        }.getOrDefault(true)
+        val wdWrite = AdbShell.lastOwnWirelessDebuggingWrite()
+        val wdNote = wdWrite?.let { (value, agoMs) ->
+            "our last adb_wifi_enabled=$value write was ${agoMs}ms ago"
+        } ?: "we have not written adb_wifi_enabled this process"
+        AppLogger.i(
+            TAG,
+            "keep-alive: death circumstances — screenOn=$interactive, $wdNote, " +
+                "wd=${AdbShell.isWirelessDebuggingEnabled(this)} usb=${AdbShell.isUsbDebuggingEnabled(this)}"
+        )
     }
 
     /**
