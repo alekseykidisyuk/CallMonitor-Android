@@ -8,7 +8,7 @@ Status key: 🔵 agreed, not started · 🟡 in progress · ✅ done (kept brief
 
 ---
 
-## Current state — 2026-07-31 (after the 1.5.6 release)
+## Current state — 2026-08-01 (after the 1.5.6 release)
 
 Kept at the top so a session can start from disk instead of from recall. **Update it whenever a
 release is cut, a branch lands, or something starts or stops being blocked.**
@@ -22,14 +22,23 @@ invisible to the in-app updater, on branch `diag/scrcpy-only`, **never to be mer
 and restores on disable; Share attaches a filtered, redacted logcat slice. Verified on the OP12 —
 six `CV:RecorderServer` lines in a shareable report, which no bug report has ever carried before.
 
+**Also unreleased on `main`:** the CodeQL triage of 2026-08-01. Thirteen alerts: seven implicit-
+PendingIntent and two sensitive-log **dismissed as false positives** (every Intent is explicit; the
+pairing code is never logged and redaction runs before every `Log` call), one missing-certificate-
+pinning **dismissed as won't-fix** (the pinned APK *signing* cert is the real gate; pinning GitHub's
+TLS cert would break the updater on rotation, and users could not then receive the fix), and three
+relative-path-command **fixed** — `sh`/`pkill` now invoked by absolute path. The three fixed alerts
+stay open on GitHub until the code is pushed and re-scanned. Rationale for each dismissal is on the
+alert itself.
+
 **Previously:** 1.5.6 shipped the mid-call update guard, encoder validation, the three-state
 recording control (Off / Ask me / Automatic for both phone and app calls), share + multi-select with a
 scoped bulk delete, PayPal alongside Ko-fi, and the debug-log controls.
 
-**Hard constraint on the next release:** versionCode must exceed **10678**, not 10670. 1.5.6 shipped as
+**Hard constraint on the next release:** versionCode must exceed **10680**, not 10670. 1.5.6 shipped as
 10670, but the maintainer's OP12 carries a locally-rebuilt 1.5.6 at **10678** — the published APK could
 not be installed back over a 10677 test build, because `adb install -d` refuses a downgrade on a
-non-debuggable app and uninstalling would wipe the ADB pairing. Anything at or below 10678 will install
+non-debuggable app and uninstalling would wipe the ADB pairing. Test builds since have reached **10680**. Anything at or below 10680 will install
 for users and silently fail on the maintainer's own phone. See the `release-version-bump` memory.
 
 **Device-verified 2026-07-31 (OnePlus 12, build `1.5.6-encoder` / 10661):** encoder validation does
