@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="other">%1$d sélectionnés</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Supprimer %1$d enregistrement ?</item>
+        <item quantity="other">Supprimer %1$d enregistrements ?</item>
+    </plurals>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d enregistrements</item>
+        <item quantity="other">%1$d enregistrements</item>
+    </plurals>
     <string name="audio_source_mic_camcorder_description">Optimisé pour l\'enregistrement vidéo, avec une focalisation sur le son provenant de la direction de la caméra.</string>
     <string name="audio_source_mic_description">Capture audio directement depuis le microphone principal de l\'appareil. Légère réduction du bruit.</string>
     <string name="audio_source_mic_unprocessed_description">Capture l\'audio brut et naturel du microphone sans aucun filtrage ni amélioration automatique.</string>
@@ -43,9 +55,15 @@
     <string name="general_system_limitation">Limitation Système</string>
     <string name="general_system_limitation_message">CallVault ne fonctionnera pas sur cet appareil car votre application shell ne dispose pas des autorisations requises :\n\n%1$s\n\nVous ne pouvez rien y faire, l’application ne peut pas fonctionner et va se fermer.</string>
     <string name="home_all_set_message">Tout est prêt. CallVault est prêt à enregistrer vos appels.</string>
-    <string name="home_share">Partager</string>
-    <string name="home_share_chooser">Partager l\'enregistrement</string>
-    <string name="home_row_menu">Plus d\'options</string>
+    <string name="home_bulk_delete_both">Les deux copies</string>
+    <string name="home_bulk_delete_device_only">Appareil uniquement</string>
+    <string name="home_bulk_delete_drive_only">Drive uniquement</string>
+    <string name="home_bulk_delete_kept_device">%1$s sera conservé : uniquement sur cet appareil.</string>
+    <string name="home_bulk_delete_kept_drive">%1$s sera conservé : uniquement dans Drive.</string>
+    <string name="home_bulk_delete_message">Cette action est irréversible.</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d sur %3$d)</string>
+    <string name="home_bulk_delete_scope_label">Copies à supprimer</string>
+    <string name="home_bulk_delete_scope_message">Certains sont enregistrés à la fois sur cet appareil et dans Drive.</string>
     <string name="home_delete">Supprimer</string>
     <string name="home_delete_confirm_message">Cela supprime définitivement %1$s.</string>
     <string name="home_delete_confirm_title">Supprimer l\'enregistrement ?</string>
@@ -57,6 +75,9 @@
     <string name="home_player_stop">Arrêter</string>
     <string name="home_recordings_empty">Aucun enregistrement pour l\'instant.</string>
     <string name="home_recordings_title">Enregistrements</string>
+    <string name="home_row_menu">Plus d\'options</string>
+    <string name="home_share">Partager</string>
+    <string name="home_share_chooser">Partager l\'enregistrement</string>
     <string name="home_status_dev_options_off_suggestion">CallVault enregistre via le débogage sans fil, qui nécessite les options pour les développeurs. L\'enregistrement ne peut pas fonctionner tant que vous ne réactivez pas les options pour les développeurs (et le débogage sans fil) dans les paramètres du système.</string>
     <string name="home_status_dev_options_off_title">Options pour les développeurs désactivées</string>
     <string name="home_status_no_folder_suggestion">Ouvrez les Paramètres pour choisir où les enregistrements sont enregistrés.</string>
@@ -150,7 +171,15 @@
     <string name="settings_bugreport_share_chooser">Partager les journaux de débogage</string>
     <string name="settings_bugreport_share_empty">Aucun journal pour l\'instant. Activez la journalisation de débogage, reproduisez le problème, puis touchez Partager.</string>
     <string name="settings_bugreport_share_hint">Les journaux de votre dernière session de débogage sont prêts à être partagés.</string>
+    <string name="settings_carrier_recording">Enregistrer les appels téléphoniques</string>
+    <string name="settings_carrier_recording_description">Désactivé : les appels téléphoniques sont totalement ignorés, sans enregistrement ni notification. Les appels dans les applis ne sont pas concernés.</string>
     <string name="settings_copy_version">Copier la version</string>
+    <string name="settings_debug_log_delete">Supprimer le journal</string>
+    <string name="settings_debug_log_delete_message">Les entrées collectées jusqu\'ici sont supprimées. Si la journalisation est toujours active, un nouveau journal démarre aussitôt.</string>
+    <string name="settings_debug_log_delete_title">Supprimer le journal ?</string>
+    <string name="settings_debug_log_empty">Le journal est vide.</string>
+    <string name="settings_debug_log_file">Fichier journal</string>
+    <string name="settings_debug_log_view_hint">Appuyez pour lire les entrées les plus récentes.</string>
     <string name="settings_debug_logging_enabled">Activer l\'enregistrement des journaux</string>
     <string name="settings_debug_logging_enabled_description">Pour signaler un bug, activez cette option, redémarrez l\'application et reproduisez le problème.</string>
     <string name="settings_drive_folder_desc">Choisissez un dossier (dans l\'application Google Drive) où copier les enregistrements.</string>
@@ -187,6 +216,7 @@
     <string name="settings_section_audio">Configuration audio</string>
     <string name="settings_section_debug">Options de débogage</string>
     <string name="settings_section_experimental">Expérimental</string>
+    <string name="settings_section_general">Général</string>
     <string name="settings_section_recorder_server">Service d\'enregistrement</string>
     <string name="settings_section_recording">Enregistrement</string>
     <string name="settings_section_recording_storage">Enregistrement et stockage</string>
@@ -195,7 +225,6 @@
     <string name="settings_section_security">Sécurité</string>
     <string name="settings_section_storage">Stockage</string>
     <string name="settings_section_updates">Mises à jour</string>
-    <string name="settings_section_general">Général</string>
     <string name="settings_section_visual">Paramètres visuels</string>
     <string name="settings_select_contacts">Sélectionner les contacts (%1$d)</string>
     <string name="settings_select_contacts_incoming">Sélectionnez les contacts entrants</string>
@@ -205,6 +234,7 @@
     <string name="settings_storage_target_label">Où enregistrer les enregistrements</string>
     <string name="settings_subsection_incoming">Appels entrants</string>
     <string name="settings_subsection_outgoing">Appels sortants</string>
+    <string name="settings_subsection_phone_calls">Appels téléphoniques</string>
     <string name="settings_subsection_resilience">Résilience</string>
     <string name="settings_subsection_voip">Appels VoIP</string>
     <string name="settings_support_label">Soutenir le développement</string>
@@ -227,6 +257,8 @@
     <string name="settings_usb_default_label">USB au déverrouillage</string>
     <string name="settings_vibration_enabled">Vibration au démarrage/arrêt</string>
     <string name="settings_view_licenses">Afficher les licences</string>
+    <string name="settings_voip_auto_start_description">Désactivé signifie que CallVault demande d\'abord : une notification avec un bouton Enregistrer apparaît au début d\'un appel dans une appli.</string>
+    <string name="settings_voip_auto_start_label">Démarrer automatiquement</string>
     <string name="settings_voip_recording_description">Enregistre aussi les appels passés dans des applis comme WhatsApp, Signal et Telegram. Expérimental : certaines applis bloquent l\'enregistrement, et cela ne se sait qu\'une fois l\'appel en cours.</string>
     <string name="settings_voip_recording_label">Enregistrer les appels VoIP</string>
     <string name="settings_wd_disable_when_idle">Désactiver le débogage sans fil en cas d\'inactivité</string>
@@ -234,13 +266,20 @@
     <string name="storage_target_both">Appareil + Google Drive</string>
     <string name="storage_target_drive">Google Drive uniquement</string>
     <string name="storage_target_local">Sur cet appareil uniquement</string>
+    <string name="support_appeal_body">Je développe CallVault seul, sur mon temps libre : gratuit, open source, sans publicité ni pistage. ☕ Si l\'appli vous est utile, un petit pourboire m\'aide à continuer. Dans tous les cas, merci ! 🙏</string>
+    <string name="support_appeal_title">Fait par une seule personne 👋</string>
+    <string name="support_not_now">Pas maintenant</string>
     <string name="usb_mode_charging">Charge uniquement (sans données)</string>
+    <string name="usb_mode_debugging_only">Débogage uniquement</string>
     <string name="usb_mode_file_transfer">Transfert de fichiers</string>
     <string name="usb_mode_midi">MIDI</string>
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">Partage de connexion USB</string>
     <string name="voicemail_contact_label">Messagerie vocale</string>
     <string name="voip_one_sided_warning">Seule votre voix a été enregistrée pour cet appel — l\'autre application n\'autorise pas la capture de l\'audio de ses appels.</string>
+    <string name="voip_prompt_text">Appuyez sur Enregistrer pour enregistrer cet appel.</string>
+    <string name="voip_prompt_text_named">Appel %1$s. Appuyez sur Enregistrer pour l\'enregistrer.</string>
+    <string name="voip_prompt_title">Appel en cours dans une appli</string>
     <string name="voip_recording_arming">Préparation de l\'enregistrement VoIP…</string>
     <string name="voip_recording_names_hint">Les noms des contacts proviennent de la notification d\'appel de l\'application elle-même. Si les notifications de cette application sont désactivées, ses enregistrements sont sauvegardés sans nom.</string>
     <string name="voip_recording_unavailable">Activation impossible sur cet appareil — l\'enregistrement VoIP n\'est pas disponible ici.</string>
@@ -260,6 +299,8 @@
     <string name="wizard_day_thursday">Jeudi</string>
     <string name="wizard_day_tuesday">Mardi</string>
     <string name="wizard_day_wednesday">Mercredi</string>
+    <string name="wizard_experimental_subtitle">Deux fonctionnalités encore à l\'épreuve. Les deux sont désactivées par défaut : vous pourrez les activer plus tard dans les Paramètres.</string>
+    <string name="wizard_experimental_title">Options supplémentaires</string>
     <string name="wizard_filename_subtitle">Choisissez la façon dont les enregistrements sont nommés.</string>
     <string name="wizard_filename_title">Format du nom de fichier</string>
     <string name="wizard_finish">Terminer</string>
@@ -267,10 +308,6 @@
     <string name="wizard_reliability_offline_button">Activer</string>
     <string name="wizard_reliability_offline_done">L\'enregistrement hors ligne est activé</string>
     <string name="wizard_reliability_subtitle">Deux réglages facultatifs qui maintiennent l\'enregistrement dans des conditions difficiles. Tu peux les ignorer et les modifier plus tard dans les Paramètres.</string>
-    <string name="wizard_experimental_title">Options supplémentaires</string>
-    <string name="wizard_experimental_subtitle">Deux fonctionnalités encore à l\'épreuve. Les deux sont désactivées par défaut : vous pourrez les activer plus tard dans les Paramètres.</string>
-    <string name="wizard_updates_title">Rester à jour</string>
-    <string name="wizard_updates_subtitle">CallVault n\'est sur aucune boutique d\'applications : il cherche donc lui-même les nouvelles versions sur GitHub.</string>
     <string name="wizard_reliability_title">Enregistrement fiable</string>
     <string name="wizard_reliability_usb_button">Régler l\'USB sur Charge uniquement</string>
     <string name="wizard_reliability_usb_desc">Sur certains téléphones, verrouiller l\'écran pendant un appel peut arrêter l\'enregistrement. Régler l\'USB sur « Charge uniquement » l\'empêche. (Ton téléphone se met alors en charge par défaut sur un PC — choisis Transfert de fichiers manuellement au besoin.)</string>
@@ -291,42 +328,6 @@
     <string name="wizard_storage_subtitle">Choisissez l\'emplacement de stockage de vos enregistrements. Vous pourrez le modifier plus tard dans les Paramètres.</string>
     <string name="wizard_storage_title">Où enregistrer les enregistrements</string>
     <string name="wizard_title">Configurer CallVault</string>
-    <string name="settings_carrier_recording">Enregistrer les appels téléphoniques</string>
-    <string name="settings_carrier_recording_description">Désactivé : les appels téléphoniques sont totalement ignorés, sans enregistrement ni notification. Les appels dans les applis ne sont pas concernés.</string>
-    <string name="settings_voip_auto_start_label">Démarrer automatiquement</string>
-    <string name="settings_voip_auto_start_description">Désactivé signifie que CallVault demande d\'abord : une notification avec un bouton Enregistrer apparaît au début d\'un appel dans une appli.</string>
-    <string name="voip_prompt_title">Appel en cours dans une appli</string>
-    <string name="voip_prompt_text">Appuyez sur Enregistrer pour enregistrer cet appel.</string>
-    <string name="voip_prompt_text_named">Appel %1$s. Appuyez sur Enregistrer pour l\'enregistrer.</string>
-    <string name="settings_subsection_phone_calls">Appels téléphoniques</string>
-    <string name="home_bulk_delete_message">Cette action est irréversible.</string>
-    <string name="home_bulk_delete_scope_message">Certains sont enregistrés à la fois sur cet appareil et dans Drive.</string>
-    <string name="home_bulk_delete_device_only">Appareil uniquement</string>
-    <string name="home_bulk_delete_drive_only">Drive uniquement</string>
-    <string name="home_bulk_delete_both">Les deux copies</string>
-    <string name="support_appeal_title">Fait par une seule personne 👋</string>
-    <string name="support_appeal_body">Je développe CallVault seul, sur mon temps libre : gratuit, open source, sans publicité ni pistage. ☕ Si l\'appli vous est utile, un petit pourboire m\'aide à continuer. Dans tous les cas, merci ! 🙏</string>
-    <string name="support_not_now">Pas maintenant</string>
-    <plurals name="home_selected_count">
-        <item quantity="one">%1$d sélectionné</item>
-        <item quantity="other">%1$d sélectionnés</item>
-    </plurals>
-    <plurals name="home_bulk_delete_title">
-        <item quantity="one">Supprimer %1$d enregistrement ?</item>
-        <item quantity="other">Supprimer %1$d enregistrements ?</item>
-    </plurals>
-    <string name="home_bulk_delete_scope_label">Copies à supprimer</string>
-    <string name="home_bulk_delete_option_count">%1$s (%2$d sur %3$d)</string>
-    <string name="home_bulk_delete_kept_drive">%1$s sera conservé : uniquement dans Drive.</string>
-    <string name="home_bulk_delete_kept_device">%1$s sera conservé : uniquement sur cet appareil.</string>
-    <plurals name="home_bulk_delete_kept_count">
-        <item quantity="one">%1$d enregistrements</item>
-        <item quantity="other">%1$d enregistrements</item>
-    </plurals>
-    <string name="settings_debug_log_file">Fichier journal</string>
-    <string name="settings_debug_log_view_hint">Appuyez pour lire les entrées les plus récentes.</string>
-    <string name="settings_debug_log_delete">Supprimer le journal</string>
-    <string name="settings_debug_log_delete_title">Supprimer le journal ?</string>
-    <string name="settings_debug_log_delete_message">Les entrées collectées jusqu\'ici sont supprimées. Si la journalisation est toujours active, un nouveau journal démarre aussitôt.</string>
-    <string name="settings_debug_log_empty">Le journal est vide.</string>
+    <string name="wizard_updates_subtitle">CallVault n\'est sur aucune boutique d\'applications : il cherche donc lui-même les nouvelles versions sur GitHub.</string>
+    <string name="wizard_updates_title">Rester à jour</string>
 </resources>

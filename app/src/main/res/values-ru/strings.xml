@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <plurals name="home_selected_count">
+        <item quantity="one">Выбрано: %1$d</item>
+        <item quantity="other">Выбрано: %1$d</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Удалить записи (%1$d)?</item>
+        <item quantity="other">Удалить записи (%1$d)?</item>
+    </plurals>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">записей: %1$d</item>
+        <item quantity="other">записей: %1$d</item>
+    </plurals>
     <string name="audio_source_mic_camcorder_description">Оптимизировано для записи видео с акцентом на звук в направлении камеры.</string>
     <string name="audio_source_mic_description">Запись звука осуществляется непосредственно с основного микрофона устройства. Незначительное шумоподавление.</string>
     <string name="audio_source_mic_unprocessed_description">Запись чистого звука с микрофона без автоматической фильтрации и улучшения.</string>
@@ -43,9 +55,15 @@
     <string name="general_system_limitation">Системное ограничение</string>
     <string name="general_system_limitation_message">Приложение CallVault не будет работать на этом устройстве, так как у вашей системной оболочки (shell) нет необходимых разрешений:\n\n%1$s\n\nВы ничего не можете с этим поделать – приложение не может функционировать и сейчас закроется.</string>
     <string name="home_all_set_message">Всё готово. CallVault готов записывать ваши звонки.</string>
-    <string name="home_share">Отправить</string>
-    <string name="home_share_chooser">Отправить запись</string>
-    <string name="home_row_menu">Другие действия</string>
+    <string name="home_bulk_delete_both">Обе копии</string>
+    <string name="home_bulk_delete_device_only">Только на устройстве</string>
+    <string name="home_bulk_delete_drive_only">Только в Диске</string>
+    <string name="home_bulk_delete_kept_device">%1$s останется — только на этом устройстве.</string>
+    <string name="home_bulk_delete_kept_drive">%1$s останется — только в Диске.</string>
+    <string name="home_bulk_delete_message">Это действие нельзя отменить.</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d из %3$d)</string>
+    <string name="home_bulk_delete_scope_label">Какие копии удалить</string>
+    <string name="home_bulk_delete_scope_message">Некоторые сохранены и на устройстве, и в Диске.</string>
     <string name="home_delete">Удалить</string>
     <string name="home_delete_confirm_message">Это безвозвратно удалит «%1$s».</string>
     <string name="home_delete_confirm_title">Удалить запись?</string>
@@ -57,6 +75,9 @@
     <string name="home_player_stop">Стоп</string>
     <string name="home_recordings_empty">Записей пока нет.</string>
     <string name="home_recordings_title">Записи</string>
+    <string name="home_row_menu">Другие действия</string>
+    <string name="home_share">Отправить</string>
+    <string name="home_share_chooser">Отправить запись</string>
     <string name="home_status_dev_options_off_suggestion">CallVault записывает через беспроводную отладку, для которой нужны параметры разработчика. Запись не будет работать, пока вы не включите параметры разработчика (и беспроводную отладку) в настройках системы.</string>
     <string name="home_status_dev_options_off_title">Параметры разработчика отключены</string>
     <string name="home_status_no_folder_suggestion">Откройте настройки, чтобы выбрать, куда сохранять записи.</string>
@@ -150,7 +171,15 @@
     <string name="settings_bugreport_share_chooser">Отправить отладочные журналы</string>
     <string name="settings_bugreport_share_empty">Журналов пока нет. Включите отладочное логирование, воспроизведите проблему, затем нажмите «Отправить».</string>
     <string name="settings_bugreport_share_hint">Журналы вашей последней отладочной сессии готовы к отправке.</string>
+    <string name="settings_carrier_recording">Записывать телефонные звонки</string>
+    <string name="settings_carrier_recording_description">Выключено: телефонные звонки полностью игнорируются — без записи и без уведомления. На звонки в приложениях это не влияет.</string>
     <string name="settings_copy_version">Копировать версию</string>
+    <string name="settings_debug_log_delete">Удалить журнал</string>
+    <string name="settings_debug_log_delete_message">Собранные записи будут удалены. Если запись журнала всё ещё включена, сразу начнётся новый журнал.</string>
+    <string name="settings_debug_log_delete_title">Удалить журнал?</string>
+    <string name="settings_debug_log_empty">Журнал пуст.</string>
+    <string name="settings_debug_log_file">Файл журнала</string>
+    <string name="settings_debug_log_view_hint">Нажмите, чтобы прочитать последние записи.</string>
     <string name="settings_debug_logging_enabled">Включить логи записи</string>
     <string name="settings_debug_logging_enabled_description">Чтобы сообщить об ошибке, включите это, перезапустите приложение, и повторите проблему.</string>
     <string name="settings_drive_folder_desc">Выберите папку (в приложении Google Drive), куда копировать записи.</string>
@@ -187,6 +216,7 @@
     <string name="settings_section_audio">Настройки аудио</string>
     <string name="settings_section_debug">Настройки отладки</string>
     <string name="settings_section_experimental">Экспериментальное</string>
+    <string name="settings_section_general">Общие</string>
     <string name="settings_section_recorder_server">Служба записи</string>
     <string name="settings_section_recording">Запись</string>
     <string name="settings_section_recording_storage">Запись и хранилище</string>
@@ -195,7 +225,6 @@
     <string name="settings_section_security">Безопасность</string>
     <string name="settings_section_storage">Хранилище</string>
     <string name="settings_section_updates">Обновления</string>
-    <string name="settings_section_general">Общие</string>
     <string name="settings_section_visual">Визуальные настройки</string>
     <string name="settings_select_contacts">Выбрать контакты (%1$d)</string>
     <string name="settings_select_contacts_incoming">Выбрать входящие контакты</string>
@@ -205,6 +234,7 @@
     <string name="settings_storage_target_label">Куда сохранять записи</string>
     <string name="settings_subsection_incoming">Входящие звонки</string>
     <string name="settings_subsection_outgoing">Исходящие звонки</string>
+    <string name="settings_subsection_phone_calls">Телефонные звонки</string>
     <string name="settings_subsection_resilience">Устойчивость</string>
     <string name="settings_subsection_voip">Звонки VoIP</string>
     <string name="settings_support_label">Поддержать разработку</string>
@@ -227,6 +257,8 @@
     <string name="settings_usb_default_label">USB при разблокировке</string>
     <string name="settings_vibration_enabled">Вибрация при запуске/остановке</string>
     <string name="settings_view_licenses">Посмотреть лицензии</string>
+    <string name="settings_voip_auto_start_description">Если выключено, CallVault сначала спросит: в начале звонка в приложении появится уведомление с кнопкой «Записать».</string>
+    <string name="settings_voip_auto_start_label">Запускать автоматически</string>
     <string name="settings_voip_recording_description">Записывает и звонки в приложениях вроде WhatsApp, Signal и Telegram. Экспериментально: некоторые приложения блокируют запись, и узнать об этом можно только во время звонка.</string>
     <string name="settings_voip_recording_label">Записывать звонки VoIP</string>
     <string name="settings_wd_disable_when_idle">Выключать отладку по Wi-Fi в режиме ожидания</string>
@@ -234,13 +266,20 @@
     <string name="storage_target_both">Устройство + Google Drive</string>
     <string name="storage_target_drive">Только в Google Drive</string>
     <string name="storage_target_local">Только на этом устройстве</string>
+    <string name="support_appeal_body">Я разрабатываю CallVault один, в свободное время — бесплатно, с открытым кодом, без рекламы и слежки. ☕ Если приложение полезно, небольшая поддержка помогает продолжать. В любом случае — спасибо! 🙏</string>
+    <string name="support_appeal_title">Делает один человек 👋</string>
+    <string name="support_not_now">Не сейчас</string>
     <string name="usb_mode_charging">Только зарядка (без данных)</string>
+    <string name="usb_mode_debugging_only">Только отладка</string>
     <string name="usb_mode_file_transfer">Передача файлов</string>
     <string name="usb_mode_midi">MIDI</string>
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">USB-модем</string>
     <string name="voicemail_contact_label">Голосовая почта</string>
     <string name="voip_one_sided_warning">Из этого звонка записана только ваша сторона — другое приложение не разрешает захват звука своих звонков.</string>
+    <string name="voip_prompt_text">Нажмите «Записать», чтобы записать этот звонок.</string>
+    <string name="voip_prompt_text_named">Звонок в %1$s. Нажмите «Записать», чтобы записать его.</string>
+    <string name="voip_prompt_title">Идёт звонок в приложении</string>
     <string name="voip_recording_arming">Подготовка записи VoIP…</string>
     <string name="voip_recording_names_hint">Имена контактов берутся из собственного уведомления о звонке приложения. Если уведомления этого приложения отключены, его записи сохраняются без имени.</string>
     <string name="voip_recording_unavailable">Не удалось включить на этом устройстве — запись VoIP здесь недоступна.</string>
@@ -260,6 +299,8 @@
     <string name="wizard_day_thursday">Четверг</string>
     <string name="wizard_day_tuesday">Вторник</string>
     <string name="wizard_day_wednesday">Среда</string>
+    <string name="wizard_experimental_subtitle">Две функции, которые ещё проверяются. Обе выключены по умолчанию — включить их можно позже в настройках.</string>
+    <string name="wizard_experimental_title">Дополнительно</string>
     <string name="wizard_filename_subtitle">Выберите, как именуются сохранённые записи.</string>
     <string name="wizard_filename_title">Формат имени файла</string>
     <string name="wizard_finish">Готово</string>
@@ -267,10 +308,6 @@
     <string name="wizard_reliability_offline_button">Включить</string>
     <string name="wizard_reliability_offline_done">Автономная запись включена</string>
     <string name="wizard_reliability_subtitle">Две необязательные настройки, которые сохраняют запись в сложных условиях. Их можно пропустить и изменить позже в настройках.</string>
-    <string name="wizard_experimental_title">Дополнительно</string>
-    <string name="wizard_experimental_subtitle">Две функции, которые ещё проверяются. Обе выключены по умолчанию — включить их можно позже в настройках.</string>
-    <string name="wizard_updates_title">Быть в курсе обновлений</string>
-    <string name="wizard_updates_subtitle">CallVault не публикуется в магазинах приложений, поэтому сам проверяет новые версии на GitHub.</string>
     <string name="wizard_reliability_title">Надёжная запись</string>
     <string name="wizard_reliability_usb_button">Установить USB «Только зарядка»</string>
     <string name="wizard_reliability_usb_desc">На некоторых телефонах блокировка экрана во время звонка может остановить запись. Режим USB «Только зарядка» это предотвращает. (При подключении к ПК телефон будет только заряжаться — при необходимости выберите «Передача файлов» вручную.)</string>
@@ -291,42 +328,6 @@
     <string name="wizard_storage_subtitle">Выберите, где будут храниться ваши записи. Это можно изменить позже в настройках.</string>
     <string name="wizard_storage_title">Куда сохранять записи</string>
     <string name="wizard_title">Настройка CallVault</string>
-    <string name="settings_carrier_recording">Записывать телефонные звонки</string>
-    <string name="settings_carrier_recording_description">Выключено: телефонные звонки полностью игнорируются — без записи и без уведомления. На звонки в приложениях это не влияет.</string>
-    <string name="settings_voip_auto_start_label">Запускать автоматически</string>
-    <string name="settings_voip_auto_start_description">Если выключено, CallVault сначала спросит: в начале звонка в приложении появится уведомление с кнопкой «Записать».</string>
-    <string name="voip_prompt_title">Идёт звонок в приложении</string>
-    <string name="voip_prompt_text">Нажмите «Записать», чтобы записать этот звонок.</string>
-    <string name="voip_prompt_text_named">Звонок в %1$s. Нажмите «Записать», чтобы записать его.</string>
-    <string name="settings_subsection_phone_calls">Телефонные звонки</string>
-    <string name="home_bulk_delete_message">Это действие нельзя отменить.</string>
-    <string name="home_bulk_delete_scope_message">Некоторые сохранены и на устройстве, и в Диске.</string>
-    <string name="home_bulk_delete_device_only">Только на устройстве</string>
-    <string name="home_bulk_delete_drive_only">Только в Диске</string>
-    <string name="home_bulk_delete_both">Обе копии</string>
-    <string name="support_appeal_title">Делает один человек 👋</string>
-    <string name="support_appeal_body">Я разрабатываю CallVault один, в свободное время — бесплатно, с открытым кодом, без рекламы и слежки. ☕ Если приложение полезно, небольшая поддержка помогает продолжать. В любом случае — спасибо! 🙏</string>
-    <string name="support_not_now">Не сейчас</string>
-    <plurals name="home_selected_count">
-        <item quantity="one">Выбрано: %1$d</item>
-        <item quantity="other">Выбрано: %1$d</item>
-    </plurals>
-    <plurals name="home_bulk_delete_title">
-        <item quantity="one">Удалить записи (%1$d)?</item>
-        <item quantity="other">Удалить записи (%1$d)?</item>
-    </plurals>
-    <string name="home_bulk_delete_scope_label">Какие копии удалить</string>
-    <string name="home_bulk_delete_option_count">%1$s (%2$d из %3$d)</string>
-    <string name="home_bulk_delete_kept_drive">%1$s останется — только в Диске.</string>
-    <string name="home_bulk_delete_kept_device">%1$s останется — только на этом устройстве.</string>
-    <plurals name="home_bulk_delete_kept_count">
-        <item quantity="one">записей: %1$d</item>
-        <item quantity="other">записей: %1$d</item>
-    </plurals>
-    <string name="settings_debug_log_file">Файл журнала</string>
-    <string name="settings_debug_log_view_hint">Нажмите, чтобы прочитать последние записи.</string>
-    <string name="settings_debug_log_delete">Удалить журнал</string>
-    <string name="settings_debug_log_delete_title">Удалить журнал?</string>
-    <string name="settings_debug_log_delete_message">Собранные записи будут удалены. Если запись журнала всё ещё включена, сразу начнётся новый журнал.</string>
-    <string name="settings_debug_log_empty">Журнал пуст.</string>
+    <string name="wizard_updates_subtitle">CallVault не публикуется в магазинах приложений, поэтому сам проверяет новые версии на GitHub.</string>
+    <string name="wizard_updates_title">Быть в курсе обновлений</string>
 </resources>

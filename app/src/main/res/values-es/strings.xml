@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d seleccionada</item>
+        <item quantity="other">%1$d seleccionadas</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">¿Eliminar %1$d grabación?</item>
+        <item quantity="other">¿Eliminar %1$d grabaciones?</item>
+    </plurals>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d grabaciones</item>
+        <item quantity="other">%1$d grabaciones</item>
+    </plurals>
     <string name="audio_source_mic_camcorder_description">Optimizado para la grabación de vídeo, enfocándose en el audio proveniente de la dirección de la cámara.</string>
     <string name="audio_source_mic_description">Captura el audio directamente del micrófono principal del dispositivo. Reducción de ruido mínima.</string>
     <string name="audio_source_mic_unprocessed_description">Captura el audio tal cual, de forma natural del micrófono, sin ningún filtrado ni mejora automática.</string>
@@ -43,9 +55,15 @@
     <string name="general_system_limitation">Limitación del sistema</string>
     <string name="general_system_limitation_message">CallVault no funcionará en este dispositivo ya que tu aplicación de shell no tiene los permisos necesarios:\n\n%1$s\n\nNo puedes hacer nada al respecto; la aplicación no puede funcionar y se cerrará ahora.</string>
     <string name="home_all_set_message">Todo está listo. CallVault está preparado para grabar sus llamadas.</string>
-    <string name="home_share">Compartir</string>
-    <string name="home_share_chooser">Compartir grabación</string>
-    <string name="home_row_menu">Más opciones</string>
+    <string name="home_bulk_delete_both">Ambas copias</string>
+    <string name="home_bulk_delete_device_only">Solo el dispositivo</string>
+    <string name="home_bulk_delete_drive_only">Solo Drive</string>
+    <string name="home_bulk_delete_kept_device">%1$s se conservará: solo está en este dispositivo.</string>
+    <string name="home_bulk_delete_kept_drive">%1$s se conservará: solo está en Drive.</string>
+    <string name="home_bulk_delete_message">Esta acción no se puede deshacer.</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d de %3$d)</string>
+    <string name="home_bulk_delete_scope_label">Copias que eliminar</string>
+    <string name="home_bulk_delete_scope_message">Algunas están guardadas en este dispositivo y en Drive.</string>
     <string name="home_delete">Eliminar</string>
     <string name="home_delete_confirm_message">Esto elimina permanentemente %1$s.</string>
     <string name="home_delete_confirm_title">¿Eliminar grabación?</string>
@@ -57,6 +75,9 @@
     <string name="home_player_stop">Detener</string>
     <string name="home_recordings_empty">Aún no hay grabaciones.</string>
     <string name="home_recordings_title">Grabaciones</string>
+    <string name="home_row_menu">Más opciones</string>
+    <string name="home_share">Compartir</string>
+    <string name="home_share_chooser">Compartir grabación</string>
     <string name="home_status_dev_options_off_suggestion">CallVault graba a través de la depuración inalámbrica, que necesita las opciones de desarrollador. La grabación no funcionará hasta que reactives las opciones de desarrollador (y la depuración inalámbrica) en los ajustes del sistema.</string>
     <string name="home_status_dev_options_off_title">Las opciones de desarrollador están desactivadas</string>
     <string name="home_status_no_folder_suggestion">Abra Ajustes para elegir dónde se guardan las grabaciones.</string>
@@ -150,7 +171,15 @@
     <string name="settings_bugreport_share_chooser">Compartir registros de depuración</string>
     <string name="settings_bugreport_share_empty">Aún no hay registros. Active el registro de depuración, reproduzca el problema y luego toque compartir.</string>
     <string name="settings_bugreport_share_hint">Los registros de su última sesión de depuración están listos para compartir.</string>
+    <string name="settings_carrier_recording">Grabar llamadas telefónicas</string>
+    <string name="settings_carrier_recording_description">Desactivado: las llamadas telefónicas se ignoran por completo, sin grabación ni notificación. Las llamadas de apps no se ven afectadas.</string>
     <string name="settings_copy_version">Copiar versión</string>
+    <string name="settings_debug_log_delete">Eliminar registro</string>
+    <string name="settings_debug_log_delete_message">Se eliminan las entradas recopiladas hasta ahora. Si el registro sigue activo, empieza uno nuevo de inmediato.</string>
+    <string name="settings_debug_log_delete_title">¿Eliminar el registro?</string>
+    <string name="settings_debug_log_empty">El registro está vacío.</string>
+    <string name="settings_debug_log_file">Archivo de registro</string>
+    <string name="settings_debug_log_view_hint">Toca para leer las entradas más recientes.</string>
     <string name="settings_debug_logging_enabled">Activar el registro de eventos</string>
     <string name="settings_debug_logging_enabled_description">Para informar de un error, activa esta opción, reinicia la aplicación y reproduce el problema.</string>
     <string name="settings_drive_folder_desc">Elija una carpeta (en la app de Google Drive) a la que copiar las grabaciones.</string>
@@ -187,6 +216,7 @@
     <string name="settings_section_audio">Configuración de audio</string>
     <string name="settings_section_debug">Opciones de depuración</string>
     <string name="settings_section_experimental">Experimental</string>
+    <string name="settings_section_general">General</string>
     <string name="settings_section_recorder_server">Servicio de grabación</string>
     <string name="settings_section_recording">Grabando</string>
     <string name="settings_section_recording_storage">Grabación y almacenamiento</string>
@@ -195,7 +225,6 @@
     <string name="settings_section_security">Seguridad</string>
     <string name="settings_section_storage">Almacenamiento</string>
     <string name="settings_section_updates">Actualizaciones</string>
-    <string name="settings_section_general">General</string>
     <string name="settings_section_visual">Ajustes visuales</string>
     <string name="settings_select_contacts">Seleccionar contactos (%1$d)</string>
     <string name="settings_select_contacts_incoming">Seleccionar contactos (entrantes)</string>
@@ -205,6 +234,7 @@
     <string name="settings_storage_target_label">Dónde guardar las grabaciones</string>
     <string name="settings_subsection_incoming">Llamadas entrantes</string>
     <string name="settings_subsection_outgoing">Llamadas salientes</string>
+    <string name="settings_subsection_phone_calls">Llamadas telefónicas</string>
     <string name="settings_subsection_resilience">Resistencia</string>
     <string name="settings_subsection_voip">Llamadas VoIP</string>
     <string name="settings_support_label">Apoyar el desarrollo</string>
@@ -227,6 +257,8 @@
     <string name="settings_usb_default_label">USB al desbloquear</string>
     <string name="settings_vibration_enabled">Vibrar al iniciar/detener</string>
     <string name="settings_view_licenses">Ver licencias</string>
+    <string name="settings_voip_auto_start_description">Desactivado significa que CallVault pregunta primero: aparece una notificación con un botón Grabar cuando empieza una llamada de app.</string>
+    <string name="settings_voip_auto_start_label">Iniciar automáticamente</string>
     <string name="settings_voip_recording_description">Graba también las llamadas hechas en apps como WhatsApp, Signal y Telegram. Experimental: algunas apps bloquean la grabación, y no se sabe hasta que la llamada está en curso.</string>
     <string name="settings_voip_recording_label">Grabar llamadas VoIP</string>
     <string name="settings_wd_disable_when_idle">Desactivar la Depuración inalámbrica cuando esté inactiva</string>
@@ -234,13 +266,20 @@
     <string name="storage_target_both">Dispositivo + Google Drive</string>
     <string name="storage_target_drive">Solo en Google Drive</string>
     <string name="storage_target_local">Solo en este dispositivo</string>
+    <string name="support_appeal_body">Desarrollo CallVault por mi cuenta, en mi tiempo libre: gratis, de código abierto, sin anuncios ni rastreo. ☕ Si te resulta útil, una pequeña aportación me ayuda a seguir. En cualquier caso, ¡gracias! 🙏</string>
+    <string name="support_appeal_title">Hecho por una sola persona 👋</string>
+    <string name="support_not_now">Ahora no</string>
     <string name="usb_mode_charging">Solo carga (sin datos)</string>
+    <string name="usb_mode_debugging_only">Solo depuración</string>
     <string name="usb_mode_file_transfer">Transferencia de archivos</string>
     <string name="usb_mode_midi">MIDI</string>
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">Anclaje USB</string>
     <string name="voicemail_contact_label">Buzón de voz</string>
     <string name="voip_one_sided_warning">De esa llamada solo se grabó tu lado: la otra app no permite capturar el audio de sus llamadas.</string>
+    <string name="voip_prompt_text">Toca Grabar para grabar esta llamada.</string>
+    <string name="voip_prompt_text_named">Llamada de %1$s. Toca Grabar para grabarla.</string>
+    <string name="voip_prompt_title">Llamada de app en curso</string>
     <string name="voip_recording_arming">Preparando la grabación VoIP…</string>
     <string name="voip_recording_names_hint">Los nombres de contacto proceden de la propia notificación de llamada de cada app. Si las notificaciones de esa app están desactivadas, sus grabaciones se guardan sin nombre.</string>
     <string name="voip_recording_unavailable">No se pudo activar en este dispositivo: la grabación VoIP no está disponible aquí.</string>
@@ -260,6 +299,8 @@
     <string name="wizard_day_thursday">Jueves</string>
     <string name="wizard_day_tuesday">Martes</string>
     <string name="wizard_day_wednesday">Miércoles</string>
+    <string name="wizard_experimental_subtitle">Dos funciones que aún se están probando. Ambas están desactivadas por defecto: puedes activarlas más tarde en Ajustes.</string>
+    <string name="wizard_experimental_title">Extras opcionales</string>
     <string name="wizard_filename_subtitle">Elija cómo se nombran las grabaciones guardadas.</string>
     <string name="wizard_filename_title">Formato del nombre de archivo</string>
     <string name="wizard_finish">Finalizar</string>
@@ -267,10 +308,6 @@
     <string name="wizard_reliability_offline_button">Activar</string>
     <string name="wizard_reliability_offline_done">La grabación sin conexión está activada</string>
     <string name="wizard_reliability_subtitle">Dos ajustes opcionales que mantienen la grabación en condiciones difíciles. Puedes omitirlos y cambiarlos más tarde en Ajustes.</string>
-    <string name="wizard_experimental_title">Extras opcionales</string>
-    <string name="wizard_experimental_subtitle">Dos funciones que aún se están probando. Ambas están desactivadas por defecto: puedes activarlas más tarde en Ajustes.</string>
-    <string name="wizard_updates_title">Mantente al día</string>
-    <string name="wizard_updates_subtitle">CallVault no está en ninguna tienda de aplicaciones, así que busca nuevas versiones en GitHub por su cuenta.</string>
     <string name="wizard_reliability_title">Grabación fiable</string>
     <string name="wizard_reliability_usb_button">Poner USB en Solo carga</string>
     <string name="wizard_reliability_usb_desc">En algunos teléfonos, bloquear la pantalla durante una llamada puede detener la grabación. Poner USB en "Solo carga" lo evita. (El teléfono se quedará en carga al conectarlo a un PC; elige Transferencia de archivos manualmente cuando la necesites.)</string>
@@ -291,42 +328,6 @@
     <string name="wizard_storage_subtitle">Elija dónde se almacenan sus grabaciones. Puede cambiar esto más tarde en Ajustes.</string>
     <string name="wizard_storage_title">Dónde guardar las grabaciones</string>
     <string name="wizard_title">Configurar CallVault</string>
-    <string name="settings_carrier_recording">Grabar llamadas telefónicas</string>
-    <string name="settings_carrier_recording_description">Desactivado: las llamadas telefónicas se ignoran por completo, sin grabación ni notificación. Las llamadas de apps no se ven afectadas.</string>
-    <string name="settings_voip_auto_start_label">Iniciar automáticamente</string>
-    <string name="settings_voip_auto_start_description">Desactivado significa que CallVault pregunta primero: aparece una notificación con un botón Grabar cuando empieza una llamada de app.</string>
-    <string name="voip_prompt_title">Llamada de app en curso</string>
-    <string name="voip_prompt_text">Toca Grabar para grabar esta llamada.</string>
-    <string name="voip_prompt_text_named">Llamada de %1$s. Toca Grabar para grabarla.</string>
-    <string name="settings_subsection_phone_calls">Llamadas telefónicas</string>
-    <string name="home_bulk_delete_message">Esta acción no se puede deshacer.</string>
-    <string name="home_bulk_delete_scope_message">Algunas están guardadas en este dispositivo y en Drive.</string>
-    <string name="home_bulk_delete_device_only">Solo el dispositivo</string>
-    <string name="home_bulk_delete_drive_only">Solo Drive</string>
-    <string name="home_bulk_delete_both">Ambas copias</string>
-    <string name="support_appeal_title">Hecho por una sola persona 👋</string>
-    <string name="support_appeal_body">Desarrollo CallVault por mi cuenta, en mi tiempo libre: gratis, de código abierto, sin anuncios ni rastreo. ☕ Si te resulta útil, una pequeña aportación me ayuda a seguir. En cualquier caso, ¡gracias! 🙏</string>
-    <string name="support_not_now">Ahora no</string>
-    <plurals name="home_selected_count">
-        <item quantity="one">%1$d seleccionada</item>
-        <item quantity="other">%1$d seleccionadas</item>
-    </plurals>
-    <plurals name="home_bulk_delete_title">
-        <item quantity="one">¿Eliminar %1$d grabación?</item>
-        <item quantity="other">¿Eliminar %1$d grabaciones?</item>
-    </plurals>
-    <string name="home_bulk_delete_scope_label">Copias que eliminar</string>
-    <string name="home_bulk_delete_option_count">%1$s (%2$d de %3$d)</string>
-    <string name="home_bulk_delete_kept_drive">%1$s se conservará: solo está en Drive.</string>
-    <string name="home_bulk_delete_kept_device">%1$s se conservará: solo está en este dispositivo.</string>
-    <plurals name="home_bulk_delete_kept_count">
-        <item quantity="one">%1$d grabaciones</item>
-        <item quantity="other">%1$d grabaciones</item>
-    </plurals>
-    <string name="settings_debug_log_file">Archivo de registro</string>
-    <string name="settings_debug_log_view_hint">Toca para leer las entradas más recientes.</string>
-    <string name="settings_debug_log_delete">Eliminar registro</string>
-    <string name="settings_debug_log_delete_title">¿Eliminar el registro?</string>
-    <string name="settings_debug_log_delete_message">Se eliminan las entradas recopiladas hasta ahora. Si el registro sigue activo, empieza uno nuevo de inmediato.</string>
-    <string name="settings_debug_log_empty">El registro está vacío.</string>
+    <string name="wizard_updates_subtitle">CallVault no está en ninguna tienda de aplicaciones, así que busca nuevas versiones en GitHub por su cuenta.</string>
+    <string name="wizard_updates_title">Mantente al día</string>
 </resources>
