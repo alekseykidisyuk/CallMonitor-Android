@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="home_date_today">Ma</string>
+    <string name="home_date_yesterday">Tegnap</string>
     <string name="home_health_call_not_recorded">Egy hívás nem lett rögzítve — %1$s, %2$s.</string>
     <string name="home_health_call_not_recorded_unnamed">Egy hívás nem lett rögzítve — %1$s.</string>
     <string name="home_health_failed_daemon">A rögzítés leállt az utolsó hívása közben.</string>
@@ -66,13 +68,14 @@
     <string name="whatsnew_150_where">Beállítások ▸ Kísérleti ▸ USB hibakeresés</string>
     <string name="whatsnew_153_body">Az állapotkártya mostantól megmondja, hogy a rögzítés valóban működött-e — a valódi hívásai alapján, nem pedig egy zöld jelzés alapján, amely csak annyit jelent, hogy az alkalmazás elindult. Ha egy hívás nem lett rögzítve, ezt kiírja, és megmondja az okát is: soha nem volt beállítva mappa, ki voltak kapcsolva a fejlesztői beállítások, egy frissítés miatt elveszett egy engedély.\n\nEzenkívül: a CallVault mostantól beszél brazíliai portugálul, és az összes többi nyelv is frissült.</string>
     <string name="whatsnew_153_title">A beállítása, amelyet a saját hívásai ellenőriznek</string>
-    <string name="whatsnew_155_title">Beállítások panelen, és megbízhatóbb felvételek</string>
-    <string name="whatsnew_155_body">A beállítások mostantól ráúsznak az alkalmazásra ahelyett, hogy lecserélnék, és úgy vannak csoportosítva, hogy minden képernyő rövid lista legyen. A felvételek mutatják, mikor volt a hívás és meddig tartott.\n\nA felszín alatt: több olyan hiba is javult, amely miatt egy felvétel elveszhetett vagy tönkremehetett — köztük a recsegő hang a rugalmas felvételnél, és a VoIP-hívások hiányzó oldala Samsung készülékeken.</string>
-    <string name="whatsnew_154_title">A felvétel magától helyreáll</string>
     <string name="whatsnew_154_body">A rögzítővel való kapcsolat ritka elakadása csendben kikapcsolva hagyhatta a felvételt az alkalmazás újraindításáig – anélkül, hogy a képernyőn bármi jelezte volna. Ez most időtúllépéssel magától helyreáll.\n\nAzt is megválaszthatja, mikor töltődjenek fel a felvételek a Drive-ra: azonnal, naponta vagy hetente. A Beállítások ▸ Tárhely alatt található, a Megőrzéssel együtt, amely ugyanide került át.</string>
-    <string name="home_date_today">Ma</string>
-    <string name="home_date_yesterday">Tegnap</string>
-    <string name="whatsnew_156_title">Eldöntheted, mi kerüljön rögzítésre – és rendet tehetsz</string>
+    <string name="whatsnew_154_title">A felvétel magától helyreáll</string>
+    <string name="whatsnew_155_body">A beállítások mostantól ráúsznak az alkalmazásra ahelyett, hogy lecserélnék, és úgy vannak csoportosítva, hogy minden képernyő rövid lista legyen. A felvételek mutatják, mikor volt a hívás és meddig tartott.\n\nA felszín alatt: több olyan hiba is javult, amely miatt egy felvétel elveszhetett vagy tönkremehetett — köztük a recsegő hang a rugalmas felvételnél, és a VoIP-hívások hiányzó oldala Samsung készülékeken.</string>
+    <string name="whatsnew_155_title">Beállítások panelen, és megbízhatóbb felvételek</string>
     <string name="whatsnew_156_body">A telefon- és az alkalmazáshívások külön-külön rögzülhetnek automatikusan, rákérdezhetnek, vagy teljesen figyelmen kívül maradhatnak – így a „csak alkalmazáshívások” valódi beállítás lett.\n\nA felvételek megoszthatók, és hosszan nyomva több is kijelölhető megosztásra vagy törlésre. Ha egy felvétel az eszközön és a Drive-ban is megvan, a törlés rákérdez, melyik másolatot távolítsa el.</string>
+    <string name="whatsnew_156_title">Eldöntheted, mi kerüljön rögzítésre – és rendet tehetsz</string>
     <string name="whatsnew_156_where">Beállítások ▸ Rögzítés ▸ Telefonhívások</string>
+    <string name="whatsnew_157_body">Ha bekapcsolta az automatikus törlést, néhány felvétel csendben örökre megmaradt: az ellenőrzés csak azokat a felvételeket látta, amelyekről a CallVault még tudott, a többit soha nem törölte, bármilyen régi is volt. Egy egyhetes megőrzésre állított telefonon 131 fájl élte túl ezt az időszakot.\n\nA napi ellenőrzés mostantól a felvételi mappákat is beolvassa, így egyedül a kor számít. Csak a CallVault által elnevezett fájlokat érinti, és amit nem tud datálni, azt békén hagyja.\n\nAz ellenőrzés időpontjának módosítása is azonnal érvénybe lép, nem csak másnap.</string>
+    <string name="whatsnew_157_title">Az automatikus törlés már mindent eltávolít, amit kell</string>
+    <string name="whatsnew_157_where">Beállítások ▸ Tárhely ▸ Megőrzés</string>
 </resources>

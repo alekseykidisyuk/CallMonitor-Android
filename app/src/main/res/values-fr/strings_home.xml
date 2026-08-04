@@ -2,6 +2,8 @@
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
 
+    <string name="home_date_today">Aujourd\'hui</string>
+    <string name="home_date_yesterday">Hier</string>
     <string name="home_health_call_not_recorded">Un appel n\'a pas été enregistré — %1$s, %2$s.</string>
     <string name="home_health_call_not_recorded_unnamed">Un appel n\'a pas été enregistré — %1$s.</string>
     <string name="home_health_failed_daemon">L\'enregistreur s\'est arrêté pendant votre dernier appel.</string>
@@ -67,13 +69,14 @@
     <string name="whatsnew_150_where">Paramètres ▸ Expérimental ▸ Débogage USB</string>
     <string name="whatsnew_153_body">La carte d\'état vous indique désormais si l\'enregistrement a réellement fonctionné, d\'après vos appels réels et non d\'après un voyant vert qui signifie seulement que l\'application a démarré. Si un appel n\'a pas été enregistré, elle le dit et en donne la raison : un dossier jamais défini, les options pour les développeurs désactivées, une autorisation perdue lors d\'une mise à jour.\n\nEn outre : CallVault parle maintenant le portugais du Brésil, et toutes les autres langues ont été mises à jour.</string>
     <string name="whatsnew_153_title">Votre configuration, vérifiée par vos propres appels</string>
-    <string name="whatsnew_155_title">Les réglages en panneau, et des enregistrements plus fiables</string>
-    <string name="whatsnew_155_body">Les réglages glissent désormais par-dessus l\'application au lieu de la remplacer, et sont regroupés pour que chaque écran soit une liste courte. Les enregistrements indiquent quand l\'appel a eu lieu et combien de temps il a duré.\n\nEn dessous : plusieurs façons de perdre ou d\'abîmer un enregistrement ont été corrigées, dont un son grésillant avec l\'enregistrement résilient et un côté manquant dans les appels VoIP sur les téléphones Samsung.</string>
-    <string name="whatsnew_154_title">Un enregistrement qui se rétablit seul</string>
     <string name="whatsnew_154_body">Un blocage rare de la connexion à l\'enregistreur pouvait désactiver l\'enregistrement en silence jusqu\'au redémarrage de l\'application, sans rien afficher à l\'écran. Le délai expire désormais et tout se rétablit tout seul.\n\nVous pouvez aussi choisir quand les enregistrements sont envoyés vers Drive : immédiatement, chaque jour ou chaque semaine. C\'est dans Paramètres ▸ Stockage, avec la Conservation, qui a rejoint la même section.</string>
-    <string name="home_date_today">Aujourd\'hui</string>
-    <string name="home_date_yesterday">Hier</string>
-    <string name="whatsnew_156_title">Choisir ce qui est enregistré, et faire le ménage</string>
+    <string name="whatsnew_154_title">Un enregistrement qui se rétablit seul</string>
+    <string name="whatsnew_155_body">Les réglages glissent désormais par-dessus l\'application au lieu de la remplacer, et sont regroupés pour que chaque écran soit une liste courte. Les enregistrements indiquent quand l\'appel a eu lieu et combien de temps il a duré.\n\nEn dessous : plusieurs façons de perdre ou d\'abîmer un enregistrement ont été corrigées, dont un son grésillant avec l\'enregistrement résilient et un côté manquant dans les appels VoIP sur les téléphones Samsung.</string>
+    <string name="whatsnew_155_title">Les réglages en panneau, et des enregistrements plus fiables</string>
     <string name="whatsnew_156_body">Les appels téléphoniques et les appels dans les applis peuvent chacun s\'enregistrer automatiquement, demander d\'abord, ou être totalement ignorés : « appels dans les applis uniquement » est donc un vrai réglage, et non une combinaison à deviner.\n\nUn enregistrement peut être partagé, et un appui long permet d\'en sélectionner plusieurs à partager ou supprimer. Supprimer un enregistrement présent à la fois sur l\'appareil et dans Drive demande désormais quelles copies retirer.</string>
+    <string name="whatsnew_156_title">Choisir ce qui est enregistré, et faire le ménage</string>
     <string name="whatsnew_156_where">Paramètres ▸ Enregistrement ▸ Appels téléphoniques</string>
+    <string name="whatsnew_157_body">Si vous aviez activé la suppression automatique, certains enregistrements étaient conservés indéfiniment sans le dire : la vérification ne voyait que les enregistrements dont CallVault gardait la trace, et les autres n\'étaient jamais supprimés, quel que soit leur âge. Sur un téléphone réglé sur une semaine, 131 fichiers avaient dépassé ce délai.\n\nLa vérification quotidienne lit désormais aussi vos dossiers d\'enregistrement : seul l\'âge décide. Seuls les fichiers nommés par CallVault sont concernés, et ceux dont la date est inconnue sont laissés tels quels.\n\nModifier l\'heure de la vérification prend également effet immédiatement, sans attendre un jour.</string>
+    <string name="whatsnew_157_title">La suppression automatique retire enfin tout ce qu\'elle doit</string>
+    <string name="whatsnew_157_where">Paramètres ▸ Stockage ▸ Conservation</string>
 </resources>

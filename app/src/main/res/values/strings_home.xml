@@ -89,6 +89,9 @@
     <string name="home_health_failed_one_sided">Only your side was recorded on your last app call.</string>
     <string name="home_date_today">Today</string>
     <string name="home_date_yesterday">Yesterday</string>
+    <string name="whatsnew_157_title">Auto-delete now removes everything it should</string>
+    <string name="whatsnew_157_body">If you set recordings to auto-delete, some were quietly kept for ever — the check only looked at recordings CallVault still had a record of, and any it had lost track of were never removed however old they got. On one phone set to keep a week, 131 files had outlived that.\n\nThe daily check now reads your recording folders as well, so age alone decides. Only files CallVault named are ever touched, and anything it cannot date is left alone.\n\nChanging the time the check runs also takes effect straight away instead of waiting a day.</string>
+    <string name="whatsnew_157_where">Settings ▸ Storage ▸ Retention</string>
     <string name="whatsnew_156_title">Decide what gets recorded, and tidy up recordings</string>
     <string name="whatsnew_156_body">Phone calls and app calls can each record automatically, ask first, or be ignored completely — so \"app calls only\" is now a real setting rather than a combination you had to work out.\n\nRecordings can be shared, and held down to select several at once for sharing or deleting. Deleting a recording kept both on the device and in Drive now asks which copies to remove.</string>
     <string name="whatsnew_156_where">Settings ▸ Recording ▸ Phone calls</string>

@@ -8,38 +8,60 @@ Status key: 🔵 agreed, not started · 🟡 in progress · ✅ done (kept brief
 
 ---
 
-## Current state — 2026-08-01 (after the 1.5.6 release)
+## Current state — 2026-08-04 (1.5.7 in preparation)
 
 Kept at the top so a session can start from disk instead of from recall. **Update it whenever a
 release is cut, a branch lands, or something starts or stops being blocked.**
 
-**Released:** `v1.5.6` is the latest release users can get (versionCode **10670**, tag `v1.5.6`, asset
-`CallVault.apk`). Also published: `v1.5.2-diag-scrcpy`, a **pre-release** debug build for issue #18 —
-invisible to the in-app updater, on branch `diag/scrcpy-only`, **never to be merged**.
+**Released:** `v1.5.6` is still the latest release users can get (versionCode **10670**, tag `v1.5.6`,
+asset `CallVault.apk`). Also published, both **pre-releases** invisible to the in-app updater and
+**never to be merged**: `v1.5.2-diag-scrcpy` (issue #18, branch `diag/scrcpy-only`) and
+`v1.5.7-loopbackdiag` (issue #22, branch `diag/loopback-oneui`).
 
-**Unreleased, merged to `main` and NOT pushed:** daemon + system log collection
-(`2026-07-28-daemon-and-system-logs-design.md`, implemented 2026-07-31). Ring grows on logging-enable
-and restores on disable; Share attaches a filtered, redacted logcat slice. Verified on the OP12 —
-six `CV:RecorderServer` lines in a shareable report, which no bug report has ever carried before.
+**Unreleased, merged to `main` and pushed — this is 1.5.7:**
 
-**Also unreleased on `main`:** the CodeQL triage of 2026-08-01. Thirteen alerts: seven implicit-
-PendingIntent and two sensitive-log **dismissed as false positives** (every Intent is explicit; the
-pairing code is never logged and redaction runs before every `Log` call), one missing-certificate-
-pinning **dismissed as won't-fix** (the pinned APK *signing* cert is the real gate; pinning GitHub's
-TLS cert would break the updater on rotation, and users could not then receive the fix), and three
-relative-path-command **fixed** — `sh`/`pkill` now invoked by absolute path. The three fixed alerts
-stay open on GitHub until the code is pushed and re-scanned. Rationale for each dismissal is on the
-alert itself.
+- **Daemon + system log collection** (`2026-07-28-daemon-and-system-logs-design.md`). Ring grows on
+  logging-enable and restores on disable; Share attaches a filtered, redacted logcat slice. Verified
+  on the OP12.
+- **CodeQL triage** of 2026-08-01: ten alerts dismissed with rationale on the alert itself, three
+  relative-path-command **fixed** (`sh`/`pkill` by absolute path).
+- **Retention actually deletes what it promises** — four faults, all found by measuring the OP12 on
+  2026-08-04 and all fixed and device-verified the same day. See below.
+- **The USB-mode warning is no longer hidden behind readiness**, `UNKNOWN` is surfaced instead of
+  silently treated as safe, the mode is re-read on a calm path, and One UI 8's "Debugging only" is
+  recognised as safe. **Unit-tested only — never run on a device.**
 
-**Previously:** 1.5.6 shipped the mid-call update guard, encoder validation, the three-state
-recording control (Off / Ask me / Automatic for both phone and app calls), share + multi-select with a
-scoped bulk delete, PayPal alongside Ko-fi, and the debug-log controls.
+**The retention story, because it cost a day and the shape recurs.** With retention set to 7 days the
+app showed a convincing 64 recordings going back exactly 7 days while **131 files had outlived the
+window** (8 device, 123 Drive, oldest by 48 days). Four independent faults:
 
-**Hard constraint on the next release:** versionCode must exceed **10680**, not 10670. 1.5.6 shipped as
-10670, but the maintainer's OP12 carries a locally-rebuilt 1.5.6 at **10678** — the published APK could
-not be installed back over a 10677 test build, because `adb install -d` refuses a downgrade on a
-non-debuggable app and uninstalling would wipe the ADB pairing. Test builds since have reached **10680**. Anything at or below 10680 will install
-for users and silently fail on the maintainer's own phone. See the `release-version-bump` memory.
+1. `deleteFile` cleared the catalog entry even when the delete failed, so a failed Drive delete made
+   the file invisible *and* unreachable for ever. Fixed: the entry survives a failed delete.
+2. The sweep walked only the catalog, so anything missing from it was exempt regardless of age. Fixed:
+   it reads the folders too, gated on `RetentionPolicy.isEligible` (only names CallVault writes) and
+   never deleting a file whose age is unknown.
+3. `ExistingPeriodicWorkPolicy.UPDATE` ignored the new initial delay, so changing **Run at** moved
+   nothing for up to a day. Fixed: `CANCEL_AND_REENQUEUE`.
+4. **Google Drive renumbers the account slot inside its SAF URIs** (`acc=1` → `acc=4` here), which
+   invalidates every stored Drive URI — uploads, deletes and listings all throw SecurityException, and
+   re-picking the folder does not repair the URIs already stored. Fixed: `DriveCatalogRepair`
+   re-points them against the live listing before each sweep. **This is a recurring hazard, not a
+   one-off** — it will happen again whenever the user's Drive accounts change.
+
+Device-verified 2026-08-04 across three sweeps: `deletedLocal=9`, then `deletedDrive=124`, then
+`63 re-pointed, 1 forgotten`. The one pre-cutoff file the sweep deliberately left alone was
+`callvault-signing.keystore`, sitting in the same Drive folder — the eligibility gate earning its keep
+on its first real run.
+
+**Hard constraint on the next release:** versionCode must exceed **10703**. 1.5.6 shipped as 10670,
+but test builds on the maintainer's OP12 have gone well past it (10680, 10690 for the published
+diagnostic pre-release, and 10700-10703 during the retention work). Anything at or below 10703 installs
+for users and silently fails on the one device that has to test it. See the `release-version-bump`
+memory, and read the phone before choosing.
+
+**Ready but not done for 1.5.7:** the release itself — bump `ciVersionName`/`ciVersionCode`, build,
+verify the artifact, install on the phone, tag and publish. The `ReleaseHighlights` entry and its
+`whatsnew_157_*` strings are already written in all ten locales.
 
 **Device-verified 2026-07-31 (OnePlus 12, build `1.5.6-encoder` / 10661):** encoder validation does
 *not* divert recording to the scrcpy fallback — output was mono 48 kHz, full duration, −16.9 dB mean.

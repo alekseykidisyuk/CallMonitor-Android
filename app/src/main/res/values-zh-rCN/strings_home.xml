@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="home_date_today">今天</string>
+    <string name="home_date_yesterday">昨天</string>
     <string name="home_health_call_not_recorded">有一通通话未被录音 — %1$s，%2$s。</string>
     <string name="home_health_call_not_recorded_unnamed">有一通通话未被录音 — %1$s。</string>
     <string name="home_health_failed_daemon">上一通通话期间录音已停止。</string>
@@ -66,13 +68,14 @@
     <string name="whatsnew_150_where">设置 ▸ 实验性功能 ▸ USB 调试</string>
     <string name="whatsnew_153_body">状态卡片现在会告诉你录音是否真的成功了 — 依据是你的真实通话，而不是一个只表示应用已启动的绿灯。如果某通通话没有被录音，它会说明这一点并给出原因：从未设置文件夹、开发者选项被关闭、更新导致权限丢失。\n\n此外：CallVault 现在支持巴西葡萄牙语，其他所有语言也都已更新。</string>
     <string name="whatsnew_153_title">你的设置，由你自己的通话来验证</string>
-    <string name="whatsnew_155_title">设置改为侧边面板，录音更可靠</string>
-    <string name="whatsnew_155_body">设置现在会滑出覆盖在应用之上，而不是整屏替换，并已重新分组，让每屏只是一份简短列表。录音会显示通话时间和时长。\n\n底层方面：修复了多种可能导致录音丢失或受损的情况，包括开启稳健录音时的爆音，以及三星手机上 VoIP 通话缺失一方声音的问题。</string>
-    <string name="whatsnew_154_title">能自行恢复的录音</string>
     <string name="whatsnew_154_body">与录音器的连接偶尔会出现罕见的卡顿，可能在无任何提示的情况下悄悄停止录音，直到重启应用。现在它会超时并自行恢复。\n\n你还可以选择录音上传到云端硬盘的时间：立即、每天或每周。请前往「设置 ▸ 存储」，「保留时长」也已移至同一板块。</string>
-    <string name="home_date_today">今天</string>
-    <string name="home_date_yesterday">昨天</string>
-    <string name="whatsnew_156_title">决定录制什么，并整理录音</string>
+    <string name="whatsnew_154_title">能自行恢复的录音</string>
+    <string name="whatsnew_155_body">设置现在会滑出覆盖在应用之上，而不是整屏替换，并已重新分组，让每屏只是一份简短列表。录音会显示通话时间和时长。\n\n底层方面：修复了多种可能导致录音丢失或受损的情况，包括开启稳健录音时的爆音，以及三星手机上 VoIP 通话缺失一方声音的问题。</string>
+    <string name="whatsnew_155_title">设置改为侧边面板，录音更可靠</string>
     <string name="whatsnew_156_body">电话通话和应用内通话现在可以分别设置为自动录制、先询问，或完全忽略——“仅录制应用内通话”成了一项真正的设置，而不再是需要自己摸索的组合。\n\n录音可以分享，长按还能一次选中多条来分享或删除。删除同时保存在本机和云端硬盘中的录音时，会先询问要删除哪些副本。</string>
+    <string name="whatsnew_156_title">决定录制什么，并整理录音</string>
     <string name="whatsnew_156_where">设置 ▸ 录制 ▸ 电话通话</string>
+    <string name="whatsnew_157_body">如果您设置了自动删除，有些录音会被悄悄永久保留——检查只看得到 CallVault 仍有记录的录音，其余的无论多旧都不会被删除。在一台设置为保留一周的手机上，有 131 个文件早已超期。\n\n每日检查现在也会读取您的录音文件夹，因此只由文件的时间决定去留。只有 CallVault 自己命名的文件才会被处理，无法确定日期的文件一律保留。\n\n修改检查时间也会立即生效，不再需要等到第二天。</string>
+    <string name="whatsnew_157_title">自动删除现在会清理掉所有该清理的录音</string>
+    <string name="whatsnew_157_where">设置 ▸ 存储 ▸ 保留</string>
 </resources>

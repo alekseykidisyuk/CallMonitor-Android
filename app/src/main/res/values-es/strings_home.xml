@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="home_date_today">Hoy</string>
+    <string name="home_date_yesterday">Ayer</string>
     <string name="home_health_call_not_recorded">Una llamada no se grabó: %1$s, %2$s.</string>
     <string name="home_health_call_not_recorded_unnamed">Una llamada no se grabó: %1$s.</string>
     <string name="home_health_failed_daemon">La grabación se detuvo durante tu última llamada.</string>
@@ -66,13 +68,14 @@
     <string name="whatsnew_150_where">Ajustes ▸ Experimental ▸ Depuración por USB</string>
     <string name="whatsnew_153_body">La tarjeta de estado ahora te dice si la grabación funcionó de verdad, según tus llamadas reales y no según una luz verde que solo significa que la app se inició. Si una llamada no se grabó, lo dice y explica por qué: una carpeta que nunca se configuró, las opciones de desarrollador desactivadas, un permiso perdido en una actualización.\n\nAdemás: CallVault ya habla portugués de Brasil, y el resto de idiomas se han puesto al día.</string>
     <string name="whatsnew_153_title">Tu configuración, comprobada por tus propias llamadas</string>
-    <string name="whatsnew_155_title">Ajustes en un panel y grabaciones más fiables</string>
-    <string name="whatsnew_155_body">Los ajustes ahora se deslizan sobre la aplicación en lugar de sustituirla, y están agrupados para que cada pantalla sea una lista breve. Las grabaciones muestran cuándo fue la llamada y cuánto duró.\n\nPor debajo: se han corregido varias formas en que una grabación podía perderse o estropearse, incluido el audio con chasquidos en la grabación resistente y la falta de un lado en las llamadas VoIP en teléfonos Samsung.</string>
-    <string name="whatsnew_154_title">Grabación que se recupera sola</string>
     <string name="whatsnew_154_body">Un fallo poco frecuente en la conexión con el grabador podía dejar la grabación desactivada en silencio hasta reiniciar la aplicación, sin ningún aviso en pantalla. Ahora se agota el tiempo de espera y se recupera por sí sola.\n\nTambién puedes elegir cuándo se suben las grabaciones a Drive: al momento, a diario o cada semana. Está en Ajustes ▸ Almacenamiento, junto con la Retención, que se ha trasladado a la misma sección.</string>
-    <string name="home_date_today">Hoy</string>
-    <string name="home_date_yesterday">Ayer</string>
-    <string name="whatsnew_156_title">Decide qué se graba y ordena tus grabaciones</string>
+    <string name="whatsnew_154_title">Grabación que se recupera sola</string>
+    <string name="whatsnew_155_body">Los ajustes ahora se deslizan sobre la aplicación en lugar de sustituirla, y están agrupados para que cada pantalla sea una lista breve. Las grabaciones muestran cuándo fue la llamada y cuánto duró.\n\nPor debajo: se han corregido varias formas en que una grabación podía perderse o estropearse, incluido el audio con chasquidos en la grabación resistente y la falta de un lado en las llamadas VoIP en teléfonos Samsung.</string>
+    <string name="whatsnew_155_title">Ajustes en un panel y grabaciones más fiables</string>
     <string name="whatsnew_156_body">Las llamadas telefónicas y las de apps pueden grabarse automáticamente, preguntar primero o ignorarse por completo, así que «solo llamadas de apps» ya es un ajuste real y no una combinación que había que deducir.\n\nLas grabaciones se pueden compartir, y manteniéndolas pulsadas puedes seleccionar varias para compartir o eliminar. Al eliminar una grabación guardada en el dispositivo y en Drive se te pregunta qué copias quitar.</string>
+    <string name="whatsnew_156_title">Decide qué se graba y ordena tus grabaciones</string>
     <string name="whatsnew_156_where">Ajustes ▸ Grabación ▸ Llamadas telefónicas</string>
+    <string name="whatsnew_157_body">Si configuraste el borrado automático, algunas grabaciones se conservaban para siempre sin avisar: la comprobación solo veía las grabaciones de las que CallVault seguía teniendo registro, y las demás no se eliminaban por antiguas que fueran. En un teléfono configurado para conservar una semana, 131 archivos habían superado ese plazo.\n\nLa comprobación diaria ahora también lee tus carpetas de grabación, así que decide solo la antigüedad. Únicamente se tocan los archivos nombrados por CallVault, y los que no se pueden fechar se dejan intactos.\n\nCambiar la hora de la comprobación también surte efecto de inmediato en lugar de esperar un día.</string>
+    <string name="whatsnew_157_title">El borrado automático ya elimina todo lo que debe</string>
+    <string name="whatsnew_157_where">Ajustes ▸ Almacenamiento ▸ Retención</string>
 </resources>

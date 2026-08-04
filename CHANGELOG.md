@@ -5,6 +5,35 @@ All notable changes to CallVault are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- **Retention now deletes what it says it deletes.** "Recordings older than the selected period are
+  permanently deleted" was true only of recordings CallVault still had a record of. Measured on a
+  phone set to keep one week: the list showed a convincing 64 recordings going back exactly seven
+  days, while **131 files had outlived the period** — 8 on the device and 123 in Drive, the oldest by
+  48 days. Four separate faults, each of which alone was enough to strand a recording for ever:
+  - A delete that failed — Drive offline, a permission lost — still made CallVault forget the file.
+    It then existed nowhere in the app: absent from the list, and past the reach of every future
+    check. The entry is now kept when the file survives, so the next day's check tries again.
+  - The daily check only ever looked at CallVault's own index, so a file missing from it was exempt
+    from the retention period no matter how old it got. It now reads the recording folders too.
+    Only files CallVault itself named are eligible, and a file whose age cannot be established is
+    never deleted — your own audio kept in the same folder is not touched.
+  - Changing **Run at** did not move the next check until the current 24-hour period happened to
+    elapse. It now takes effect immediately.
+  - Google Drive can renumber the account slot inside the folder link it gives out, which silently
+    invalidates every saved link — uploads, deletions and folder listings all start failing, and
+    re-picking the folder does not repair the ones already saved. They are now repaired
+    automatically, so recordings do not become undeletable.
+- **The USB-mode warning no longer disappears exactly when it matters.** Locking the screen mid-call
+  can stop a recording when USB is set to a data mode, and CallVault warned about it — but only while
+  the recorder was ready. Since that setting is one of the things that stops the recorder being
+  ready, the warning vanished precisely when it applied. It is now shown either way, and when the
+  setting cannot be read at all CallVault says so instead of staying silent.
+  - One UI 8's **"Debugging only"** is recognised as a safe mode rather than an unknown one.
+- **Hardening:** the background helper now invokes `sh` and `pkill` by absolute path, so its
+  behaviour cannot depend on the shell's search path.
+
 ### Added
 
 - **Bug reports now include the background helper's own log, and the system's.** Everything the

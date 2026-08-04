@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="home_date_today">Heute</string>
+    <string name="home_date_yesterday">Gestern</string>
     <string name="home_health_call_not_recorded">Ein Anruf wurde nicht aufgezeichnet — %1$s, %2$s.</string>
     <string name="home_health_call_not_recorded_unnamed">Ein Anruf wurde nicht aufgezeichnet — %1$s.</string>
     <string name="home_health_failed_daemon">Die Aufnahme wurde während Ihres letzten Anrufs beendet.</string>
@@ -66,13 +68,14 @@
     <string name="whatsnew_150_where">Einstellungen ▸ Experimentell ▸ USB-Debugging</string>
     <string name="whatsnew_153_body">Die Statuskarte zeigt Ihnen jetzt, ob die Aufnahme tatsächlich funktioniert hat — anhand Ihrer echten Anrufe statt eines grünen Lichts, das nur bedeutet, dass die App gestartet ist. Wenn ein Anruf nicht aufgezeichnet wurde, sagt sie es und nennt den Grund: ein nie festgelegter Ordner, deaktivierte Entwickleroptionen, eine durch ein Update verlorene Berechtigung.\n\nAußerdem: CallVault spricht jetzt brasilianisches Portugiesisch, und alle anderen Sprachen wurden aktualisiert.</string>
     <string name="whatsnew_153_title">Ihre Einrichtung, geprüft von Ihren eigenen Anrufen</string>
-    <string name="whatsnew_155_title">Einstellungen als Panel, und zuverlässigere Aufnahmen</string>
-    <string name="whatsnew_155_body">Die Einstellungen schieben sich jetzt über die App, statt sie zu ersetzen, und sind so gruppiert, dass jeder Bereich eine kurze Liste ist. Aufnahmen zeigen, wann das Gespräch war und wie lange es dauerte.\n\nDarunter: mehrere Wege, auf denen eine Aufnahme verloren gehen oder leiden konnte, sind behoben — darunter knisternder Ton bei der robusten Aufnahme und eine fehlende Gesprächsseite bei VoIP-Anrufen auf Samsung-Geräten.</string>
-    <string name="whatsnew_154_title">Aufnahme, die sich selbst wiederherstellt</string>
     <string name="whatsnew_154_body">Eine seltene Störung der Verbindung zum Recorder konnte die Aufnahme stillschweigend deaktivieren, bis die App neu gestartet wurde – ohne jeden Hinweis auf dem Bildschirm. Das läuft jetzt in eine Zeitüberschreitung und stellt sich selbst wieder her.\n\nAußerdem können Sie wählen, wann Aufnahmen zu Drive hochgeladen werden: sofort, täglich oder wöchentlich. Zu finden unter Einstellungen ▸ Speicher, zusammen mit der Aufbewahrung, die in denselben Bereich umgezogen ist.</string>
-    <string name="home_date_today">Heute</string>
-    <string name="home_date_yesterday">Gestern</string>
-    <string name="whatsnew_156_title">Entscheiden, was aufgenommen wird – und Aufnahmen aufräumen</string>
+    <string name="whatsnew_154_title">Aufnahme, die sich selbst wiederherstellt</string>
+    <string name="whatsnew_155_body">Die Einstellungen schieben sich jetzt über die App, statt sie zu ersetzen, und sind so gruppiert, dass jeder Bereich eine kurze Liste ist. Aufnahmen zeigen, wann das Gespräch war und wie lange es dauerte.\n\nDarunter: mehrere Wege, auf denen eine Aufnahme verloren gehen oder leiden konnte, sind behoben — darunter knisternder Ton bei der robusten Aufnahme und eine fehlende Gesprächsseite bei VoIP-Anrufen auf Samsung-Geräten.</string>
+    <string name="whatsnew_155_title">Einstellungen als Panel, und zuverlässigere Aufnahmen</string>
     <string name="whatsnew_156_body">Telefon- und App-Anrufe können jeweils automatisch aufnehmen, vorher fragen oder ganz ignoriert werden – „nur App-Anrufe“ ist damit eine echte Einstellung statt einer Kombination, die man sich zusammenreimen musste.\n\nAufnahmen lassen sich teilen und per Gedrückthalten mehrfach auswählen, um sie zu teilen oder zu löschen. Beim Löschen einer Aufnahme, die auf dem Gerät und in Drive liegt, wird gefragt, welche Kopien entfernt werden.</string>
+    <string name="whatsnew_156_title">Entscheiden, was aufgenommen wird – und Aufnahmen aufräumen</string>
     <string name="whatsnew_156_where">Einstellungen ▸ Aufnahme ▸ Telefonanrufe</string>
+    <string name="whatsnew_157_body">Wenn Sie Aufnahmen automatisch löschen lassen, blieben manche stillschweigend für immer erhalten — die Prüfung sah nur Aufnahmen, von denen CallVault noch wusste; alle anderen wurden nie entfernt, egal wie alt sie waren. Auf einem Telefon mit einer Woche Aufbewahrung hatten 131 Dateien diese Frist überdauert.\n\nDie tägliche Prüfung liest nun auch Ihre Aufnahmeordner, sodass allein das Alter entscheidet. Angefasst werden nur Dateien, die CallVault selbst benannt hat, und alles ohne feststellbares Datum bleibt unberührt.\n\nEine Änderung der Uhrzeit wirkt außerdem sofort statt erst am nächsten Tag.</string>
+    <string name="whatsnew_157_title">Das automatische Löschen entfernt jetzt alles, was es soll</string>
+    <string name="whatsnew_157_where">Einstellungen ▸ Speicher ▸ Aufbewahrung</string>
 </resources>
