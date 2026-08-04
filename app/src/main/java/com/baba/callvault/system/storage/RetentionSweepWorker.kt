@@ -14,6 +14,7 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.recordings.DriveCatalogRepair
 import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.data.recordings.RecordingsRepository
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
@@ -51,6 +52,11 @@ class RetentionSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWo
         val now = System.currentTimeMillis()
         val localCutoff = RetentionPolicy.cutoffFor(localDays, now)
         val driveCutoff = RetentionPolicy.cutoffFor(driveDays, now)
+
+        // A Drive reference minted under a grant we no longer hold can be neither used nor noticed —
+        // the catalog pass fails on it for ever while the untracked pass skips the file as already
+        // known. Repair those first, so both halves below see a catalog that matches reality.
+        DriveCatalogRepair.reconcile(applicationContext)
 
         var deletedLocal = 0
         var deletedDrive = 0
