@@ -3,7 +3,7 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
-## [Unreleased]
+## [1.5.7] - 2026-08-04
 
 ### Fixed
 
@@ -31,6 +31,12 @@ All notable changes to CallVault are documented here. The format is based on
   ready, the warning vanished precisely when it applied. It is now shown either way, and when the
   setting cannot be read at all CallVault says so instead of staying silent.
   - One UI 8's **"Debugging only"** is recognised as a safe mode rather than an unknown one.
+  - On phones whose `dumpsys usb` does not report the setting while a safe mode is selected — a
+    OnePlus 12 among them — CallVault now reads it from a system property instead, so a correctly
+    configured phone is recognised as such rather than staying permanently unknown.
+  - Changing the USB mode no longer leaves the setting spinning on "Applying…" for tens of seconds.
+    Choosing "Charging only" cuts USB data, and the app was trying to confirm the change over the
+    very connection the change had just closed.
 - **Hardening:** the background helper now invokes `sh` and `pkill` by absolute path, so its
   behaviour cannot depend on the shell's search path.
 
