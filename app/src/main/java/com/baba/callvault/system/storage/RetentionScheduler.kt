@@ -53,7 +53,18 @@ object RetentionScheduler {
             .setInitialDelay(nextDailyDelayMillis(hour, minute), TimeUnit.MILLISECONDS)
             .build()
 
-        workManager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
+        // CANCEL_AND_REENQUEUE, not UPDATE. UPDATE keeps an already-enqueued periodic job's existing
+        // schedule and ignores the new initial delay, so changing "Run at" changed nothing until the
+        // current 24-hour period happened to roll over. Measured on 2026-08-04: the sweep time was moved
+        // from 03:30 to 14:00, the job was re-enqueued under a new id — and its next run stayed pinned to
+        // the old anchor, ~12h41m away. A user who moves the time and watches the old one pass has been
+        // told something untrue by the UI.
+        //
+        // Re-enqueueing re-anchors it to the next occurrence, which is a fixed wall-clock target, so
+        // frequent app starts cannot push the sweep past it. The cost is that a start landing exactly on
+        // a running sweep cancels that run; the sweep is idempotent and runs daily, so it simply happens
+        // the next day.
+        workManager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE, request)
         AppLogger.i(
             TAG,
             "Retention sweep scheduled at $hour:$minute local (localDays=${prefs.getRetentionLocalDays()} driveDays=${prefs.getRetentionDriveDays()})."
