@@ -308,8 +308,17 @@ object RecordingsRepository {
             AppLogger.w(TAG, "Failed to delete file $uri: ${e.message}")
             false
         }
-        // Clear just this copy from the catalog (dropping the row if it was the last copy).
-        RecordingCatalog.removeCopyByUri(context, uri)
+        // Clear this copy from the catalog ONLY if the file is actually gone (dropping the row if it was
+        // the last copy). Clearing it regardless is what stranded 123 recordings on one device's Drive:
+        // the Drive delete failed, the row was dropped anyway, and since the retention sweep only walks
+        // the catalog, the file became both invisible in the app and permanently un-retryable — while
+        // the sweep's own docs promised a retry "on the next daily run". Keeping the row is what makes
+        // that promise true.
+        if (deleted) {
+            RecordingCatalog.removeCopyByUri(context, uri)
+        } else {
+            AppLogger.w(TAG, "Keeping the catalog entry for $uri so the next sweep can retry the delete")
+        }
         deleted
     }
 
@@ -342,7 +351,7 @@ object RecordingsRepository {
      * Drive app raise its own "synchronization issue" toast. The cheap metadata check below still drops
      * obviously-dead/zero-byte entries.
      */
-    private fun enumerateFolder(context: Context, folderUri: Uri): List<RecordingItem> {
+    internal fun enumerateFolder(context: Context, folderUri: Uri): List<RecordingItem> {
         val result = mutableListOf<RecordingItem>()
         runCatching {
             val tree = DocumentFile.fromTreeUri(context, folderUri)
