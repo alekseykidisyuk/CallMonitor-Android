@@ -100,7 +100,16 @@ object UsbDefaultConfig {
     private fun parseAndCache(context: Context, out: String?): UsbDefaultMode? {
         if (out == null) return null
         // Filter for the relevant line in Kotlin rather than a `| grep` (pipes are fragile over `shell:`).
-        val line = out.lineSequence().firstOrNull { it.contains("screen_unlocked_functions") } ?: return null
+        val line = out.lineSequence().firstOrNull { it.contains("screen_unlocked_functions") }
+        if (line == null) {
+            // The command ran and the field simply is not there. Measured on a OnePlus 12 (ColorOS):
+            // `dumpsys usb` prints 237 lines and not one of them mentions screen_unlocked_functions, so
+            // the setting is permanently unreadable on that ROM and every retry will fail the same way.
+            // Worth saying out loud — a silent null here is indistinguishable from a shell that failed,
+            // which is the confusion this whole area was built on.
+            AppLogger.i(TAG, "dumpsys usb has no screen_unlocked_functions line; this ROM does not expose the Default USB Configuration")
+            return null
+        }
         val mode = parse(line)
         if (mode != UsbDefaultMode.UNKNOWN) AppPreferences(context).setUsbDefaultMode(mode.name)
         AppLogger.i(TAG, "Default USB Configuration read: $mode (raw: '${line.trim()}')")
