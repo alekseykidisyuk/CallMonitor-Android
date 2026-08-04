@@ -56,13 +56,33 @@ object RecordingCatalog {
      * Stamps the Drive copy onto the recording named [displayName] (creating a Drive-only row if the
      * recording is not yet catalogued). When [deleteLocalAfter] is true (DRIVE-only mode), the local
      * copy reference is cleared because the worker deletes the on-device file after copying.
+     *
+     * [lastModified] is only consulted when a Drive-ONLY row has to be created, where there is no device
+     * copy to have supplied one. It matters because a row with no timestamp is one the retention sweep
+     * refuses to age out (it will not delete a recording whose age it cannot establish), so a Drive-only
+     * row created without it would never expire. The sync path leaves it at 0 as before: it always stamps
+     * Drive onto a row [recordLocal] has already dated.
      */
-    suspend fun markDrive(context: Context, displayName: String, driveUri: Uri, driveSizeBytes: Long?, deleteLocalAfter: Boolean) {
+    suspend fun markDrive(
+        context: Context,
+        displayName: String,
+        driveUri: Uri,
+        driveSizeBytes: Long?,
+        deleteLocalAfter: Boolean,
+        lastModified: Long = 0L,
+    ) {
         runCatching {
             val dao = dao(context)
             val size = driveSizeBytes?.takeIf { it > 0L }
             if (dao.findByName(displayName) == null) {
-                dao.upsert(RecordingEntry(displayName = displayName, driveUri = driveUri.toString(), driveSizeBytes = size))
+                dao.upsert(
+                    RecordingEntry(
+                        displayName = displayName,
+                        driveUri = driveUri.toString(),
+                        driveSizeBytes = size,
+                        lastModified = lastModified.takeIf { it > 0L } ?: 0L,
+                    )
+                )
             } else {
                 dao.setDrive(displayName, driveUri.toString(), size)
                 if (deleteLocalAfter) dao.clearLocal(displayName)

@@ -23,9 +23,15 @@ import com.baba.callvault.utils.AppLogger
  * [AppPreferences.getRetentionLocalDays], Drive copies use [AppPreferences.getRetentionDriveDays] (0 =
  * keep forever). Age is measured from each entry's recorded timestamp ([lastModified]).
  *
- * Deletion goes through [RecordingsRepository.deleteFile], which removes the SAF file AND clears that copy
- * from the catalog (dropping the row once no copy remains). Robust by design: entries with an unknown age
- * are never deleted; a failed delete (e.g. Drive offline) is simply retried on the next daily run.
+ * Deletion goes through [RecordingsRepository.deleteFile], which removes the SAF file and clears that copy
+ * from the catalog ONLY once the file is actually gone (dropping the row when no copy remains). Robust by
+ * design: entries with an unknown age are never deleted; a failed delete (e.g. Drive offline) keeps its
+ * catalog entry and is retried on the next daily run.
+ *
+ * **What this sweep cannot see.** It walks the catalog, so a file the catalog does not know about is never
+ * considered — it will sit in the folder forever regardless of its age. That is not hypothetical: until the
+ * delete/forget ordering above was fixed, every failed delete created exactly such an orphan.
+ * [com.baba.callvault.data.recordings.StorageReconciler] is how they are found and adopted back.
  */
 class RetentionSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
