@@ -88,26 +88,92 @@ object UsbDefaultConfig {
      * there is no live shell to read through (caller should fall back to [cached]); does NOT force a
      * connection, so it never causes WD/adbd churn. Caches the value on success. Call OFF the main thread.
      */
-    fun readViaShell(context: Context): UsbDefaultMode? = parseAndCache(context, runShell(context, READ_CMD, ensure = true))
+    fun readViaShell(context: Context): UsbDefaultMode? =
+        parseAndCache(context, runShell(context, READ_CMD, ensure = true)) ?: readFromSystemProperty(context)
 
     /**
      * Like [readViaShell] but reads ONLY if an ADB connection is already up — never forces one, so it
      * causes no WD/adbd churn. Use for opportunistic cache refreshes on paths that already hold a
      * connection (e.g. right after a daemon launch). Returns null when nothing was read. OFF main thread.
      */
-    fun readIfConnected(context: Context): UsbDefaultMode? = parseAndCache(context, runShell(context, READ_CMD, ensure = false))
+    fun readIfConnected(context: Context): UsbDefaultMode? =
+        parseAndCache(context, runShell(context, READ_CMD, ensure = false)) ?: readFromSystemProperty(context)
+
+    /**
+     * Falls back to the `sys.usb.config` system property, for ROMs whose `dumpsys usb` does not print
+     * the setting at all.
+     *
+     * **Why this exists.** On a OnePlus 12 (ColorOS) `dumpsys usb` omits `screen_unlocked_functions`
+     * whenever no data function is set, so the read above returns nothing on a correctly-configured
+     * phone. That is the *safe* case, but the app could not tell it from a failed shell, so the mode
+     * stayed UNKNOWN for ever and the readiness notification kept offering to check something it never
+     * could. The property resolves it.
+     *
+     * **What the property actually is, measured 2026-08-04.** It holds the USB functions *currently
+     * applied*, which in the steady state are the screen-unlocked ones. Sampled across a deliberate
+     * unplug: `adb` while a manual override was in force for the cable, then `rndis,none,adb` once the
+     * cable was out and the system re-applied the configured functions — the tethering mode that was
+     * genuinely set. It does not blank out when disconnected, which was the failure this had to rule out;
+     * a blank would have mapped to "no data functions" and reported SAFE for a phone that was not.
+     *
+     * Two known imprecisions, both harmless for the warning this drives. While someone has manually
+     * overridden the mode to transfer files, it reports the override rather than the stored default — but
+     * an override is itself a data mode, so warning then is if anything correct. And a value of `adb`
+     * alone cannot distinguish "Charging only" from One UI's "Debugging only"; both are safe, so only the
+     * label shown in the picker is a guess.
+     *
+     * Needs no shell, no daemon and no ADB connection — unlike everything else in this file.
+     */
+    private fun readFromSystemProperty(context: Context): UsbDefaultMode? {
+        val raw = systemProperty(USB_CONFIG_PROP)
+        val mode = parseProperty(raw)
+        if (mode == UsbDefaultMode.UNKNOWN) return null
+        AppPreferences(context).setUsbDefaultMode(mode.name)
+        AppLogger.i(TAG, "Default USB Configuration from $USB_CONFIG_PROP='$raw': $mode")
+        return mode
+    }
+
+    /**
+     * Classifies a `sys.usb.config` value (a comma-separated function list, e.g. `rndis,none,adb`).
+     *
+     * A blank value means the property is absent — no evidence, so [UsbDefaultMode.UNKNOWN] rather than a
+     * cheerful "no data functions". `none` is the opposite: positive evidence that nothing is configured.
+     */
+    internal fun parseProperty(raw: String): UsbDefaultMode {
+        val v = raw.trim().lowercase()
+        if (v.isEmpty()) return UsbDefaultMode.UNKNOWN
+        return when {
+            v.contains("mtp") -> UsbDefaultMode.FILE_TRANSFER
+            v.contains("ptp") -> UsbDefaultMode.PTP
+            v.contains("rndis") -> UsbDefaultMode.TETHERING
+            v.contains("midi") -> UsbDefaultMode.MIDI
+            // Only adb and/or none: no data function is applied, which is the safe case. Which safe mode
+            // it is cannot be told from here — see the note above.
+            else -> UsbDefaultMode.CHARGING
+        }
+    }
+
+    /** Reads a system property via the hidden `SystemProperties.get` (reflection; public SDK-safe). */
+    private fun systemProperty(key: String): String = runCatching {
+        Class.forName("android.os.SystemProperties")
+            .getMethod("get", String::class.java)
+            .invoke(null, key) as? String ?: ""
+    }.getOrDefault("")
+
+    private const val USB_CONFIG_PROP = "sys.usb.config"
 
     private fun parseAndCache(context: Context, out: String?): UsbDefaultMode? {
         if (out == null) return null
         // Filter for the relevant line in Kotlin rather than a `| grep` (pipes are fragile over `shell:`).
         val line = out.lineSequence().firstOrNull { it.contains("screen_unlocked_functions") }
         if (line == null) {
-            // The command ran and the field simply is not there. Measured on a OnePlus 12 (ColorOS):
-            // `dumpsys usb` prints 237 lines and not one of them mentions screen_unlocked_functions, so
-            // the setting is permanently unreadable on that ROM and every retry will fail the same way.
-            // Worth saying out loud — a silent null here is indistinguishable from a shell that failed,
-            // which is the confusion this whole area was built on.
-            AppLogger.i(TAG, "dumpsys usb has no screen_unlocked_functions line; this ROM does not expose the Default USB Configuration")
+            // The command ran and the field is not in the output. On a OnePlus 12 (ColorOS) that turned
+            // out to mean "no screen-unlocked functions are set" rather than "this ROM never prints it":
+            // with Charging only the line is absent entirely, and the moment the mode became USB
+            // tethering the same command printed `screen_unlocked_functions=RNDIS`. So absence is weak
+            // evidence of the SAFE case, not of an unreadable device — worth logging either way, because
+            // a silent null here is indistinguishable from a shell that failed.
+            AppLogger.i(TAG, "dumpsys usb printed no screen_unlocked_functions line (often means none is set)")
             return null
         }
         val mode = parse(line)

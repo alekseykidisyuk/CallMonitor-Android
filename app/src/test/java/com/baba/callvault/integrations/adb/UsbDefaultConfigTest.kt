@@ -88,4 +88,29 @@ class UsbDefaultConfigTest {
             UsbDefaultConfig.noticeFor(UsbDefaultMode.UNKNOWN, recorderReady = true),
         )
     }
+
+    // ---- parseProperty: the sys.usb.config fallback, for ROMs whose dumpsys omits the setting
+
+    @Test
+    fun `reads a data function out of the property, whatever else is listed alongside it`() {
+        // The real value sampled on a OnePlus 12 while the mode was USB tethering.
+        assertEquals(UsbDefaultMode.TETHERING, UsbDefaultConfig.parseProperty("rndis,none,adb"))
+        assertEquals(UsbDefaultMode.FILE_TRANSFER, UsbDefaultConfig.parseProperty("mtp,adb"))
+        assertEquals(UsbDefaultMode.PTP, UsbDefaultConfig.parseProperty("ptp,adb"))
+        assertEquals(UsbDefaultMode.MIDI, UsbDefaultConfig.parseProperty("midi,adb"))
+    }
+
+    @Test
+    fun `treats adb-only and none as the safe case`() {
+        assertEquals(UsbDefaultMode.CHARGING, UsbDefaultConfig.parseProperty("adb"))
+        assertEquals(UsbDefaultMode.CHARGING, UsbDefaultConfig.parseProperty("none"))
+    }
+
+    @Test
+    fun `treats an absent property as unknown, not as safe`() {
+        // A blank is no evidence. Mapping it to "no data functions" would report SAFE for a phone whose
+        // mode we never learned — the exact false reassurance this whole area is about.
+        assertEquals(UsbDefaultMode.UNKNOWN, UsbDefaultConfig.parseProperty(""))
+        assertEquals(UsbDefaultMode.UNKNOWN, UsbDefaultConfig.parseProperty("   "))
+    }
 }
