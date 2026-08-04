@@ -196,6 +196,7 @@
     <string name="settings_usb_default_hint">"Charging only" keeps recording alive if you lock the screen during a call. Other modes let USB transfer data but can interrupt a recording when you lock the phone.</string>
     <string name="settings_usb_default_applying">Applying…</string>
     <string name="usb_mode_charging">Charging only (no data)</string>
+    <string name="usb_mode_debugging_only">Debugging only</string>
     <string name="usb_mode_file_transfer">File transfer</string>
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">USB tethering</string>

@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <plurals name="home_selected_count">
+        <item quantity="one">Đã chọn %1$d</item>
+        <item quantity="other">Đã chọn %1$d</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Xóa %1$d bản ghi?</item>
+        <item quantity="other">Xóa %1$d bản ghi?</item>
+    </plurals>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d bản ghi</item>
+        <item quantity="other">%1$d bản ghi</item>
+    </plurals>
     <string name="audio_source_mic_camcorder_description">Được tinh chỉnh để quay video, tập trung vào âm thanh từ hướng máy quay.</string>
     <string name="audio_source_mic_description">Thu âm trực tiếp từ micro chính của thiết bị. Giảm nhiễu nhẹ.</string>
     <string name="audio_source_mic_unprocessed_description">Thu âm thanh thô, tự nhiên từ micro mà không qua bất kỳ bộ lọc hoặc hiệu chỉnh tự động nào.</string>
@@ -43,9 +55,15 @@
     <string name="general_system_limitation">Giới hạn hệ thống</string>
     <string name="general_system_limitation_message">CallVault sẽ không hoạt động trên thiết bị này vì ứng dụng shell của bạn không có các quyền cần thiết:\n\n%1$s\n\nBạn không thể làm gì được nữa, ứng dụng không thể hoạt động và sẽ tự động đóng.</string>
     <string name="home_all_set_message">Mọi thứ đã sẵn sàng. CallVault đã sẵn sàng ghi âm các cuộc gọi của bạn.</string>
-    <string name="home_share">Chia sẻ</string>
-    <string name="home_share_chooser">Chia sẻ bản ghi</string>
-    <string name="home_row_menu">Tùy chọn khác</string>
+    <string name="home_bulk_delete_both">Cả hai bản sao</string>
+    <string name="home_bulk_delete_device_only">Chỉ trên thiết bị</string>
+    <string name="home_bulk_delete_drive_only">Chỉ trên Drive</string>
+    <string name="home_bulk_delete_kept_device">%1$s sẽ được giữ lại — chỉ có trên thiết bị này.</string>
+    <string name="home_bulk_delete_kept_drive">%1$s sẽ được giữ lại — chỉ có trên Drive.</string>
+    <string name="home_bulk_delete_message">Không thể hoàn tác.</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d trên %3$d)</string>
+    <string name="home_bulk_delete_scope_label">Bản sao cần xóa</string>
+    <string name="home_bulk_delete_scope_message">Một số được lưu cả trên thiết bị này và trên Drive.</string>
     <string name="home_delete">Xóa</string>
     <string name="home_delete_confirm_message">Thao tác này sẽ xóa vĩnh viễn %1$s.</string>
     <string name="home_delete_confirm_title">Xóa bản ghi âm?</string>
@@ -57,6 +75,9 @@
     <string name="home_player_stop">Dừng</string>
     <string name="home_recordings_empty">Chưa có bản ghi âm nào.</string>
     <string name="home_recordings_title">Bản ghi âm</string>
+    <string name="home_row_menu">Tùy chọn khác</string>
+    <string name="home_share">Chia sẻ</string>
+    <string name="home_share_chooser">Chia sẻ bản ghi</string>
     <string name="home_status_dev_options_off_suggestion">CallVault ghi âm qua gỡ lỗi không dây, tính năng này cần Tùy chọn nhà phát triển. Không thể ghi âm cho đến khi bạn bật lại Tùy chọn nhà phát triển (và Gỡ lỗi không dây) trong cài đặt hệ thống.</string>
     <string name="home_status_dev_options_off_title">Tùy chọn nhà phát triển đang tắt</string>
     <string name="home_status_no_folder_suggestion">Mở Cài đặt để chọn nơi lưu bản ghi âm.</string>
@@ -150,7 +171,15 @@
     <string name="settings_bugreport_share_chooser">Chia sẻ nhật ký gỡ lỗi</string>
     <string name="settings_bugreport_share_empty">Chưa có nhật ký. Hãy bật ghi nhật ký gỡ lỗi, tái hiện sự cố, rồi nhấn chia sẻ.</string>
     <string name="settings_bugreport_share_hint">Nhật ký từ phiên gỡ lỗi gần nhất của bạn đã sẵn sàng để chia sẻ.</string>
+    <string name="settings_carrier_recording">Ghi âm cuộc gọi điện thoại</string>
+    <string name="settings_carrier_recording_description">Tắt: cuộc gọi điện thoại bị bỏ qua hoàn toàn — không ghi âm, không thông báo. Cuộc gọi trong ứng dụng không bị ảnh hưởng.</string>
     <string name="settings_copy_version">Sao chép phiên bản</string>
+    <string name="settings_debug_log_delete">Xóa nhật ký</string>
+    <string name="settings_debug_log_delete_message">Các mục đã thu thập sẽ bị xóa. Nếu ghi nhật ký vẫn bật, một nhật ký mới sẽ bắt đầu ngay.</string>
+    <string name="settings_debug_log_delete_title">Xóa nhật ký?</string>
+    <string name="settings_debug_log_empty">Nhật ký trống.</string>
+    <string name="settings_debug_log_file">Tệp nhật ký</string>
+    <string name="settings_debug_log_view_hint">Nhấn để đọc các mục gần đây nhất.</string>
     <string name="settings_debug_logging_enabled">Bật ghi nhật ký</string>
     <string name="settings_debug_logging_enabled_description">Để báo cáo lỗi, hãy bật chức năng này, khởi động lại ứng dụng và tái hiện lỗi.</string>
     <string name="settings_drive_folder_desc">Chọn một thư mục (trong ứng dụng Google Drive) để sao chép bản ghi âm vào.</string>
@@ -187,6 +216,7 @@
     <string name="settings_section_audio">Cấu hình âm thanh</string>
     <string name="settings_section_debug">Tùy chọn gỡ lỗi</string>
     <string name="settings_section_experimental">Thử nghiệm</string>
+    <string name="settings_section_general">Chung</string>
     <string name="settings_section_recorder_server">Dịch vụ ghi âm</string>
     <string name="settings_section_recording">Ghi âm</string>
     <string name="settings_section_recording_storage">Ghi âm và bộ nhớ</string>
@@ -195,7 +225,6 @@
     <string name="settings_section_security">Bảo mật</string>
     <string name="settings_section_storage">Bộ nhớ</string>
     <string name="settings_section_updates">Cập nhật</string>
-    <string name="settings_section_general">Chung</string>
     <string name="settings_section_visual">Cài đặt trực quan</string>
     <string name="settings_select_contacts">Chọn danh bạ (%1$d)</string>
     <string name="settings_select_contacts_incoming">Chọn liên hệ gọi đến</string>
@@ -205,6 +234,7 @@
     <string name="settings_storage_target_label">Nơi lưu bản ghi âm</string>
     <string name="settings_subsection_incoming">Cuộc gọi đến</string>
     <string name="settings_subsection_outgoing">Cuộc gọi đi</string>
+    <string name="settings_subsection_phone_calls">Cuộc gọi điện thoại</string>
     <string name="settings_subsection_resilience">Độ bền bỉ</string>
     <string name="settings_subsection_voip">Cuộc gọi VoIP</string>
     <string name="settings_support_label">Ủng hộ phát triển</string>
@@ -227,6 +257,8 @@
     <string name="settings_usb_default_label">USB khi mở khóa màn hình</string>
     <string name="settings_vibration_enabled">Rung khi bắt đầu/dừng</string>
     <string name="settings_view_licenses">Xem giấy phép</string>
+    <string name="settings_voip_auto_start_description">Tắt nghĩa là CallVault sẽ hỏi trước: một thông báo có nút Ghi âm xuất hiện khi cuộc gọi trong ứng dụng bắt đầu.</string>
+    <string name="settings_voip_auto_start_label">Tự động bắt đầu</string>
     <string name="settings_voip_recording_description">Ghi âm cả những cuộc gọi thực hiện trong các ứng dụng như WhatsApp, Signal và Telegram. Thử nghiệm — một số ứng dụng chặn việc ghi âm, và chỉ khi cuộc gọi đang diễn ra mới biết được.</string>
     <string name="settings_voip_recording_label">Ghi âm cuộc gọi VoIP</string>
     <string name="settings_wd_disable_when_idle">Tắt Gỡ lỗi không dây khi rảnh</string>
@@ -234,13 +266,20 @@
     <string name="storage_target_both">Thiết bị + Google Drive</string>
     <string name="storage_target_drive">Chỉ trên Google Drive</string>
     <string name="storage_target_local">Chỉ trên thiết bị này</string>
+    <string name="support_appeal_body">Tôi tự phát triển CallVault trong thời gian rảnh — miễn phí, mã nguồn mở, không quảng cáo, không theo dõi. ☕ Nếu thấy hữu ích, một khoản nhỏ giúp tôi tiếp tục. Dù sao thì, cảm ơn bạn! 🙏</string>
+    <string name="support_appeal_title">Do một người làm 👋</string>
+    <string name="support_not_now">Để sau</string>
     <string name="usb_mode_charging">Chỉ sạc (không dữ liệu)</string>
+    <string name="usb_mode_debugging_only">Chỉ gỡ lỗi</string>
     <string name="usb_mode_file_transfer">Truyền tệp</string>
     <string name="usb_mode_midi">MIDI</string>
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">Chia sẻ Internet qua USB</string>
     <string name="voicemail_contact_label">Thư thoại</string>
     <string name="voip_one_sided_warning">Chỉ có phía bạn được ghi trong cuộc gọi đó — ứng dụng kia không cho phép ghi âm thanh cuộc gọi của nó.</string>
+    <string name="voip_prompt_text">Nhấn Ghi âm để ghi lại cuộc gọi này.</string>
+    <string name="voip_prompt_text_named">Cuộc gọi %1$s. Nhấn Ghi âm để ghi lại.</string>
+    <string name="voip_prompt_title">Đang có cuộc gọi trong ứng dụng</string>
     <string name="voip_recording_arming">Đang chuẩn bị ghi âm VoIP…</string>
     <string name="voip_recording_names_hint">Tên liên hệ lấy từ chính thông báo cuộc gọi của ứng dụng đó. Nếu thông báo của ứng dụng đó bị tắt, các bản ghi của nó sẽ được lưu mà không có tên.</string>
     <string name="voip_recording_unavailable">Không thể bật trên thiết bị này — ghi âm VoIP không khả dụng ở đây.</string>
@@ -260,6 +299,8 @@
     <string name="wizard_day_thursday">Thứ Năm</string>
     <string name="wizard_day_tuesday">Thứ Ba</string>
     <string name="wizard_day_wednesday">Thứ Tư</string>
+    <string name="wizard_experimental_subtitle">Hai tính năng vẫn đang được kiểm chứng. Cả hai đều tắt theo mặc định — bạn có thể bật sau trong Cài đặt.</string>
+    <string name="wizard_experimental_title">Tùy chọn bổ sung</string>
     <string name="wizard_filename_subtitle">Chọn cách đặt tên cho các bản ghi âm đã lưu.</string>
     <string name="wizard_filename_title">Định dạng tên tệp</string>
     <string name="wizard_finish">Hoàn tất</string>
@@ -267,10 +308,6 @@
     <string name="wizard_reliability_offline_button">Bật</string>
     <string name="wizard_reliability_offline_done">Ghi âm ngoại tuyến đang bật</string>
     <string name="wizard_reliability_subtitle">Hai tùy chọn giúp việc ghi âm hoạt động trong điều kiện khó khăn. Bạn có thể bỏ qua và thay đổi sau trong Cài đặt.</string>
-    <string name="wizard_experimental_title">Tùy chọn bổ sung</string>
-    <string name="wizard_experimental_subtitle">Hai tính năng vẫn đang được kiểm chứng. Cả hai đều tắt theo mặc định — bạn có thể bật sau trong Cài đặt.</string>
-    <string name="wizard_updates_title">Luôn được cập nhật</string>
-    <string name="wizard_updates_subtitle">CallVault không có trên kho ứng dụng nào, nên tự tìm phiên bản mới trên GitHub.</string>
     <string name="wizard_reliability_title">Ghi âm đáng tin cậy</string>
     <string name="wizard_reliability_usb_button">Đặt USB thành Chỉ sạc</string>
     <string name="wizard_reliability_usb_desc">Trên một số điện thoại, khóa màn hình khi đang gọi có thể dừng ghi âm. Đặt USB thành "Chỉ sạc" sẽ ngăn điều đó. (Khi cắm vào máy tính, điện thoại sẽ mặc định chỉ sạc — chọn Truyền tệp thủ công khi cần.)</string>
@@ -291,42 +328,6 @@
     <string name="wizard_storage_subtitle">Chọn nơi lưu các bản ghi âm. Bạn có thể thay đổi sau trong Cài đặt.</string>
     <string name="wizard_storage_title">Nơi lưu bản ghi âm</string>
     <string name="wizard_title">Thiết lập CallVault</string>
-    <string name="settings_carrier_recording">Ghi âm cuộc gọi điện thoại</string>
-    <string name="settings_carrier_recording_description">Tắt: cuộc gọi điện thoại bị bỏ qua hoàn toàn — không ghi âm, không thông báo. Cuộc gọi trong ứng dụng không bị ảnh hưởng.</string>
-    <string name="settings_voip_auto_start_label">Tự động bắt đầu</string>
-    <string name="settings_voip_auto_start_description">Tắt nghĩa là CallVault sẽ hỏi trước: một thông báo có nút Ghi âm xuất hiện khi cuộc gọi trong ứng dụng bắt đầu.</string>
-    <string name="voip_prompt_title">Đang có cuộc gọi trong ứng dụng</string>
-    <string name="voip_prompt_text">Nhấn Ghi âm để ghi lại cuộc gọi này.</string>
-    <string name="voip_prompt_text_named">Cuộc gọi %1$s. Nhấn Ghi âm để ghi lại.</string>
-    <string name="settings_subsection_phone_calls">Cuộc gọi điện thoại</string>
-    <string name="home_bulk_delete_message">Không thể hoàn tác.</string>
-    <string name="home_bulk_delete_scope_message">Một số được lưu cả trên thiết bị này và trên Drive.</string>
-    <string name="home_bulk_delete_device_only">Chỉ trên thiết bị</string>
-    <string name="home_bulk_delete_drive_only">Chỉ trên Drive</string>
-    <string name="home_bulk_delete_both">Cả hai bản sao</string>
-    <string name="support_appeal_title">Do một người làm 👋</string>
-    <string name="support_appeal_body">Tôi tự phát triển CallVault trong thời gian rảnh — miễn phí, mã nguồn mở, không quảng cáo, không theo dõi. ☕ Nếu thấy hữu ích, một khoản nhỏ giúp tôi tiếp tục. Dù sao thì, cảm ơn bạn! 🙏</string>
-    <string name="support_not_now">Để sau</string>
-    <plurals name="home_selected_count">
-        <item quantity="one">Đã chọn %1$d</item>
-        <item quantity="other">Đã chọn %1$d</item>
-    </plurals>
-    <plurals name="home_bulk_delete_title">
-        <item quantity="one">Xóa %1$d bản ghi?</item>
-        <item quantity="other">Xóa %1$d bản ghi?</item>
-    </plurals>
-    <string name="home_bulk_delete_scope_label">Bản sao cần xóa</string>
-    <string name="home_bulk_delete_option_count">%1$s (%2$d trên %3$d)</string>
-    <string name="home_bulk_delete_kept_drive">%1$s sẽ được giữ lại — chỉ có trên Drive.</string>
-    <string name="home_bulk_delete_kept_device">%1$s sẽ được giữ lại — chỉ có trên thiết bị này.</string>
-    <plurals name="home_bulk_delete_kept_count">
-        <item quantity="one">%1$d bản ghi</item>
-        <item quantity="other">%1$d bản ghi</item>
-    </plurals>
-    <string name="settings_debug_log_file">Tệp nhật ký</string>
-    <string name="settings_debug_log_view_hint">Nhấn để đọc các mục gần đây nhất.</string>
-    <string name="settings_debug_log_delete">Xóa nhật ký</string>
-    <string name="settings_debug_log_delete_title">Xóa nhật ký?</string>
-    <string name="settings_debug_log_delete_message">Các mục đã thu thập sẽ bị xóa. Nếu ghi nhật ký vẫn bật, một nhật ký mới sẽ bắt đầu ngay.</string>
-    <string name="settings_debug_log_empty">Nhật ký trống.</string>
+    <string name="wizard_updates_subtitle">CallVault không có trên kho ứng dụng nào, nên tự tìm phiên bản mới trên GitHub.</string>
+    <string name="wizard_updates_title">Luôn được cập nhật</string>
 </resources>

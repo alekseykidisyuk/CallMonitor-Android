@@ -31,6 +31,7 @@ import com.baba.callvault.data.health.SetupHealthStore
 import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.DeveloperOptions
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
+import com.baba.callvault.integrations.adb.UsbNotice
 import com.baba.callvault.integrations.adb.WirelessDebuggingPolicy
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.server.RecorderServerLauncher
@@ -76,6 +77,11 @@ class DaemonKeepAliveService : Service() {
                 lastReady = alive
                 updateNotification(alive)
                 AppLogger.d(TAG, "keep-alive: daemon alive=$alive")
+                // The daemon has just come up, so the shell is free and nothing is racing us — the calm
+                // moment to find out the USB mode if we never managed to. The recording path's own
+                // attempt gets one un-retried shot while a call is starting, and on the device in issue
+                // #22 that shot always failed, leaving the advice permanently unsayable.
+                if (alive) readUsbDefaultIfStillUnknown()
             }
             if (alive) {
                 downStreak = 0
@@ -278,6 +284,22 @@ class DaemonKeepAliveService : Service() {
     }
 
     /**
+     * Reads the Default USB Configuration on a background thread, if it was never successfully read.
+     *
+     * No-op once a value is known, so this is one read per install in the normal case. The notification
+     * is refreshed afterwards because the answer may be what decides whether it carries a warning.
+     */
+    private fun readUsbDefaultIfStillUnknown() {
+        Thread {
+            val mode = runCatching { UsbDefaultConfig.readIfUnknown(applicationContext) }
+                .onFailure { AppLogger.d(TAG, "keep-alive: USB-default read failed: ${it.message}") }
+                .getOrNull() ?: return@Thread
+            AppLogger.i(TAG, "keep-alive: Default USB Configuration resolved to $mode")
+            watchdogHandler.post { updateNotification(isDaemonAlive()) }
+        }.apply { isDaemon = true; name = "cv-usbdefault-calm" }.start()
+    }
+
+    /**
      * Relaunch the daemon if it's down. [force] (a confirmed binder-death) bypasses the throttle so a
      * genuine recovery isn't delayed; the un-forced watchdog path still throttles to avoid hammering a
      * relaunch that keeps failing. Loopback records off-Wi-Fi, so only the non-offline (Wireless
@@ -412,10 +434,18 @@ class DaemonKeepAliveService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
 
-        // When recording is ready BUT the USB default is a data mode, locking the screen mid-call can kill
-        // the recorder — surface that right on the readiness notification so the user can act.
-        if (ready && UsbDefaultConfig.isScreenLockRisk(this)) {
-            val warning = getString(R.string.notif_usb_lock_warning)
+        // The Default USB Configuration decides whether a screen transition restarts adbd and kills the
+        // daemon, so it is surfaced here — NOT gated on readiness. It used to be, and that made it
+        // useless exactly when it mattered: the data mode kills the daemon, the dead daemon reads as
+        // not-ready, and not-ready hid the warning. See [UsbDefaultConfig.noticeFor].
+        val usbNotice = UsbDefaultConfig.noticeFor(UsbDefaultConfig.cached(this), ready)
+        if (usbNotice != UsbNotice.NONE) {
+            val warning = getString(
+                when (usbNotice) {
+                    UsbNotice.DATA_MODE_RISK -> R.string.notif_usb_lock_warning
+                    else -> R.string.notif_usb_check_unavailable
+                },
+            )
             builder.setContentText(warning)
                 .setStyle(NotificationCompat.BigTextStyle().bigText("$baseText\n$warning"))
             return builder.build()

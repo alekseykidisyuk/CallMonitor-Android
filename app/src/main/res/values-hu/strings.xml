@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d kijelölve</item>
+        <item quantity="other">%1$d kijelölve</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Töröl %1$d felvételt?</item>
+        <item quantity="other">Töröl %1$d felvételt?</item>
+    </plurals>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d felvétel</item>
+        <item quantity="other">%1$d felvétel</item>
+    </plurals>
     <string name="audio_source_mic_camcorder_description">Videofelvételre hangolt rögzítés, a kamera irányából érkező hangra fókuszálva.</string>
     <string name="audio_source_mic_description">A hangot közvetlenül az eszköz elsődleges (fő) mikrofonjából veszi fel enyhe zajszűrés mellett.</string>
     <string name="audio_source_mic_unprocessed_description">A mikrofonból érkező nyers hangot rögzíti, automatikus szűrés vagy bármilyen hangjavítás nélkül.</string>
@@ -43,9 +55,15 @@
     <string name="general_system_limitation">Rendszerkorlát</string>
     <string name="general_system_limitation_message">CallVault nem tud működni ezen a készüléken mivel a shell alkalmazás nem rendelkezik a megfelelő jogosultságokkal.\n\n%1$s\n\nA helyzettel nem lehet mit csinálni, az alkalmazás nem tud működni és most bezáródik.</string>
     <string name="home_all_set_message">Minden készen áll. A CallVault készen áll a hívásai rögzítésére.</string>
-    <string name="home_share">Megosztás</string>
-    <string name="home_share_chooser">Felvétel megosztása</string>
-    <string name="home_row_menu">További lehetőségek</string>
+    <string name="home_bulk_delete_both">Mindkét másolat</string>
+    <string name="home_bulk_delete_device_only">Csak az eszközön</string>
+    <string name="home_bulk_delete_drive_only">Csak a Drive-ban</string>
+    <string name="home_bulk_delete_kept_device">%1$s megmarad – csak ezen az eszközön van.</string>
+    <string name="home_bulk_delete_kept_drive">%1$s megmarad – csak a Drive-ban van.</string>
+    <string name="home_bulk_delete_message">Ez a művelet nem vonható vissza.</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d / %3$d)</string>
+    <string name="home_bulk_delete_scope_label">Törlendő másolatok</string>
+    <string name="home_bulk_delete_scope_message">Néhány ezen az eszközön és a Drive-ban is el van mentve.</string>
     <string name="home_delete">Törlés</string>
     <string name="home_delete_confirm_message">Ez véglegesen törli a következőt: %1$s.</string>
     <string name="home_delete_confirm_title">Törli a felvételt?</string>
@@ -57,6 +75,9 @@
     <string name="home_player_stop">Leállítás</string>
     <string name="home_recordings_empty">Még nincsenek felvételek.</string>
     <string name="home_recordings_title">Felvételek</string>
+    <string name="home_row_menu">További lehetőségek</string>
+    <string name="home_share">Megosztás</string>
+    <string name="home_share_chooser">Felvétel megosztása</string>
     <string name="home_status_dev_options_off_suggestion">A CallVault a vezeték nélküli hibakeresésen keresztül rögzít, amelyhez a fejlesztői beállítások szükségesek. A rögzítés nem működik, amíg újra nem engedélyezi a fejlesztői beállításokat (és a vezeték nélküli hibakeresést) a rendszerbeállításokban.</string>
     <string name="home_status_dev_options_off_title">A fejlesztői beállítások ki vannak kapcsolva</string>
     <string name="home_status_no_folder_suggestion">Nyissa meg a Beállításokat, és válassza ki, hová mentse a felvételeket.</string>
@@ -150,7 +171,15 @@
     <string name="settings_bugreport_share_chooser">Hibakeresési naplók megosztása</string>
     <string name="settings_bugreport_share_empty">Még nincsenek naplók. Kapcsolja be a hibakeresési naplózást, idézze elő a problémát, majd koppintson a megosztásra.</string>
     <string name="settings_bugreport_share_hint">A legutóbbi hibakeresési munkamenet naplói készen állnak a megosztásra.</string>
+    <string name="settings_carrier_recording">Telefonhívások rögzítése</string>
+    <string name="settings_carrier_recording_description">Kikapcsolva: a telefonhívásokat teljesen figyelmen kívül hagyja – nincs rögzítés, nincs értesítés. Az alkalmazáshívásokat ez nem érinti.</string>
     <string name="settings_copy_version">Verziószám másolása</string>
+    <string name="settings_debug_log_delete">Napló törlése</string>
+    <string name="settings_debug_log_delete_message">Az eddig gyűjtött bejegyzések törlődnek. Ha a naplózás még be van kapcsolva, azonnal új napló indul.</string>
+    <string name="settings_debug_log_delete_title">Törli a naplót?</string>
+    <string name="settings_debug_log_empty">A napló üres.</string>
+    <string name="settings_debug_log_file">Naplófájl</string>
+    <string name="settings_debug_log_view_hint">Koppintson a legutóbbi bejegyzések elolvasásához.</string>
     <string name="settings_debug_logging_enabled">Naplózás bekapcsolása</string>
     <string name="settings_debug_logging_enabled_description">Hibajelentéshez engedélyezd ezt a beállítást, indítsd újra az alkalmazást majd próbáld reprodukálni a problémát.</string>
     <string name="settings_drive_folder_desc">Válasszon egy mappát (a Google Drive alkalmazásban), ahová a felvételek másolódnak.</string>
@@ -187,6 +216,7 @@
     <string name="settings_section_audio">Hangbeállítások</string>
     <string name="settings_section_debug">Debug beállítások</string>
     <string name="settings_section_experimental">Kísérleti</string>
+    <string name="settings_section_general">Általános</string>
     <string name="settings_section_recorder_server">Rögzítőszolgáltatás</string>
     <string name="settings_section_recording">Felvétel</string>
     <string name="settings_section_recording_storage">Rögzítés és tárhely</string>
@@ -195,7 +225,6 @@
     <string name="settings_section_security">Biztonság</string>
     <string name="settings_section_storage">Tárhely</string>
     <string name="settings_section_updates">Frissítések</string>
-    <string name="settings_section_general">Általános</string>
     <string name="settings_section_visual">Megjelenítési beállítások</string>
     <string name="settings_select_contacts">Névjegyek kiválasztása (%1$d)</string>
     <string name="settings_select_contacts_incoming">Bejövő névjegyek kiválasztása</string>
@@ -205,6 +234,7 @@
     <string name="settings_storage_target_label">Hová mentse a felvételeket</string>
     <string name="settings_subsection_incoming">Bejövő hívások</string>
     <string name="settings_subsection_outgoing">Kimenő hívások</string>
+    <string name="settings_subsection_phone_calls">Telefonhívások</string>
     <string name="settings_subsection_resilience">Ellenállóság</string>
     <string name="settings_subsection_voip">VoIP-hívások</string>
     <string name="settings_support_label">Fejlesztés támogatása</string>
@@ -227,6 +257,8 @@
     <string name="settings_usb_default_label">USB a képernyő feloldásakor</string>
     <string name="settings_vibration_enabled">Rezgés a felvétel elindításakor/leállításakor</string>
     <string name="settings_view_licenses">Licenszek megtekintése</string>
+    <string name="settings_voip_auto_start_description">Kikapcsolva a CallVault először rákérdez: alkalmazáshívás kezdetekor értesítés jelenik meg egy Rögzítés gombbal.</string>
+    <string name="settings_voip_auto_start_label">Automatikus indítás</string>
     <string name="settings_voip_recording_description">A WhatsApp, Signal, Telegram és hasonló alkalmazásokban indított hívásokat is rögzíti. Kísérleti — egyes alkalmazások letiltják a rögzítést, és ez csak hívás közben derül ki.</string>
     <string name="settings_voip_recording_label">VoIP-hívások rögzítése</string>
     <string name="settings_wd_disable_when_idle">Vezeték nélküli hibakeresés kikapcsolása tétlenkor</string>
@@ -234,13 +266,20 @@
     <string name="storage_target_both">Eszköz + Google Drive</string>
     <string name="storage_target_drive">Csak Google Drive</string>
     <string name="storage_target_local">Csak erre az eszközre</string>
+    <string name="support_appeal_body">A CallVaultot egyedül fejlesztem, a szabadidőmben – ingyenes, nyílt forráskódú, nincs hirdetés és nyomkövetés. ☕ Ha hasznos neked, egy kis támogatás segít folytatni. Így is, úgy is: köszönöm! 🙏</string>
+    <string name="support_appeal_title">Egyetlen ember készíti 👋</string>
+    <string name="support_not_now">Most nem</string>
     <string name="usb_mode_charging">Csak töltés (adat nélkül)</string>
+    <string name="usb_mode_debugging_only">Csak hibakeresés</string>
     <string name="usb_mode_file_transfer">Fájlátvitel</string>
     <string name="usb_mode_midi">MIDI</string>
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">USB-megosztás</string>
     <string name="voicemail_contact_label">Hangposta</string>
     <string name="voip_one_sided_warning">Abból az alkalmazáshívásból csak a te oldalad rögzült — a másik alkalmazás nem engedi a hívás hangjának rögzítését.</string>
+    <string name="voip_prompt_text">Koppintson a Rögzítés gombra a hívás rögzítéséhez.</string>
+    <string name="voip_prompt_text_named">%1$s hívás. Koppintson a Rögzítés gombra a rögzítéséhez.</string>
+    <string name="voip_prompt_title">Alkalmazáshívás folyamatban</string>
     <string name="voip_recording_arming">VoIP-rögzítés előkészítése…</string>
     <string name="voip_recording_names_hint">A névjegyek nevei a hívó alkalmazás saját hívásértesítéséből származnak. Ha az adott alkalmazás értesítései ki vannak kapcsolva, a felvételei név nélkül mentődnek.</string>
     <string name="voip_recording_unavailable">Nem sikerült bekapcsolni ezen az eszközön — a VoIP-rögzítés itt nem érhető el.</string>
@@ -260,6 +299,8 @@
     <string name="wizard_day_thursday">Csütörtök</string>
     <string name="wizard_day_tuesday">Kedd</string>
     <string name="wizard_day_wednesday">Szerda</string>
+    <string name="wizard_experimental_subtitle">Két funkció, amely még bizonyít. Mindkettő alapból ki van kapcsolva — később a Beállításokban bekapcsolhatja.</string>
+    <string name="wizard_experimental_title">Választható extrák</string>
     <string name="wizard_filename_subtitle">Válassza ki, hogyan legyenek elnevezve a mentett felvételek.</string>
     <string name="wizard_filename_title">Fájlnévformátum</string>
     <string name="wizard_finish">Befejezés</string>
@@ -267,10 +308,6 @@
     <string name="wizard_reliability_offline_button">Bekapcsolás</string>
     <string name="wizard_reliability_offline_done">Az offline rögzítés be van kapcsolva</string>
     <string name="wizard_reliability_subtitle">Két opcionális beállítás, amely nehéz körülmények között is működteti a rögzítést. Kihagyhatod, és később a Beállításokban módosíthatod.</string>
-    <string name="wizard_experimental_title">Választható extrák</string>
-    <string name="wizard_experimental_subtitle">Két funkció, amely még bizonyít. Mindkettő alapból ki van kapcsolva — később a Beállításokban bekapcsolhatja.</string>
-    <string name="wizard_updates_title">Naprakészen tartás</string>
-    <string name="wizard_updates_subtitle">A CallVault nincs alkalmazásboltban, ezért maga keresi az új verziókat a GitHubon.</string>
     <string name="wizard_reliability_title">Megbízható rögzítés</string>
     <string name="wizard_reliability_usb_button">USB beállítása Csak töltésre</string>
     <string name="wizard_reliability_usb_desc">Egyes telefonokon a képernyő zárolása hívás közben leállíthatja a rögzítést. A „Csak töltés“ USB-beállítás megakadályozza ezt. (A telefon PC-hez csatlakoztatva ekkor töltésre vált – szükség esetén válaszd kézzel a Fájlátvitelt.)</string>
@@ -291,42 +328,6 @@
     <string name="wizard_storage_subtitle">Válassza ki, hová mentse a felvételeit. Ezt később a Beállításokban módosíthatja.</string>
     <string name="wizard_storage_title">Hová mentse a felvételeket</string>
     <string name="wizard_title">CallVault beállítása</string>
-    <string name="settings_carrier_recording">Telefonhívások rögzítése</string>
-    <string name="settings_carrier_recording_description">Kikapcsolva: a telefonhívásokat teljesen figyelmen kívül hagyja – nincs rögzítés, nincs értesítés. Az alkalmazáshívásokat ez nem érinti.</string>
-    <string name="settings_voip_auto_start_label">Automatikus indítás</string>
-    <string name="settings_voip_auto_start_description">Kikapcsolva a CallVault először rákérdez: alkalmazáshívás kezdetekor értesítés jelenik meg egy Rögzítés gombbal.</string>
-    <string name="voip_prompt_title">Alkalmazáshívás folyamatban</string>
-    <string name="voip_prompt_text">Koppintson a Rögzítés gombra a hívás rögzítéséhez.</string>
-    <string name="voip_prompt_text_named">%1$s hívás. Koppintson a Rögzítés gombra a rögzítéséhez.</string>
-    <string name="settings_subsection_phone_calls">Telefonhívások</string>
-    <string name="home_bulk_delete_message">Ez a művelet nem vonható vissza.</string>
-    <string name="home_bulk_delete_scope_message">Néhány ezen az eszközön és a Drive-ban is el van mentve.</string>
-    <string name="home_bulk_delete_device_only">Csak az eszközön</string>
-    <string name="home_bulk_delete_drive_only">Csak a Drive-ban</string>
-    <string name="home_bulk_delete_both">Mindkét másolat</string>
-    <string name="support_appeal_title">Egyetlen ember készíti 👋</string>
-    <string name="support_appeal_body">A CallVaultot egyedül fejlesztem, a szabadidőmben – ingyenes, nyílt forráskódú, nincs hirdetés és nyomkövetés. ☕ Ha hasznos neked, egy kis támogatás segít folytatni. Így is, úgy is: köszönöm! 🙏</string>
-    <string name="support_not_now">Most nem</string>
-    <plurals name="home_selected_count">
-        <item quantity="one">%1$d kijelölve</item>
-        <item quantity="other">%1$d kijelölve</item>
-    </plurals>
-    <plurals name="home_bulk_delete_title">
-        <item quantity="one">Töröl %1$d felvételt?</item>
-        <item quantity="other">Töröl %1$d felvételt?</item>
-    </plurals>
-    <string name="home_bulk_delete_scope_label">Törlendő másolatok</string>
-    <string name="home_bulk_delete_option_count">%1$s (%2$d / %3$d)</string>
-    <string name="home_bulk_delete_kept_drive">%1$s megmarad – csak a Drive-ban van.</string>
-    <string name="home_bulk_delete_kept_device">%1$s megmarad – csak ezen az eszközön van.</string>
-    <plurals name="home_bulk_delete_kept_count">
-        <item quantity="one">%1$d felvétel</item>
-        <item quantity="other">%1$d felvétel</item>
-    </plurals>
-    <string name="settings_debug_log_file">Naplófájl</string>
-    <string name="settings_debug_log_view_hint">Koppintson a legutóbbi bejegyzések elolvasásához.</string>
-    <string name="settings_debug_log_delete">Napló törlése</string>
-    <string name="settings_debug_log_delete_title">Törli a naplót?</string>
-    <string name="settings_debug_log_delete_message">Az eddig gyűjtött bejegyzések törlődnek. Ha a naplózás még be van kapcsolva, azonnal új napló indul.</string>
-    <string name="settings_debug_log_empty">A napló üres.</string>
+    <string name="wizard_updates_subtitle">A CallVault nincs alkalmazásboltban, ezért maga keresi az új verziókat a GitHubon.</string>
+    <string name="wizard_updates_title">Naprakészen tartás</string>
 </resources>

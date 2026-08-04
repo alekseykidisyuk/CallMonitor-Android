@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <plurals name="home_selected_count">
+        <item quantity="one">Wybrano: %1$d</item>
+        <item quantity="other">Wybrano: %1$d</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">Usunąć nagrania (%1$d)?</item>
+        <item quantity="other">Usunąć nagrania (%1$d)?</item>
+    </plurals>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">nagrania: %1$d</item>
+        <item quantity="other">nagrania: %1$d</item>
+    </plurals>
     <string name="audio_source_mic_camcorder_description">Ustawione pod kątem nagrywania filmów, z naciskiem na dźwięk dochodzący z kierunku kamery.</string>
     <string name="audio_source_mic_description">Nagrywa dźwięk bezpośrednio z głównego mikrofonu urządzenia. Nieznaczna redukcja szumów.</string>
     <string name="audio_source_mic_unprocessed_description">Rejestruje surowy, naturalny dźwięk z mikrofonu bez żadnego automatycznego filtrowania ani poprawiania.</string>
@@ -43,9 +55,15 @@
     <string name="general_system_limitation">Ograniczenia systemu</string>
     <string name="general_system_limitation_message">CallVault nie będzie działać na tym urządzeniu, ponieważ Twoja aplikacja powłoki nie posiada wymaganych uprawnień:\n\n%1$s\n\nNie można nic z tym zrobić – aplikacja nie może działać i zostanie teraz zamknięta.</string>
     <string name="home_all_set_message">Wszystko gotowe. CallVault jest gotowy do nagrywania Twoich rozmów.</string>
-    <string name="home_share">Udostępnij</string>
-    <string name="home_share_chooser">Udostępnij nagranie</string>
-    <string name="home_row_menu">Więcej opcji</string>
+    <string name="home_bulk_delete_both">Obie kopie</string>
+    <string name="home_bulk_delete_device_only">Tylko urządzenie</string>
+    <string name="home_bulk_delete_drive_only">Tylko Dysk</string>
+    <string name="home_bulk_delete_kept_device">%1$s zostanie zachowane — tylko na tym urządzeniu.</string>
+    <string name="home_bulk_delete_kept_drive">%1$s zostanie zachowane — tylko na Dysku.</string>
+    <string name="home_bulk_delete_message">Tej operacji nie można cofnąć.</string>
+    <string name="home_bulk_delete_option_count">%1$s (%2$d z %3$d)</string>
+    <string name="home_bulk_delete_scope_label">Kopie do usunięcia</string>
+    <string name="home_bulk_delete_scope_message">Część jest zapisana i na tym urządzeniu, i na Dysku.</string>
     <string name="home_delete">Usuń</string>
     <string name="home_delete_confirm_message">Spowoduje to trwałe usunięcie %1$s.</string>
     <string name="home_delete_confirm_title">Usunąć nagranie?</string>
@@ -57,6 +75,9 @@
     <string name="home_player_stop">Zatrzymaj</string>
     <string name="home_recordings_empty">Brak nagrań.</string>
     <string name="home_recordings_title">Nagrania</string>
+    <string name="home_row_menu">Więcej opcji</string>
+    <string name="home_share">Udostępnij</string>
+    <string name="home_share_chooser">Udostępnij nagranie</string>
     <string name="home_status_dev_options_off_suggestion">CallVault nagrywa przez debugowanie bezprzewodowe, które wymaga opcji programistycznych. Nagrywanie nie będzie działać, dopóki nie włączysz ponownie opcji programistycznych (i debugowania bezprzewodowego) w ustawieniach systemu.</string>
     <string name="home_status_dev_options_off_title">Opcje programistyczne są wyłączone</string>
     <string name="home_status_no_folder_suggestion">Otwórz Ustawienia, aby wybrać miejsce zapisu nagrań.</string>
@@ -150,7 +171,15 @@
     <string name="settings_bugreport_share_chooser">Udostępnij logi diagnostyczne</string>
     <string name="settings_bugreport_share_empty">Brak logów. Włącz rejestrowanie diagnostyczne, odtwórz problem, a następnie dotknij udostępnij.</string>
     <string name="settings_bugreport_share_hint">Logi z Twojej ostatniej sesji diagnostycznej są gotowe do udostępnienia.</string>
+    <string name="settings_carrier_recording">Nagrywaj połączenia telefoniczne</string>
+    <string name="settings_carrier_recording_description">Wyłączone: połączenia telefoniczne są całkowicie ignorowane – bez nagrywania i bez powiadomienia. Nie dotyczy połączeń w aplikacjach.</string>
     <string name="settings_copy_version">Kopiuj Wersję</string>
+    <string name="settings_debug_log_delete">Usuń dziennik</string>
+    <string name="settings_debug_log_delete_message">Zebrane dotąd wpisy zostaną usunięte. Jeśli rejestrowanie nadal działa, od razu zacznie się nowy dziennik.</string>
+    <string name="settings_debug_log_delete_title">Usunąć dziennik?</string>
+    <string name="settings_debug_log_empty">Dziennik jest pusty.</string>
+    <string name="settings_debug_log_file">Plik dziennika</string>
+    <string name="settings_debug_log_view_hint">Dotknij, aby przeczytać najnowsze wpisy.</string>
     <string name="settings_debug_logging_enabled">Włącz rejestrowanie logów</string>
     <string name="settings_debug_logging_enabled_description">Aby zgłosić błąd, włącz tę opcję, uruchom ponownie aplikację i spróbuj odtworzyć problem.</string>
     <string name="settings_drive_folder_desc">Wybierz folder (w aplikacji Google Drive), do którego będą kopiowane nagrania.</string>
@@ -187,6 +216,7 @@
     <string name="settings_section_audio">Ustawienia dźwięku</string>
     <string name="settings_section_debug">Opcje debugowania</string>
     <string name="settings_section_experimental">Eksperymentalne</string>
+    <string name="settings_section_general">Ogólne</string>
     <string name="settings_section_recorder_server">Usługa nagrywania</string>
     <string name="settings_section_recording">Nagrywanie</string>
     <string name="settings_section_recording_storage">Nagrywanie i pamięć</string>
@@ -195,7 +225,6 @@
     <string name="settings_section_security">Bezpieczeństwo</string>
     <string name="settings_section_storage">Pamięć</string>
     <string name="settings_section_updates">Aktualizacje</string>
-    <string name="settings_section_general">Ogólne</string>
     <string name="settings_section_visual">Ustawienia graficzne</string>
     <string name="settings_select_contacts">Wybierz kontakty (%1$d)</string>
     <string name="settings_select_contacts_incoming">Wybierz przychodzące kontakty</string>
@@ -205,6 +234,7 @@
     <string name="settings_storage_target_label">Gdzie zapisywać nagrania</string>
     <string name="settings_subsection_incoming">Połączenia przychodzące</string>
     <string name="settings_subsection_outgoing">Połączenia wychodzące</string>
+    <string name="settings_subsection_phone_calls">Połączenia telefoniczne</string>
     <string name="settings_subsection_resilience">Odporność</string>
     <string name="settings_subsection_voip">Połączenia VoIP</string>
     <string name="settings_support_label">Wesprzyj rozwój</string>
@@ -227,6 +257,8 @@
     <string name="settings_usb_default_label">USB po odblokowaniu</string>
     <string name="settings_vibration_enabled">Wibracja przy rozpoczęciu/zakończeniu</string>
     <string name="settings_view_licenses">Wyświetl licencje</string>
+    <string name="settings_voip_auto_start_description">Wyłączone oznacza, że CallVault najpierw zapyta: na początku połączenia w aplikacji pojawi się powiadomienie z przyciskiem Nagrywaj.</string>
+    <string name="settings_voip_auto_start_label">Uruchamiaj automatycznie</string>
     <string name="settings_voip_recording_description">Nagrywa także rozmowy prowadzone w aplikacjach takich jak WhatsApp, Signal i Telegram. Eksperymentalne — niektóre aplikacje blokują nagrywanie, a dowiesz się o tym dopiero w trakcie rozmowy.</string>
     <string name="settings_voip_recording_label">Nagrywaj połączenia VoIP</string>
     <string name="settings_wd_disable_when_idle">Wyłączaj Debugowanie bezprzewodowe w stanie bezczynności</string>
@@ -234,13 +266,20 @@
     <string name="storage_target_both">Urządzenie + Google Drive</string>
     <string name="storage_target_drive">Tylko Google Drive</string>
     <string name="storage_target_local">Tylko na tym urządzeniu</string>
+    <string name="support_appeal_body">Tworzę CallVault sam, po godzinach — za darmo, otwartoźródłowo, bez reklam i śledzenia. ☕ Jeśli aplikacja Ci się przydaje, drobne wsparcie pomaga mi działać dalej. Tak czy inaczej — dzięki! 🙏</string>
+    <string name="support_appeal_title">Tworzy to jedna osoba 👋</string>
+    <string name="support_not_now">Nie teraz</string>
     <string name="usb_mode_charging">Tylko ładowanie (bez danych)</string>
+    <string name="usb_mode_debugging_only">Tylko debugowanie</string>
     <string name="usb_mode_file_transfer">Przesyłanie plików</string>
     <string name="usb_mode_midi">MIDI</string>
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">Tethering USB</string>
     <string name="voicemail_contact_label">Poczta głosowa</string>
     <string name="voip_one_sided_warning">Z tej rozmowy nagrano tylko twoją stronę — druga aplikacja nie pozwala na przechwytywanie dźwięku swoich połączeń.</string>
+    <string name="voip_prompt_text">Dotknij Nagrywaj, aby nagrać to połączenie.</string>
+    <string name="voip_prompt_text_named">Połączenie %1$s. Dotknij Nagrywaj, aby je nagrać.</string>
+    <string name="voip_prompt_title">Trwa połączenie w aplikacji</string>
     <string name="voip_recording_arming">Przygotowywanie nagrywania VoIP…</string>
     <string name="voip_recording_names_hint">Nazwy kontaktów pochodzą z własnego powiadomienia o połączeniu danej aplikacji. Jeśli powiadomienia tej aplikacji są wyłączone, jej nagrania są zapisywane bez nazwy.</string>
     <string name="voip_recording_unavailable">Nie udało się włączyć na tym urządzeniu — nagrywanie VoIP nie jest tu dostępne.</string>
@@ -260,6 +299,8 @@
     <string name="wizard_day_thursday">Czwartek</string>
     <string name="wizard_day_tuesday">Wtorek</string>
     <string name="wizard_day_wednesday">Środa</string>
+    <string name="wizard_experimental_subtitle">Dwie funkcje wciąż sprawdzane w praktyce. Obie są domyślnie wyłączone — możesz je włączyć później w Ustawieniach.</string>
+    <string name="wizard_experimental_title">Dodatki opcjonalne</string>
     <string name="wizard_filename_subtitle">Wybierz, jak nazywane są zapisane nagrania.</string>
     <string name="wizard_filename_title">Format nazwy pliku</string>
     <string name="wizard_finish">Zakończ</string>
@@ -267,10 +308,6 @@
     <string name="wizard_reliability_offline_button">Włącz</string>
     <string name="wizard_reliability_offline_done">Nagrywanie offline jest włączone</string>
     <string name="wizard_reliability_subtitle">Dwa opcjonalne ustawienia, które utrzymują nagrywanie w trudnych warunkach. Możesz je pominąć i zmienić później w Ustawieniach.</string>
-    <string name="wizard_experimental_title">Dodatki opcjonalne</string>
-    <string name="wizard_experimental_subtitle">Dwie funkcje wciąż sprawdzane w praktyce. Obie są domyślnie wyłączone — możesz je włączyć później w Ustawieniach.</string>
-    <string name="wizard_updates_title">Bądź na bieżąco</string>
-    <string name="wizard_updates_subtitle">CallVault nie jest w żadnym sklepie z aplikacjami, więc sam sprawdza nowe wersje na GitHubie.</string>
     <string name="wizard_reliability_title">Niezawodne nagrywanie</string>
     <string name="wizard_reliability_usb_button">Ustaw USB na Tylko ładowanie</string>
     <string name="wizard_reliability_usb_desc">W niektórych telefonach zablokowanie ekranu podczas rozmowy może zatrzymać nagrywanie. Ustawienie USB na „Tylko ładowanie“ temu zapobiega. (Telefon po podłączeniu do komputera domyślnie się ładuje — w razie potrzeby wybierz ręcznie Przesyłanie plików.)</string>
@@ -291,42 +328,6 @@
     <string name="wizard_storage_subtitle">Wybierz, gdzie przechowywane są Twoje nagrania. Możesz to zmienić później w Ustawieniach.</string>
     <string name="wizard_storage_title">Gdzie zapisywać nagrania</string>
     <string name="wizard_title">Skonfiguruj CallVault</string>
-    <string name="settings_carrier_recording">Nagrywaj połączenia telefoniczne</string>
-    <string name="settings_carrier_recording_description">Wyłączone: połączenia telefoniczne są całkowicie ignorowane – bez nagrywania i bez powiadomienia. Nie dotyczy połączeń w aplikacjach.</string>
-    <string name="settings_voip_auto_start_label">Uruchamiaj automatycznie</string>
-    <string name="settings_voip_auto_start_description">Wyłączone oznacza, że CallVault najpierw zapyta: na początku połączenia w aplikacji pojawi się powiadomienie z przyciskiem Nagrywaj.</string>
-    <string name="voip_prompt_title">Trwa połączenie w aplikacji</string>
-    <string name="voip_prompt_text">Dotknij Nagrywaj, aby nagrać to połączenie.</string>
-    <string name="voip_prompt_text_named">Połączenie %1$s. Dotknij Nagrywaj, aby je nagrać.</string>
-    <string name="settings_subsection_phone_calls">Połączenia telefoniczne</string>
-    <string name="home_bulk_delete_message">Tej operacji nie można cofnąć.</string>
-    <string name="home_bulk_delete_scope_message">Część jest zapisana i na tym urządzeniu, i na Dysku.</string>
-    <string name="home_bulk_delete_device_only">Tylko urządzenie</string>
-    <string name="home_bulk_delete_drive_only">Tylko Dysk</string>
-    <string name="home_bulk_delete_both">Obie kopie</string>
-    <string name="support_appeal_title">Tworzy to jedna osoba 👋</string>
-    <string name="support_appeal_body">Tworzę CallVault sam, po godzinach — za darmo, otwartoźródłowo, bez reklam i śledzenia. ☕ Jeśli aplikacja Ci się przydaje, drobne wsparcie pomaga mi działać dalej. Tak czy inaczej — dzięki! 🙏</string>
-    <string name="support_not_now">Nie teraz</string>
-    <plurals name="home_selected_count">
-        <item quantity="one">Wybrano: %1$d</item>
-        <item quantity="other">Wybrano: %1$d</item>
-    </plurals>
-    <plurals name="home_bulk_delete_title">
-        <item quantity="one">Usunąć nagrania (%1$d)?</item>
-        <item quantity="other">Usunąć nagrania (%1$d)?</item>
-    </plurals>
-    <string name="home_bulk_delete_scope_label">Kopie do usunięcia</string>
-    <string name="home_bulk_delete_option_count">%1$s (%2$d z %3$d)</string>
-    <string name="home_bulk_delete_kept_drive">%1$s zostanie zachowane — tylko na Dysku.</string>
-    <string name="home_bulk_delete_kept_device">%1$s zostanie zachowane — tylko na tym urządzeniu.</string>
-    <plurals name="home_bulk_delete_kept_count">
-        <item quantity="one">nagrania: %1$d</item>
-        <item quantity="other">nagrania: %1$d</item>
-    </plurals>
-    <string name="settings_debug_log_file">Plik dziennika</string>
-    <string name="settings_debug_log_view_hint">Dotknij, aby przeczytać najnowsze wpisy.</string>
-    <string name="settings_debug_log_delete">Usuń dziennik</string>
-    <string name="settings_debug_log_delete_title">Usunąć dziennik?</string>
-    <string name="settings_debug_log_delete_message">Zebrane dotąd wpisy zostaną usunięte. Jeśli rejestrowanie nadal działa, od razu zacznie się nowy dziennik.</string>
-    <string name="settings_debug_log_empty">Dziennik jest pusty.</string>
+    <string name="wizard_updates_subtitle">CallVault nie jest w żadnym sklepie z aplikacjami, więc sam sprawdza nowe wersje na GitHubie.</string>
+    <string name="wizard_updates_title">Bądź na bieżąco</string>
 </resources>

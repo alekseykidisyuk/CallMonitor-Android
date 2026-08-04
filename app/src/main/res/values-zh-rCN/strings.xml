@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <plurals name="home_selected_count">
+        <item quantity="one">已选择 %1$d 项</item>
+        <item quantity="other">已选择 %1$d 项</item>
+    </plurals>
+    <plurals name="home_bulk_delete_title">
+        <item quantity="one">删除 %1$d 条录音？</item>
+        <item quantity="other">删除 %1$d 条录音？</item>
+    </plurals>
+    <plurals name="home_bulk_delete_kept_count">
+        <item quantity="one">%1$d 条录音</item>
+        <item quantity="other">%1$d 条录音</item>
+    </plurals>
     <string name="audio_source_mic_camcorder_description">此选项面向视频录制，将尽可能从拍摄的方向来录取音频。</string>
     <string name="audio_source_mic_description">直接从您的设备麦克风中录音。降噪效果较差。</string>
     <string name="audio_source_mic_unprocessed_description">录制原始的麦克风音频，不做任何优化和过滤。</string>
@@ -43,9 +55,15 @@
     <string name="general_system_limitation">系统限制</string>
     <string name="general_system_limitation_message">很抱歉，CallVault无法在您的设备上运行，因为您设备的shell权限不足。\n\n%1$s\n\n对于您厂商添加的限制，我们无能为力。CallVault现在将退出。</string>
     <string name="home_all_set_message">一切就绪。CallVault 已准备好录制你的通话。</string>
-    <string name="home_share">分享</string>
-    <string name="home_share_chooser">分享录音</string>
-    <string name="home_row_menu">更多选项</string>
+    <string name="home_bulk_delete_both">两份副本</string>
+    <string name="home_bulk_delete_device_only">仅本机</string>
+    <string name="home_bulk_delete_drive_only">仅云端硬盘</string>
+    <string name="home_bulk_delete_kept_device">%1$s 将保留——只在本机中。</string>
+    <string name="home_bulk_delete_kept_drive">%1$s 将保留——只在云端硬盘中。</string>
+    <string name="home_bulk_delete_message">此操作无法撤销。</string>
+    <string name="home_bulk_delete_option_count">%1$s（%2$d/%3$d）</string>
+    <string name="home_bulk_delete_scope_label">要删除的副本</string>
+    <string name="home_bulk_delete_scope_message">其中一些同时保存在本机和云端硬盘中。</string>
     <string name="home_delete">删除</string>
     <string name="home_delete_confirm_message">这将永久删除 %1$s。</string>
     <string name="home_delete_confirm_title">删除录音？</string>
@@ -57,6 +75,9 @@
     <string name="home_player_stop">停止</string>
     <string name="home_recordings_empty">暂无录音。</string>
     <string name="home_recordings_title">录音</string>
+    <string name="home_row_menu">更多选项</string>
+    <string name="home_share">分享</string>
+    <string name="home_share_chooser">分享录音</string>
     <string name="home_status_dev_options_off_suggestion">CallVault 通过无线调试进行录音，需要开发者选项。在系统设置中重新启用开发者选项（和无线调试）之前，无法录音。</string>
     <string name="home_status_dev_options_off_title">开发者选项已关闭</string>
     <string name="home_status_no_folder_suggestion">打开设置以选择录音的保存位置。</string>
@@ -150,7 +171,15 @@
     <string name="settings_bugreport_share_chooser">分享调试日志</string>
     <string name="settings_bugreport_share_empty">暂无日志。请启用调试日志，复现问题，然后点按分享。</string>
     <string name="settings_bugreport_share_hint">上次调试会话的日志已可分享。</string>
+    <string name="settings_carrier_recording">录制电话通话</string>
+    <string name="settings_carrier_recording_description">关闭：完全忽略电话通话，不录音也不显示通知。不影响应用内通话。</string>
     <string name="settings_copy_version">复制S-S版本号</string>
+    <string name="settings_debug_log_delete">删除日志</string>
+    <string name="settings_debug_log_delete_message">已收集的条目将被移除。如果日志记录仍处于开启状态，将立即开始新的日志。</string>
+    <string name="settings_debug_log_delete_title">删除日志？</string>
+    <string name="settings_debug_log_empty">日志为空。</string>
+    <string name="settings_debug_log_file">日志文件</string>
+    <string name="settings_debug_log_view_hint">点按可查看最近的条目。</string>
     <string name="settings_debug_logging_enabled">记录运行日志</string>
     <string name="settings_debug_logging_enabled_description">若要反馈Bug，请先开启此开关，然后在重启App之后再重复您刚才的操作。</string>
     <string name="settings_drive_folder_desc">选择一个文件夹（在 Google Drive 应用中）用于复制录音。</string>
@@ -187,6 +216,7 @@
     <string name="settings_section_audio">音源选项</string>
     <string name="settings_section_debug">调试选项</string>
     <string name="settings_section_experimental">实验性功能</string>
+    <string name="settings_section_general">通用</string>
     <string name="settings_section_recorder_server">录音服务</string>
     <string name="settings_section_recording">自动录音触发条件</string>
     <string name="settings_section_recording_storage">录音与存储</string>
@@ -195,7 +225,6 @@
     <string name="settings_section_security">安全性选项</string>
     <string name="settings_section_storage">存储</string>
     <string name="settings_section_updates">更新</string>
-    <string name="settings_section_general">通用</string>
     <string name="settings_section_visual">页面风格选项</string>
     <string name="settings_select_contacts">选择联系人（已选%1$d人）</string>
     <string name="settings_select_contacts_incoming">选择联系人（仅应用于被叫）</string>
@@ -205,6 +234,7 @@
     <string name="settings_storage_target_label">录音保存位置</string>
     <string name="settings_subsection_incoming">来电</string>
     <string name="settings_subsection_outgoing">去电</string>
+    <string name="settings_subsection_phone_calls">电话通话</string>
     <string name="settings_subsection_resilience">弹性</string>
     <string name="settings_subsection_voip">VoIP 通话</string>
     <string name="settings_support_label">支持开发</string>
@@ -227,6 +257,8 @@
     <string name="settings_usb_default_label">解锁时的 USB 模式</string>
     <string name="settings_vibration_enabled">开始/停止录音时震动</string>
     <string name="settings_view_licenses">阅读许可协议</string>
+    <string name="settings_voip_auto_start_description">关闭后，CallVault 会先询问：应用内通话开始时会显示带“录制”按钮的通知。</string>
+    <string name="settings_voip_auto_start_label">自动开始</string>
     <string name="settings_voip_recording_description">同时录制在 WhatsApp、Signal、Telegram 等应用中进行的通话。实验性功能——部分应用会阻止录音，而这只有在通话进行时才能得知。</string>
     <string name="settings_voip_recording_label">录制 VoIP 通话</string>
     <string name="settings_wd_disable_when_idle">空闲时关闭无线调试</string>
@@ -234,13 +266,20 @@
     <string name="storage_target_both">设备 + Google Drive</string>
     <string name="storage_target_drive">仅 Google Drive</string>
     <string name="storage_target_local">仅保存在本设备</string>
+    <string name="support_appeal_body">CallVault 由我一个人利用业余时间开发——免费、开源、无广告、无追踪。☕ 如果它对你有用，一点小小的支持能让我继续做下去。无论如何，谢谢！🙏</string>
+    <string name="support_appeal_title">由一个人开发 👋</string>
+    <string name="support_not_now">以后再说</string>
     <string name="usb_mode_charging">仅充电（无数据）</string>
+    <string name="usb_mode_debugging_only">仅调试</string>
     <string name="usb_mode_file_transfer">文件传输</string>
     <string name="usb_mode_midi">MIDI</string>
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">USB 网络共享</string>
     <string name="voicemail_contact_label">语音信箱</string>
     <string name="voip_one_sided_warning">那通应用内通话只录到了你这一方——对方应用不允许捕获其通话音频。</string>
+    <string name="voip_prompt_text">点按“录制”即可录制此通话。</string>
+    <string name="voip_prompt_text_named">%1$s 通话。点按“录制”即可录制。</string>
+    <string name="voip_prompt_title">应用内通话进行中</string>
     <string name="voip_recording_arming">正在准备 VoIP 录音…</string>
     <string name="voip_recording_names_hint">联系人姓名来自通话应用自己的来电通知。如果该应用的通知被关闭，它的录音将不带姓名保存。</string>
     <string name="voip_recording_unavailable">无法在此设备上启用 — 这里不支持 VoIP 录音。</string>
@@ -260,6 +299,8 @@
     <string name="wizard_day_thursday">星期四</string>
     <string name="wizard_day_tuesday">星期二</string>
     <string name="wizard_day_wednesday">星期三</string>
+    <string name="wizard_experimental_subtitle">两项仍在验证中的功能，默认均为关闭，你可以稍后在「设置」中开启。</string>
+    <string name="wizard_experimental_title">可选功能</string>
     <string name="wizard_filename_subtitle">选择已保存录音的命名方式。</string>
     <string name="wizard_filename_title">文件名格式</string>
     <string name="wizard_finish">完成</string>
@@ -267,10 +308,6 @@
     <string name="wizard_reliability_offline_button">启用</string>
     <string name="wizard_reliability_offline_done">离线录音已开启</string>
     <string name="wizard_reliability_subtitle">两项可选设置，让录音在复杂情况下也能正常工作。你可以跳过，稍后在“设置”中更改。</string>
-    <string name="wizard_experimental_title">可选功能</string>
-    <string name="wizard_experimental_subtitle">两项仍在验证中的功能，默认均为关闭，你可以稍后在「设置」中开启。</string>
-    <string name="wizard_updates_title">保持最新</string>
-    <string name="wizard_updates_subtitle">CallVault 不在任何应用商店上架，因此会自行到 GitHub 查看新版本。</string>
     <string name="wizard_reliability_title">可靠录音</string>
     <string name="wizard_reliability_usb_button">将 USB 设为仅充电</string>
     <string name="wizard_reliability_usb_desc">在某些手机上，通话中锁屏可能会中断录音。将 USB 设为“仅充电”即可避免。（连接电脑时手机将默认为充电——需要时请手动选择文件传输。）</string>
@@ -291,42 +328,6 @@
     <string name="wizard_storage_subtitle">选择录音的存储位置。你之后可以在设置中更改。</string>
     <string name="wizard_storage_title">录音保存位置</string>
     <string name="wizard_title">设置 CallVault</string>
-    <string name="settings_carrier_recording">录制电话通话</string>
-    <string name="settings_carrier_recording_description">关闭：完全忽略电话通话，不录音也不显示通知。不影响应用内通话。</string>
-    <string name="settings_voip_auto_start_label">自动开始</string>
-    <string name="settings_voip_auto_start_description">关闭后，CallVault 会先询问：应用内通话开始时会显示带“录制”按钮的通知。</string>
-    <string name="voip_prompt_title">应用内通话进行中</string>
-    <string name="voip_prompt_text">点按“录制”即可录制此通话。</string>
-    <string name="voip_prompt_text_named">%1$s 通话。点按“录制”即可录制。</string>
-    <string name="settings_subsection_phone_calls">电话通话</string>
-    <string name="home_bulk_delete_message">此操作无法撤销。</string>
-    <string name="home_bulk_delete_scope_message">其中一些同时保存在本机和云端硬盘中。</string>
-    <string name="home_bulk_delete_device_only">仅本机</string>
-    <string name="home_bulk_delete_drive_only">仅云端硬盘</string>
-    <string name="home_bulk_delete_both">两份副本</string>
-    <string name="support_appeal_title">由一个人开发 👋</string>
-    <string name="support_appeal_body">CallVault 由我一个人利用业余时间开发——免费、开源、无广告、无追踪。☕ 如果它对你有用，一点小小的支持能让我继续做下去。无论如何，谢谢！🙏</string>
-    <string name="support_not_now">以后再说</string>
-    <plurals name="home_selected_count">
-        <item quantity="one">已选择 %1$d 项</item>
-        <item quantity="other">已选择 %1$d 项</item>
-    </plurals>
-    <plurals name="home_bulk_delete_title">
-        <item quantity="one">删除 %1$d 条录音？</item>
-        <item quantity="other">删除 %1$d 条录音？</item>
-    </plurals>
-    <string name="home_bulk_delete_scope_label">要删除的副本</string>
-    <string name="home_bulk_delete_option_count">%1$s（%2$d/%3$d）</string>
-    <string name="home_bulk_delete_kept_drive">%1$s 将保留——只在云端硬盘中。</string>
-    <string name="home_bulk_delete_kept_device">%1$s 将保留——只在本机中。</string>
-    <plurals name="home_bulk_delete_kept_count">
-        <item quantity="one">%1$d 条录音</item>
-        <item quantity="other">%1$d 条录音</item>
-    </plurals>
-    <string name="settings_debug_log_file">日志文件</string>
-    <string name="settings_debug_log_view_hint">点按可查看最近的条目。</string>
-    <string name="settings_debug_log_delete">删除日志</string>
-    <string name="settings_debug_log_delete_title">删除日志？</string>
-    <string name="settings_debug_log_delete_message">已收集的条目将被移除。如果日志记录仍处于开启状态，将立即开始新的日志。</string>
-    <string name="settings_debug_log_empty">日志为空。</string>
+    <string name="wizard_updates_subtitle">CallVault 不在任何应用商店上架，因此会自行到 GitHub 查看新版本。</string>
+    <string name="wizard_updates_title">保持最新</string>
 </resources>
