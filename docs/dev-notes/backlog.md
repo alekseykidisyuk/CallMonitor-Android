@@ -72,6 +72,12 @@ logcat, but logcat's default 256 KiB ring holds barely a minute on this phone (m
 ColorOS for filtering third-party logs — that was wrong, and re-tested: our lines are present. The
 fix is the ring growth in `2026-07-28-daemon-and-system-logs-design.md`.
 
+**Known limitation, parked, not planned:** a Bluetooth headset or smart glasses can make a carrier
+recording silent — right size, right duration, no audio. This was the real cause of issue #18 (Meta
+Ray-Ban glasses), found by the reporter after about a week. See
+`2026-08-04-bluetooth-headsets-and-silent-recordings.md`. **If a silent-recording report ever arrives
+again, ask what the audio was routed to before anything else.**
+
 **Blocked on other people:** nothing.
 
 **Written but unplanned:** `2026-07-28-daemon-and-system-logs-design.md` — a design for getting daemon
