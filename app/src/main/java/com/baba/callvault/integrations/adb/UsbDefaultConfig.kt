@@ -238,17 +238,28 @@ object UsbDefaultConfig {
      */
     fun setViaShell(context: Context, mode: UsbDefaultMode): Boolean {
         if (mode == UsbDefaultMode.UNKNOWN) return false
-        // `svc` applies the change ON-DEVICE even when its (empty) response stream closes early, so we
-        // can't trust the stream result. Fire it, cache optimistically, then CONFIRM by reading back.
+        // `svc` applies the change ON-DEVICE even when its (empty) response stream closes early, so the
+        // stream result cannot be trusted either way. Fire it and record the intent.
         runShell(context, "svc usb setScreenUnlockedFunctions ${mode.svcArg}".trimEnd(), ensure = true)
         AppPreferences(context).setUsbDefaultMode(mode.name)
-        val readback = runCatching { readViaShell(context) }.getOrNull()
-        // A null read-back means the link dropped (expected when switching to CHARGING kills USB-adb) —
-        // treat that as applied; only a read-back showing a DIFFERENT mode is a real failure.
-        val ok = readback == null || readback == mode
-        AppLogger.i(TAG, "Set Default USB Configuration to $mode (read-back=$readback, ok=$ok)")
-        return ok
+        AppLogger.i(TAG, "Set Default USB Configuration to $mode")
+        return true
     }
+
+    // There used to be a confirming read-back here. It was removed on 2026-08-04 because it could not
+    // succeed and cost the user a long spinner for nothing:
+    //
+    //  - Choosing "Charging only" severs USB data, and USB-adb with it. The confirmation then ran over
+    //    the transport the write had just killed, burning two attempts with an 8-second connect budget
+    //    each plus a reconnect before giving up. The device applied the change instantly; the app sat
+    //    "Applying…" for tens of seconds. Reported from the device.
+    //  - Its verdict was `readback == null || readback == mode` — i.e. only a *different* answer counted
+    //    as failure. Once the property fallback existed that became actively harmful: `sys.usb.config`
+    //    still reports the previously applied functions for a moment after a switch, so a stale reply
+    //    would compare unequal and the picker would silently refuse to show what the user just chose.
+    //
+    // A wrong cache is self-correcting — the next successful read overwrites it — whereas a wrong "that
+    // didn't work" in front of the user is not.
 
     /**
      * Classifies a `screen_unlocked_functions=` line. Data functions win: the value is a comma-separated
