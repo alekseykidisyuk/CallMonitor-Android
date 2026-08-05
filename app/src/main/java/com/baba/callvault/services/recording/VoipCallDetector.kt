@@ -104,9 +104,37 @@ class VoipCallDetector(private val context: Context) {
         onRecordingStateChanged?.invoke()
     }
 
+    /**
+     * Drops an app-call recording because a carrier call has been answered.
+     *
+     * The mode listener cannot be relied on for this: on a ROM where an IMS carrier call reads as
+     * MODE_IN_COMMUNICATION, the mode never changes when the phone call starts, so nothing would fire
+     * and the capture would run on through it. The telephony broadcast is the signal that does arrive.
+     */
+    fun abortForCarrierCall() {
+        if (!callActive) return
+        AppLogger.i(TAG, "A carrier call was answered — dropping the app-call recording")
+        handler.removeCallbacks(endCallRunnable)
+        callActive = false
+        VoipRecordPrompt.cancel(context)
+        runCatching { VoipRecordingCoordinator.onCallEnded(context) }
+            .onFailure { AppLogger.w(TAG, "VoIP stop failed: ${it.message}") }
+        isRecording = false
+        onRecordingStateChanged?.invoke()
+    }
+
     private fun evaluate(mode: Int) {
         val inVoipCall = mode == AudioManager.MODE_IN_COMMUNICATION
         if (inVoipCall && !callActive) {
+            // The mode alone does not prove this is an app call. A carrier call carried over IMS
+            // (Wi-Fi calling, some VoLTE stacks) can present as MODE_IN_COMMUNICATION too, and acting
+            // on it would record a phone call the carrier path is already recording — see
+            // [VoipTelephonyGate]. Deliberately NOT marking callActive: we believe no app call is up,
+            // so a later mode event is free to reconsider once the phone call is over.
+            if (!VoipTelephonyGate.mayStartNow(context)) {
+                AppLogger.i(TAG, "mode=IN_COMMUNICATION but a carrier call is in progress — not an app call")
+                return
+            }
             handler.removeCallbacks(endCallRunnable)
             callActive = true
             AppLogger.i(TAG, "VoIP call detected (mode=IN_COMMUNICATION)")
