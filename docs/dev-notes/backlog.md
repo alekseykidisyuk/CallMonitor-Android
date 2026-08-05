@@ -8,17 +8,18 @@ Status key: 🔵 agreed, not started · 🟡 in progress · ✅ done (kept brief
 
 ---
 
-## Current state — 2026-08-04 (1.5.7 in preparation)
+## Current state — 2026-08-05 (after the 1.5.7 release)
 
 Kept at the top so a session can start from disk instead of from recall. **Update it whenever a
 release is cut, a branch lands, or something starts or stops being blocked.**
 
-**Released:** `v1.5.6` is still the latest release users can get (versionCode **10670**, tag `v1.5.6`,
-asset `CallVault.apk`). Also published, both **pre-releases** invisible to the in-app updater and
-**never to be merged**: `v1.5.2-diag-scrcpy` (issue #18, branch `diag/scrcpy-only`) and
-`v1.5.7-loopbackdiag` (issue #22, branch `diag/loopback-oneui`).
+**Released:** `v1.5.7` is the latest release users can get (versionCode **10720**, tag `v1.5.7`, asset
+`CallVault.apk`, published 2026-08-04 and verified byte-identical to the locally built artifact). Also
+published, both **pre-releases** invisible to the in-app updater and **never to be merged**:
+`v1.5.2-diag-scrcpy` (issue #18, branch `diag/scrcpy-only`) and `v1.5.7-loopbackdiag` (issue #22,
+branch `diag/loopback-oneui`).
 
-**Unreleased, merged to `main` and pushed — this is 1.5.7:**
+**What 1.5.7 shipped:**
 
 - **Daemon + system log collection** (`2026-07-28-daemon-and-system-logs-design.md`). Ring grows on
   logging-enable and restores on disable; Share attaches a filtered, redacted logcat slice. Verified
@@ -28,8 +29,16 @@ asset `CallVault.apk`). Also published, both **pre-releases** invisible to the i
 - **Retention actually deletes what it promises** — four faults, all found by measuring the OP12 on
   2026-08-04 and all fixed and device-verified the same day. See below.
 - **The USB-mode warning is no longer hidden behind readiness**, `UNKNOWN` is surfaced instead of
-  silently treated as safe, the mode is re-read on a calm path, and One UI 8's "Debugging only" is
-  recognised as safe. **Unit-tested only — never run on a device.**
+  silently treated as safe, One UI 8's "Debugging only" is recognised as safe, the mode is resolved
+  from `sys.usb.config` where `dumpsys usb` omits it, and the picker no longer spins on a confirming
+  read-back that could not work. Device-verified except the `COULD_NOT_CHECK` message, which needs a
+  phone whose mode was never read.
+
+**Open:** issue **#22** (Galaxy S25, One UI 8.5) — the reporter holds `v1.5.7-loopbackdiag` and has not
+yet sent logs. Nothing in 1.5.7 addresses their loopback failure. **1.5.7 will be offered to them as a
+normal update, which replaces the diagnostic build and loses its instrumentation** — tell them not to
+update if those logs are still wanted. Issue **#18 is closed**: the reporter found the cause himself
+(Meta Ray-Ban glasses), written up in `2026-08-04-bluetooth-headsets-and-silent-recordings.md`.
 
 **The retention story, because it cost a day and the shape recurs.** With retention set to 7 days the
 app showed a convincing 64 recordings going back exactly 7 days while **131 files had outlived the
@@ -53,15 +62,12 @@ Device-verified 2026-08-04 across three sweeps: `deletedLocal=9`, then `deletedD
 `callvault-signing.keystore`, sitting in the same Drive folder — the eligibility gate earning its keep
 on its first real run.
 
-**Hard constraint on the next release:** versionCode must exceed **10703**. 1.5.6 shipped as 10670,
-but test builds on the maintainer's OP12 have gone well past it (10680, 10690 for the published
-diagnostic pre-release, and 10700-10703 during the retention work). Anything at or below 10703 installs
-for users and silently fails on the one device that has to test it. See the `release-version-bump`
-memory, and read the phone before choosing.
-
-**Ready but not done for 1.5.7:** the release itself — bump `ciVersionName`/`ciVersionCode`, build,
-verify the artifact, install on the phone, tag and publish. The `ReleaseHighlights` entry and its
-`whatsnew_157_*` strings are already written in all ten locales.
+**Hard constraint on the next release:** versionCode must exceed **10720** — what 1.5.7 shipped as, and
+what the maintainer's OP12 now carries. The floor climbs faster than the version number: 1.5.6 shipped
+as 10670, then test builds and a published diagnostic pre-release took it through 10678, 10680, 10690
+and 10700-10714 before 1.5.7 was cut at 10720. Anything at or below the floor installs for most users
+and silently fails on the devices that matter most. See the `release-version-bump` memory, and read the
+phone before choosing.
 
 **Device-verified 2026-07-31 (OnePlus 12, build `1.5.6-encoder` / 10661):** encoder validation does
 *not* divert recording to the scrcpy fallback — output was mono 48 kHz, full duration, −16.9 dB mean.
