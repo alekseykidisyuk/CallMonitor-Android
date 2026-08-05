@@ -40,6 +40,10 @@ normal update, which replaces the diagnostic build and loses its instrumentation
 update if those logs are still wanted. Issue **#18 is closed**: the reporter found the cause himself
 (Meta Ray-Ban glasses), written up in `2026-08-04-bluetooth-headsets-and-silent-recordings.md`.
 
+**Waiting for the next release:** `fix/voip-carrier-collision` (`75868ca`) — a carrier call could be
+mistaken for an app call on ROMs that route calls over IMS. Merged to `main`, unit-tested, **not yet
+run on a device**; see the section below for what to check when it ships.
+
 **The retention story, because it cost a day and the shape recurs.** With retention set to 7 days the
 app showed a convincing 64 recordings going back exactly 7 days while **131 files had outlived the
 window** (8 device, 123 Drive, oldest by 48 days). Four independent faults:
@@ -94,6 +98,57 @@ it: twice, the answer lived in the daemon's process where no bug report can reac
 daemon's PCM, cheap on the direct path) and a settings snapshot in the log-export header (the export
 carries device and version but not the toggles, which is why the VoIP question above needs a manual
 test at all).
+
+---
+
+## 🟡 A carrier call could be mistaken for an app call — FIXED, awaiting the next release
+
+**Branch `fix/voip-carrier-collision`, commit `75868ca`. Fold into the next release and device-test it
+there.** Not device-tested: the fixed path cannot fire on the OP12 (see below), so the only thing a
+device run proves is the absence of a regression — one WhatsApp call and one carrier call, both
+recording as before.
+
+App-call detection recognises a VoIP call by one signal, the audio mode being
+`MODE_IN_COMMUNICATION`. Nothing enforced that a carrier call could not set the same mode; the only
+thing separating the two paths was a comment in `VoipCallDetector` asserting they "cannot collide".
+Wi-Fi calling and some VoLTE stacks carry the call over IMS and can present as
+`MODE_IN_COMMUNICATION` — and there the app-call path would record a phone call the carrier path is
+already recording, holding a plain `MIC` capture that contends with the dialer, made worse by the
+1.5.5 microphone-reclaim logic taking it back mid-call.
+
+`VoipTelephonyGate` makes the telephony call state the authority: no start while ringing or off-hook
+(the ring matters — the mode moves around during call setup), and a running capture stops once a
+carrier call is answered, signalled by the telephony broadcast because on such a ROM the mode never
+changes and the mode listener never fires. Fails open on an unrecognised state, like
+`CallInProgressGate`.
+
+**Measured on the OP12, 2026-08-05, and worth keeping:** every carrier call went to `MODE_IN_CALL` set
+by `com.android.server.telecom`; only WhatsApp used `MODE_IN_COMMUNICATION`. So the collision is real
+in principle and absent on this hardware — which is exactly why it survived unnoticed.
+
+**Where this came from:** a user report that "the mic is always on during a cell call", which turned
+out not to be a bug at all. Measured on the OP12 mid-call: a live `AudioIn` thread, `Standby: no`,
+`AUDIO_SOURCE_VOICE_CALL` on `AUDIO_DEVICE_IN_TELEPHONY_RX`, reading continuously for the duration of
+the call and gone afterwards — the carrier recorder doing its job, attributed to `com.android.shell`
+because that is the uid the daemon runs as. Android shows the privacy indicator for any active
+capture and it cannot be suppressed. The reporter's belief that 1.5.6 did not do this was checked and
+dropped: 1.5.6-era recordings exist, so the capture — and the indicator — was running then too.
+**If this is reported again: the indicator is the recording. Ask whether recordings exist for the
+period they think was quiet.** There is nothing to fix short of not recording, and the gap is
+documentation — nothing in onboarding warns that the indicator appears on every call and is
+attributed to Shell rather than CallVault.
+
+## 🔵 Our captures do not register with `AudioService`'s record tracking
+
+Noticed while investigating the above, unexplained, and left alone deliberately. During a live carrier
+call on 2026-08-05 the HAL-level capture was plainly running (`AudioIn_5C6`, frames read climbing)
+while `dumpsys audio`'s record-activity log carried **no matching `rec start`** — and the same log
+shows `rec stop` events at 10:22, 12:22 and 13:58 with no starts either. Starts register sometimes
+(11:50 that day, and the 08:59 VoIP `MIC` capture) and not others.
+
+It causes no stuck microphone and no lost audio, so it is not urgent. It does mean the OS's view of
+who is recording disagrees with reality, which would affect anything keyed off record-configuration
+callbacks. Worth understanding before relying on that API for anything.
 
 ---
 
