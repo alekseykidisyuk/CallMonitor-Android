@@ -19,8 +19,11 @@ import com.baba.callvault.data.health.SetupPrerequisites
 import com.baba.callvault.data.health.recordMissedForMissingPrerequisite
 import com.baba.callvault.data.recordings.RecordingDirection
 import com.baba.callvault.data.recordings.RecordingMetadata
+import com.baba.callvault.services.recording.DaemonKeepAliveService
 import com.baba.callvault.services.recording.RecordingForegroundService
 import com.baba.callvault.services.recording.RecordingPolicy
+import com.baba.callvault.services.recording.VoipRecordingCoordinator
+import com.baba.callvault.services.recording.VoipTelephonyGate
 import com.baba.callvault.system.permissions.PermissionChecks
 import com.baba.callvault.utils.AppLogger
 import com.baba.callvault.utils.PhoneNumberManager
@@ -206,7 +209,23 @@ class CallSessionManager private constructor(context: Context) {
             return
         }
 
-        // 2. Launch the Coroutine for RINGING or OFFHOOK
+        // 2. A carrier call outranks the app-call path.
+        // On a ROM where an IMS call reads as MODE_IN_COMMUNICATION, an app-call capture started just
+        // before would otherwise keep running right through this phone call — the mode never changes,
+        // so the detector's own listener never fires. Only sent when something is actually recording,
+        // which also guarantees the service is already up and foreground. See [VoipTelephonyGate].
+        if (VoipTelephonyGate.mustStop(receivedCallState) && VoipRecordingCoordinator.isRecording) {
+            AppLogger.i(TAG, "Carrier call answered while an app call was recording — stopping it.")
+            runCatching {
+                appContext.startService(
+                    Intent(appContext, DaemonKeepAliveService::class.java).apply {
+                        action = DaemonKeepAliveService.ACTION_CARRIER_CALL_STARTED
+                    }
+                )
+            }.onFailure { AppLogger.w(TAG, "Could not signal the app-call stop: ${it.message}") }
+        }
+
+        // 3. Launch the Coroutine for RINGING or OFFHOOK
         // Canceling the previous job for the verification window logic
         sessionJob?.cancel()
         sessionJob = managerScope.launch {

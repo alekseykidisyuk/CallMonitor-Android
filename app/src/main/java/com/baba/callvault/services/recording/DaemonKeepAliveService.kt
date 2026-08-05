@@ -247,6 +247,9 @@ class DaemonKeepAliveService : Service() {
         if (intent?.action == ACTION_VOIP_RECORD_NOW) {
             voipDetector.startNow()
         }
+        if (intent?.action == ACTION_CARRIER_CALL_STARTED) {
+            voipDetector.abortForCarrierCall()
+        }
 
         // Recover the INSTANT the daemon dies (binder linkToDeath) — don't wait for the next poll.
         // On a real incoming call this is what races (and hopefully beats) the call after a long idle.
@@ -484,6 +487,13 @@ class DaemonKeepAliveService : Service() {
          * a second component tracking the same call state.
          */
         const val ACTION_VOIP_RECORD_NOW = "com.baba.callvault.VOIP_RECORD_NOW"
+
+        /**
+         * Sent by [com.baba.callvault.services.call.CallSessionManager] when a carrier call is
+         * answered. Handled here for the same reason as above: this service owns the detector that
+         * knows whether an app-call recording is running. See [VoipTelephonyGate].
+         */
+        const val ACTION_CARRIER_CALL_STARTED = "com.baba.callvault.CARRIER_CALL_STARTED"
 
         /** Low-importance channel for one-off explanations, kept apart from the permanent status note. */
         private const val INFO_CHANNEL_ID = "callvault_info"
