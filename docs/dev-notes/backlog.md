@@ -138,6 +138,21 @@ period they think was quiet.** There is nothing to fix short of not recording, a
 documentation — nothing in onboarding warns that the indicator appears on every call and is
 attributed to Shell rather than CallVault.
 
+**Checked against history, 2026-08-07, so nobody re-derives it.** There is no release in which a call
+was recorded without a shell-uid capture. At `v1.4.7` the carrier path is `DirectAudioRecorderSession`
+opening `AudioRecord` itself, annotated *"shell uid holds `CAPTURE_AUDIO_OUTPUT`; the daemon is not an
+app"*. Direct capture only arrived in `v1.4.0` (`7df300a`); before it everything went through
+scrcpy-server, which `ScrcpyConfig.kt:21` at **`v1.1.0`** — the earliest tag — describes as running
+"with `app_process` … the shell user (UID 2000)". The app has **never** declared `RECORD_AUDIO`, so
+shell was always the only possible attribution. Capture code between `v1.4.7` and `v1.5.7` moved only
+for `EncoderLimits` bit-rate validation and 1.5.5's mic re-take, neither of which changes the source,
+the uid, or how long the capture is held.
+
+**What that check cannot cover:** it proves our capture never changed, not that the OS always
+*displayed* it the same way. A ROM update altering how shell-uid captures are surfaced would look
+exactly like a CallVault regression and leave no trace in this repo. If a second user reports it and
+their recordings also check out, look there.
+
 ## 🔵 Our captures do not register with `AudioService`'s record tracking
 
 Noticed while investigating the above, unexplained, and left alone deliberately. During a live carrier
