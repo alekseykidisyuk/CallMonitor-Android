@@ -6,9 +6,23 @@ file is for decided product and engineering work.
 
 Status key: 🔵 agreed, not started · 🟡 in progress · ✅ done (kept briefly, then deleted)
 
+**A section header is a claim about a release, so verify it against the tags rather than trusting it.**
+Every ✅/🟡 below now names the release it shipped in. On 2026-08-14 three sections still read "not yet
+on a device" / "awaiting device test" for work that had shipped in **v1.5.5**, two releases earlier —
+they were written before that release was cut and never revisited, and reading them cost a session's
+worth of wrong conclusions about what was pending. When a release is cut, reconcile this file:
+
+```bash
+# does <tag> contain the file that implements <entry>?
+git ls-tree -r <tag> --name-only | grep -c '<TheClass>.kt'
+```
+
+Use `git ls-tree`, not `git cat-file -e` inside a shell loop — the latter's exit code interacts badly
+with `&&`/`||` chains and silently reported the opposite answer while this was being checked.
+
 ---
 
-## Current state — 2026-08-05 (after the 1.5.7 release)
+## Current state — 2026-08-05, status reconciled against the tags 2026-08-14
 
 Kept at the top so a session can start from disk instead of from recall. **Update it whenever a
 release is cut, a branch lands, or something starts or stops being blocked.**
@@ -40,9 +54,23 @@ normal update, which replaces the diagnostic build and loses its instrumentation
 update if those logs are still wanted. Issue **#18 is closed**: the reporter found the cause himself
 (Meta Ray-Ban glasses), written up in `2026-08-04-bluetooth-headsets-and-silent-recordings.md`.
 
-**Waiting for the next release:** `fix/voip-carrier-collision` (`75868ca`) — a carrier call could be
-mistaken for an app call on ROMs that route calls over IMS. Merged to `main`, unit-tested, **not yet
-run on a device**; see the section below for what to check when it ships.
+**Waiting for the next release — this is the whole list, one item:** `fix/voip-carrier-collision`
+(`75868ca`) — a carrier call could be mistaken for an app call on ROMs that route calls over IMS.
+Merged to `main`, unit-tested, **not yet run on a device**; see the section below for what to check
+when it ships. Note it is on **local `main` only** — `main` sits 4 commits ahead of `origin/main`.
+
+**What each recent section actually shipped in, verified with `git ls-tree` on 2026-08-14.** The
+sections below are the detail; this table is the truth about *release membership*:
+
+| Entry (implementing file) | Shipped in |
+|---|---|
+| Keep-alive rewarm latch (`RewarmGate.kt`) | **v1.5.5** |
+| Upload schedule in Settings, issue #20 (`SyncScheduleLabels.kt`) | **v1.5.5** |
+| Settings "General" restructure (`SettingsSidebar.kt`) | **v1.5.5** |
+| Resilient-recording ring + guard fix (`handoff/HandoffGeometry.kt`, `GUARD_FRAMES = 960`) | **v1.5.3** |
+| No install while recording (`CallInProgressGate.kt`) | **v1.5.6** |
+| Encoder validation (`EncoderLimits.kt`) | **v1.5.6** |
+| VoIP/carrier collision (`VoipTelephonyGate.kt`) | **unreleased — `main` only** |
 
 **The retention story, because it cost a day and the shape recurs.** With retention set to 7 days the
 app showed a convincing 64 recordings going back exactly 7 days while **131 files had outlived the
@@ -101,7 +129,7 @@ test at all).
 
 ---
 
-## 🟡 A carrier call could be mistaken for an app call — FIXED, awaiting the next release
+## 🟡 A carrier call could be mistaken for an app call — FIXED, THE ONE ITEM AWAITING RELEASE
 
 **Branch `fix/voip-carrier-collision`, commit `75868ca`. Fold into the next release and device-test it
 there.** Not device-tested: the fixed path cannot fire on the OP12 (see below), so the only thing a
@@ -167,7 +195,7 @@ callbacks. Worth understanding before relying on that API for anything.
 
 ---
 
-## ✅ Don't install an update while a call is being recorded — DONE (`4e46948`, merged `2e5c0dc`)
+## ✅ Don't install an update while a call is being recorded — SHIPPED in v1.5.6 (`4e46948`, merged `2e5c0dc`)
 
 `CallInProgressGate.mayInstall()` is checked in `UpdateInstaller.installSilentlyViaShell` *before* the
 heavy-operation lock; a blocked attempt returns `ShellResult.DEFERRED_CALL_IN_PROGRESS`, which clears
@@ -201,7 +229,7 @@ installer mid-stream, which is worse than the problem — a half-written APK is 
 
 ---
 
-## ✅ VoIP near-party drops out on One UI — FIXED by re-taking the mic
+## ✅ VoIP near-party drops out on One UI — FIXED by re-taking the mic, SHIPPED in v1.5.5
 
 On a Galaxy S24 FE, One UI **silences** our shell-uid MIC capture intermittently while the VoIP app
 holds the mic — logged by the platform itself as `rec update uid:2000 src:MIC silenced
@@ -278,7 +306,7 @@ before today — regenerating them needs care about real contacts in a public re
 
 ---
 
-## ✅ Validate the encoder before recording into it — DONE (`1ee77af`, merged `2e5c0dc`)
+## ✅ Validate the encoder before recording into it — SHIPPED in v1.5.6 (`1ee77af`, merged `2e5c0dc`)
 
 `EncoderLimits.resolveBitRate()` clamps the requested rate into the encoder's advertised range and
 logs `encoder=… bitrate=[min..max] requested=… resolved=… sampleRate=… supported=… channels=…
@@ -327,7 +355,7 @@ taps stack (unique work + KEEP, as the install path does).
 
 ---
 
-## 🟡 Keep-alive rewarm latch can permanently stop recording — FIXED, NOT YET ON A DEVICE
+## ✅ Keep-alive rewarm latch can permanently stop recording — SHIPPED in v1.5.5
 
 **Found 2026-07-30 on the OP12: the daemon had been dead ~21 hours and the app never retried.**
 `DaemonKeepAliveService.maybeRewarm` guards on a `rewarming` flag that only the worker thread clears.
@@ -340,8 +368,13 @@ Shipped in **v1.4.0** (`a2b248e`); any adbd churn triggers it (cable, screen-off
 debugging switch). Likely behind field reports of "it just stopped recording".
 
 **Fixed 2026-07-30** by `RewarmGate` (expiring latch, unit-tested) plus a bounded relaunch that drops
-the half-dead connection so the abandoned thread frees `heavyOperationLock`. **Still to do: run it on
-a device, and ship it** — every user has been exposed since v1.4.0.
+the half-dead connection so the abandoned thread frees `heavyOperationLock`.
+
+**Shipped in v1.5.5** (`RewarmGate.kt` is present in the v1.5.5, v1.5.6 and v1.5.7 trees), so the
+exposure window was v1.4.0 → v1.5.3 and only users still on **v1.5.3 or older** are affected. This
+entry read "Still to do: run it on a device, and ship it" until 2026-08-14, three releases after it
+shipped — the mistake this file's header warning now exists to prevent. Still true: **no device run
+was ever recorded for it**, so it shipped verified by unit tests alone.
 
 Full diagnosis and the fix's shape: `2026-07-30-keepalive-rewarm-latch-wedge.md`.
 The `ensureConnected` entry below is the same bug's root and is still open — layers 1-2 contain it
@@ -349,7 +382,7 @@ rather than remove it.
 
 ---
 
-## ✅ Upload schedule is built but stranded in the wizard — issue #20 (DONE, awaiting device test)
+## ✅ Upload schedule is built but stranded in the wizard — issue #20, SHIPPED in v1.5.5
 
 **Issue:** https://github.com/madkongo/CallVault/issues/20 (CathaEdulis, 2026-07-29)
 
@@ -391,7 +424,7 @@ plainly rather than letting him expect silence.
 
 ---
 
-## ✅ Settings restructure: a "General" section — DONE on feat/settings-sidebar
+## ✅ Settings restructure: a "General" section — SHIPPED in v1.5.5
 
 **Why.** Settings has grown top-level sections that are really peers of each other, so the screen reads
 as a flat list of everything rather than a shape.
@@ -510,7 +543,7 @@ Three related asks, all about the user deciding rather than the rules deciding:
 
 ---
 
-## ✅ Resilient recording on One UI — ring fix CONFIRMED, crackle root-caused and fixed
+## ✅ Resilient recording on One UI — ring fix CONFIRMED, crackle fixed, SHIPPED in v1.5.3
 
 **Root cause, confirmed against AOSP source rather than guessed.** The handoff sized the ring from
 `AudioRecord.getBufferSizeInFrames()`. That returns `cblk->mBufferSizeInFrames`, a **logical value the
