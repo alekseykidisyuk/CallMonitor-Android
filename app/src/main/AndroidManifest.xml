@@ -174,7 +174,7 @@
              is a pure binder-delivery channel; no app data is exposed. -->
         <provider
             android:name=".server.RecorderBinderProvider"
-            android:authorities="com.baba.callvault.recorder"
+            android:authorities="${recorderAuthority}"
             android:enabled="true"
             android:exported="true" />
 

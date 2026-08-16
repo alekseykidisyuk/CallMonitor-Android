@@ -128,6 +128,11 @@ val ciVersionCode = providers.gradleProperty("versionCode").map { it.toIntOrNull
 val ciVersionName = providers.gradleProperty("versionName").orElse("1.5.7")
 val ciBuildNumber = providers.gradleProperty("ciBuildNumber").orElse("Local")
 
+// -PisolateTestApp builds the debug variant under its own applicationId so instrumented tests can be
+// run on a device that is already carrying a working release build. Off by default: it must not
+// change the ordinary `installDebug` loop, which deliberately reinstalls over the top.
+val isolateTestApp = providers.gradleProperty("isolateTestApp").isPresent
+
 android {
     namespace = "com.baba.callvault"
     compileSdk = 36
@@ -151,6 +156,11 @@ android {
         // native symbol fails only at runtime — silently producing confident nonsense rather than
         // crashing. See app/src/androidTest.
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Default provider authority. Only an isolated instrumented build overrides it; every normal
+        // build resolves to exactly the string RecorderBinderProvider.AUTHORITY hardcodes, so release
+        // output is unchanged.
+        manifestPlaceholders["recorderAuthority"] = "com.baba.callvault.recorder"
 
         buildConfigField("String", "CI_BUILD_NUMBER", "\"${ciBuildNumber.get()}\"")
 
@@ -215,25 +225,31 @@ android {
             }
         }
 
-        // Instrumented-test variant, installed SIDE BY SIDE with the real app.
+        // Opt-in isolation for instrumented runs: -PisolateTestApp
         //
-        // The only test device is the maintainer's daily driver, and it runs a release build that is
-        // actively recording calls. Installing a debug APK over it would replace a working recorder
-        // and drop WRITE_SECURE_SETTINGS, forcing a re-grant before recording works again. Its own
-        // applicationId avoids all of that: the instrumented tests need no permissions, no ADB
-        // pairing and no daemon, so a sibling install is enough to exercise them.
+        // The only test device is the maintainer's daily driver, running a release build that is
+        // actively recording calls. Installing a debug APK over it replaces a working recorder and
+        // drops WRITE_SECURE_SETTINGS, forcing a re-grant before recording works again.
         //
-        // Run with: ./gradlew connectedInstrtestAndroidTest
-        create("instrtest") {
-            initWith(getByName("debug"))
-            applicationIdSuffix = ".instrtest"
-            isDebuggable = true
+        //   ./gradlew connectedDebugAndroidTest -PisolateTestApp
+        //
+        // installs under its own applicationId instead, alongside the real app, and leaves it alone.
+        // This is a property rather than a separate build type on purpose: AGP creates unit-test
+        // tasks only for `testBuildType`, so introducing one and pointing testBuildType at it
+        // silently deletes `testDebugUnitTest` — the command this project and its docs use
+        // everywhere. Plain `installDebug` is likewise unaffected, so the normal
+        // reinstall-over-the-top dev loop still works.
+        debug {
+            if (isolateTestApp) {
+                applicationIdSuffix = ".instrtest"
+                // Two installs cannot share a ContentProvider authority. Only the isolated build
+                // moves; every normal build keeps the authority RecorderBinderProvider.AUTHORITY
+                // expects. The isolated build never uses that provider — the instrumented tests
+                // exercise the whisper.cpp JNI bridge, which needs no provider and no daemon.
+                manifestPlaceholders["recorderAuthority"] = "com.baba.callvault.instrtest.recorder"
+            }
         }
     }
-
-    // Instrumented tests build against "instrtest", never "debug", so running them can never install
-    // over the real app on the test device. See the instrtest build type above for why that matters.
-    testBuildType = "instrtest"
     compileOptions {
         sourceCompatibility =  JavaVersion.VERSION_17
         targetCompatibility =  JavaVersion.VERSION_17
