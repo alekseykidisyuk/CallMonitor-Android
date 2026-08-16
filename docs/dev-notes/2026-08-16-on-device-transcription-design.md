@@ -138,21 +138,34 @@ them would only generate bad transcripts and support load.
 
 - **Runs in the app process, never the daemon.** Transcription needs no privilege; going near the
   uid-2000 shell daemon would risk the most fragile component for zero benefit.
-- `whisper.cpp` as a **git submodule pinned to a tag**, plus a `:whisper` Gradle module modelled on
-  `examples/whisper.android/lib` (thin JNI + `externalNativeBuild { cmake }`). We do not fork the C++.
-- **ABI: `arm64-v8a` only** for release. `minSdk` 30 means effectively every target is 64-bit;
-  `x86_64` is added to debug builds only so emulators work.
+- `whisper.cpp` as a **git submodule pinned to a tag** at `third_party/whisper.cpp`, pulled into the
+  **existing** `app/src/main/cpp/CMakeLists.txt` with `add_subdirectory`. **No separate Gradle module
+  is needed** — an earlier draft proposed a `:whisper` module before it was clear the app already
+  compiles native code there. `GGML_OPENMP` must be forced OFF; the NDK ships no OpenMP runtime.
+- We do not fork whisper.cpp itself, but we **do write our own JNI** rather than reusing upstream's
+  Android sample, because that sample **hardcodes `params.language = "en"`**
+  (`examples/whisper.android/lib/src/main/jni/whisper/jni.c:179`) and returns one flat pre-formatted
+  string. Both are disqualifying: Hebrew decoded as English is garbage, and storage needs per-segment
+  start/end times. Our JNI takes a language code (or null to auto-detect) and exposes segments.
+- **ABI: `arm64-v8a` only** for release — **already configured** in `app/build.gradle.kts`
+  (`ndk { abiFilters += "arm64-v8a" }`), so this needs no change. `minSdk` 30 means effectively every
+  target is 64-bit.
 - **Threads**: `n_threads` drives RTF more than anything else. Default to performance-core count, not
   total cores — big.LITTLE scheduling onto little cores measurably hurts. First knob to tune on device.
 - **Memory**: `large-v3-turbo-q5_0` needs roughly 1 GB resident. Check `ActivityManager.MemoryInfo`
   before loading and fail with a clear message rather than taking an OOM kill; that is the cue to
   suggest the Light tier.
 
-**What this costs, stated plainly:** the **NDK and CMake become build requirements** — `assembleRelease`
-currently needs only Gradle and the keystore. Pin the NDK version so builds stay reproducible. F-Droid
-must fetch submodules and run an NDK build; both are supported but add moving parts to a build we
-cannot debug directly. This is the cost sherpa-onnx would have avoided; Hebrew is what makes it worth
-paying.
+**What this costs — corrected 2026-08-16 after reading the build.** An earlier draft of this document
+claimed "the NDK and CMake become build requirements". **That was wrong: they already are.** The app
+already runs `externalNativeBuild { cmake }` over `app/src/main/cpp/CMakeLists.txt` to build
+`audiohandoff.cpp` for resilient recording, `ndkVersion = "27.2.12479018"` is already pinned, and
+`ndk { abiFilters += "arm64-v8a" }` is already the policy this design independently arrived at.
+
+So whisper.cpp adds an `add_subdirectory` to an existing native build rather than introducing a
+toolchain. The real remaining costs are smaller: **F-Droid must fetch a git submodule**, and first-time
+native compilation is slower (incremental Kotlin work is unaffected). This makes whisper.cpp
+meaningfully cheaper than the sherpa-onnx comparison assumed.
 
 ### 4. Transcript storage
 
@@ -223,8 +236,9 @@ today.** Room migrations and cascade deletes corrupt data silently and cannot be
    are MIT. Confirm against their policy — it affects listing, not function.
 3. **Hebrew quality at the Light tier is poor.** Users who decline the 574 MB download get visibly
    wrong words. The tier picker must say so honestly rather than implying parity.
-4. **NDK in the release path** is a new way for `assembleRelease` to break; the keystore flow is
-   unchanged but the build is no longer pure Gradle.
+4. ~~**NDK in the release path**~~ — **retired 2026-08-16.** `assembleRelease` already runs a native
+   CMake build (`audiohandoff.cpp`) with a pinned NDK, so this is not a new failure mode. What remains
+   is narrower: the pinned whisper.cpp **submodule tag** must be fetched by F-Droid and must not drift.
 
 ## Rollback
 
