@@ -10,6 +10,7 @@ package com.baba.callvault.transcription
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -83,5 +84,53 @@ class AudioDecoderTest {
     @Test
     fun `resampling empty audio yields empty audio`() {
         assertEquals(0, AudioDecoder.resampleTo16k(FloatArray(0), inputRate = 48_000).size)
+    }
+
+    // ---- duration plausibility ----
+    //
+    // These exist because of a real incident on 2026-08-16: a 45-second clip was handed to whisper
+    // malformed and transcribed for over eleven minutes before anything indicated a problem. whisper
+    // does not reject an over-long buffer, it just works through it, so the arithmetic has to be
+    // checked here instead.
+
+    @Test
+    fun `a decode matching the declared duration is plausible`() {
+        // 45 s at 48 kHz.
+        assertTrue(AudioDecoder.isPlausibleDuration(45 * 48_000, 48_000, 45_000_000L))
+    }
+
+    @Test
+    fun `the eleven-minute-from-45-seconds case is rejected`() {
+        // What the failed on-device run effectively did: ~15x more audio than the file declares.
+        assertFalse(AudioDecoder.isPlausibleDuration(45 * 15 * 48_000, 48_000, 45_000_000L))
+    }
+
+    @Test
+    fun `reading float samples as shorts would double the length and is rejected`() {
+        // The concrete mis-decode this guards: 32-bit float PCM read as 16-bit doubles the count.
+        assertFalse(AudioDecoder.isPlausibleDuration(45 * 48_000 * 2 + 1, 48_000, 45_000_000L))
+    }
+
+    @Test
+    fun `a wrong sample rate assumption that triples the audio is rejected`() {
+        // Believing the file's 48 kHz when the decoder actually emitted 16 kHz.
+        assertFalse(AudioDecoder.isPlausibleDuration(45 * 48_000 * 3, 48_000, 45_000_000L))
+    }
+
+    @Test
+    fun `an unknown declared duration is not treated as a failure`() {
+        // Some containers do not declare one; that is not evidence of a bug.
+        assertTrue(AudioDecoder.isPlausibleDuration(1_000, 48_000, 0L))
+    }
+
+    @Test
+    fun `small imprecision is tolerated rather than policed`() {
+        // A few dropped frames must not fail a decode; the guard is for order-of-magnitude errors.
+        assertTrue(AudioDecoder.isPlausibleDuration((45 * 48_000 * 0.97).toInt(), 48_000, 45_000_000L))
+    }
+
+    @Test
+    fun `a nonsensical sample rate is implausible`() {
+        assertFalse(AudioDecoder.isPlausibleDuration(1_000, 0, 45_000_000L))
     }
 }

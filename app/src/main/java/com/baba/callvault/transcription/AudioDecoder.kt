@@ -9,10 +9,12 @@
 package com.baba.callvault.transcription
 
 import android.content.Context
+import android.media.AudioFormat
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
+import com.baba.callvault.utils.AppLogger
 import java.io.ByteArrayOutputStream
 import java.nio.ByteOrder
 
@@ -25,14 +27,25 @@ import java.nio.ByteOrder
  * **Known limit, deliberately not solved here.** [decodeToMono16k] decodes the whole file into memory:
  * roughly 210 MB of transient buffers for a 10-minute call, and proportionally more beyond that. That
  * is fine for typical calls but not for very long ones, especially alongside a ~1 GB model. The fix is
- * chunked, VAD-segmented decoding, which the pipeline needs anyway for resumability — see the design
- * note. Until then callers must treat a very long recording as a real failure mode.
+ * chunked, VAD-segmented decoding, which the pipeline needs anyway for resumability.
  */
 object AudioDecoder {
+
+    private const val TAG = "CV:AudioDecoder"
 
     const val TARGET_SAMPLE_RATE = 16_000
 
     private const val DEQUEUE_TIMEOUT_US = 10_000L
+
+    /**
+     * How far the decoded length may stray from the container's declared duration before it is
+     * treated as a bug rather than as ordinary imprecision. Generous on purpose: the point is to catch
+     * an order-of-magnitude error, not to police a few dropped frames.
+     */
+    private const val DURATION_TOLERANCE = 2.0
+
+    /** PCM plus the format it is *actually* in, which is the decoder's output, not the file's input. */
+    private data class DecodedPcm(val pcm: ShortArray, val sampleRate: Int, val channels: Int)
 
     /**
      * Interleaved PCM-16 to mono float. Extra channels are averaged in rather than dropped, so a
@@ -76,8 +89,32 @@ object AudioDecoder {
     }
 
     /**
+     * Whether [frames] at [sampleRate] is a believable decode of a file declaring [expectedDurationUs].
+     *
+     * This exists because of a real failure: handing whisper an over-long or malformed buffer does not
+     * throw — it simply runs for as long as the buffer implies. A 45-second clip once transcribed for
+     * over eleven minutes before anyone could tell anything was wrong. Checking the arithmetic costs
+     * nothing and converts that into an immediate, legible error.
+     *
+     * Returns true when the duration is unknown ([expectedDurationUs] <= 0), because some containers
+     * genuinely do not declare one and that is not evidence of a bug.
+     */
+    fun isPlausibleDuration(frames: Int, sampleRate: Int, expectedDurationUs: Long): Boolean {
+        if (expectedDurationUs <= 0L) return true
+        if (sampleRate <= 0) return false
+        val decodedMs = frames * 1000.0 / sampleRate
+        val expectedMs = expectedDurationUs / 1000.0
+        if (decodedMs == 0.0) return expectedMs == 0.0
+        val ratio = decodedMs / expectedMs
+        return ratio in (1.0 / DURATION_TOLERANCE)..DURATION_TOLERANCE
+    }
+
+    /**
      * Decodes [uri] to 16 kHz mono float. Blocking and CPU-bound — [TranscriptionEngine] is what moves
      * it off the main thread; do not call it directly from UI code.
+     *
+     * @throws IllegalStateException if the decode produces an implausible amount of audio, rather than
+     *   letting a malformed buffer reach whisper where it costs minutes of silent CPU burn.
      */
     fun decodeToMono16k(context: Context, uri: Uri): FloatArray {
         val extractor = MediaExtractor()
@@ -91,30 +128,51 @@ object AudioDecoder {
             } ?: error("No audio track in $uri")
 
             extractor.selectTrack(track)
-            val format = extractor.getTrackFormat(track)
-            val mime = requireNotNull(format.getString(MediaFormat.KEY_MIME))
-            val sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
-            val channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+            val inputFormat = extractor.getTrackFormat(track)
+            val mime = requireNotNull(inputFormat.getString(MediaFormat.KEY_MIME))
+            val expectedDurationUs =
+                if (inputFormat.containsKey(MediaFormat.KEY_DURATION)) inputFormat.getLong(MediaFormat.KEY_DURATION) else 0L
 
-            val pcm = decodePcm(extractor, format, mime)
-            val mono = pcm16ToMonoFloat(pcm, channels)
-            return resampleTo16k(mono, sampleRate)
+            val decoded = decodePcm(extractor, inputFormat, mime)
+            val mono = pcm16ToMonoFloat(decoded.pcm, decoded.channels)
+
+            check(isPlausibleDuration(mono.size, decoded.sampleRate, expectedDurationUs)) {
+                "Decoded ${mono.size} frames at ${decoded.sampleRate} Hz " +
+                    "(${mono.size * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms) but the container " +
+                    "declares ${expectedDurationUs / 1000} ms — refusing to transcribe a malformed decode"
+            }
+
+            AppLogger.i(
+                TAG,
+                "Decoded $uri: ${mono.size} frames @ ${decoded.sampleRate} Hz, ${decoded.channels} ch " +
+                    "(${mono.size * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms)",
+            )
+            return resampleTo16k(mono, decoded.sampleRate)
         } finally {
             extractor.release()
         }
     }
 
     /**
-     * Drains the decoder into raw little-endian PCM-16.
+     * Drains the decoder into raw little-endian PCM-16, reporting the format the decoder **actually
+     * produced**.
+     *
+     * Taking the sample rate and channel count from the extractor's input format is a bug: a decoder
+     * may emit a different layout, and believing the wrong one silently rescales the whole recording.
+     * `INFO_OUTPUT_FORMAT_CHANGED` is therefore honoured rather than ignored.
      *
      * Bytes are accumulated rather than boxed `Short`s on purpose: a ten-minute call is ~29 million
      * samples, and a `List<Short>` of that would cost hundreds of megabytes in object headers alone.
      */
-    private fun decodePcm(extractor: MediaExtractor, format: MediaFormat, mime: String): ShortArray {
+    private fun decodePcm(extractor: MediaExtractor, inputFormat: MediaFormat, mime: String): DecodedPcm {
         val codec = MediaCodec.createDecoderByType(mime)
         val sink = ByteArrayOutputStream()
+
+        var sampleRate = inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+        var channels = inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+
         try {
-            codec.configure(format, null, null, 0)
+            codec.configure(inputFormat, null, null, 0)
             codec.start()
 
             val info = MediaCodec.BufferInfo()
@@ -136,15 +194,33 @@ object AudioDecoder {
                         }
                     }
                 }
+
                 when (val outIndex = codec.dequeueOutputBuffer(info, DEQUEUE_TIMEOUT_US)) {
-                    MediaCodec.INFO_TRY_AGAIN_LATER, MediaCodec.INFO_OUTPUT_FORMAT_CHANGED,
-                    MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED -> Unit
+                    MediaCodec.INFO_TRY_AGAIN_LATER -> Unit
+
+                    MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+                        val out = codec.outputFormat
+                        // The decoder is the authority on what it emits; the extractor only describes
+                        // the file. Where they disagree, believing the file rescales the recording.
+                        sampleRate = out.getInteger(MediaFormat.KEY_SAMPLE_RATE, sampleRate)
+                        channels = out.getInteger(MediaFormat.KEY_CHANNEL_COUNT, channels)
+
+                        val encoding = out.getInteger(MediaFormat.KEY_PCM_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
+                        check(encoding == AudioFormat.ENCODING_PCM_16BIT) {
+                            "Decoder emitted PCM encoding $encoding; this reader only understands 16-bit. " +
+                                "Reading float samples as shorts would double the sample count and produce noise."
+                        }
+                        AppLogger.i(TAG, "Decoder output format: ${sampleRate} Hz, $channels ch")
+                    }
+
                     else -> if (outIndex >= 0) {
                         val buf = codec.getOutputBuffer(outIndex)!!
-                        val chunk = ByteArray(info.size)
-                        buf.position(info.offset)
-                        buf.get(chunk, 0, info.size)
-                        sink.write(chunk)
+                        if (info.size > 0) {
+                            val chunk = ByteArray(info.size)
+                            buf.position(info.offset)
+                            buf.get(chunk, 0, info.size)
+                            sink.write(chunk)
+                        }
                         codec.releaseOutputBuffer(outIndex, false)
                         if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) sawOutputEnd = true
                     }
@@ -158,6 +234,6 @@ object AudioDecoder {
         val bytes = sink.toByteArray()
         val shorts = ShortArray(bytes.size / 2)
         java.nio.ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shorts)
-        return shorts
+        return DecodedPcm(shorts, sampleRate, channels)
     }
 }
