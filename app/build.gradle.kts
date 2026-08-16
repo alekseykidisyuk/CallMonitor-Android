@@ -214,7 +214,26 @@ android {
                 else -> println("No release keystore found (signing/callvault-signing.keystore); release APK will be unsigned.")
             }
         }
+
+        // Instrumented-test variant, installed SIDE BY SIDE with the real app.
+        //
+        // The only test device is the maintainer's daily driver, and it runs a release build that is
+        // actively recording calls. Installing a debug APK over it would replace a working recorder
+        // and drop WRITE_SECURE_SETTINGS, forcing a re-grant before recording works again. Its own
+        // applicationId avoids all of that: the instrumented tests need no permissions, no ADB
+        // pairing and no daemon, so a sibling install is enough to exercise them.
+        //
+        // Run with: ./gradlew connectedInstrtestAndroidTest
+        create("instrtest") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".instrtest"
+            isDebuggable = true
+        }
     }
+
+    // Instrumented tests build against "instrtest", never "debug", so running them can never install
+    // over the real app on the test device. See the instrtest build type above for why that matters.
+    testBuildType = "instrtest"
     compileOptions {
         sourceCompatibility =  JavaVersion.VERSION_17
         targetCompatibility =  JavaVersion.VERSION_17
