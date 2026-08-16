@@ -26,7 +26,12 @@
 
 ---
 
-## Task 1: Measure real on-device speed before building anything
+## Task 1: Measure real on-device speed before building anything — ✅ DONE 2026-08-16
+
+> **Executed.** See *Results* at the bottom for the numbers, the method deviation (cross-compiled
+> `whisper-cli` over `adb shell` instead of upstream's tap-driven sample app), and the two design
+> claims it disproved. The steps below are kept as the record of what was intended; follow *Results*
+> for what actually happened. Nothing was left on the phone or in scratch.
 
 This is **risk #1 in the spec** and it is deliberately first. Desktop RTF was 0.54 on an Apple M5; a phone may be 3–6× slower. If a 10-minute call takes 30 minutes, the scheduler in Plan 2 must be opportunistic (charging + idle) rather than "runs when the call ends". Measuring first stops that assumption being baked in.
 
@@ -637,25 +642,23 @@ import org.junit.Test
 class TranscriptionEngineTest {
 
     @Test
-    fun `thread count never exceeds available processors`() {
-        val n = TranscriptionEngine.threadCountFor(availableProcessors = 8, performanceCores = 4)
-        assertTrue(n <= 8)
-    }
-
-    @Test
-    fun `performance core count is preferred when known`() {
-        // big.LITTLE: scheduling onto little cores measurably hurts RTF, so prefer the big cluster.
-        assertEquals(4, TranscriptionEngine.threadCountFor(availableProcessors = 8, performanceCores = 4))
-    }
-
-    @Test
-    fun `falls back to half the processors when performance cores are unknown`() {
-        assertEquals(4, TranscriptionEngine.threadCountFor(availableProcessors = 8, performanceCores = 0))
+    fun `uses every available core`() {
+        // Measured on the OP12 (SM8650, 6 performance + 2 efficiency cores), large-v3-turbo-q5_0:
+        // 4 threads 140.4 s, 6 threads 99.2 s, 8 threads 95.9 s. All-cores won, so the
+        // "prefer performance cores" heuristic was rejected on evidence rather than kept on intuition.
+        assertEquals(8, TranscriptionEngine.threadCountFor(availableProcessors = 8))
     }
 
     @Test
     fun `never returns fewer than one thread`() {
-        assertEquals(1, TranscriptionEngine.threadCountFor(availableProcessors = 1, performanceCores = 0))
+        assertEquals(1, TranscriptionEngine.threadCountFor(availableProcessors = 1))
+    }
+
+    @Test
+    fun `a nonsensical processor count still yields a usable thread count`() {
+        // Runtime.availableProcessors() is documented to be able to change and has been seen to
+        // return 0 on some devices; whisper.cpp would divide by it.
+        assertEquals(1, TranscriptionEngine.threadCountFor(availableProcessors = 0))
     }
 }
 ```
@@ -697,16 +700,17 @@ object TranscriptionEngine {
     }.asCoroutineDispatcher()
 
     /**
-     * Threads to hand whisper.cpp. On big.LITTLE, using every core drags work onto little cores and
-     * measurably slows the job, so the performance-core count is preferred when it is known.
+     * Threads to hand whisper.cpp: every core.
+     *
+     * Measured on the OP12 (SM8650, 6 performance + 2 efficiency cores) with
+     * `large-v3-turbo-q5_0` — 4 threads 140.4 s, 6 threads 99.2 s, 8 threads 95.9 s. Using the
+     * efficiency cluster too was fastest, so the "prefer performance cores" rule this was originally
+     * designed with is deliberately NOT implemented. Do not reintroduce it without new measurements.
      */
-    fun threadCountFor(availableProcessors: Int, performanceCores: Int): Int = when {
-        performanceCores in 1..availableProcessors -> performanceCores
-        else -> (availableProcessors / 2).coerceAtLeast(1)
-    }
+    fun threadCountFor(availableProcessors: Int): Int = availableProcessors.coerceAtLeast(1)
 
     fun preferredThreadCount(): Int =
-        threadCountFor(Runtime.getRuntime().availableProcessors(), performanceCores = 0)
+        threadCountFor(Runtime.getRuntime().availableProcessors())
 
     /**
      * Transcribes [uri] with the model at [modelPath].
@@ -775,14 +779,63 @@ Expected: Hebrew text, not English transliteration. **This is the check that Tas
 
 ---
 
-## Results — Task 1 (fill in during execution)
+## Results — Task 1 (MEASURED 2026-08-16 on the OP12)
 
-| model | audio duration | wall clock | RTF | peak RSS |
+Device: OnePlus 12 (`6011b07e`, CPH2581), **SM8650** / Snapdragon 8 Gen 3, 8 cores
+(1× Cortex-X4 + 5× A720 performance, 2× A520 efficiency).
+
+**Method deviation, deliberate.** The plan said to build upstream's `examples/whisper.android` sample.
+That app needs manual taps to load a model and start a run, which cannot be driven headlessly, so
+`whisper-cli` was cross-compiled for `arm64-v8a` with NDK 27.2.12479018 and run over `adb shell`
+instead. Same engine, same models, scriptable, and it reports whisper's own timings. Input was a real
+120.0 s Hebrew call excerpt decoded to 16 kHz mono WAV.
+
+| model | audio | wall clock | **RTF** | peak RSS |
 |---|---|---|---|---|
-| `ggml-small-q5_1` | | | | |
-| `ggml-large-v3-turbo-q5_0` | | | | |
+| `ggml-small-q5_1` | 120.0 s | 118.9 s | **0.99** | not reliably measured † |
+| `ggml-large-v3-turbo-q5_0` | 120.0 s | 259.1 s | **2.16** | **1.03 GB** (1,057,268 kB) |
 
-**Consequence for Plan 2's scheduler:**
+† Two attempts returned an implausible ~1.7 MB — the PID capture read the shell rather than
+`whisper-cli`. Not fabricated here. Scaling turbo's measured 1.8× model-size overhead suggests roughly
+350 MB, but treat that as an estimate, not a measurement.
+
+**Desktop → phone slowdown was 5×** for `small` (0.20 → 0.99) and **4×** for turbo (0.54 → 2.16),
+inside the 3–6× the spec predicted.
+
+### Thread count: the "performance cores" heuristic was measured and REJECTED
+
+`large-v3-turbo-q5_0`, 30 s slice:
+
+| threads | total |
+|---|---|
+| 4 | 140.4 s |
+| 6 | 99.2 s |
+| **8** | **95.9 s** |
+
+Using **all 8 cores**, including the efficiency cluster, was fastest. The spec claimed big.LITTLE
+scheduling onto little cores "measurably hurts" — on SM8650 it does not. The 8-thread run also went
+**last**, so thermal throttling worked against it and the result still held. Task 5 and the spec are
+corrected accordingly.
+
+### Consequence for Plan 2's scheduler
+
+Transcription is **viable but slow enough that it must never block a user**:
+
+| call length | Light (RTF 0.99) | Best (RTF 2.16) |
+|---|---|---|
+| 5 min | ~5 min | ~11 min |
+| 10 min | ~10 min | ~22 min |
+| 30 min | ~30 min | ~65 min |
+
+So:
+1. **Keep the deferred background-job design.** "Runs when the call ends" with someone waiting is not
+   an option at the Best tier; the foreground-service-with-progress-and-cancel design stands.
+2. **Resumability is now mandatory, not a nicety.** A 65-minute job that restarts from zero on
+   interruption would effectively never finish.
+3. **Charging-only should be the recommended default for the Best tier** — an hour at 8 cores is a real
+   battery and thermal cost — but it must not be *forced*, since Light at ~1× real time is fine
+   unplugged.
+4. **The ~1 GB memory gate is justified** and must be enforced before loading the Best tier.
 
 ---
 

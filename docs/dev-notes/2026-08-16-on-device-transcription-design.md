@@ -150,8 +150,11 @@ them would only generate bad transcripts and support load.
 - **ABI: `arm64-v8a` only** for release — **already configured** in `app/build.gradle.kts`
   (`ndk { abiFilters += "arm64-v8a" }`), so this needs no change. `minSdk` 30 means effectively every
   target is 64-bit.
-- **Threads**: `n_threads` drives RTF more than anything else. Default to performance-core count, not
-  total cores — big.LITTLE scheduling onto little cores measurably hurts. First knob to tune on device.
+- **Threads — measured 2026-08-16, and the original guidance was wrong.** This document first said to
+  prefer the performance-core count because big.LITTLE scheduling onto little cores "measurably
+  hurts". On the OP12 (SM8650) with `large-v3-turbo-q5_0` the opposite held: 4 threads 140.4 s,
+  6 threads 99.2 s, **8 threads 95.9 s**. Use **every available core**. Do not reintroduce the
+  performance-core heuristic without new measurements.
 - **Memory**: `large-v3-turbo-q5_0` needs roughly 1 GB resident. Check `ActivityManager.MemoryInfo`
   before loading and fail with a clear message rather than taking an OOM kill; that is the cue to
   suggest the Light tier.
@@ -229,9 +232,13 @@ today.** Room migrations and cascade deletes corrupt data silently and cannot be
 
 ## Open risks
 
-1. **On-device RTF is unmeasured.** Desktop M5 gave 0.54; a phone may be 3–6× slower, so a 10-minute
-   call could take 15–30 minutes. If so, transcription becomes an opportunistic charging-and-idle job
-   rather than "runs when the call ends". **Measure on the OP12 before building the scheduler.**
+1. ~~**On-device RTF is unmeasured.**~~ **CLOSED 2026-08-16 — measured on the OP12** (SM8650):
+   `small-q5_1` **RTF 0.99**, `large-v3-turbo-q5_0` **RTF 2.16**, peak RSS **1.03 GB** for the Best
+   tier. The 3–6× slowdown prediction held (5× and 4×). Consequences, now settled rather than assumed:
+   a 10-minute call takes ~10 min (Light) or ~22 min (Best), and a 30-minute call ~30 / ~65 min. The
+   deferred background-job design stands, **resumability becomes mandatory** rather than a nicety, and
+   charging-only should be the *recommended default* for the Best tier without being forced — Light
+   runs fine unplugged. Full numbers in `2026-08-16-transcription-plan-1-engine.md`.
 2. **F-Droid anti-feature label** for downloading binaries at runtime, even though the Whisper weights
    are MIT. Confirm against their policy — it affects listing, not function.
 3. **Hebrew quality at the Light tier is poor.** Users who decline the 574 MB download get visibly
