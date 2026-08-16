@@ -54,6 +54,31 @@ class TranscriptionEngineInstrumentedTest {
         assertTrue("system info was blank", info.isNotBlank())
     }
 
+    /**
+     * Decode only — no model, no whisper. Runs in seconds.
+     *
+     * Deliberately separate from the transcription test so a decode bug is caught cheaply. The first
+     * on-device run of this feature spent eleven minutes transcribing a 45-second clip before anything
+     * suggested a problem, and the cause was in the decode. This test would have failed in about a
+     * second, which is the whole point of splitting it out: the phone is a daily driver, and time
+     * borrowed from it should be spent on the check that actually needs the device.
+     */
+    @Test
+    fun decodes_a_recording_to_the_expected_amount_of_audio() {
+        val audio = fixture("cv-test-audio.ogg")
+        assumeTrue("fixture not staged — see this class's KDoc", audio != null)
+
+        val samples = AudioDecoder.decodeToMono16k(context, Uri.fromFile(audio))
+        assertTrue("decoded nothing", samples.isNotEmpty())
+
+        // The fixture is a 45 s clip. At 16 kHz that is ~720k samples; anything wildly off means the
+        // decoder's format was misread, which is exactly what made whisper run 15x too long.
+        val seconds = samples.size.toDouble() / AudioDecoder.TARGET_SAMPLE_RATE
+        assertTrue("decoded $seconds s of audio from a ~45 s clip", seconds in 40.0..50.0)
+
+        assertTrue("samples outside [-1,1]", samples.all { it in -1f..1f })
+    }
+
     @Test
     fun transcribes_hebrew_audio_in_hebrew_script() {
         val model = fixture("cv-test-model.bin")
