@@ -146,6 +146,12 @@ android {
         // depends on) is arm64, and shipping one ABI keeps the APK small.
         ndk { abiFilters += "arm64-v8a" }
 
+        // Instrumented tests. Added with on-device transcription: the JNI bridge to whisper.cpp
+        // cannot be verified by a JVM unit test, and a wrong language parameter or a mismatched
+        // native symbol fails only at runtime — silently producing confident nonsense rather than
+        // crashing. See app/src/androidTest.
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
         buildConfigField("String", "CI_BUILD_NUMBER", "\"${ciBuildNumber.get()}\"")
 
         buildConfigField("String", "SCRCPY_VERSION", "\"$scrcpyVersion\"")
@@ -360,4 +366,9 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.13")
     testImplementation("org.robolectric:robolectric:4.14")
     testImplementation("androidx.test:core:1.6.1")
+
+    // Instrumented tests — the only way to exercise the whisper.cpp JNI bridge, which a JVM unit
+    // test cannot load. Deliberately minimal: runner + JUnit extensions, no UI-testing stack.
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
 }
