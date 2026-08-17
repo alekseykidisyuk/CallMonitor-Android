@@ -70,7 +70,18 @@ that is a deliberate, documented trade, not an oversight.
 
 ---
 
-## Task 1: Transcript storage that survives a schema bump
+## Task 1: Transcript storage that survives a schema bump — ✅ DONE 2026-08-17 (`21e0e03`)
+
+> **Built and green: 10 new tests, 340 total, 0 failures.** Two things worth carrying forward:
+>
+> - **`exportSchema = true` exports nothing without `room.schemaLocation`.** Added to
+>   `app/build.gradle.kts`; the baseline is committed at
+>   `app/schemas/…TranscriptDatabase/1.json`. Without it the migration promise was hollow.
+> - **The cascade needed wiring into *two* paths, not one.** `removeName` is the user deleting a
+>   recording; the **retention sweep deletes per copy** via `removeCopyByUri`, which drops the row
+>   through a bulk `deleteEmpty()` that cannot report what it removed — so orphaned names are captured
+>   before it runs. Verified that Room does generate FTS sync triggers, so search rows follow segment
+>   deletes automatically (four `room_fts_content_sync_*` triggers in the exported schema).
 
 **Files:**
 - Create: `app/src/main/java/com/baba/callvault/data/transcripts/db/TranscriptEntry.kt`
