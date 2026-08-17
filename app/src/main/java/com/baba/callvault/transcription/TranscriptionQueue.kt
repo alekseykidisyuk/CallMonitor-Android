@@ -28,6 +28,9 @@ object TranscriptionQueue {
     /** How many recordings one scheduled run will take on. */
     const val DEFAULT_LIMIT = 25
 
+    /** Passed as the limit to mean "take the whole backlog". */
+    const val NO_LIMIT = 0
+
     /**
      * Display names that should be transcribed, **oldest first** so a backlog drains in call order.
      *
@@ -62,7 +65,7 @@ object TranscriptionQueue {
                 }
             }
             .sortedBy { it.lastModified }
-            .take(limit)
+            .let { if (limit <= NO_LIMIT) it else it.take(limit) }
             .map { it.displayName }
     }
 }

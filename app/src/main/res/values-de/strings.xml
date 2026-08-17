@@ -270,6 +270,8 @@
     <string name="support_appeal_body">Ich entwickle CallVault allein, in meiner Freizeit – kostenlos, quelloffen, ohne Werbung, ohne Tracking. ☕ Wenn es dir nützt, hält mich eine kleine Spende am Ball. So oder so: danke! 🙏</string>
     <string name="support_appeal_title">Von einer Person gemacht 👋</string>
     <string name="support_not_now">Jetzt nicht</string>
+    <string name="transcription_batch_label">Anrufe pro Durchlauf</string>
+    <string name="transcription_batch_no_limit">Ohne Begrenzung</string>
     <string name="transcription_charging_subtitle">Die Transkription belastet den Prozessor stark und entlädt den Akku.</string>
     <string name="transcription_charging_title">Nur beim Laden</string>
     <string name="transcription_hour_label">Stunde</string>

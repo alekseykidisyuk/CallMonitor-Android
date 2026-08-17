@@ -496,4 +496,6 @@
     <string name="transcription_language_auto">Detect automatically</string>
     <string name="transcription_note_manual">Transcripts are made only when you ask for one, from the button on a recording.</string>
     <string name="transcription_note_automatic">Calls that have no transcript yet are transcribed at the chosen time. A 30-minute call takes about 30 minutes.</string>
+    <string name="transcription_batch_label">Calls per run</string>
+    <string name="transcription_batch_no_limit">No limit</string>
 </resources>

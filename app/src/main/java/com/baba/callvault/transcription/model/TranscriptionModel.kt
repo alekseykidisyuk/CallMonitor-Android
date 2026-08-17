@@ -58,8 +58,15 @@ enum class TranscriptionModel(
     );
 
     companion object {
-        /** The tier chosen when the user has expressed no preference. */
-        val DEFAULT = SMALL_Q5_1
+        /**
+         * The tier chosen when the user has expressed no preference.
+         *
+         * Best rather than Fast, decided 2026-08-17. Fast produces Hebrew *gist*; Best produces clean
+         * Hebrew, and a transcript you cannot trust is not worth the battery it cost. The price is a
+         * 574 MB download and roughly 2.2x real time instead of 1x, which the user accepted — a
+         * 30-minute call takes about 65 minutes rather than 30.
+         */
+        val DEFAULT = LARGE_V3_TURBO_Q5_0
 
         fun fromId(id: String?): TranscriptionModel? = entries.firstOrNull { it.id == id }
     }

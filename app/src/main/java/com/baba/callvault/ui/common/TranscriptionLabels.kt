@@ -29,6 +29,14 @@ object TranscriptionLabels {
     val MINUTE_OPTIONS = listOf(0, 15, 30, 45)
 
     /**
+     * How many recordings one automatic run may take on. 0 is offered as "No limit".
+     *
+     * Configurable because the right answer depends entirely on how long the calls are: ten short
+     * calls is a quick sweep, ten hour-long ones is most of a night at the Best tier.
+     */
+    val BATCH_LIMIT_OPTIONS = listOf(5, 10, 25, 50, 0)
+
+    /**
      * Languages offered, null meaning auto-detect.
      *
      * Hebrew is first because it is what this feature was measured against. Auto-detect is offered

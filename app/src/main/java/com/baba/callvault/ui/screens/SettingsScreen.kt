@@ -80,6 +80,7 @@ import com.baba.callvault.data.RetentionPeriod
 import com.baba.callvault.integrations.scrcpy.AUDIO_BIT_RATE_OPTIONS
 import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.data.TranscriptionMode
+import com.baba.callvault.transcription.TranscriptionQueue
 import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.ui.common.SyncScheduleLabels
@@ -733,6 +734,7 @@ private fun TranscriptionSection(
     val hour = remember(updateTrigger) { preferences.getTranscriptionHour() }
     val minute = remember(updateTrigger) { preferences.getTranscriptionMinute() }
     val requiresCharging = remember(updateTrigger) { preferences.getTranscriptionRequiresCharging() }
+    val batchLimit = remember(updateTrigger) { preferences.getTranscriptionBatchLimit() }
     val modelId = remember(updateTrigger) { preferences.getTranscriptionModelId() }
     val language = remember(updateTrigger) { preferences.getTranscriptionLanguage() }
     val installed = remember(updateTrigger) { ModelRepository.installedModels(context) }
@@ -779,6 +781,25 @@ private fun TranscriptionSection(
                     onOptionSelected = { actions.setTranscriptionMinute(it.key.toIntOrNull() ?: 0) }
                 )
             }
+            val batchOptions = TranscriptionLabels.BATCH_LIMIT_OPTIONS.map { limit ->
+                OptionItem(
+                    limit.toString(),
+                    if (limit == TranscriptionQueue.NO_LIMIT) {
+                        stringResource(R.string.transcription_batch_no_limit)
+                    } else {
+                        limit.toString()
+                    }
+                )
+            }
+            DropdownRow {
+                M3DropdownField(
+                    label = stringResource(R.string.transcription_batch_label),
+                    selected = batchOptions.find { it.key == batchLimit.toString() } ?: batchOptions.first(),
+                    options = batchOptions,
+                    onOptionSelected = { actions.setTranscriptionBatchLimit(it.key.toIntOrNull() ?: 25) }
+                )
+            }
+
             SettingsToggleRow(
                 icon = Icons.Filled.BatteryChargingFull,
                 label = stringResource(R.string.transcription_charging_title),
@@ -2291,6 +2312,7 @@ private fun SettingsScreenPreview() {
             override fun setTranscriptionHour(hour: Int) {}
             override fun setTranscriptionMinute(minute: Int) {}
             override fun setTranscriptionRequiresCharging(required: Boolean) {}
+            override fun setTranscriptionBatchLimit(limit: Int) {}
             override fun setTranscriptionModelId(id: String) {}
             override fun setTranscriptionLanguage(language: String?) {}
             override fun downloadTranscriptionModel(model: TranscriptionModel) {}

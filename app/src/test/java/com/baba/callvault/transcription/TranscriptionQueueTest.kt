@@ -127,6 +127,19 @@ class TranscriptionQueueTest {
         assertEquals(listOf("a.ogg"), TranscriptionQueue.pending(context, limit = 1))
     }
 
+    @Test
+    fun a_limit_of_zero_takes_the_whole_backlog() = runBlocking {
+        // The user-facing "No limit" option. Zero must mean everything, not nothing — the opposite
+        // reading would silently transcribe none of the backlog every night.
+        catalogued("a.ogg", lastModified = 100L)
+        catalogued("b.ogg", lastModified = 200L)
+
+        assertEquals(
+            listOf("a.ogg", "b.ogg"),
+            TranscriptionQueue.pending(context, limit = TranscriptionQueue.NO_LIMIT)
+        )
+    }
+
     private suspend fun catalogued(name: String, lastModified: Long) {
         RecordingCatalog.recordLocal(context, name, "content://local/$name".toUri(), 10L, lastModified)
     }

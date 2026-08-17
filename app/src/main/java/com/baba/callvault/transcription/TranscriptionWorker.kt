@@ -45,7 +45,11 @@ class TranscriptionWorker(
             }
 
         val single = inputData.getString(KEY_DISPLAY_NAME)
-        val names = if (single != null) listOf(single) else TranscriptionQueue.pending(applicationContext)
+        val names = if (single != null) {
+            listOf(single)
+        } else {
+            TranscriptionQueue.pending(applicationContext, prefs.getTranscriptionBatchLimit())
+        }
 
         if (names.isEmpty()) {
             AppLogger.i(TAG, "Nothing to transcribe")

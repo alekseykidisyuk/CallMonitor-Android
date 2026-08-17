@@ -98,6 +98,10 @@ class AppPreferences(context: Context) {
         const val TRANSCRIPTION_HOUR = 2       // 0-23, device local time
         const val TRANSCRIPTION_MINUTE = 0     // 0-59
         const val TRANSCRIPTION_REQUIRES_CHARGING = true
+        // How many recordings one automatic run takes on. 0 means no limit. Configurable because the
+        // right answer depends entirely on call length: 25 short calls is a quick sweep, 25 long ones
+        // is most of a night.
+        const val TRANSCRIPTION_BATCH_LIMIT = 25
         val TRANSCRIPTION_MODEL_ID = TranscriptionModel.DEFAULT.id
         // Null means auto-detect. Our JNI sets whisper's detect_language whenever no language is
         // given, so null is genuine detection rather than a silent fall back to English — that
@@ -196,6 +200,7 @@ class AppPreferences(context: Context) {
         TRANSCRIPTION_HOUR("transcription_hour"),
         TRANSCRIPTION_MINUTE("transcription_minute"),
         TRANSCRIPTION_REQUIRES_CHARGING("transcription_requires_charging"),
+        TRANSCRIPTION_BATCH_LIMIT("transcription_batch_limit"),
         TRANSCRIPTION_MODEL_ID("transcription_model_id"),
         TRANSCRIPTION_LANGUAGE("transcription_language"),
 
@@ -555,6 +560,13 @@ class AppPreferences(context: Context) {
     /** Sets whether the automatic run waits for the phone to be charging. */
     fun setTranscriptionRequiresCharging(required: Boolean) =
         setBoolean(Key.TRANSCRIPTION_REQUIRES_CHARGING, required)
+
+    /** How many recordings one automatic run takes on; 0 means no limit. */
+    fun getTranscriptionBatchLimit() =
+        getInt(Key.TRANSCRIPTION_BATCH_LIMIT, DefaultsValue.TRANSCRIPTION_BATCH_LIMIT)
+
+    /** Sets how many recordings one automatic run takes on; 0 means no limit. */
+    fun setTranscriptionBatchLimit(limit: Int) = setInt(Key.TRANSCRIPTION_BATCH_LIMIT, limit)
 
     /** Gets the chosen model tier. */
     fun getTranscriptionModelId(): String =

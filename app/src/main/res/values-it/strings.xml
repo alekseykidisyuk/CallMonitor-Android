@@ -270,6 +270,8 @@
     <string name="support_appeal_body">Sviluppo CallVault da solo, nel tempo libero: gratuita, open source, senza pubblicità né tracciamento. ☕ Se ti è utile, una piccola offerta mi aiuta ad andare avanti. In ogni caso, grazie! 🙏</string>
     <string name="support_appeal_title">Fatta da una sola persona 👋</string>
     <string name="support_not_now">Non ora</string>
+    <string name="transcription_batch_label">Chiamate per esecuzione</string>
+    <string name="transcription_batch_no_limit">Nessun limite</string>
     <string name="transcription_charging_subtitle">La trascrizione usa molto il processore e consuma la batteria.</string>
     <string name="transcription_charging_title">Solo durante la ricarica</string>
     <string name="transcription_hour_label">Ora</string>

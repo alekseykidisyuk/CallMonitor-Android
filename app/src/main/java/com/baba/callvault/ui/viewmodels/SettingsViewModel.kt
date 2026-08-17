@@ -80,6 +80,7 @@ interface SettingsActions {
     fun setTranscriptionHour(hour: Int)
     fun setTranscriptionMinute(minute: Int)
     fun setTranscriptionRequiresCharging(required: Boolean)
+    fun setTranscriptionBatchLimit(limit: Int)
     fun setTranscriptionModelId(id: String)
     fun setTranscriptionLanguage(language: String?)
     fun downloadTranscriptionModel(model: TranscriptionModel)
@@ -399,6 +400,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     override fun setTranscriptionRequiresCharging(required: Boolean) {
         preferences.setTranscriptionRequiresCharging(required)
         TranscriptionScheduler.apply(appContext)
+        refresh()
+    }
+
+    /** Saves how many recordings one automatic run takes on. */
+    override fun setTranscriptionBatchLimit(limit: Int) {
+        preferences.setTranscriptionBatchLimit(limit)
         refresh()
     }
 

@@ -270,6 +270,8 @@
     <string name="support_appeal_body">A CallVaultot egyedül fejlesztem, a szabadidőmben – ingyenes, nyílt forráskódú, nincs hirdetés és nyomkövetés. ☕ Ha hasznos neked, egy kis támogatás segít folytatni. Így is, úgy is: köszönöm! 🙏</string>
     <string name="support_appeal_title">Egyetlen ember készíti 👋</string>
     <string name="support_not_now">Most nem</string>
+    <string name="transcription_batch_label">Hívások futásonként</string>
+    <string name="transcription_batch_no_limit">Nincs korlát</string>
     <string name="transcription_charging_subtitle">Az átírás erősen terheli a processzort, és meríti az akkumulátort.</string>
     <string name="transcription_charging_title">Csak töltés közben</string>
     <string name="transcription_hour_label">Óra</string>
