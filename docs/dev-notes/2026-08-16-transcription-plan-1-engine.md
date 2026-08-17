@@ -37,52 +37,91 @@ never pushed). `main` is untouched. **330 unit tests pass; `assembleDebug` succe
 | 2 — vendor whisper.cpp | ✅ done, libs verified in the APK |
 | 3 — JNI language + segments | ✅ done, symbols verified with `llvm-nm` |
 | 4 — audio decode | ✅ done + bug found and fixed on device (see below) |
-| 5 — engine facade | ✅ code done; **on-device verification OUTSTANDING** |
+| 5 — engine facade | ✅ done and **verified on device 2026-08-17** |
 
-### The one thing left, and how to do it cheaply
+## ✅ VERIFIED ON DEVICE — 2026-08-17
 
-The first device run transcribed a 45-second clip for **eleven minutes** without finishing — an
-effective RTF of ~15 against the ~1.0 `whisper-cli` measured on the same phone with the same model.
-Root cause: `AudioDecoder` read the sample rate and channel count from the *extractor's input*
-format and ignored `INFO_OUTPUT_FORMAT_CHANGED`; the decoder is the authority on what it emits.
-Fixed in `956312c`, together with `isPlausibleDuration()`, which now fails loudly on an
-order-of-magnitude mismatch instead of burning an hour of CPU in silence.
+All three instrumented tests pass on the OP12: **3 tests, 0 failures, 0 skipped.** Plan 1 is done.
 
-**That fix is NOT yet confirmed on a device.** Do this, in this order — the first step needs no model
-and finishes in about a second:
+- the native library loads and resolves its JNI symbols
+- the decoder fix (`956312c`) is confirmed: a 47.5 s clip decodes to 47.5 s of audio
+- **the transcript comes back in Hebrew script**, which is what proves `params.language` actually
+  reaches whisper — the whole reason this JNI is not upstream's
+
+Verify the counts in the XML report, not the Gradle log. `assumeTrue` skips are reported as
+`BUILD SUCCESSFUL`, so a run that staged no fixtures looks identical to a passing one:
 
 ```bash
-# 0. The test device is a daily driver. ASK before assuming it is connected.
-export JAVA_HOME=/opt/homebrew/opt/openjdk@21 && export PATH="$JAVA_HOME/bin:$PATH"
-export ANDROID_SERIAL=6011b07e
-
-# 1. Build + install SIDE BY SIDE. -PisolateTestApp is what stops this replacing the
-#    user's working release build and dropping WRITE_SECURE_SETTINGS.
-./gradlew installDebug -PisolateTestApp
-
-# 2. Stage the small fixture only (138 KB, no model needed yet)
-D=/sdcard/Android/data/com.baba.callvault.instrtest/files
-adb shell mkdir -p $D
-adb push <45s-hebrew-clip>.ogg $D/cv-test-audio.ogg
-
-# 3. Fast decode check — seconds. If this fails, the decode is still wrong; do NOT go further.
-./gradlew connectedDebugAndroidTest -PisolateTestApp \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.baba.callvault.transcription.TranscriptionEngineInstrumentedTest#decodes_a_recording_to_the_expected_amount_of_audio
-
-# 4. Only if step 3 passes: push the model (190 MB) and run the Hebrew transcription test.
-adb push ggml-small-q5_1.bin $D/cv-test-model.bin
-./gradlew connectedDebugAndroidTest -PisolateTestApp
-
-# 5. Clean up the borrowed device
-adb uninstall com.baba.callvault.instrtest
-adb shell rm -rf /sdcard/Android/data/com.baba.callvault.instrtest
+grep -o 'tests="[0-9]*"\|skipped="[0-9]*"\|failures="[0-9]*"' \
+  "app/build/outputs/androidTest-results/connected/debug/TEST-*.xml"
 ```
 
-The transcription test's real assertion is that the output contains **Hebrew** Unicode: if
-`params.language` failed to reach whisper it falls back to English and returns Latin script, which is
-the whole reason this JNI is not upstream's.
+### Finding: a debug build runs inference ~13x too slow (fixed)
 
-**Afterwards:** merge to `main` (do not push — this project is local-first), then write Plan 2.
+The first verified run took **10m26s** for a 47.5 s clip. Nothing was wrong with the code — AGP
+compiles debug variants with `CMAKE_BUILD_TYPE=Debug`, and the NDK's Debug flags are `-O0`. For ggml
+that is not a mild penalty.
+
+Fixed by `add_compile_options($<$<CONFIG:Debug>:-O3>)` in `app/src/main/cpp/CMakeLists.txt`, placed
+before `add_subdirectory` so whisper, ggml and `whispercv` inherit it while `audiohandoff` keeps its
+debuggable `-O0`. Re-measured immediately after:
+
+| native build | wall clock, 47.5 s clip | speedup |
+|---|---|---|
+| `-O0` (AGP default for debug) | 10m 26s | — |
+| `-O3` | **49 s** (RTF ≈ 0.85) | **12.8x** |
+
+The `-O3` number agrees with the 0.99 RTF measured in Task 1 with a release-built `whisper-cli`, so
+release performance was never affected — only on-device debug runs were, and they were the runs
+being used to judge speed. **Do not remove that line**, or every future device test costs 13x.
+
+### Gotcha: `connectedAndroidTest` uninstalls the app, wiping the fixtures
+
+Gradle uninstalls the package when the run finishes, and uninstalling deletes
+`/sdcard/Android/data/<pkg>/`. Fixtures therefore do **not** survive a run, and pushing them while
+the package is absent silently lands in an orphaned directory. Stage them *after* install, *every*
+time:
+
+```bash
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21 && export PATH="$JAVA_HOME/bin:$PATH"
+export ANDROID_SERIAL=6011b07e
+D=/sdcard/Android/data/com.baba.callvault.instrtest/files
+
+./gradlew installDebug -PisolateTestApp        # 1. install (side by side; never replaces v1.5.7)
+adb push cv-test-audio.ogg $D/cv-test-audio.ogg # 2. stage AFTER install
+adb push ggml-small-q5_1.bin $D/cv-test-model.bin
+./gradlew connectedDebugAndroidTest -PisolateTestApp   # 3. run (uninstalls itself at the end)
+```
+
+### The Hebrew fixture is synthetic, on purpose
+
+Real call recordings live in app-private storage and are not readable over `adb`, and the maintainer's
+calls must not be copied around to make a test pass. The fixture is generated locally instead:
+
+```bash
+say -v Carmit -f hebrew.txt -o hebrew.aiff        # macOS Hebrew TTS
+ffmpeg -i hebrew.aiff -af "lowpass=f=3800,highpass=f=250" \
+       -c:a libopus -b:a 16k -ac 1 -ar 48000 cv-test-audio.ogg
+```
+
+The band-pass mimics the narrowband telephony audio the spec measured, and the encode matches
+CallVault's own Opus 16 kbps mono. It must land in the 40–50 s window the decode test asserts; `say`
+ignores `-r` for Carmit, so adjust the *text length*, not the rate. This validates the language
+plumbing, not recognition accuracy on real speech — accuracy was already assessed in Task 1.
+
+### Historical: the original 15x report
+
+The first ever device run transcribed a 45 s clip for eleven minutes. That was read as one bug; it
+was two, stacked. The decoder read the *extractor's input* format and ignored
+`INFO_OUTPUT_FORMAT_CHANGED` (fixed in `956312c`, with `isPlausibleDuration()` to fail loudly next
+time), **and** the `-O0` build above. Fixing only the first would have left an 11-minute run looking
+barely improved, which is why the decode check is split out to run in a second without a model.
+
+Keep the decode check split out for that reason: it needs no model and finishes in about a second, so
+a decode fault never again costs eleven minutes of borrowed device time to discover.
+
+**Next:** Plan 2 — model download and verification, the WorkManager pipeline, and Room v1→v2 with
+transcripts, FTS and cascade delete.
 
 ---
 
