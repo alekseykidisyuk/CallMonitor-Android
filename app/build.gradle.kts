@@ -416,6 +416,9 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.13")
     testImplementation("org.robolectric:robolectric:4.14")
     testImplementation("androidx.test:core:1.6.1")
+    // Lets tests exercise code that enqueues work. Without it WorkManager throws "not initialized"
+    // the moment a test touches a scheduler, which would otherwise push that code out of test reach.
+    testImplementation("androidx.work:work-testing:2.10.0")
 
     // Instrumented tests — the only way to exercise the whisper.cpp JNI bridge, which a JVM unit
     // test cannot load. Deliberately minimal: runner + JUnit extensions, no UI-testing stack.
