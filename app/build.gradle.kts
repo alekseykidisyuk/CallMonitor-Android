@@ -302,6 +302,21 @@ kotlin {
     }
 }
 
+/**
+ * Where Room writes its schema JSON.
+ *
+ * Only [com.baba.callvault.data.transcripts.db.TranscriptDatabase] exports a schema. It must, because
+ * it carries real migrations: a transcript costs minutes of device CPU and cannot be regenerated, so
+ * that database may never take the destructive fallback the recordings catalog deliberately uses. A
+ * migration needs a committed baseline to be written and tested against, and without this argument
+ * `exportSchema = true` silently produces nothing.
+ *
+ * The exported files are committed on purpose — they are the record of every shipped schema.
+ */
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 androidComponents {
     onVariants { variant ->
         variant.sources.assets?.addGeneratedSourceDirectory(

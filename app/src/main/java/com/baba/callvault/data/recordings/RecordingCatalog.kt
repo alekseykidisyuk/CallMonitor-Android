@@ -12,6 +12,7 @@ import android.content.Context
 import android.net.Uri
 import com.baba.callvault.data.recordings.db.RecordingDatabase
 import com.baba.callvault.data.recordings.db.RecordingEntry
+import com.baba.callvault.data.transcripts.TranscriptCascade
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -96,10 +97,16 @@ object RecordingCatalog {
             AppLogger.w(TAG, "all() failed: ${it.message}"); emptyList()
         }
 
-    /** Removes the recording (all copies) from the catalog. */
+    /**
+     * Removes the recording (all copies) from the catalog, and with it any transcript.
+     *
+     * The transcript cascade is explicit because transcripts live in a separate database (see
+     * [TranscriptCascade]); SQLite cannot do it for us.
+     */
     suspend fun removeName(context: Context, displayName: String) {
         runCatching { dao(context).deleteByName(displayName) }
             .onFailure { AppLogger.w(TAG, "removeName('$displayName') failed: ${it.message}") }
+        TranscriptCascade.deleteFor(context, listOf(displayName))
     }
 
     /**
@@ -107,14 +114,24 @@ object RecordingCatalog {
      * row if no copy remains. Mirrors a per-copy delete of a BOTH recording.
      */
     suspend fun removeCopyByUri(context: Context, uri: Uri) {
+        // Names whose last copy this call removes. Captured before deleteEmpty(), which is a bulk
+        // delete and so cannot report what it dropped — and the transcript cascade needs to know.
+        // This is the path the retention sweep takes (it deletes per copy, not by name).
+        var orphaned = emptyList<String>()
+
         runCatching {
             val dao = dao(context)
             val s = uri.toString()
-            val row = dao.getAll().firstOrNull { it.localUri == s || it.driveUri == s } ?: return
+            val row = dao.getAll().firstOrNull { it.localUri == s || it.driveUri == s } ?: return@runCatching
             if (row.localUri == s) dao.clearLocal(row.displayName)
             if (row.driveUri == s) dao.clearDrive(row.displayName)
+            orphaned = dao.getAll()
+                .filter { it.localUri == null && it.driveUri == null }
+                .map { it.displayName }
             dao.deleteEmpty()
         }.onFailure { AppLogger.w(TAG, "removeCopyByUri($uri) failed: ${it.message}") }
+
+        TranscriptCascade.deleteFor(context, orphaned)
     }
 
     /**
