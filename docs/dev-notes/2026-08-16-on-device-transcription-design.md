@@ -172,6 +172,18 @@ meaningfully cheaper than the sherpa-onnx comparison assumed.
 
 ### 4. Transcript storage
 
+> **⚠️ CORRECTED 2026-08-17 — do not build what this section originally said.** It specified the same
+> `RecordingDatabase` bumped v1 → v2 with an `ON DELETE CASCADE` FK. Reading the code afterwards showed
+> that database is built with `fallbackToDestructiveMigration(dropAllTables = true)` on purpose: the
+> catalog is a *rebuildable cache*, re-seeded from the SAF folders. Transcripts are **not** rebuildable
+> — each costs minutes of device CPU — so any future schema bump would silently destroy them all.
+>
+> **Transcripts now live in their own `transcripts.db`** with real migrations and no destructive
+> fallback, keyed by the same natural key (`displayName`), which is what makes them survive the catalog
+> being dropped and re-seeded. The cross-database FK is impossible, so **the cascade below becomes an
+> explicit call in the deletion path** — still non-negotiable, just enforced by code and a test instead
+> of by SQLite. See `2026-08-17-transcription-plan-2-pipeline.md`, Task 1.
+
 Same Room database (`RecordingDatabase`), bumped **v1 → v2**.
 
 - `TranscriptEntry` — per recording: `displayName` (FK), `status`
