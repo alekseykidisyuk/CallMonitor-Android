@@ -20,6 +20,28 @@ not run, the same UI shows timestamps only with no code change.
 
 ---
 
+## STATUS — 2026-08-17
+
+| task | state |
+|---|---|
+| 1 — per-row transcript status | ✅ `0074c76` — 9 tests |
+| 2 — the row button | ✅ `995517b` — 7 tests |
+| 3 — the transcript sheet | ✅ `995517b` — 5 timestamp tests |
+| 4 — search across transcripts | ⬜ not started (the repository half is built and tested) |
+| 5 — share / copy / delete | 🟡 share + copy + re-transcribe done in the sheet; **delete-transcript-only not surfaced** |
+| 6 — the progress pill | ⬜ not started |
+
+**400 unit tests, 0 failures.** `assembleDebug` green; 10 locales at 536 strings each.
+
+**The feature is now usable end to end**: a recording row offers to transcribe, shows progress, and
+then opens the transcript. That was the milestone — everything before it was invisible plumbing.
+
+**Notes for whoever picks up Task 4:** `TranscriptRepository.search` is already built and tested,
+including the FTS-quoting that stops a typed apostrophe becoming a syntax error. What remains is
+purely the Home search UI and jumping to the matched timestamp.
+
+---
+
 ## The one affordance, in four states
 
 Requirement, as given: *"manual transcript should be a button on the recording"*, and *"the same
