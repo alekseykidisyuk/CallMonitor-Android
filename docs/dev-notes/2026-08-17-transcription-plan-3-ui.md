@@ -223,4 +223,8 @@ fun `lays out right to left for Hebrew segments`() { /* ... */ }
 - Searching a spoken word finds the call and jumps to the moment
 - No transcript text appears in any log
 
+**Device checks are deferred, not skipped:** the RTL rendering, seek-on-tap and search-finds-a-spoken-
+word checks are collected in **`docs/dev-notes/2026-08-17-transcription-device-test-plan.md`** (B9),
+so the phone is borrowed once at the end rather than after each task.
+
 **Not in this plan:** diarizing the existing back catalogue (Plan 4, still open).

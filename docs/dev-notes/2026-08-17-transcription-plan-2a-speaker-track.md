@@ -280,6 +280,10 @@ Add a test that a throwing service yields an empty list and no exception escapes
 **This task is empirical and cannot be done from the desk.** It answers the one question the code
 cannot: is channel A the near party or the far party?
 
+> Deferred to the batched device session — see
+> **`docs/dev-notes/2026-08-17-transcription-device-test-plan.md`**, items B7 and B8. Until B7 is
+> answered the UI must use neutral "Speaker A / B" labels, so this does not block Tasks 1–3.
+
 - [ ] **Step 1:** Place a call where the far party speaks first and alone for several seconds, and the
   near party stays silent. Record it.
 - [ ] **Step 2:** Read back the stored turns and check which channel is active during that window.

@@ -99,8 +99,13 @@ class AppPreferences(context: Context) {
         const val TRANSCRIPTION_MINUTE = 0     // 0-59
         const val TRANSCRIPTION_REQUIRES_CHARGING = true
         val TRANSCRIPTION_MODEL_ID = TranscriptionModel.DEFAULT.id
-        // Null means "let whisper detect it". Defaulting to a language is deliberate: whisper decodes
-        // an unspecified language as English and returns confident nonsense rather than failing.
+        // Null means auto-detect. Our JNI sets whisper's detect_language whenever no language is
+        // given, so null is genuine detection rather than a silent fall back to English — that
+        // failure mode belongs to upstream's JNI, which hardcodes "en".
+        //
+        // Auto-detect is still a judgement call rather than an obvious default: naming the language
+        // outright is more reliable than detecting it, and mis-detection does not fail loudly, it
+        // returns fluent text in the wrong language. See the device-test plan.
         val TRANSCRIPTION_LANGUAGE: String? = null
 
         // --- Retention (auto-delete old recordings) ---

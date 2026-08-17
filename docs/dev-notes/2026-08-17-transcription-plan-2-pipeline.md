@@ -49,7 +49,10 @@ All six tasks built and committed. **365 unit tests, 0 failures, 0 skipped**; `a
   published LFS pointer rather than guessed, since a wrong constant fails every verification.
 
 **On-device verification is still outstanding for this plan.** Everything is JVM-tested; nothing here
-has yet transcribed a real call end to end through the worker.
+has yet transcribed a real call end to end through the worker. Those checks are **not** to be run
+piecemeal — they are collected in
+**`docs/dev-notes/2026-08-17-transcription-device-test-plan.md`**, to be worked through in one
+session when a build is installed on the phone.
 
 ---
 
