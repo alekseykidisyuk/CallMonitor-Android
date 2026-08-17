@@ -79,7 +79,11 @@ import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.data.RetentionPeriod
 import com.baba.callvault.integrations.scrcpy.AUDIO_BIT_RATE_OPTIONS
 import com.baba.callvault.data.SyncScheduleMode
+import com.baba.callvault.data.TranscriptionMode
+import com.baba.callvault.transcription.model.ModelRepository
+import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.ui.common.SyncScheduleLabels
+import com.baba.callvault.ui.common.TranscriptionLabels
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.integrations.scrcpy.RECOMMENDED_AUDIO_BIT_RATE
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
@@ -114,6 +118,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
@@ -315,6 +322,13 @@ fun SettingsContent(
                 )
             }
             item {
+                TranscriptionSection(
+                    preferences, updateTrigger, actions,
+                    expanded = openSection == SECTION_TRANSCRIPTION,
+                    onToggle = { onToggleSection(SECTION_TRANSCRIPTION) }
+                )
+            }
+            item {
                 GeneralSection(
                     preferences = preferences,
                     updateTrigger = updateTrigger,
@@ -403,6 +417,7 @@ private const val SECTION_RECORDING = "recording"
 private const val SECTION_STORAGE = "storage"
 private const val SECTION_RETENTION = "retention"
 private const val SECTION_AUDIO = "audio"
+private const val SECTION_TRANSCRIPTION = "transcription"
 private const val SECTION_GENERAL = "general"
 
 // Sub-section keys. Scoped to their parent section, so the same value can never collide across two.
@@ -694,6 +709,148 @@ private fun StorageSection(
         ) { RetentionSubSection(preferences, updateTrigger, actions) }
     }
 }
+
+/**
+ * On-device transcription: whether it happens on its own, when, and with which model.
+ *
+ * The mode dropdown comes first and the scheduling rows appear only under Automatic, so a user who
+ * wants to transcribe the occasional call by hand is never shown a run time they do not use. Same
+ * shape as [UploadScheduleSubSection], which already does exactly this for the upload cadence.
+ *
+ * Model and language stay visible in both modes: a manual transcription needs them just as much as an
+ * automatic one, and the model has to be downloaded before either can work at all.
+ */
+@Composable
+private fun TranscriptionSection(
+    preferences: AppPreferences,
+    updateTrigger: Int,
+    actions: SettingsActions,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
+    val context = LocalContext.current
+    val mode = remember(updateTrigger) { preferences.getTranscriptionMode() }
+    val hour = remember(updateTrigger) { preferences.getTranscriptionHour() }
+    val minute = remember(updateTrigger) { preferences.getTranscriptionMinute() }
+    val requiresCharging = remember(updateTrigger) { preferences.getTranscriptionRequiresCharging() }
+    val modelId = remember(updateTrigger) { preferences.getTranscriptionModelId() }
+    val language = remember(updateTrigger) { preferences.getTranscriptionLanguage() }
+    val installed = remember(updateTrigger) { ModelRepository.installedModels(context) }
+
+    val selectedModel = TranscriptionModel.fromId(modelId) ?: TranscriptionModel.DEFAULT
+
+    SettingsSection(
+        title = stringResource(R.string.settings_section_transcription),
+        expanded = expanded,
+        onToggle = onToggle
+    ) {
+        val modeOptions = TranscriptionMode.entries.map {
+            OptionItem(it.key, stringResource(TranscriptionLabels.titleOf(it)))
+        }
+
+        DropdownRow {
+            M3DropdownField(
+                label = stringResource(R.string.transcription_mode_label),
+                selected = modeOptions.find { it.key == mode.key } ?: modeOptions.first(),
+                options = modeOptions,
+                onOptionSelected = { actions.setTranscriptionMode(TranscriptionMode.fromKey(it.key)) }
+            )
+        }
+
+        // Revealed only by Automatic — there is no run time to choose when nothing runs on its own.
+        if (mode == TranscriptionMode.AUTOMATIC) {
+            val hourOptions = (0..23).map { OptionItem(it.toString(), it.toString().padStart(2, '0')) }
+            val minuteOptions = TranscriptionLabels.MINUTE_OPTIONS.map {
+                OptionItem(it.toString(), it.toString().padStart(2, '0'))
+            }
+            DropdownRow {
+                M3DropdownField(
+                    label = stringResource(R.string.transcription_hour_label),
+                    selected = hourOptions.find { it.key == hour.toString() } ?: hourOptions.first(),
+                    options = hourOptions,
+                    onOptionSelected = { actions.setTranscriptionHour(it.key.toIntOrNull() ?: 2) }
+                )
+            }
+            DropdownRow {
+                M3DropdownField(
+                    label = stringResource(R.string.transcription_minute_label),
+                    selected = minuteOptions.find { it.key == minute.toString() } ?: minuteOptions.first(),
+                    options = minuteOptions,
+                    onOptionSelected = { actions.setTranscriptionMinute(it.key.toIntOrNull() ?: 0) }
+                )
+            }
+            SettingsToggleRow(
+                icon = Icons.Filled.BatteryChargingFull,
+                label = stringResource(R.string.transcription_charging_title),
+                description = stringResource(R.string.transcription_charging_subtitle),
+                checked = requiresCharging,
+                onCheckedChange = { actions.setTranscriptionRequiresCharging(it) }
+            )
+        }
+
+        val modelOptions = TranscriptionModel.entries.map {
+            OptionItem(it.id, stringResource(TranscriptionLabels.titleOf(it)))
+        }
+        DropdownRow {
+            M3DropdownField(
+                label = stringResource(R.string.transcription_model_label),
+                selected = modelOptions.find { it.key == modelId } ?: modelOptions.first(),
+                options = modelOptions,
+                onOptionSelected = { actions.setTranscriptionModelId(it.key) }
+            )
+        }
+
+        val languageOptions = TranscriptionLabels.LANGUAGE_OPTIONS.map { code ->
+            OptionItem(code ?: TranscriptionLabels.AUTO_DETECT_KEY, stringResource(TranscriptionLabels.languageOf(code)))
+        }
+        DropdownRow {
+            M3DropdownField(
+                label = stringResource(R.string.transcription_language_label),
+                selected = languageOptions.find {
+                    it.key == (language ?: TranscriptionLabels.AUTO_DETECT_KEY)
+                } ?: languageOptions.first(),
+                options = languageOptions,
+                onOptionSelected = {
+                    actions.setTranscriptionLanguage(it.key.takeIf { k -> k != TranscriptionLabels.AUTO_DETECT_KEY })
+                }
+            )
+        }
+
+        // The model is the gate: nothing can be transcribed until one is on the device, so its state
+        // is stated plainly rather than left for the user to infer from a button that does nothing.
+        if (selectedModel in installed) {
+            NavigationRow(
+                icon = Icons.Filled.Delete,
+                label = stringResource(R.string.transcription_model_delete),
+                value = stringResource(R.string.transcription_model_installed),
+                onClick = { actions.deleteTranscriptionModel(selectedModel) }
+            )
+        } else {
+            NavigationRow(
+                icon = Icons.Filled.Download,
+                label = stringResource(R.string.transcription_model_download),
+                value = stringResource(
+                    R.string.transcription_model_download_subtitle,
+                    selectedModel.sizeBytes / BYTES_PER_MB
+                ),
+                onClick = { actions.downloadTranscriptionModel(selectedModel) }
+            )
+        }
+
+        Text(
+            text = stringResource(
+                if (mode == TranscriptionMode.MANUAL) R.string.transcription_note_manual
+                else R.string.transcription_note_automatic
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+    }
+}
+
+/** Bytes in a megabyte, for stating a model's download size. */
+private const val BYTES_PER_MB = 1_000_000L
 
 /**
  * When finished recordings are uploaded to the Drive folder.
@@ -2130,6 +2287,14 @@ private fun SettingsScreenPreview() {
             override fun setRetentionTimeHour(hour: Int) {}
             override fun setRetentionTimeMinute(minute: Int) {}
             override fun setSyncScheduleMode(mode: SyncScheduleMode) {}
+            override fun setTranscriptionMode(mode: TranscriptionMode) {}
+            override fun setTranscriptionHour(hour: Int) {}
+            override fun setTranscriptionMinute(minute: Int) {}
+            override fun setTranscriptionRequiresCharging(required: Boolean) {}
+            override fun setTranscriptionModelId(id: String) {}
+            override fun setTranscriptionLanguage(language: String?) {}
+            override fun downloadTranscriptionModel(model: TranscriptionModel) {}
+            override fun deleteTranscriptionModel(model: TranscriptionModel) {}
             override fun setSyncTimeHour(hour: Int) {}
             override fun setSyncTimeMinute(minute: Int) {}
             override fun setSyncDayOfWeek(day: Int) {}

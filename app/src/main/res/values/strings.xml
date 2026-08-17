@@ -470,4 +470,30 @@
     <string name="settings_debug_log_delete_title">Delete the log?</string>
     <string name="settings_debug_log_delete_message">The entries collected so far are removed. If logging is still on, a new log starts immediately.</string>
     <string name="settings_debug_log_empty">The log is empty.</string>
+    <!-- Transcription (on-device speech to text) -->
+    <string name="settings_section_transcription">Transcription</string>
+    <string name="transcription_mode_label">Transcribe</string>
+    <string name="transcription_mode_manual">Manually</string>
+    <string name="transcription_mode_automatic">Automatically</string>
+    <string name="transcription_hour_label">Hour</string>
+    <string name="transcription_minute_label">Minute</string>
+    <string name="transcription_charging_title">Only while charging</string>
+    <string name="transcription_charging_subtitle">Transcribing uses the processor heavily and will drain the battery.</string>
+    <string name="transcription_model_label">Model</string>
+    <string name="transcription_model_small">Fast</string>
+    <string name="transcription_model_best">Best quality</string>
+    <string name="transcription_model_download">Download model</string>
+    <string name="transcription_model_download_subtitle">%1$d MB, over Wi-Fi only</string>
+    <string name="transcription_model_delete">Delete model</string>
+    <string name="transcription_model_installed">Downloaded and ready</string>
+    <string name="transcription_language_label">Language</string>
+    <string name="transcription_language_hebrew">Hebrew</string>
+    <string name="transcription_language_english">English</string>
+    <string name="transcription_language_arabic">Arabic</string>
+    <string name="transcription_language_russian">Russian</string>
+    <string name="transcription_language_french">French</string>
+    <string name="transcription_language_spanish">Spanish</string>
+    <string name="transcription_language_auto">Detect automatically</string>
+    <string name="transcription_note_manual">Transcripts are made only when you ask for one, from the button on a recording.</string>
+    <string name="transcription_note_automatic">Calls that have no transcript yet are transcribed at the chosen time. A 30-minute call takes about 30 minutes.</string>
 </resources>

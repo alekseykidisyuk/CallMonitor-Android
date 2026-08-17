@@ -19,6 +19,11 @@ import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.data.SyncScheduleMode
+import com.baba.callvault.data.TranscriptionMode
+import com.baba.callvault.transcription.TranscriptionScheduler
+import com.baba.callvault.transcription.model.ModelDownloadWorker
+import com.baba.callvault.transcription.model.ModelRepository
+import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.system.storage.RetentionScheduler
 import com.baba.callvault.system.storage.SyncScheduler
 import com.baba.callvault.system.updates.UpdateScheduler
@@ -70,6 +75,15 @@ interface SettingsActions {
     fun setSyncScheduleMode(mode: SyncScheduleMode)
     fun setSyncTimeHour(hour: Int)
     fun setSyncTimeMinute(minute: Int)
+
+    fun setTranscriptionMode(mode: TranscriptionMode)
+    fun setTranscriptionHour(hour: Int)
+    fun setTranscriptionMinute(minute: Int)
+    fun setTranscriptionRequiresCharging(required: Boolean)
+    fun setTranscriptionModelId(id: String)
+    fun setTranscriptionLanguage(language: String?)
+    fun downloadTranscriptionModel(model: TranscriptionModel)
+    fun deleteTranscriptionModel(model: TranscriptionModel)
     fun setSyncDayOfWeek(day: Int)
     fun setUpdateCheckEnabled(enabled: Boolean)
 }
@@ -351,6 +365,65 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     override fun setSyncTimeMinute(minute: Int) {
         preferences.setSyncTimeMinute(minute)
         SyncScheduler.apply(appContext)
+        refresh()
+    }
+
+    // -------- Transcription --------
+    //
+    // Every setter re-applies the scheduler for the same reason the sync ones do: saving a preference
+    // without reconciling WorkManager leaves the two disagreeing, and the user would be looking at a
+    // schedule that nothing is actually running to.
+
+    /** Saves Manual/Automatic and schedules or cancels the periodic run accordingly. */
+    override fun setTranscriptionMode(mode: TranscriptionMode) {
+        preferences.setTranscriptionMode(mode)
+        TranscriptionScheduler.apply(appContext)
+        refresh()
+    }
+
+    /** Saves the automatic-run hour (0-23, local) and re-anchors the periodic run. */
+    override fun setTranscriptionHour(hour: Int) {
+        preferences.setTranscriptionHour(hour)
+        TranscriptionScheduler.apply(appContext)
+        refresh()
+    }
+
+    /** Saves the automatic-run minute and re-anchors the periodic run. */
+    override fun setTranscriptionMinute(minute: Int) {
+        preferences.setTranscriptionMinute(minute)
+        TranscriptionScheduler.apply(appContext)
+        refresh()
+    }
+
+    /** Saves whether the automatic run waits for a charger, and re-applies the constraint. */
+    override fun setTranscriptionRequiresCharging(required: Boolean) {
+        preferences.setTranscriptionRequiresCharging(required)
+        TranscriptionScheduler.apply(appContext)
+        refresh()
+    }
+
+    /** Saves the chosen model tier. */
+    override fun setTranscriptionModelId(id: String) {
+        preferences.setTranscriptionModelId(id)
+        refresh()
+    }
+
+    /** Saves the language passed to whisper, or null to auto-detect. */
+    override fun setTranscriptionLanguage(language: String?) {
+        preferences.setTranscriptionLanguage(language)
+        refresh()
+    }
+
+    /** Queues a model download (unmetered network only). */
+    override fun downloadTranscriptionModel(model: TranscriptionModel) {
+        ModelDownloadWorker.enqueue(appContext, model)
+        refresh()
+    }
+
+    /** Removes a downloaded model and any partial download of it. */
+    override fun deleteTranscriptionModel(model: TranscriptionModel) {
+        ModelDownloadWorker.cancel(appContext, model)
+        ModelRepository.delete(appContext, model)
         refresh()
     }
 
