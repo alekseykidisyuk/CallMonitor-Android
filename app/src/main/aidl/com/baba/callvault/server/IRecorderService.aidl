@@ -131,4 +131,25 @@ interface IRecorderService {
 
     /** Releases the daemon's held handoff AudioRecord (frees the capture input). Idempotent. */
     void stopHandoff();
+
+    /**
+     * Speaker turns observed during the recording that just stopped, or "" when there are none.
+     *
+     * Queried AFTER stopRecording(), mirroring {@link #voipFarPartyHeard} — the daemon gathers this
+     * during capture and the app collects it once the file is finalised.
+     *
+     * The capture puts the two call directions on separate stereo channels; comparing their energy
+     * before the mono downmix yields exact speaker turns at no cost to the audio, which is written
+     * unchanged. Encoded by SpeakerTurnCodec as "startMs:channel" pairs joined by ";".
+     *
+     * Empty is a normal answer, not an error: a mono capture carries no direction information, and
+     * the scrcpy fallback never sees the raw channels. Callers must also tolerate this method being
+     * absent altogether — a warm daemon from an older build predates it, and that must degrade to "no
+     * speaker data" rather than fail the recording that just completed.
+     *
+     * Channels are reported as A and B rather than near and far: which index is the near party is an
+     * OEM detail Android never specifies, so the mapping is learned separately and applied when the
+     * transcript is displayed.
+     */
+    String speakerTurns();
 }

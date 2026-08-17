@@ -20,6 +20,8 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioSource
 import com.baba.callvault.integrations.scrcpy.androidAudioSource
 import com.baba.callvault.utils.AppLogger
+import com.baba.callvault.server.speakers.SpeakerTurnCodec
+import com.baba.callvault.server.speakers.SpeakerTurnDetector
 import com.baba.callvault.utils.PcmDownmix
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -51,6 +53,16 @@ internal class DirectAudioRecorderSession(
     @Volatile private var encoder: MediaCodec? = null
     @Volatile private var muxer: MediaMuxer? = null
     @Volatile private var readThread: Thread? = null
+
+    /**
+     * Speaker turns, published by the capture loop as it ends and read after [stop] joins it.
+     *
+     * Stays empty when the capture was mono, or if the loop never reached its end — degrading to "no
+     * speaker data" rather than to a broken recording is the rule for everything in this file.
+     */
+    @Volatile private var speakerTurnsEncoded: String = ""
+
+    override fun speakerTurns(): String = speakerTurnsEncoded
 
     override fun start() {
         try {
@@ -122,6 +134,10 @@ internal class DirectAudioRecorderSession(
         val pcm = ByteArray(READ_CHUNK_BYTES)
         val mono = ByteArray(READ_CHUNK_BYTES / 2)   // downmix target (half the samples of stereo input)
         val downmix = captureChannels == 2
+        // Speaker turns come free from the stereo buffer we already hold: the two directions are on
+        // separate channels here, and that information is destroyed by the downmix below. Only a
+        // stereo capture carries it — a mono route has nothing to compare.
+        val speakers = if (downmix) SpeakerTurnDetector(SAMPLE_RATE) else null
         val info = MediaCodec.BufferInfo()
         var muxerStarted = false
         var totalFrames = 0L
@@ -130,6 +146,13 @@ internal class DirectAudioRecorderSession(
         while (!stopRequested.get()) {
             val read = record.read(pcm, 0, pcm.size)
             if (read <= 0) continue
+
+            // Read the channels BEFORE the downmix averages them away. Guarded: a recording that works
+            // is worth more than a label, so a fault here must cost the turns and nothing else.
+            if (speakers != null) {
+                runCatching { speakers.accept(pcm, read) }
+                    .onFailure { AppLogger.w(TAG, "Speaker detection failed; continuing without turns: ${it.message}") }
+            }
 
             // Feed MONO to the encoder: downmix a stereo capture (average L+R), or pass a mono capture through.
             val (buf, len) = if (downmix) mono to PcmDownmix.stereoToMono(pcm, read, mono) else pcm to read
@@ -143,6 +166,12 @@ internal class DirectAudioRecorderSession(
                 totalFrames += len / bytesPerFrame
             }
             muxerStarted = drainEncoder(enc, mux, info, muxerStarted)
+        }
+
+        // Publish the turns before finalising, so stop() finds them once it has joined this thread.
+        if (speakers != null) {
+            runCatching { speakerTurnsEncoded = SpeakerTurnCodec.encode(speakers.finish()) }
+                .onFailure { AppLogger.w(TAG, "Could not encode speaker turns: ${it.message}") }
         }
 
         // Signal end-of-stream so the encoder flushes its tail, then drain what's left.
