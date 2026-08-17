@@ -22,6 +22,39 @@ checkpointing after each recording so a killed job resumes instead of restarting
 
 ---
 
+## ✅ PLAN 2 COMPLETE — 2026-08-17
+
+All six tasks built and committed. **365 unit tests, 0 failures, 0 skipped**; `assembleDebug` green;
+`checkTranslations` reports 10 locales at 525 strings each with consistent placeholders.
+
+| task | commit |
+|---|---|
+| 1 — transcript storage + FTS + cascade | `21e0e03` |
+| 2 — model catalog, verified resumable downloads | `acdc3d7` |
+| 3 — the queue | `e463505` |
+| 4+5 — runner, worker, Manual/Automatic scheduler | `341e92d` |
+| 6 — Settings section | `cabc9c7` |
+
+**Deviations from this plan, all deliberate:**
+
+- **Downloads are resumable, not foreground.** WorkManager stops a worker after ~10 minutes and these
+  are 190–574 MB, so an interrupted download resumes with a Range request instead of holding a
+  foreground service open. Cheaper for the user and simpler than the notification plumbing.
+- **`isInstalled` compares length; only `finalizeDownload` hashes.** Hashing 574 MB every time the
+  settings screen drew would stall it. The full digest still gates installation.
+- **The orchestration lives in `TranscriptionRunner`, not the worker.** The worker cannot be unit
+  tested (native library, WorkManager), so everything worth testing was moved behind a `Transcriber`
+  seam and the worker reduced to a thin wrapper.
+- **Turbo's real size is 574,041,195 bytes**, not the 574,041,600 estimated here — fetched from the
+  published LFS pointer rather than guessed, since a wrong constant fails every verification.
+
+**On-device verification is still outstanding for this plan.** Everything is JVM-tested; nothing here
+has yet transcribed a real call end to end through the worker.
+
+---
+
+---
+
 ## Correction to the approved spec — read before Task 1
 
 The spec says transcripts live in *"Same Room database (`RecordingDatabase`), bumped **v1 → v2**"*
