@@ -51,6 +51,16 @@ interface TranscriptDao {
     @Query("SELECT displayName FROM transcripts WHERE state = :state")
     suspend fun displayNamesWithState(state: TranscriptState): List<String>
 
+    /**
+     * Every transcript row, without its segments.
+     *
+     * Used to work out what still needs transcribing. That decision spans two databases, so it cannot
+     * be a join and is composed in Kotlin instead; this returns one small row per *already
+     * transcribed* recording rather than per segment, so it stays cheap as the library grows.
+     */
+    @Query("SELECT * FROM transcripts")
+    suspend fun allTranscripts(): List<TranscriptEntry>
+
     @Query("SELECT * FROM transcripts WHERE displayName IN (:displayNames)")
     fun observeAll(displayNames: List<String>): Flow<List<TranscriptEntry>>
 
