@@ -26,6 +26,66 @@
 
 ---
 
+## EXECUTION STATUS — resume here (2026-08-16)
+
+All five tasks are **code-complete on branch `feat/transcription-engine`** (9 commits, not merged,
+never pushed). `main` is untouched. **330 unit tests pass; `assembleDebug` succeeds.**
+
+| task | state |
+|---|---|
+| 1 — measure on-device RTF | ✅ done, numbers in *Results* below |
+| 2 — vendor whisper.cpp | ✅ done, libs verified in the APK |
+| 3 — JNI language + segments | ✅ done, symbols verified with `llvm-nm` |
+| 4 — audio decode | ✅ done + bug found and fixed on device (see below) |
+| 5 — engine facade | ✅ code done; **on-device verification OUTSTANDING** |
+
+### The one thing left, and how to do it cheaply
+
+The first device run transcribed a 45-second clip for **eleven minutes** without finishing — an
+effective RTF of ~15 against the ~1.0 `whisper-cli` measured on the same phone with the same model.
+Root cause: `AudioDecoder` read the sample rate and channel count from the *extractor's input*
+format and ignored `INFO_OUTPUT_FORMAT_CHANGED`; the decoder is the authority on what it emits.
+Fixed in `956312c`, together with `isPlausibleDuration()`, which now fails loudly on an
+order-of-magnitude mismatch instead of burning an hour of CPU in silence.
+
+**That fix is NOT yet confirmed on a device.** Do this, in this order — the first step needs no model
+and finishes in about a second:
+
+```bash
+# 0. The test device is a daily driver. ASK before assuming it is connected.
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21 && export PATH="$JAVA_HOME/bin:$PATH"
+export ANDROID_SERIAL=6011b07e
+
+# 1. Build + install SIDE BY SIDE. -PisolateTestApp is what stops this replacing the
+#    user's working release build and dropping WRITE_SECURE_SETTINGS.
+./gradlew installDebug -PisolateTestApp
+
+# 2. Stage the small fixture only (138 KB, no model needed yet)
+D=/sdcard/Android/data/com.baba.callvault.instrtest/files
+adb shell mkdir -p $D
+adb push <45s-hebrew-clip>.ogg $D/cv-test-audio.ogg
+
+# 3. Fast decode check — seconds. If this fails, the decode is still wrong; do NOT go further.
+./gradlew connectedDebugAndroidTest -PisolateTestApp \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.baba.callvault.transcription.TranscriptionEngineInstrumentedTest#decodes_a_recording_to_the_expected_amount_of_audio
+
+# 4. Only if step 3 passes: push the model (190 MB) and run the Hebrew transcription test.
+adb push ggml-small-q5_1.bin $D/cv-test-model.bin
+./gradlew connectedDebugAndroidTest -PisolateTestApp
+
+# 5. Clean up the borrowed device
+adb uninstall com.baba.callvault.instrtest
+adb shell rm -rf /sdcard/Android/data/com.baba.callvault.instrtest
+```
+
+The transcription test's real assertion is that the output contains **Hebrew** Unicode: if
+`params.language` failed to reach whisper it falls back to English and returns Latin script, which is
+the whole reason this JNI is not upstream's.
+
+**Afterwards:** merge to `main` (do not push — this project is local-first), then write Plan 2.
+
+---
+
 ## Task 1: Measure real on-device speed before building anything — ✅ DONE 2026-08-16
 
 > **Executed.** See *Results* at the bottom for the numbers, the method deviation (cross-compiled
