@@ -270,6 +270,15 @@
     <string name="support_appeal_body">Tôi tự phát triển CallVault trong thời gian rảnh — miễn phí, mã nguồn mở, không quảng cáo, không theo dõi. ☕ Nếu thấy hữu ích, một khoản nhỏ giúp tôi tiếp tục. Dù sao thì, cảm ơn bạn! 🙏</string>
     <string name="support_appeal_title">Do một người làm 👋</string>
     <string name="support_not_now">Để sau</string>
+    <string name="transcript_action_busy">Đang chuyển…</string>
+    <string name="transcript_action_open">Đọc bản ghi lời</string>
+    <string name="transcript_action_retry">Chuyển thất bại — thử lại</string>
+    <string name="transcript_action_transcribe">Chuyển cuộc gọi này thành văn bản</string>
+    <string name="transcript_copy">Sao chép</string>
+    <string name="transcript_loading">Đang tải bản ghi lời…</string>
+    <string name="transcript_no_speech">Không nhận ra giọng nói nào trong bản ghi âm này.</string>
+    <string name="transcript_retranscribe">Chuyển lại</string>
+    <string name="transcript_share">Chia sẻ</string>
     <string name="transcription_batch_label">Số cuộc gọi mỗi lần chạy</string>
     <string name="transcription_batch_no_limit">Không giới hạn</string>
     <string name="transcription_charging_subtitle">Việc chuyển lời nói dùng nhiều CPU và sẽ hao pin.</string>

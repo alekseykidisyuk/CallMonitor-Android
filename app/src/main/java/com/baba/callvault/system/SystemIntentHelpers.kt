@@ -239,6 +239,24 @@ fun Context.copyToClipboard(label: String, text: String) {
 }
 
 /**
+ * Shares plain text through the system share sheet.
+ *
+ * Text rather than a file on purpose, for sharing a transcript: no temporary file is written, so
+ * nothing is left behind on disk for a share the user may cancel, and no FileProvider grant is needed.
+ *
+ * @param subject Offered to apps that show one (mail, notes). Ignored by most.
+ * @param text    The body to share.
+ */
+fun Context.sharePlainText(subject: String, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    launchSmartIntent(Intent.createChooser(intent, null))
+}
+
+/**
  * Launches [intent] safely regardless of whether this [Context] is an [Activity] or not.
  *
  * When called from a non-Activity context (e.g. a ViewModel's applicationContext or a

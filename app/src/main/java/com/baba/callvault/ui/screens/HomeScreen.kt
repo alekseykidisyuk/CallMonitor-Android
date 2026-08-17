@@ -92,9 +92,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.setValue
 import com.baba.callvault.ui.common.OfflineDialogMode
 import com.baba.callvault.ui.common.OfflineRecordingDialog
+import com.baba.callvault.data.transcripts.TranscriptRepository
+import com.baba.callvault.data.transcripts.TranscriptStatus
+import com.baba.callvault.ui.common.TranscriptActionButton
+import com.baba.callvault.ui.common.TranscriptSheet
+import com.baba.callvault.system.copyToClipboard
+import com.baba.callvault.system.sharePlainText
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -175,6 +183,17 @@ fun HomeScreen(
     // holds anything the screen is in selection mode, so there is no second flag to keep in step.
     var selection by remember { mutableStateOf<Set<Uri>>(emptySet()) }
     var showBulkDelete by remember { mutableStateOf(false) }
+
+    // Transcript state for the rows currently listed — scoped to those names rather than the whole
+    // table, because Home lists years of calls and only a handful of icons are ever on screen.
+    val listedNames = uiState.filteredRecordings.map { it.displayName }
+    val transcriptStatuses by remember(listedNames) {
+        TranscriptRepository.statusesFor(context, listedNames)
+    }.collectAsState(initial = emptyMap())
+
+    /** Which recording's transcript is open, or null. */
+    var transcriptFor by remember { mutableStateOf<String?>(null) }
+    val transcriptScope = rememberCoroutineScope()
     val selectionMode = selection.isNotEmpty()
     val selectedItems = remember(selection, uiState.recordings) {
         uiState.recordings.filter { it.uri in selection }
@@ -240,6 +259,27 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
+        transcriptFor?.let { displayName ->
+            val transcript by remember(displayName) {
+                TranscriptRepository.transcript(context, displayName)
+            }.collectAsState(initial = null)
+
+            val row = uiState.filteredRecordings.firstOrNull { it.displayName == displayName }
+
+            TranscriptSheet(
+                transcript = transcript,
+                title = row?.contactName ?: row?.number ?: displayName,
+                onDismiss = { transcriptFor = null },
+                onSeekTo = { startMs -> viewModel.seekTo(startMs.toInt()) },
+                onCopy = { text -> context.copyToClipboard(displayName, text) },
+                onShare = { text -> context.sharePlainText(displayName, text) },
+                onRetranscribe = {
+                    transcriptScope.launch { TranscriptRepository.retry(context, displayName) }
+                    transcriptFor = null
+                }
+            )
+        }
+
         if (showBulkDelete) {
             BulkDeleteDialog(
                 items = selectedItems,
@@ -380,7 +420,13 @@ fun HomeScreen(
                         onResume = { viewModel.resumePlayback() },
                         onSeek = { viewModel.seekTo(it) },
                         onDeleteAll = { viewModel.deleteRecording(item) },
-                        onDeleteUri = { uri -> viewModel.deleteUri(uri) }
+                        onDeleteUri = { uri -> viewModel.deleteUri(uri) },
+                        transcriptStatus = transcriptStatuses[item.displayName] ?: TranscriptStatus.NONE,
+                        onTranscribe = { TranscriptRepository.transcribeNow(context, item.displayName) },
+                        onOpenTranscript = { transcriptFor = item.displayName },
+                        onRetryTranscript = {
+                            transcriptScope.launch { TranscriptRepository.retry(context, item.displayName) }
+                        }
                     )
                 }
             }
@@ -1242,7 +1288,11 @@ private fun RecordingRow(
     onResume: () -> Unit,
     onSeek: (Int) -> Unit,
     onDeleteAll: () -> Unit,
-    onDeleteUri: (Uri) -> Unit
+    onDeleteUri: (Uri) -> Unit,
+    transcriptStatus: TranscriptStatus,
+    onTranscribe: () -> Unit,
+    onOpenTranscript: () -> Unit,
+    onRetryTranscript: () -> Unit
 ) {
     // The pending delete target drives the confirm dialog: null = closed.
     var deleteTarget by remember { mutableStateOf<DeleteTarget?>(null) }
@@ -1374,6 +1424,14 @@ private fun RecordingRow(
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 }
             } else {
+                // One slot, four meanings: transcribe, in progress, read, retry. Placed before the
+                // overflow menu so the common action is the easier reach.
+                TranscriptActionButton(
+                    status = transcriptStatus,
+                    onTranscribe = onTranscribe,
+                    onOpen = onOpenTranscript,
+                    onRetry = onRetryTranscript
+                )
                 RecordingRowMenu(
                     // Share the device copy when there is one: it needs no network to read, and for a
                     // BOTH row the two copies are the same audio.

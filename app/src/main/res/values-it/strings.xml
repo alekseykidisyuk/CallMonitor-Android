@@ -270,6 +270,15 @@
     <string name="support_appeal_body">Sviluppo CallVault da solo, nel tempo libero: gratuita, open source, senza pubblicità né tracciamento. ☕ Se ti è utile, una piccola offerta mi aiuta ad andare avanti. In ogni caso, grazie! 🙏</string>
     <string name="support_appeal_title">Fatta da una sola persona 👋</string>
     <string name="support_not_now">Non ora</string>
+    <string name="transcript_action_busy">Trascrizione in corso…</string>
+    <string name="transcript_action_open">Leggi la trascrizione</string>
+    <string name="transcript_action_retry">Trascrizione non riuscita — riprova</string>
+    <string name="transcript_action_transcribe">Trascrivi questa chiamata</string>
+    <string name="transcript_copy">Copia</string>
+    <string name="transcript_loading">Caricamento della trascrizione…</string>
+    <string name="transcript_no_speech">Nessun parlato riconosciuto in questa registrazione.</string>
+    <string name="transcript_retranscribe">Trascrivi di nuovo</string>
+    <string name="transcript_share">Condividi</string>
     <string name="transcription_batch_label">Chiamate per esecuzione</string>
     <string name="transcription_batch_no_limit">Nessun limite</string>
     <string name="transcription_charging_subtitle">La trascrizione usa molto il processore e consuma la batteria.</string>

@@ -498,4 +498,13 @@
     <string name="transcription_note_automatic">Calls that have no transcript yet are transcribed at the chosen time. A 30-minute call takes about 30 minutes.</string>
     <string name="transcription_batch_label">Calls per run</string>
     <string name="transcription_batch_no_limit">No limit</string>
+    <string name="transcript_action_transcribe">Transcribe this call</string>
+    <string name="transcript_action_busy">Transcribing…</string>
+    <string name="transcript_action_open">Read the transcript</string>
+    <string name="transcript_action_retry">Transcription failed — try again</string>
+    <string name="transcript_loading">Loading the transcript…</string>
+    <string name="transcript_no_speech">No speech was recognised in this recording.</string>
+    <string name="transcript_copy">Copy</string>
+    <string name="transcript_share">Share</string>
+    <string name="transcript_retranscribe">Transcribe again</string>
 </resources>
