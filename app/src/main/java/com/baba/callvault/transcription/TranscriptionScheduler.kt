@@ -1,0 +1,124 @@
+/*
+ * CallVault: FOSS call recording, self-contained over embedded ADB
+ *  Copyright (C) 2026-present The CallVault Authors
+ *  This software is licensed under the GNU General Public License v3 or later, with additional terms as permitted under Section 7.
+ *  The full license text is available in the LICENSE file at the root of this project.
+ *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+package com.baba.callvault.transcription
+
+import android.content.Context
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.TranscriptionMode
+import com.baba.callvault.utils.AppLogger
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
+
+/**
+ * Schedules (or cancels) the periodic [TranscriptionWorker] that transcribes everything not yet done.
+ *
+ * Idempotent: [apply] reconciles the current prefs with WorkManager using
+ * [ExistingPeriodicWorkPolicy.UPDATE], so it is safe to call from Settings, after boot, or whenever
+ * a preference changes. Modelled directly on
+ * [com.baba.callvault.system.storage.SyncScheduler] so there is one scheduling idiom in this app
+ * rather than two.
+ *
+ * - MANUAL    -> no periodic work; only [runNow] transcribes anything.
+ * - AUTOMATIC -> 24h period, first run at the next HH:mm.
+ */
+object TranscriptionScheduler {
+
+    /** Unique WorkManager name for the periodic transcription sweep. */
+    const val WORK_NAME = "cv_transcription_sweep"
+
+    /** Unique name for a user-requested run, so repeated taps do not stack up duplicate work. */
+    const val MANUAL_WORK_NAME = "cv_transcription_now"
+
+    private const val TAG = "CV:TranscriptionScheduler"
+    private const val DAILY_PERIOD_HOURS = 24L
+
+    /**
+     * Reconciles the periodic sweep with the current prefs: cancels it for MANUAL, otherwise
+     * (re)schedules a daily run anchored to the configured HH:mm.
+     */
+    fun apply(context: Context) {
+        val prefs = AppPreferences(context)
+        val mode = prefs.getTranscriptionMode()
+        val workManager = WorkManager.getInstance(context)
+
+        if (mode == TranscriptionMode.MANUAL) {
+            workManager.cancelUniqueWork(WORK_NAME)
+            AppLogger.i(TAG, "Periodic transcription cancelled (mode=$mode).")
+            return
+        }
+
+        val hour = prefs.getTranscriptionHour()
+        val minute = prefs.getTranscriptionMinute()
+
+        // Charging and battery-not-low by default: a backlog can be hours of sustained CPU, which is
+        // not something to spend someone's battery on while they are out with the phone in a pocket.
+        val constraints = Constraints.Builder()
+            .setRequiresCharging(prefs.getTranscriptionRequiresCharging())
+            .setRequiresBatteryNotLow(true)
+            .setRequiresStorageNotLow(true)
+            .build()
+
+        val request = PeriodicWorkRequestBuilder<TranscriptionWorker>(
+            DAILY_PERIOD_HOURS, TimeUnit.HOURS
+        )
+            .setConstraints(constraints)
+            .setInitialDelay(nextDailyDelayMillis(hour, minute), TimeUnit.MILLISECONDS)
+            .build()
+
+        workManager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
+        AppLogger.i(TAG, "Periodic transcription scheduled at $hour:$minute.")
+    }
+
+    /**
+     * Transcribes now, on request.
+     *
+     * Runs with **no constraints**: the user asked for this one and is presumably waiting, so making
+     * them find a charger first would be obtuse. [displayName] names a single recording; null drains
+     * the queue.
+     */
+    fun runNow(context: Context, displayName: String? = null) {
+        val request = OneTimeWorkRequestBuilder<TranscriptionWorker>()
+            .apply {
+                if (displayName != null) {
+                    setInputData(workDataOf(TranscriptionWorker.KEY_DISPLAY_NAME to displayName))
+                }
+            }
+            .build()
+
+        // APPEND rather than KEEP: two different recordings tapped in a row must both be transcribed,
+        // while the queue-draining variant still cannot run twice at once.
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            MANUAL_WORK_NAME,
+            ExistingWorkPolicy.APPEND_OR_REPLACE,
+            request
+        )
+        AppLogger.i(TAG, "Transcription requested (${displayName ?: "whole queue"}).")
+    }
+
+    /** Millis from now until the next occurrence of [hour]:[minute] (today if ahead, else tomorrow). */
+    private fun nextDailyDelayMillis(hour: Int, minute: Int): Long {
+        val now = System.currentTimeMillis()
+        val next = Calendar.getInstance().apply {
+            timeInMillis = now
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        if (next.timeInMillis <= now) next.add(Calendar.DAY_OF_YEAR, 1)
+        return next.timeInMillis - now
+    }
+}

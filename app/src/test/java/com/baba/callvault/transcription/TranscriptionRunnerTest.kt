@@ -1,0 +1,167 @@
+/*
+ * CallVault: FOSS call recording, self-contained over embedded ADB
+ *  Copyright (C) 2026-present The CallVault Authors
+ *  This software is licensed under the GNU General Public License v3 or later, with additional terms as permitted under Section 7.
+ *  The full license text is available in the LICENSE file at the root of this project.
+ *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+package com.baba.callvault.transcription
+
+import android.content.Context
+import androidx.core.net.toUri
+import androidx.test.core.app.ApplicationProvider
+import com.baba.callvault.data.recordings.RecordingCatalog
+import com.baba.callvault.data.transcripts.db.TranscriptDatabase
+import com.baba.callvault.data.transcripts.db.TranscriptState
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/**
+ * The orchestration around whisper: state transitions, checkpointing, and what happens when one
+ * recording in a batch cannot be transcribed.
+ *
+ * Deliberately tested apart from [TranscriptionEngine], which loads a native library a JVM test
+ * cannot: the engine's own correctness is covered by the instrumented tests, while everything that
+ * decides *whether and in what order* it runs is ordinary logic and belongs here.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35]) // Robolectric 4.14 max; project targets SDK 36
+class TranscriptionRunnerTest {
+
+    private val context: Context = ApplicationProvider.getApplicationContext()
+
+    @Before
+    fun clearCatalog() = runBlocking {
+        RecordingCatalog.all(context).forEach { RecordingCatalog.removeName(context, it.displayName) }
+    }
+
+    @Test
+    fun marks_a_recording_done_and_stores_its_segments() = runBlocking {
+        // Arrange
+        catalogued("ok.ogg")
+        val runner = runnerReturning(
+            listOf(TranscriptSegment(0, 1000, "שלום"), TranscriptSegment(1000, 2000, "עולם"))
+        )
+
+        // Act
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("ok.ogg"))
+
+        // Assert
+        val stored = transcript("ok.ogg")
+        assertEquals(TranscriptState.DONE, stored!!.transcript.state)
+        assertEquals(listOf("שלום", "עולם"), stored.segments.map { it.text })
+        assertEquals(MODEL_ID, stored.transcript.modelId)
+    }
+
+    @Test
+    fun marks_a_recording_failed_and_carries_on_with_the_rest() = runBlocking {
+        // One undecodable file must not stall a whole night's backlog.
+        catalogued("bad.ogg")
+        catalogued("good.ogg")
+        val runner = TranscriptionRunner(context) { _, uri, _, _ ->
+            if (uri.toString().contains("bad")) error("cannot decode")
+            listOf(TranscriptSegment(0, 1, "fine"))
+        }
+
+        // Act
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("bad.ogg", "good.ogg"))
+
+        // Assert
+        assertEquals(TranscriptState.FAILED, transcript("bad.ogg")!!.transcript.state)
+        assertEquals(TranscriptState.DONE, transcript("good.ogg")!!.transcript.state)
+        assertNotNull("a failure must say why", transcript("bad.ogg")!!.transcript.errorMessage)
+    }
+
+    @Test
+    fun does_not_transcribe_a_recording_that_is_already_done() = runBlocking {
+        // The checkpoint: a job killed after 25 minutes must resume at the next recording, not redo
+        // the ones it already paid for.
+        catalogued("already.ogg")
+        var calls = 0
+        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+            calls++
+            listOf(TranscriptSegment(0, 1, "first pass"))
+        }
+
+        // Act — the same recording offered twice, as a resumed run would.
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("already.ogg"))
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("already.ogg"))
+
+        // Assert
+        assertEquals("re-transcribed work that was already finished", 1, calls)
+    }
+
+    @Test
+    fun stops_between_recordings_when_asked_to() = runBlocking {
+        // WorkManager stops long work; the batch must notice between recordings rather than
+        // ploughing through an hour of CPU after being told to stop.
+        catalogued("one.ogg")
+        catalogued("two.ogg")
+        var calls = 0
+        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+            calls++
+            listOf(TranscriptSegment(0, 1, "x"))
+        }
+
+        // Act
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("one.ogg", "two.ogg")) { calls >= 1 }
+
+        // Assert
+        assertEquals(1, calls)
+    }
+
+    @Test
+    fun an_empty_result_is_recorded_as_done_with_no_segments() = runBlocking {
+        // Silence is a result, not a failure. Marking it FAILED would invite endless manual retries
+        // of a call that genuinely has nothing in it.
+        catalogued("silent.ogg")
+        val runner = runnerReturning(emptyList())
+
+        // Act
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("silent.ogg"))
+
+        // Assert
+        val stored = transcript("silent.ogg")!!
+        assertEquals(TranscriptState.DONE, stored.transcript.state)
+        assertTrue(stored.segments.isEmpty())
+    }
+
+    @Test
+    fun skips_a_recording_that_has_vanished_from_the_catalog() = runBlocking {
+        // Deleted between being queued and being reached. Nothing to decode, and nothing to record.
+        var calls = 0
+        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+            calls++
+            emptyList()
+        }
+
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("gone.ogg"))
+
+        assertEquals(0, calls)
+    }
+
+    private fun runnerReturning(segments: List<TranscriptSegment>) =
+        TranscriptionRunner(context) { _, _, _, _ -> segments }
+
+    private suspend fun catalogued(name: String) {
+        RecordingCatalog.recordLocal(context, name, "content://local/$name".toUri(), 10L, 100L)
+    }
+
+    private suspend fun transcript(name: String) =
+        TranscriptDatabase.get(context).transcriptDao().observe(name).first()
+
+    private companion object {
+        const val MODEL_ID = "small-q5_1"
+        const val MODEL_PATH = "/models/small.bin"
+        const val LANGUAGE = "he"
+    }
+}

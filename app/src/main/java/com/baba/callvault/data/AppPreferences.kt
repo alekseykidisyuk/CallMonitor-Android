@@ -16,6 +16,7 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioSource
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.data.SyncScheduleMode
+import com.baba.callvault.transcription.model.TranscriptionModel
 
 /**
  * AppPreferences wraps [android.content.SharedPreferences] to provide typed access to all
@@ -87,6 +88,20 @@ class AppPreferences(context: Context) {
         const val SYNC_TIME_HOUR = 2          // 0-23
         const val SYNC_TIME_MINUTE = 0        // 0-59
         const val SYNC_DAY_OF_WEEK = 2        // java.util.Calendar: SUNDAY=1..SATURDAY=7 (2 = Monday)
+
+        // --- Transcription (on-device speech to text) ---
+        // MANUAL (default) transcribes only what the user taps. AUTOMATIC sweeps everything not yet
+        // transcribed at TRANSCRIPTION_HOUR:TRANSCRIPTION_MINUTE. Manual is the default because a
+        // transcription costs roughly the call's own duration in CPU, which is not something to start
+        // doing to someone's phone unasked. Charging is required by default for the same reason.
+        val TRANSCRIPTION_MODE = TranscriptionMode.MANUAL.key
+        const val TRANSCRIPTION_HOUR = 2       // 0-23, device local time
+        const val TRANSCRIPTION_MINUTE = 0     // 0-59
+        const val TRANSCRIPTION_REQUIRES_CHARGING = true
+        val TRANSCRIPTION_MODEL_ID = TranscriptionModel.DEFAULT.id
+        // Null means "let whisper detect it". Defaulting to a language is deliberate: whisper decodes
+        // an unspecified language as English and returns confident nonsense rather than failing.
+        val TRANSCRIPTION_LANGUAGE: String? = null
 
         // --- Retention (auto-delete old recordings) ---
         // Delete recordings older than N days. 0 = keep forever (OFF). Applied per copy: device copies
@@ -170,6 +185,14 @@ class AppPreferences(context: Context) {
         SYNC_TIME_HOUR("sync_time_hour"),
         SYNC_TIME_MINUTE("sync_time_minute"),
         SYNC_DAY_OF_WEEK("sync_day_of_week"),
+
+        // --- Transcription ---
+        TRANSCRIPTION_MODE("transcription_mode"),
+        TRANSCRIPTION_HOUR("transcription_hour"),
+        TRANSCRIPTION_MINUTE("transcription_minute"),
+        TRANSCRIPTION_REQUIRES_CHARGING("transcription_requires_charging"),
+        TRANSCRIPTION_MODEL_ID("transcription_model_id"),
+        TRANSCRIPTION_LANGUAGE("transcription_language"),
 
         // --- Retention ---
         RETENTION_LINKED("retention_linked"),
@@ -498,6 +521,55 @@ class AppPreferences(context: Context) {
 
     /** Sets the user-selected Google Drive SAF folder URI for routing copies. */
     fun setDriveFolderUri(uri: Uri?) = setString(Key.DRIVE_FOLDER_URI, uri?.toString())
+
+    // -------- Transcription --------
+
+    /** Gets when calls are transcribed (Manual / Automatic). */
+    fun getTranscriptionMode(): TranscriptionMode =
+        TranscriptionMode.fromKey(getString(Key.TRANSCRIPTION_MODE, DefaultsValue.TRANSCRIPTION_MODE))
+
+    /** Sets when calls are transcribed. */
+    fun setTranscriptionMode(mode: TranscriptionMode) = setString(Key.TRANSCRIPTION_MODE, mode.key)
+
+    /** Gets the hour (0-23, device local time) of the automatic transcription run. */
+    fun getTranscriptionHour() = getInt(Key.TRANSCRIPTION_HOUR, DefaultsValue.TRANSCRIPTION_HOUR)
+
+    /** Sets the hour (0-23) of the automatic transcription run. */
+    fun setTranscriptionHour(hour: Int) = setInt(Key.TRANSCRIPTION_HOUR, hour)
+
+    /** Gets the minute (0-59) of the automatic transcription run. */
+    fun getTranscriptionMinute() = getInt(Key.TRANSCRIPTION_MINUTE, DefaultsValue.TRANSCRIPTION_MINUTE)
+
+    /** Sets the minute (0-59) of the automatic transcription run. */
+    fun setTranscriptionMinute(minute: Int) = setInt(Key.TRANSCRIPTION_MINUTE, minute)
+
+    /** Whether the automatic run waits for the phone to be charging. On by default. */
+    fun getTranscriptionRequiresCharging() =
+        getBoolean(Key.TRANSCRIPTION_REQUIRES_CHARGING, DefaultsValue.TRANSCRIPTION_REQUIRES_CHARGING)
+
+    /** Sets whether the automatic run waits for the phone to be charging. */
+    fun setTranscriptionRequiresCharging(required: Boolean) =
+        setBoolean(Key.TRANSCRIPTION_REQUIRES_CHARGING, required)
+
+    /** Gets the chosen model tier. */
+    fun getTranscriptionModelId(): String =
+        getString(Key.TRANSCRIPTION_MODEL_ID, DefaultsValue.TRANSCRIPTION_MODEL_ID)
+            ?: DefaultsValue.TRANSCRIPTION_MODEL_ID
+
+    /** Sets the chosen model tier. */
+    fun setTranscriptionModelId(id: String) = setString(Key.TRANSCRIPTION_MODEL_ID, id)
+
+    /**
+     * Gets the language passed to whisper, or null to auto-detect.
+     *
+     * Not a soft setting: whisper decodes an unspecified language as English, which for a Hebrew call
+     * produces fluent nonsense rather than an error.
+     */
+    fun getTranscriptionLanguage(): String? =
+        getString(Key.TRANSCRIPTION_LANGUAGE, DefaultsValue.TRANSCRIPTION_LANGUAGE)
+
+    /** Sets the language passed to whisper, or null to auto-detect. */
+    fun setTranscriptionLanguage(language: String?) = setString(Key.TRANSCRIPTION_LANGUAGE, language)
 
     // -------- Sync Schedule --------
 

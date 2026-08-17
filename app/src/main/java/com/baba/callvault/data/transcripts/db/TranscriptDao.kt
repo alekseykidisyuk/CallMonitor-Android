@@ -48,6 +48,10 @@ interface TranscriptDao {
     @Query("SELECT * FROM transcripts WHERE displayName = :displayName")
     fun observe(displayName: String): Flow<TranscriptWithSegments?>
 
+    /** One-shot read of a single transcript's row, without its segments. */
+    @Query("SELECT * FROM transcripts WHERE displayName = :displayName")
+    suspend fun findTranscript(displayName: String): TranscriptEntry?
+
     @Query("SELECT displayName FROM transcripts WHERE state = :state")
     suspend fun displayNamesWithState(state: TranscriptState): List<String>
 
