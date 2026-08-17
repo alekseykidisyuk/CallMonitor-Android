@@ -42,8 +42,10 @@ so choosing the model later needs no migration.
 
 ## Global Constraints
 
-Same as Plan 2: GPLv3 header on new files, `AppLogger` with a `CV:` tag, strings in all 9 locales,
-immutable data, no attribution trailers, no real call audio in the repo.
+Same as Plan 2: GPLv3 header on new files, `AppLogger` with a `CV:` tag, strings in all **10** locales
+(de, es, fr, hu, it, pl, pt-rBR, ru, vi, zh-rCN — merge with `scripts/merge-translations.py`, then
+`./gradlew :app:checkTranslations`, which fails the build on drift), immutable data, no attribution
+trailers, no real call audio in the repo.
 
 ---
 
@@ -69,7 +71,7 @@ decisions live here, where they can be tested on synthetic PCM with no device.
 
 > **Channels are named A and B, not You and Them, and that is deliberate.** The capture reliably puts
 > the two *directions* on separate channels, but which index is uplink is an OEM detail this codebase
-> has never asserted. Task 4 determines the mapping empirically; until then a confident "You" that is
+> has never asserted. Task 4 learns the mapping automatically; until it has, a confident "You" that is
 > actually the other party is worse than a neutral label. The mapping is applied at the display layer,
 > never baked into stored data.
 
@@ -275,24 +277,56 @@ Add a test that a throwing service yields an empty list and no exception escapes
 
 ---
 
-## Task 4: Determine which channel is which — on device
+## Task 4: Learn which channel is which — automatically, from ringback
 
-**This task is empirical and cannot be done from the desk.** It answers the one question the code
-cannot: is channel A the near party or the far party?
+**Decided 2026-08-17 (A5): detect it, do not ask.** It cannot be hardcoded — Android documents
+`VOICE_CALL` as "uplink + downlink" and never specifies the channel order, leaving it an OEM
+decision — but it can be *learned*, with no prompt and no scripted call.
 
-> Deferred to the batched device session — see
-> **`docs/dev-notes/2026-08-17-transcription-device-test-plan.md`**, items B7 and B8. Until B7 is
-> answered the UI must use neutral "Speaker A / B" labels, so this does not block Tasks 1–3.
+**VoIP needs none of this.** `VoipCaptureSession` opens the two streams itself and interleaves them
+`LEFT near, RIGHT far` (`VoipCaptureSession.kt:40`), so app calls are correct by construction. This
+task is carrier-only.
 
-- [ ] **Step 1:** Place a call where the far party speaks first and alone for several seconds, and the
-  near party stays silent. Record it.
-- [ ] **Step 2:** Read back the stored turns and check which channel is active during that window.
-- [ ] **Step 3:** Repeat once with the roles reversed to confirm, and once on a VoIP call.
-- [ ] **Step 4:** Record the mapping in this file **with the device and Android version it was
-  observed on**, and add it as a constant with a comment saying it is empirical, not specified.
-- [ ] **Step 5:** If the mapping proves inconsistent across call types, keep the neutral
-  "Speaker A / Speaker B" labels in the UI rather than guessing at "You / Them". A wrong attribution
-  in a call transcript is a serious defect — worse than no attribution.
+**The signal:** on an **outgoing** call, between the moment recording starts and the moment the far
+side answers, the ringback tone comes from the network — present on the far-party channel, absent
+from the near one, which carries only room noise. Whichever channel holds a sustained periodic tone
+in that window is the far party.
+
+**Files:**
+- Create: `app/src/main/java/com/baba/callvault/server/speakers/ChannelMapDetector.kt`
+- Create: `app/src/main/java/com/baba/callvault/data/ChannelMap.kt` (the persisted result)
+- Test: `app/src/test/java/com/baba/callvault/server/speakers/ChannelMapDetectorTest.kt`
+
+**Interfaces:**
+- Produces: `ChannelMap` — `UNKNOWN` / `A_IS_NEAR` / `B_IS_NEAR`, persisted once learned and reused by
+  every later call, **including incoming ones**, which have no ringback phase to learn from.
+
+- [ ] **Step 1: Write the failing tests.** Synthetic PCM only — no device needed:
+
+```kotlin
+@Test fun `identifies the channel carrying a sustained tone as the far party`()
+@Test fun `reports UNKNOWN when neither channel carries a tone`()      // carrier sends no ringback
+@Test fun `reports UNKNOWN when both channels carry tonal energy`()    // leakage: refuse to guess
+@Test fun `reports UNKNOWN for an incoming call`()                     // no ringback phase at all
+@Test fun `ignores a tone too short to be ringback`()                  // a dial blip is not ringback
+```
+
+- [ ] **Step 2: FAIL. Step 3: Implement.** Classify per window on *sustained periodicity* — a narrow
+  band holding most of the energy, for seconds — not a hardcoded frequency: ringback is ~400 Hz in
+  Israel and differs by country.
+
+- [ ] **Step 4: Require corroboration.** Hold the first result as provisional and promote it to the
+  persisted `ChannelMap` only once **two calls agree**. One noisy call must not permanently mislabel
+  every transcript thereafter.
+
+- [ ] **Step 5: Refuse to guess.** Anything short of a confident, corroborated answer leaves the map
+  `UNKNOWN` and the UI shows neutral "Speaker A / Speaker B". **A confident wrong attribution — your
+  words shown as theirs — is a far worse defect than no attribution at all.**
+
+- [ ] **Step 6:** Make the learned mapping inspectable (a debug log line, or a Settings detail row),
+  so device check B7 can be verified without instrumentation.
+
+- [ ] **Step 7: Commit.**
 
 ---
 

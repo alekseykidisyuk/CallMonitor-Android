@@ -204,6 +204,49 @@ fun `lays out right to left for Hebrew segments`() { /* ... */ }
 
 ---
 
+## Task 6: The progress pill on Home
+
+**Decision A3 (2026-08-17): silent, but visible when running.** An overnight backlog can be hours of
+sustained CPU; a warm phone with nothing on screen to explain it is not acceptable. A notification was
+rejected as too heavy for something the user did not ask to be interrupted about.
+
+**Files:**
+- Create: `app/src/main/java/com/baba/callvault/ui/common/TranscribingPill.kt`
+- Modify: `app/src/main/java/com/baba/callvault/ui/screens/HomeScreen.kt` (~212, `titleTrailing`)
+- Test: `app/src/test/java/com/baba/callvault/ui/TranscribingPillTest.kt`
+
+**Shape:** the same slot and visual language as the existing `SupportPill`, which already occupies
+`titleTrailing`. Nothing new to design, and nothing shown at all when idle.
+
+```
+┌──────────────────────────────────────┐
+│  CallVault  [ ⣾ 3/12 ]           ⚙  │
+└──────────────────────────────────────┘
+        ▲ only while running
+        ▲ tap → sheet: current call + Cancel
+```
+
+- [ ] **Step 1: Failing tests**
+
+```kotlin
+@Test fun `is absent when nothing is being transcribed`() { /* the common case */ }
+@Test fun `shows position in the backlog while running`() { /* "3/12" */ }
+@Test fun `tapping opens a sheet naming the recording in progress`() { /* ... */ }
+@Test fun `cancelling stops the run and the pill disappears`() { /* ... */ }
+@Test fun `shows a single-item form for a manual one-off run`() {
+    // A tapped single recording is not a backlog; "1/1" would read as a stalled sweep.
+}
+```
+
+- [ ] **Step 2: FAIL. Step 3: Implement**, driven by `WorkManager.getWorkInfosForUniqueWorkLiveData`
+  for the sweep and manual work names, so the pill reflects real worker state rather than a guess.
+- [ ] **Step 4: Green.**
+- [ ] **Step 5:** Confirm the pill and `SupportPill` never collide — decide which wins the slot when
+  both would show, and test it.
+- [ ] **Step 6: Commit.**
+
+---
+
 ## Task 5: Share, copy, delete
 
 - [ ] Share/copy the transcript as plain text with timestamps, via the existing share sheet.

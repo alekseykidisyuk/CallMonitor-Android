@@ -12,35 +12,30 @@ until we install a build on the OP12 and work through it.
 
 ---
 
-## A. Decisions I need from you
+## A. Decisions — ✅ ALL ANSWERED 2026-08-17
 
-These change what gets built or shipped. None are urgent, but they are cheaper to answer before the
-device session than during it.
+- [x] **A1. Language: auto-detect, with manual override.** Shipped as built — auto-detect is the
+  default and the Language dropdown pins Hebrew (or five others) when wanted. No change was needed.
 
-- [ ] **A1. Default language: auto-detect, or Hebrew?**
-  Currently **auto-detect**. Naming the language outright is more reliable, and mis-detection fails
-  *silently* — it returns fluent text in the wrong language rather than an error. Most of your calls
-  are Hebrew, so defaulting to Hebrew would be more accurate for you; auto-detect is the better
-  default for other users. **My recommendation: default to Hebrew.**
+- [x] **A2. Default tier: Best (574 MB).** Changed in `1a759af`. Fast produces Hebrew *gist*, Best
+  produces clean Hebrew, and a transcript you cannot trust is not worth the battery it cost. Cost
+  accepted: ~2.2× real time, so a 30-minute call takes about 65 minutes.
 
-- [ ] **A2. Default model tier: Fast (190 MB) or Best (574 MB)?**
-  Currently **Fast**. Measured: Fast ≈ real time and produces Hebrew *gist*; Best ≈ 2.2× real time and
-  produces clean Hebrew. On a 30-minute call that is ~30 min versus ~65 min. Only you can say whether
-  gist-quality is worth having.
+- [x] **A3. Silent, but with a progress pill beside the Home title.** Same slot and shape as the
+  existing `SupportPill` (`HomeScreen.kt:212`), visible **only while running**, showing position in
+  the backlog, tapping through to a sheet with the current call and a Cancel button. → Plan 3, Task 6.
 
-- [ ] **A3. Should a long automatic run be visible?**
-  Right now it is **silent** — no notification. An overnight backlog could be hours of CPU with
-  nothing on screen explaining why the phone is warm. Options: leave silent, add a quiet ongoing
-  notification, or only notify when it finishes.
+- [x] **A4. Calls per run is configurable** — 5 / 10 / 25 / 50 / No limit, default 25. Shipped in
+  `1a759af`.
 
-- [ ] **A4. Batch size per scheduled run — currently 25 recordings.**
-  At Fast tier that could be several hours if the calls are long. Cap it lower, cap by *total
-  duration* instead of count, or leave it?
+- [x] **A5. Detect the channel mapping automatically from ringback**, falling back to neutral
+  "Speaker A / B" when the carrier gives nothing to go on. No prompt, no scripted test call.
+  → Plan 2A, Task 4.
 
-- [ ] **A5. Speaker labels: "You / Them" or "Speaker A / B"?**
-  Depends on B7 below. If the channel mapping proves stable on your phone, "You / Them" is far more
-  useful. If it varies, neutral labels are the honest choice — a transcript that confidently
-  attributes your words to the other person is worse than one that does not guess.
+  **VoIP needs no calibration at all**: `VoipCaptureSession.kt:40` interleaves the two streams
+  itself — *"LEFT near, RIGHT far"* — so for app calls the mapping is known by construction. Only
+  carrier calls are ambiguous, because Android documents `VOICE_CALL` as "uplink + downlink" without
+  ever specifying the channel order, leaving it an OEM decision.
 
 ---
 
@@ -119,15 +114,21 @@ only the unit tests.
 - [ ] Transcripts survive the recordings catalog being rebuilt. This is the whole reason they live in
       their own database.
 
-### B7. Speaker channel mapping — Plan 2A ⚠️ *blocks A5, and must be done before 2A ships*
+### B7. Speaker channel mapping — Plan 2A
 
-Empirical and device-specific: nothing in the code can determine which stereo channel is you.
+Now **automatic** (decision A5): the app detects the far-party channel from the ringback tone on an
+outgoing call. So this is no longer a scripted test — it is a check that the automatic detection
+reached the *right* conclusion on your carrier, and stayed quiet when it could not.
 
-- [ ] Place a call where **the other party speaks first and alone** for several seconds while you stay
-      silent. Note which channel is active.
-- [ ] Repeat with the roles reversed to confirm.
-- [ ] Repeat on a **VoIP** call (WhatsApp), which uses a different capture path.
-- [ ] Record the mapping *with the Android version it was observed on*.
+- [ ] Make one ordinary **outgoing** carrier call. Afterwards, check the detected mapping and confirm
+      the transcript attributes your lines to you.
+- [ ] Confirm the conclusion is **stable** across two or three more outgoing calls, not flip-flopping.
+- [ ] **Incoming** calls: there is no ringback to learn from, so confirm they reuse the mapping
+      already learned rather than guessing.
+- [ ] If the carrier sends no in-band ringback, confirm the labels fall back to neutral
+      "Speaker A / B" — **a wrong attribution is far worse than none**.
+- [ ] VoIP (WhatsApp): mapping is known by construction, so confirm "You / Them" is right there
+      *without* any calibration having happened.
 
 ### B8. Speaker track must not harm recording — Plan 2A
 
