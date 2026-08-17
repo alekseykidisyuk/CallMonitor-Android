@@ -19,6 +19,36 @@ stops via a new additive AIDL method — the same shape as the existing `voipFar
 
 ---
 
+## STATUS — 2026-08-17
+
+| task | state |
+|---|---|
+| 1 — detector as pure logic | ✅ done, `866dd2e` — 13 tests |
+| 2 — tap the capture loop | ✅ done, `918ccbd` |
+| 3 — hand the turns to the app | 🟡 **half done** (`918ccbd`): AIDL + daemon side built; **app-side persistence not started** |
+| 4 — learn the channel mapping from ringback | ⬜ not started |
+| 5 — VoIP path | ⬜ not started |
+
+**379 unit tests, 0 failures.** `assembleDebug` green.
+
+**Nothing consumes the turns yet, and that is safe.** The daemon computes and exposes them; no caller
+reads them, so the feature is inert. The recorded audio is untouched — same source, same mono
+downmix, same encoder settings.
+
+**Where Task 3 stopped, and why.** The remaining half writes the turns into `transcripts.db` keyed by
+`displayName`, which means touching `AudioRecordingEngine.release()` / `finalizeStagingIfNeeded()` —
+the recording hot path, and the most delicate code in the app. Two things to settle before editing it:
+
+- `finalizeStagingIfNeeded` (`AudioRecordingEngine.kt:570`) knows `currentRecordingUri`, not the
+  `displayName` the transcripts table is keyed on. Derive it from the SAF document name rather than
+  re-deriving a name, so the two can never disagree.
+- `transcripts.db` is at **version 1 with a committed schema baseline**, so adding `speaker_turns`
+  needs a **real migration to v2** — no destructive fallback, that is the whole point of that
+  database. It has never existed on the phone, so the migration is unexercised in the wild either
+  way; write and test it properly regardless.
+
+---
+
 ## Why this runs early, ahead of the UI
 
 Speaker labels obtained this way are **exact and free**, but only for calls recorded *after* this
