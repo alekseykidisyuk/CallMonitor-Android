@@ -3,6 +3,29 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [1.5.8] - 2026-08-18
+
+### Fixed
+
+- **Recording could stop for good, silently, and nothing said so.** A phone was found with the
+  recorder dead: no daemon, no recordings, and a status card still showing nothing wrong. It had
+  stayed that way through the app being force-quit *and* a full restart. Every minute CallVault tried
+  to bring the recorder back, waited 45 seconds, gave up, and tried the identical thing again — a loop
+  it could never escape, because an endpoint to connect to genuinely existed and connecting to it
+  simply hung. Three changes, each of which alone would have shortened the outage:
+  - After two failed attempts CallVault now stops trusting that connection: it tears it down, rebuilds
+    it, and switches Wireless debugging on so there is a second route in. Doing exactly this by hand
+    was what revived the affected phone.
+  - The check for "is there a way in at all" was wrong in a way that could strand a phone with no
+    route back. Having USB debugging switched on was treated as sufficient, but it only keeps
+    Android's debug service running — it offers nothing for CallVault to connect *to*.
+  - The failure is no longer invisible. Home now says **"Recording is down"** when recovery keeps
+    failing, instead of leaving you to discover it. It stays quiet when the recorder is merely idle,
+    which is normal and healthy.
+
+- **A phone call could be mistaken for an app call.** Carrier calls are no longer treated as VoIP,
+  which could suppress the recording of a real call.
+
 ## [1.5.7] - 2026-08-04
 
 ### Fixed

@@ -40,7 +40,7 @@
     <string name="home_usb_advisory_fix">Corrigir</string>
     <string name="home_usb_advisory_text">O USB está em um modo de transferência de dados. Toque para definir como Somente carregar.</string>
     <string name="home_usb_advisory_title">A gravação pode parar ao bloquear a tela</string>
-    <string name="home_whatsnew_body">• Grave chamadas mesmo sem Wi-Fi (ative abaixo)\n• A gravação fica pronta mais rápido depois que o celular fica ocioso\n• Um novo motor de áudio, mais leve — sem mais começos de chamada cortados</string>
+    <string name="home_whatsnew_body">• A gravação agora se recupera sozinha caso trave\n• A tela inicial avisa quando não está gravando, em vez de ficar calada\n• Uma chamada telefônica não é mais confundida com uma chamada de app</string>
     <string name="home_whatsnew_offline_cta">Ativar a gravação sem Wi-Fi</string>
     <string name="home_whatsnew_offline_enabled">Gravação offline ativada.</string>
     <string name="home_whatsnew_offline_enabling">Ativando a gravação sem Wi-Fi…</string>

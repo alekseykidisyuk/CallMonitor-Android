@@ -40,7 +40,7 @@
     <string name="home_usb_advisory_fix">Sửa</string>
     <string name="home_usb_advisory_text">USB đang ở chế độ dữ liệu. Nhấn để đặt Chỉ sạc.</string>
     <string name="home_usb_advisory_title">Ghi âm có thể dừng khi khóa màn hình</string>
-    <string name="home_whatsnew_body">• Ghi âm cuộc gọi ngay cả khi không có Wi-Fi (bật bên dưới)\n• Bản ghi âm sẵn sàng nhanh hơn sau khi điện thoại ở trạng thái nhàn rỗi\n• Công cụ âm thanh mới, nhẹ hơn — không còn cắt mất phần đầu cuộc gọi</string>
+    <string name="home_whatsnew_body">• Ghi âm nay tự phục hồi nếu bị kẹt\n• Màn hình chính báo khi không ghi âm, thay vì im lặng\n• Cuộc gọi điện thoại không còn bị nhầm với cuộc gọi trong ứng dụng</string>
     <string name="home_whatsnew_offline_cta">Bật ghi âm khi không có Wi-Fi</string>
     <string name="home_whatsnew_offline_enabled">Đã bật ghi âm ngoại tuyến.</string>
     <string name="home_whatsnew_offline_enabling">Đang bật ghi âm không cần Wi-Fi…</string>
