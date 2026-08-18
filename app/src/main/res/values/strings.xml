@@ -470,4 +470,7 @@
     <string name="settings_debug_log_delete_title">Delete the log?</string>
     <string name="settings_debug_log_delete_message">The entries collected so far are removed. If logging is still on, a new log starts immediately.</string>
     <string name="settings_debug_log_empty">The log is empty.</string>
+    <string name="home_status_recovery_stuck_title">Recording is down</string>
+    <string name="home_status_recovery_stuck_suggestion">CallVault keeps failing to restart its recorder, so calls are not being recorded. Reopening the app usually clears it.</string>
+    <string name="home_hero_pill_recovery_stuck">Not recording</string>
 </resources>

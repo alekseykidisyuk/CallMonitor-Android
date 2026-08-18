@@ -67,6 +67,7 @@
     <string name="home_delete">Supprimer</string>
     <string name="home_delete_confirm_message">Cela supprime définitivement %1$s.</string>
     <string name="home_delete_confirm_title">Supprimer l\'enregistrement ?</string>
+    <string name="home_hero_pill_recovery_stuck">N\'enregistre pas</string>
     <string name="home_open_settings">Paramètres</string>
     <string name="home_player_error">Impossible de lire ce fichier.</string>
     <string name="home_player_loading">Chargement…</string>
@@ -86,6 +87,8 @@
     <string name="home_status_not_paired_title">Configuration incomplète</string>
     <string name="home_status_ready_suggestion">CallVault enregistre les appels automatiquement selon vos paramètres.</string>
     <string name="home_status_ready_title">Prêt à enregistrer</string>
+    <string name="home_status_recovery_stuck_suggestion">CallVault n\'arrive pas à redémarrer son enregistreur, les appels ne sont donc pas enregistrés. Rouvrir l\'application suffit généralement.</string>
+    <string name="home_status_recovery_stuck_title">L\'enregistrement est hors service</string>
     <string name="home_status_update_regrant_suggestion">Une mise à jour a supprimé une autorisation dont CallVault a besoin pour relancer l\'enregistrement. Ça marche peut-être encore — appuie ici, puis active le débogage sans fil une fois pour la rétablir. Aucune réinstallation nécessaire.</string>
     <string name="home_status_update_regrant_title">Reconnecte-toi pour continuer à enregistrer</string>
     <string name="notif_info_channel">Avis de CallVault</string>

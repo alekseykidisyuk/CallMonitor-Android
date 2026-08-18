@@ -67,6 +67,7 @@
     <string name="home_delete">Eliminar</string>
     <string name="home_delete_confirm_message">Esto elimina permanentemente %1$s.</string>
     <string name="home_delete_confirm_title">¿Eliminar grabación?</string>
+    <string name="home_hero_pill_recovery_stuck">Sin grabar</string>
     <string name="home_open_settings">Ajustes</string>
     <string name="home_player_error">No se pudo reproducir este archivo.</string>
     <string name="home_player_loading">Cargando…</string>
@@ -86,6 +87,8 @@
     <string name="home_status_not_paired_title">Configuración incompleta</string>
     <string name="home_status_ready_suggestion">CallVault graba las llamadas automáticamente según sus ajustes.</string>
     <string name="home_status_ready_title">Listo para grabar</string>
+    <string name="home_status_recovery_stuck_suggestion">CallVault no consigue reiniciar su grabador, así que las llamadas no se están grabando. Volver a abrir la app suele solucionarlo.</string>
+    <string name="home_status_recovery_stuck_title">La grabación está caída</string>
     <string name="home_status_update_regrant_suggestion">Una actualización eliminó un permiso que CallVault necesita para reiniciar la grabación. Puede que siga funcionando por ahora: toca aquí y activa la depuración inalámbrica una vez para restaurarlo. No hace falta reinstalar.</string>
     <string name="home_status_update_regrant_title">Reconecta para seguir grabando</string>
     <string name="notif_info_channel">Avisos de CallVault</string>

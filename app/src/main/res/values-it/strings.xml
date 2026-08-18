@@ -67,6 +67,7 @@
     <string name="home_delete">Elimina</string>
     <string name="home_delete_confirm_message">Questa operazione elimina definitivamente %1$s.</string>
     <string name="home_delete_confirm_title">Eliminare la registrazione?</string>
+    <string name="home_hero_pill_recovery_stuck">Non registra</string>
     <string name="home_open_settings">Impostazioni</string>
     <string name="home_player_error">Impossibile riprodurre questo file.</string>
     <string name="home_player_loading">Caricamento…</string>
@@ -86,6 +87,8 @@
     <string name="home_status_not_paired_title">Configurazione non completata</string>
     <string name="home_status_ready_suggestion">CallVault registra le chiamate automaticamente in base alle Sue impostazioni.</string>
     <string name="home_status_ready_title">Pronto a registrare</string>
+    <string name="home_status_recovery_stuck_suggestion">CallVault non riesce a riavviare il registratore, quindi le chiamate non vengono registrate. Riaprire l\'app di solito risolve.</string>
+    <string name="home_status_recovery_stuck_title">La registrazione non funziona</string>
     <string name="home_status_update_regrant_suggestion">Un aggiornamento ha rimosso un\'autorizzazione necessaria a CallVault per riavviare la registrazione. Per ora potrebbe funzionare ancora: tocca qui e attiva una volta il debug wireless per ripristinarla. Nessuna reinstallazione necessaria.</string>
     <string name="home_status_update_regrant_title">Riconnetti per continuare a registrare</string>
     <string name="notif_info_channel">Avvisi di CallVault</string>

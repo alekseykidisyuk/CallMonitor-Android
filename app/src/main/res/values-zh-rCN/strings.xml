@@ -67,6 +67,7 @@
     <string name="home_delete">删除</string>
     <string name="home_delete_confirm_message">这将永久删除 %1$s。</string>
     <string name="home_delete_confirm_title">删除录音？</string>
+    <string name="home_hero_pill_recovery_stuck">未在录音</string>
     <string name="home_open_settings">设置</string>
     <string name="home_player_error">无法播放此文件。</string>
     <string name="home_player_loading">加载中…</string>
@@ -86,6 +87,8 @@
     <string name="home_status_not_paired_title">设置未完成</string>
     <string name="home_status_ready_suggestion">CallVault 会根据你的设置自动录制通话。</string>
     <string name="home_status_ready_title">准备就绪</string>
+    <string name="home_status_recovery_stuck_suggestion">CallVault 无法重启录音服务，因此通话未被录制。重新打开应用通常可以解决。</string>
+    <string name="home_status_recovery_stuck_title">录音已中断</string>
     <string name="home_status_update_regrant_suggestion">一次更新清除了 CallVault 重新启动录音所需的一项权限。目前可能仍可使用——点按这里，然后开启一次无线调试即可恢复。无需重新安装。</string>
     <string name="home_status_update_regrant_title">重新连接以继续录音</string>
     <string name="notif_info_channel">CallVault 通知</string>

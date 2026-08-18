@@ -665,6 +665,8 @@ private fun HeroStatusCard(
         HomeViewModel.HomeStatus.NO_FOLDER -> CvTone.Error
         HomeViewModel.HomeStatus.DEV_OPTIONS_OFF -> CvTone.Error
         HomeViewModel.HomeStatus.UPDATE_REGRANT_NEEDED -> CvTone.Warning
+        // Error, not Warning: the recorder is down and the next call will be missed.
+        HomeViewModel.HomeStatus.RECOVERY_STUCK -> CvTone.Error
     }
     val pillText = when (status) {
         HomeViewModel.HomeStatus.READY -> stringResource(R.string.home_hero_pill_ready)
@@ -672,6 +674,7 @@ private fun HeroStatusCard(
         HomeViewModel.HomeStatus.NO_FOLDER -> stringResource(R.string.home_hero_pill_no_folder)
         HomeViewModel.HomeStatus.DEV_OPTIONS_OFF -> stringResource(R.string.home_hero_pill_dev_options_off)
         HomeViewModel.HomeStatus.UPDATE_REGRANT_NEEDED -> stringResource(R.string.home_hero_pill_update_regrant)
+        HomeViewModel.HomeStatus.RECOVERY_STUCK -> stringResource(R.string.home_hero_pill_recovery_stuck)
     }
 
     // Subtle accent-tinted surface so the banner reads as a confident state, not a stock card.
