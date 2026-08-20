@@ -124,6 +124,8 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -1185,11 +1187,16 @@ private fun SourceBadge(source: RecordingSource) {
         RecordingSource.LOCAL -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.primary
     }
+    // Glyphs only, for every source. BOTH already worked this way because its text truncated to
+    // "Dev…"; now that the badge lives in the gutter under the play disc it has 62dp, which a text
+    // label does not fit — and three states drawn the same way are easier to learn than two
+    // conventions. The label survives as the accessible name, so nothing is lost to a screen reader.
     Row(
         modifier = Modifier
             .clip(CircleShape)
             .background(color.copy(alpha = 0.12f))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .semantics { contentDescription = label },
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (source == RecordingSource.LOCAL || source == RecordingSource.BOTH) {
@@ -1197,7 +1204,7 @@ private fun SourceBadge(source: RecordingSource) {
                 imageVector = Icons.Filled.Smartphone,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(12.dp)
+                modifier = Modifier.size(14.dp)
             )
         }
         if (source == RecordingSource.BOTH) Spacer(Modifier.width(3.dp))
@@ -1206,19 +1213,7 @@ private fun SourceBadge(source: RecordingSource) {
                 imageVector = Icons.Filled.Cloud,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(12.dp)
-            )
-        }
-        // BOTH: show only the two glyphs (no text — it truncated to "Dev…").
-        // Single-source rows keep their text label alongside the icon.
-        if (source != RecordingSource.BOTH) {
-            Spacer(Modifier.width(5.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = color,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                modifier = Modifier.size(14.dp)
             )
         }
     }
@@ -1539,22 +1534,16 @@ private fun RecordingRow(
             )
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                // The badge belongs beside the name — it says what this recording *is*, so it reads as
-                // part of the identity rather than as another fact on the details line. The width it
-                // needs comes from the two icon buttons instead: see ROW_ACTION_SIZE.
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = primaryLabel,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    SourceBadge(source = item.source)
-                }
+                // The whole line, to itself. The badge now sits under the play disc, in the gutter the
+                // details line already indents past — space that was simply empty.
+                Text(
+                    text = primaryLabel,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
             }
             Spacer(Modifier.width(4.dp))
@@ -1608,14 +1597,24 @@ private fun RecordingRow(
         // sliver left between the play disc and two icon buttons — about twenty characters — so it
         // truncated mid-duration ("Yesterday 17:33 · 23…") no matter which fields were dropped. Here it
         // has the card's full width, indented to line up under the name.
-        Text(
-            text = buildSubtitle(item),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = META_INDENT, top = 2.dp)
-        )
+        // The details line already began at META_INDENT, leaving the space under the play disc empty.
+        // The badge goes there: it costs no height, takes nothing from the name, and sits beside the
+        // disc it describes.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.width(META_INDENT), contentAlignment = Alignment.Center) {
+                SourceBadge(source = item.source)
+            }
+            Text(
+                text = buildSubtitle(item),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
 
         // Single-source: inline player directly under the row when this copy is active.
         if (!isBoth && isRowActive) {
