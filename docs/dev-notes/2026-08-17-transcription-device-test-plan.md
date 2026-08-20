@@ -165,6 +165,60 @@ Not pass/fail — things to notice over a few days.
 
 Fill in as we go, so a later session does not re-run what already passed.
 
-| test | date | device / OS | result |
-|---|---|---|---|
-| | | | |
+All on the **OnePlus 12 (CPH2581, Android 16)**, 2026-08-20, release build 1.5.8/10721 built from
+`worktree-feat+transcription-engine` (merged with v1.5.8 first, so the daemon-recovery fix was not
+lost from the daily driver).
+
+| test | result |
+|---|---|
+| B1 download | ✅ 574 MB Best model over Wi-Fi, row flips to "Downloaded and ready" |
+| B1 resume | ✅ **proven**: JobScheduler killed and restarted the download at least twice, yet only 597 MB was received against a 574 MB file. A restart-from-zero would have cost ~1.7 GB. |
+| B2 Hebrew script | ✅ full Hebrew transcript, right-to-left |
+| B2 timings | ✅ timestamps progress linearly and reach 4:24 on a 5:13 call — the centisecond→millisecond conversion is intact |
+| B2 speed | ✅ ~16 min for a 5:13 call ⇒ RTF ≈ 3, close to the predicted 2.16 for Best on this hardware |
+| B2 auto-detect | ❌ **→ then fixed.** See below. |
+| B3 Manual cancels the sweep | ✅ the TranscriptionWorker job leaves JobScheduler |
+| B4 progressive disclosure | ✅ Hour / Minute / Calls-per-run / Only-while-charging appear only under "Automatically"; Model and Language stay in both |
+| B4 long locales | ✅ German and Russian render without clipping; the charging subtitle wraps to three lines |
+| B9 modal + RTL | ✅ near-full-height, Hebrew right-to-left, timestamp column does not collide with the text |
+| B9 no-speech empty state | ✅ "No speech was recognised in this recording", not a blank sheet |
+| Task 5 delete-transcript | ✅ error-tinted "Delete text" present in the sheet |
+| Task 6 pill | ✅ appears while running, takes the slot from the support pill, single-item form (no "1/1"), taps through to a sheet with Stop |
+
+### The bug this pass existed to find
+
+**Every transcript came back empty, for every user, by default.**
+
+`whispercv.cpp` set `params.detect_language = true` whenever the language was left on auto. Despite the
+name that is not "please detect the language" — whisper.cpp treats it as *exit after detecting*:
+
+```c
+if (params.detect_language) { return 0; }   // whisper_full_with_state
+```
+
+so `whisper_full` returned success having produced **zero segments**. The runner stored that as a
+completed transcript and the sheet said *"No speech was recognised in this recording"* — which reads as
+a poor recording, not a defect. Auto-detect is the default, so this affected everything.
+
+Measured either side of the fix on the same recording:
+
+| language setting | time | result |
+|---|---|---|
+| Detect automatically (before) | ~40 s | zero segments |
+| Hebrew, forced | ~16 min | full transcript |
+
+Fixed in `e9858b5`: `params.language = "auto"` and `detect_language` left false — auto-detection already
+happens for a null/empty/"auto" language, so the flag was never needed.
+
+### Still not run
+
+B5 (deletion cascade), B6 (survival across update/catalog rebuild), B7 (speaker mapping — needs real
+outgoing calls), B8 (capture unchanged), B9 seek-on-tap and search-finds-a-spoken-word, and every item
+in section C.
+
+### Two smaller defects found
+
+- **The in-app log viewer truncates every line** and cannot wrap or scroll sideways, so the log is
+  unreadable on the phone. Since the OnePlus also suppresses this app's logcat, that left no way to read
+  a log on-device — it cost most of an hour here, and it would defeat any bug report from a user.
+- **The transcribing sheet showed the raw file name** instead of the contact name. Fixed in `e9858b5`.
