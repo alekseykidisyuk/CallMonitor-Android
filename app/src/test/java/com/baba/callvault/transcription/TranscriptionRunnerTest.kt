@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -150,6 +151,38 @@ class TranscriptionRunnerTest {
         runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("gone.ogg"))
 
         assertEquals(0, calls)
+    }
+
+    @Test
+    fun stopping_a_run_leaves_the_recording_offering_to_transcribe_again() = runBlocking {
+        // Tapping Stop cancels the coroutine mid-transcribe. Two wrong answers to avoid:
+        //  - FAILED: the queue deliberately never re-offers a FAILED recording, so one Stop would
+        //    exclude that call from every future automatic run until it was retried by hand. This is
+        //    what actually happened on the OP12 on 2026-08-20 — the row went red after a Stop.
+        //  - QUEUED: renders as the busy spinner, so in Manual mode the row would spin for ever with
+        //    nothing running behind it.
+        // Removing the row is the honest state: the row offers "Transcribe" again, and a recording
+        // with no transcript row is exactly what the queue considers pending.
+        catalogued("stopped.ogg")
+        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+            throw kotlinx.coroutines.CancellationException("stopped")
+        }
+
+        // Act — the cancellation must propagate, so the worker can report it was stopped.
+        var propagated = false
+        try {
+            runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("stopped.ogg"))
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            propagated = true
+        }
+
+        // Assert
+        assertTrue("cancellation must not be swallowed", propagated)
+        assertNull("a stopped recording must not keep a transcript row", transcript("stopped.ogg"))
+        assertTrue(
+            "a stopped recording must be offered again",
+            TranscriptionQueue.pending(context).contains("stopped.ogg")
+        )
     }
 
     private fun runnerReturning(segments: List<TranscriptSegment>) =

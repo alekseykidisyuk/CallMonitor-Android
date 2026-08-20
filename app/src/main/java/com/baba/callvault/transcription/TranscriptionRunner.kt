@@ -17,6 +17,7 @@ import com.baba.callvault.data.transcripts.db.TranscriptEntry
 import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
 import com.baba.callvault.data.transcripts.db.TranscriptState
 import com.baba.callvault.utils.AppLogger
+import kotlinx.coroutines.CancellationException
 
 /**
  * Turns audio into stored segments. Substituted in tests, because the real one loads a native
@@ -104,6 +105,20 @@ class TranscriptionRunner(
         mark(displayName, TranscriptState.RUNNING, modelId, language)
 
         return runCatching { transcriber.transcribe(context, uri, modelPath, language) }
+            .onFailure { error ->
+                // runCatching swallows CancellationException like any other, and a stop is not a
+                // failure of this recording. Recording it as FAILED is the worst outcome —
+                // TranscriptionQueue never re-offers a FAILED recording, so one tap on Stop would
+                // exclude that call from every future automatic run until someone retried it by hand.
+                // QUEUED is no better: the row renders that as a spinner, which in Manual mode would
+                // spin for ever with nothing behind it. Removing the row restores exactly the state
+                // before the run: the row offers "Transcribe", and the queue counts it as pending.
+                // The cancellation is then rethrown so the worker can report that it was stopped.
+                if (error is CancellationException) {
+                    dao.deleteFor(displayName)
+                    throw error
+                }
+            }
             .fold(
                 onSuccess = { segments ->
                     dao.replaceSegments(displayName, segments.map { it.toEntry(displayName) })
