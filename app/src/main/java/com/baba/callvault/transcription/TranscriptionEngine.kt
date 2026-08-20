@@ -69,6 +69,17 @@ object TranscriptionEngine {
     private val abortRequested = AtomicBoolean(false)
 
     /**
+     * Whether the run that just ended was stopped rather than finished.
+     *
+     * The authority on that question, because the two obvious alternatives are both wrong:
+     *  - the exception does not say. An aborted `whisper_full` returns **normally**, so a stop looks
+     *    exactly like success — and storing that would leave a half transcript.
+     *  - `isStopped` may not be true yet. Stop aborts the engine before WorkManager marks the worker
+     *    stopped, so a run unwinding in that window looks like a genuine failure.
+     */
+    fun wasAborted(): Boolean = abortRequested.get()
+
+    /**
      * Transcribes [uri] using the model at [modelPath].
      *
      * @param language ISO code such as "he", or null to auto-detect. Passing the wrong language is

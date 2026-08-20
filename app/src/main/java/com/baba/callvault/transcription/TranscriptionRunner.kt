@@ -44,6 +44,9 @@ fun interface Transcriber {
  */
 class TranscriptionRunner(
     private val context: Context,
+    /** Whether the attempt that just ended was stopped rather than finished. Injected for tests. */
+    private val wasAborted: () -> Boolean = { TranscriptionEngine.wasAborted() },
+    // Last, so `TranscriptionRunner(context) { ... }` still reads as "a runner with this transcriber".
     private val transcriber: Transcriber = Transcriber(TranscriptionEngine::transcribe)
 ) {
 
@@ -114,39 +117,41 @@ class TranscriptionRunner(
 
         mark(displayName, TranscriptState.RUNNING, modelId, language)
 
-        return runCatching { transcriber.transcribe(context, uri, modelPath, language) }
-            .onFailure { error ->
-                // A stop is not a failure of this recording, and recording it as FAILED is the worst
-                // outcome available: TranscriptionQueue deliberately never re-offers a FAILED
-                // recording, so one tap on Stop would exclude that call from every future automatic
-                // run until someone retried it by hand. QUEUED is no better — the row renders that as
-                // a spinner, which in Manual mode would spin for ever with nothing behind it.
-                // Removing the row restores exactly the state before the run: the row offers
-                // "Transcribe" again, and a recording with no row is what the queue counts as pending.
-                //
-                // NonCancellable because by this point the coroutine usually is cancelled, and a
-                // plain suspend call would abandon the cleanup that is the whole point here.
-                if (error is CancellationException || shouldStop()) {
-                    withContext(NonCancellable) { dao.deleteFor(displayName) }
-                    AppLogger.i(TAG, "Transcription of $displayName was stopped; left for a later run")
-                    if (error is CancellationException) throw error
-                    return false
-                }
+        val attempt = runCatching { transcriber.transcribe(context, uri, modelPath, language) }
+
+        // A stop is not a result, and neither the exception nor `shouldStop` can be trusted to say so:
+        //  - an aborted `whisper_full` returns NORMALLY with a partial result, so a stop can arrive
+        //    dressed as success. Storing it would mark the call DONE with a transcript of its first
+        //    few minutes, and nothing ever re-offers a DONE recording.
+        //  - Stop aborts the engine before WorkManager marks the worker stopped, so a run unwinding in
+        //    that window sees shouldStop() == false and used to be recorded as FAILED — the red error
+        //    icon that appeared after an ordinary Stop.
+        // Removing the row restores exactly the state before the run: the row offers "Transcribe"
+        // again, and a recording with no row is what the queue counts as pending.
+        val error = attempt.exceptionOrNull()
+        if (wasAborted() || shouldStop() || error is CancellationException) {
+            // NonCancellable: by now the coroutine is usually cancelled, and a plain suspend call
+            // would abandon the very cleanup this exists to do.
+            withContext(NonCancellable) { dao.deleteFor(displayName) }
+            AppLogger.i(TAG, "Transcription of $displayName was stopped; left for a later run")
+            if (error is CancellationException) throw error
+            return false
+        }
+
+        return attempt.fold(
+            onSuccess = { segments ->
+                dao.replaceSegments(displayName, segments.map { it.toEntry(displayName) })
+                mark(displayName, TranscriptState.DONE, modelId, language)
+                // Count, never content: a transcript is the substance of a private call.
+                AppLogger.i(TAG, "Transcribed $displayName (${segments.size} segment(s))")
+                true
+            },
+            onFailure = { failure ->
+                AppLogger.w(TAG, "Failed to transcribe $displayName: ${failure.message}")
+                mark(displayName, TranscriptState.FAILED, modelId, language, failure.message)
+                false
             }
-            .fold(
-                onSuccess = { segments ->
-                    dao.replaceSegments(displayName, segments.map { it.toEntry(displayName) })
-                    mark(displayName, TranscriptState.DONE, modelId, language)
-                    // Count, never content: a transcript is the substance of a private call.
-                    AppLogger.i(TAG, "Transcribed $displayName (${segments.size} segment(s))")
-                    true
-                },
-                onFailure = { error ->
-                    AppLogger.w(TAG, "Failed to transcribe $displayName: ${error.message}")
-                    mark(displayName, TranscriptState.FAILED, modelId, language, error.message)
-                    false
-                }
-            )
+        )
     }
 
     private suspend fun localUriFor(displayName: String): Uri? =

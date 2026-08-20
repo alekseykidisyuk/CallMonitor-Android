@@ -214,6 +214,52 @@ class TranscriptionRunnerTest {
         )
     }
 
+    @Test
+    fun a_run_aborted_part_way_does_not_store_a_half_transcript() = runBlocking {
+        // The nastiest of the three, because it looks like success. An aborted `whisper_full` RETURNS
+        // NORMALLY with whatever it had decoded so far, so the attempt "succeeds" — storing that would
+        // mark the call DONE with a transcript covering only its first few minutes, and DONE is never
+        // re-offered by anything.
+        catalogued("aborted.ogg")
+        val runner = TranscriptionRunner(
+            context,
+            transcriber = { _, _, _, _ -> listOf(TranscriptSegment(0, 1000, "only the first bit")) },
+            wasAborted = { true }
+        )
+
+        // Act
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("aborted.ogg"))
+
+        // Assert
+        assertNull("a partial result must not be stored as a transcript", transcript("aborted.ogg"))
+        assertTrue(
+            "an aborted recording must be offered again",
+            TranscriptionQueue.pending(context).contains("aborted.ogg")
+        )
+    }
+
+    @Test
+    fun a_stop_that_beats_the_worker_flag_is_still_not_a_failure() = runBlocking {
+        // Stop aborts the engine *before* WorkManager marks the worker stopped. A run unwinding in
+        // that window sees shouldStop() == false and used to be recorded as FAILED — which is what put
+        // the red error icon on the row after a perfectly ordinary Stop.
+        catalogued("raced.ogg")
+        val runner = TranscriptionRunner(
+            context,
+            transcriber = { _, _, _, _ -> error("decode stopped") },
+            wasAborted = { true }
+        )
+
+        // Act — note shouldStop stays false throughout, as it does in the real race.
+        runner.runBatch(
+            MODEL_ID, MODEL_PATH, LANGUAGE, listOf("raced.ogg"),
+            shouldStop = { false }
+        )
+
+        // Assert
+        assertNull("a stop must not be recorded as a failure", transcript("raced.ogg"))
+    }
+
     private fun runnerReturning(segments: List<TranscriptSegment>) =
         TranscriptionRunner(context) { _, _, _, _ -> segments }
 
