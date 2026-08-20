@@ -31,14 +31,14 @@ class TranscriptionLanguageOrderTest {
     }
 
     @Test
-    fun detect_automatically_stays_at_the_end() {
-        // It is not a language, and letting it sort into the middle of the alphabet would bury the one
-        // entry that is the default.
+    fun detect_automatically_comes_first() {
+        // It is not a language, so it does not belong in the alphabet — and it is the default, so it is
+        // the entry most people want. Both point at the top of the list.
         val sorted = TranscriptionLabels.sortLanguageOptions(
-            listOf(auto to "Detect automatically", "he" to "Hebrew", "ar" to "Arabic")
+            listOf("he" to "Hebrew", auto to "Detect automatically", "ar" to "Arabic")
         )
 
-        assertEquals(listOf("Arabic", "Hebrew", "Detect automatically"), sorted.map { it.second })
+        assertEquals(listOf("Detect automatically", "Arabic", "Hebrew"), sorted.map { it.second })
     }
 
     @Test

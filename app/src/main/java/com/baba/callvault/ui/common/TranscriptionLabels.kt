@@ -40,9 +40,15 @@ object TranscriptionLabels {
     /**
      * Languages offered, null meaning auto-detect.
      *
-     * Hebrew is first because it is what this feature was measured against. Auto-detect is offered
-     * but is not the default: whisper decodes an unspecified language as English, which for a Hebrew
-     * call produces fluent nonsense rather than an error the user could recognise.
+     * Auto-detect is the default (`AppPreferences.TRANSCRIPTION_LANGUAGE` is null) and is shown first.
+     *
+     * An older comment here claimed it was deliberately *not* the default, because "whisper decodes an
+     * unspecified language as English". That was never the model's behaviour — it was this app's bug:
+     * `detect_language` was set for auto, which whisper reads as *exit after detecting*, so every
+     * auto transcript came back empty. Fixed 2026-08-20 and verified producing Hebrew from a real call.
+     *
+     * The order here is only the source list; the dropdown sorts it by translated name via
+     * [sortLanguageOptions].
      */
     val LANGUAGE_OPTIONS: List<String?> = listOf(
         "he", "en", "ar", "zh", "fr", "de", "hu", "it", "pl", "pt", "ru", "es", "vi", null
@@ -56,13 +62,13 @@ object TranscriptionLabels {
      * sort, because a plain sort files every accented letter after Z — which would leave a French or
      * German list looking broken.
      *
-     * Auto-detect is not a language and is kept at the end, so the one entry that is the default is not
-     * buried somewhere in the middle of the alphabet.
+     * Auto-detect is not a language and is pinned **first**: it is the default, and the entry most
+     * people want is worth reaching before the alphabet starts.
      */
     fun sortLanguageOptions(options: List<Pair<String, String>>): List<Pair<String, String>> {
         val collator = Collator.getInstance()
         val (auto, languages) = options.partition { it.first == AUTO_DETECT_KEY }
-        return languages.sortedWith { a, b -> collator.compare(a.second, b.second) } + auto
+        return auto + languages.sortedWith { a, b -> collator.compare(a.second, b.second) }
     }
 
     @StringRes
