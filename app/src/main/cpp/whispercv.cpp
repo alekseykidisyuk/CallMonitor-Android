@@ -53,10 +53,20 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
     params.no_context       = true;
     params.single_segment   = false;
 
-    // nullptr language => let whisper detect it. Anything else is an ISO code such as "he".
+    // "auto" => let whisper detect the language. Anything else is an ISO code such as "he".
+    //
+    // `detect_language` must stay false even when auto-detecting. Despite the name it does NOT mean
+    // "please detect the language" — whisper.cpp treats it as *exit after detecting*:
+    //
+    //     if (params.detect_language) { return 0; }   // whisper.cpp, whisper_full_with_state
+    //
+    // so setting it returned success with zero segments. Every transcript came back empty and the
+    // app reported "No speech was recognised", which looked like a bad recording rather than a bug —
+    // and auto-detect is the default, so this affected everyone. Auto-detection already happens for
+    // a null/empty/"auto" language, which is why nothing else is needed here.
     const char *lang = (language != nullptr) ? env->GetStringUTFChars(language, nullptr) : nullptr;
-    params.language        = lang;
-    params.detect_language = (lang == nullptr);
+    params.language        = (lang != nullptr) ? lang : "auto";
+    params.detect_language = false;
 
     const jsize n = env->GetArrayLength(audio);
     jfloat *samples = env->GetFloatArrayElements(audio, nullptr);

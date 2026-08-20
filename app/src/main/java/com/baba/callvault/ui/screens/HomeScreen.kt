@@ -371,6 +371,7 @@ fun HomeScreen(
         if (showTranscribingSheet) {
             TranscribingSheet(
                 state = transcribing,
+                recordings = uiState.recordings,
                 onDismiss = { showTranscribingSheet = false },
                 onStopped = { showTranscribingSheet = false }
             )

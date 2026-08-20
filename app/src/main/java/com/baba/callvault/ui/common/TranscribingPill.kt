@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.baba.callvault.R
+import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.transcription.TranscriptionScheduler
 import com.baba.callvault.transcription.TranscriptionWorker
 import kotlinx.coroutines.flow.combine
@@ -123,23 +124,28 @@ private fun TranscribingPillState.label(): String = when (this) {
 /**
  * What the pill opens: which recording is being transcribed, and the way to stop.
  *
+ * @param recordings used to name the recording the way every other screen names it. The progress
+ *   carries a file name, and showing that raw would read as debug output next to the contact names
+ *   in the list behind it.
  * @param onStopped called after the run has been cancelled, so the caller can close this.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TranscribingSheet(
     state: TranscribingPillState,
+    recordings: List<RecordingItem>,
     onDismiss: () -> Unit,
     onStopped: () -> Unit
 ) {
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val current = when (state) {
+    val displayName = when (state) {
         is TranscribingPillState.Single -> state.current
         is TranscribingPillState.Batch -> state.current
         else -> null
     }
+    val current = displayName?.let { RecordingLabel.forDisplayName(recordings, it) }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
