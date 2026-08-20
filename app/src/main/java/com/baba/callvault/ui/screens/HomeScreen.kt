@@ -639,6 +639,12 @@ fun HomeScreen(
                             playbackFor = item.displayName
                             viewModel.play(uri)
                         },
+                        onOpenPlayback = {
+                            playbackFor = item.displayName
+                            // Only start it if this recording is not already the one loaded, so
+                            // reopening the screen does not restart a call from the beginning.
+                            if (playback.activeUri != item.uri) viewModel.play(item.uri)
+                        },
                         onPause = { viewModel.pausePlayback() },
                         onResume = { viewModel.resumePlayback() },
                         onSeek = { viewModel.seekTo(it) },
@@ -1507,6 +1513,7 @@ private fun RecordingRow(
     selected: Boolean,
     onToggleSelected: () -> Unit,
     onPlayUri: (Uri) -> Unit,
+    onOpenPlayback: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onSeek: (Int) -> Unit,
@@ -1572,8 +1579,10 @@ private fun RecordingRow(
             onToggleSelected()
         } else if (isBoth) {
             expanded = !expanded
-        } else if (!isRowActive) {
-            onPlayUri(item.uri)
+        } else {
+            // Not gated on "is this row already playing": it used to be, so coming back from the
+            // playback screen left the row active and every further tap did nothing at all.
+            onOpenPlayback()
         }
     }
 
@@ -1586,12 +1595,16 @@ private fun RecordingRow(
         Row(verticalAlignment = Alignment.CenterVertically) {
             // BOTH rows aren't directly playable from the disc; show a non-active disc as an affordance
             // hint but keep playback state attached to the active sub-copy if one is playing.
-            PlayDisc(
-                direction = item.direction,
-                voipApp = item.voipApp,
-                isActive = !isBoth && isRowActive,
-                playback = playback
-            )
+            // The disc opens the recording on every row. On a two-copy row the card tap expands, so
+            // without this there would be no way to reach playback from the row at all.
+            Box(modifier = Modifier.clip(CircleShape).clickable(enabled = !selectionMode) { onOpenPlayback() }) {
+                PlayDisc(
+                    direction = item.direction,
+                    voipApp = item.voipApp,
+                    isActive = !isBoth && isRowActive,
+                    playback = playback
+                )
+            }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 // The whole line, to itself. The badge now sits under the play disc, in the gutter the
