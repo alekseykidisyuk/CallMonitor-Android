@@ -275,6 +275,9 @@
     <string name="transcript_action_retry">La transcripción falló: inténtalo de nuevo</string>
     <string name="transcript_action_transcribe">Transcribir esta llamada</string>
     <string name="transcript_copy">Copiar</string>
+    <string name="transcript_delete">Eliminar texto</string>
+    <string name="transcript_delete_confirm_message">Se eliminará la transcripción de %1$s. La grabación se conserva y puedes transcribirla de nuevo más adelante.</string>
+    <string name="transcript_delete_confirm_title">¿Eliminar esta transcripción?</string>
     <string name="transcript_loading">Cargando la transcripción…</string>
     <string name="transcript_no_speech">No se reconoció ninguna voz en esta grabación.</string>
     <string name="transcript_retranscribe">Transcribir de nuevo</string>

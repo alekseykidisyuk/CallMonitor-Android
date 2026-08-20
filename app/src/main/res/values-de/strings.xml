@@ -275,6 +275,9 @@
     <string name="transcript_action_retry">Transkription fehlgeschlagen – erneut versuchen</string>
     <string name="transcript_action_transcribe">Dieses Gespräch transkribieren</string>
     <string name="transcript_copy">Kopieren</string>
+    <string name="transcript_delete">Text löschen</string>
+    <string name="transcript_delete_confirm_message">Das Transkript von %1$s wird gelöscht. Die Aufnahme selbst bleibt erhalten, und Sie können sie später erneut transkribieren.</string>
+    <string name="transcript_delete_confirm_title">Dieses Transkript löschen?</string>
     <string name="transcript_loading">Transkript wird geladen…</string>
     <string name="transcript_no_speech">In dieser Aufnahme wurde keine Sprache erkannt.</string>
     <string name="transcript_retranscribe">Erneut transkribieren</string>

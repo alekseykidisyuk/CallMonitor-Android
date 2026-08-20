@@ -275,6 +275,9 @@
     <string name="transcript_action_retry">Échec de la transcription — réessayer</string>
     <string name="transcript_action_transcribe">Transcrire cet appel</string>
     <string name="transcript_copy">Copier</string>
+    <string name="transcript_delete">Supprimer le texte</string>
+    <string name="transcript_delete_confirm_message">La transcription de %1$s sera supprimée. L\'enregistrement est conservé et vous pourrez le transcrire à nouveau plus tard.</string>
+    <string name="transcript_delete_confirm_title">Supprimer cette transcription ?</string>
     <string name="transcript_loading">Chargement de la transcription…</string>
     <string name="transcript_no_speech">Aucune parole n\'a été reconnue dans cet enregistrement.</string>
     <string name="transcript_retranscribe">Transcrire à nouveau</string>

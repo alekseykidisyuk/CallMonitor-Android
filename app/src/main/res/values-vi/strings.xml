@@ -275,6 +275,9 @@
     <string name="transcript_action_retry">Chuyển thất bại — thử lại</string>
     <string name="transcript_action_transcribe">Chuyển cuộc gọi này thành văn bản</string>
     <string name="transcript_copy">Sao chép</string>
+    <string name="transcript_delete">Xoá văn bản</string>
+    <string name="transcript_delete_confirm_message">Bản chép lời của %1$s sẽ bị xoá. Bản ghi âm vẫn được giữ lại và bạn có thể chép lời lại sau.</string>
+    <string name="transcript_delete_confirm_title">Xoá bản chép lời này?</string>
     <string name="transcript_loading">Đang tải bản ghi lời…</string>
     <string name="transcript_no_speech">Không nhận ra giọng nói nào trong bản ghi âm này.</string>
     <string name="transcript_retranscribe">Chuyển lại</string>

@@ -275,6 +275,9 @@
     <string name="transcript_action_retry">Расшифровка не удалась — повторить</string>
     <string name="transcript_action_transcribe">Расшифровать этот звонок</string>
     <string name="transcript_copy">Копировать</string>
+    <string name="transcript_delete">Удалить текст</string>
+    <string name="transcript_delete_confirm_message">Расшифровка %1$s будет удалена. Сама запись сохранится, и позже её можно расшифровать снова.</string>
+    <string name="transcript_delete_confirm_title">Удалить эту расшифровку?</string>
     <string name="transcript_loading">Загрузка расшифровки…</string>
     <string name="transcript_no_speech">В этой записи речь не распознана.</string>
     <string name="transcript_retranscribe">Расшифровать заново</string>

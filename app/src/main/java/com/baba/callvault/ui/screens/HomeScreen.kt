@@ -193,6 +193,9 @@ fun HomeScreen(
 
     /** Which recording's transcript is open, or null. */
     var transcriptFor by remember { mutableStateOf<String?>(null) }
+
+    /** Which recording's transcript is awaiting a delete confirmation, or null. */
+    var deleteTranscriptFor by remember { mutableStateOf<String?>(null) }
     val transcriptScope = rememberCoroutineScope()
     val selectionMode = selection.isNotEmpty()
     val selectedItems = remember(selection, uiState.recordings) {
@@ -276,7 +279,28 @@ fun HomeScreen(
                 onRetranscribe = {
                     transcriptScope.launch { TranscriptRepository.retry(context, displayName) }
                     transcriptFor = null
+                },
+                // Close the sheet first: an AlertDialog raised over a ModalBottomSheet leaves the
+                // user looking at the very text they asked to destroy.
+                onDelete = {
+                    transcriptFor = null
+                    deleteTranscriptFor = displayName
                 }
+            )
+        }
+
+        deleteTranscriptFor?.let { displayName ->
+            val row = uiState.filteredRecordings.firstOrNull { it.displayName == displayName }
+            val label = row?.contactName ?: row?.number ?: displayName
+            DeleteRecordingDialog(
+                name = label,
+                title = stringResource(R.string.transcript_delete_confirm_title),
+                message = stringResource(R.string.transcript_delete_confirm_message, label),
+                onConfirm = {
+                    transcriptScope.launch { TranscriptRepository.delete(context, displayName) }
+                    deleteTranscriptFor = null
+                },
+                onDismiss = { deleteTranscriptFor = null }
             )
         }
 
@@ -1740,12 +1764,13 @@ private fun DeleteRecordingDialog(
     name: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    message: String = stringResource(R.string.home_delete_confirm_message, name)
+    message: String = stringResource(R.string.home_delete_confirm_message, name),
+    title: String = stringResource(R.string.home_delete_confirm_title)
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(imageVector = Icons.Filled.Delete, contentDescription = null) },
-        title = { Text(text = stringResource(R.string.home_delete_confirm_title)) },
+        title = { Text(text = title) },
         text = { Text(text = message) },
         confirmButton = {
             TextButton(onClick = onConfirm) {

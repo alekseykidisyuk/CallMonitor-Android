@@ -11,12 +11,15 @@ package com.baba.callvault.ui.common
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -46,8 +49,10 @@ import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
  * @param onSeekTo        jump playback to a segment's start; a transcript you cannot navigate from is
  *                        only text, which is why the timestamps are stored at all.
  * @param onRetranscribe  run it again, e.g. after switching to a better model.
+ * @param onDelete        discard the text and keep the audio. Someone may want the recording without
+ *                        a searchable transcript of what was said in it.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TranscriptSheet(
     transcript: TranscriptWithSegments?,
@@ -56,7 +61,8 @@ fun TranscriptSheet(
     onSeekTo: (Long) -> Unit,
     onCopy: (String) -> Unit,
     onShare: (String) -> Unit,
-    onRetranscribe: () -> Unit
+    onRetranscribe: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -92,7 +98,9 @@ fun TranscriptSheet(
             }
         }
 
-        Row(
+        // FlowRow, not Row: four actions do not fit on one line on a narrow screen in every locale,
+        // and wrapping is better than squeezing labels until they ellipsize.
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 4.dp),
@@ -107,6 +115,17 @@ fun TranscriptSheet(
             }
             TextButton(onClick = onRetranscribe) {
                 Text(stringResource(R.string.transcript_retranscribe))
+            }
+            // Error-tinted, because it destroys something: the audio survives but the text does not,
+            // and getting it back costs a full re-run of the model.
+            TextButton(
+                onClick = onDelete,
+                enabled = transcript != null,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(stringResource(R.string.transcript_delete))
             }
         }
     }

@@ -507,4 +507,7 @@
     <string name="transcript_copy">Copy</string>
     <string name="transcript_share">Share</string>
     <string name="transcript_retranscribe">Transcribe again</string>
+    <string name="transcript_delete">Delete text</string>
+    <string name="transcript_delete_confirm_title">Delete this transcript?</string>
+    <string name="transcript_delete_confirm_message">The transcript of %1$s will be deleted. The recording itself is kept, and you can transcribe it again later.</string>
 </resources>

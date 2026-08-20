@@ -275,6 +275,9 @@
     <string name="transcript_action_retry">转写失败 — 重试</string>
     <string name="transcript_action_transcribe">转写这通通话</string>
     <string name="transcript_copy">复制</string>
+    <string name="transcript_delete">删除文字</string>
+    <string name="transcript_delete_confirm_message">%1$s 的文字记录将被删除。录音本身会保留，稍后可以重新转写。</string>
+    <string name="transcript_delete_confirm_title">删除这份文字记录？</string>
     <string name="transcript_loading">正在加载转写…</string>
     <string name="transcript_no_speech">这段录音中未识别到语音。</string>
     <string name="transcript_retranscribe">重新转写</string>

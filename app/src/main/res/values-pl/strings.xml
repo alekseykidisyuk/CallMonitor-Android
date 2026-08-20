@@ -275,6 +275,9 @@
     <string name="transcript_action_retry">Transkrypcja nie powiodła się — spróbuj ponownie</string>
     <string name="transcript_action_transcribe">Transkrybuj tę rozmowę</string>
     <string name="transcript_copy">Kopiuj</string>
+    <string name="transcript_delete">Usuń tekst</string>
+    <string name="transcript_delete_confirm_message">Transkrypcja %1$s zostanie usunięta. Samo nagranie pozostanie i możesz je ponownie przepisać później.</string>
+    <string name="transcript_delete_confirm_title">Usunąć tę transkrypcję?</string>
     <string name="transcript_loading">Wczytywanie transkrypcji…</string>
     <string name="transcript_no_speech">W tym nagraniu nie rozpoznano mowy.</string>
     <string name="transcript_retranscribe">Transkrybuj ponownie</string>
