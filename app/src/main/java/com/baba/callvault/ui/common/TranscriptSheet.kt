@@ -8,6 +8,7 @@
 
 package com.baba.callvault.ui.common
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -27,9 +29,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDirection
@@ -61,6 +66,8 @@ import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
 fun TranscriptSheet(
     transcript: TranscriptWithSegments?,
     title: String,
+    /** Where playback has reached, so the line being spoken can be lit. -1 when nothing is playing. */
+    positionMs: Long = -1L,
     onDismiss: () -> Unit,
     onSeekTo: (Long) -> Unit,
     onCopy: (String) -> Unit,
@@ -95,9 +102,27 @@ fun TranscriptSheet(
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)
             )
 
-            else -> LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
-                items(segments, key = { it.id }) { segment ->
-                    TranscriptLine(segment = segment, onClick = { onSeekTo(segment.startMs) })
+            else -> {
+                val active = remember(segments, positionMs) {
+                    if (positionMs < 0) -1
+                    else TranscriptFollow.activeIndex(segments.map { it.startMs }, positionMs)
+                }
+                val listState = rememberLazyListState()
+
+                // Follow the speaker, but only while it is actually moving: scrolling the list out
+                // from under someone who is reading it would be worse than not following at all.
+                LaunchedEffect(active) {
+                    if (active >= 0) listState.animateScrollToItem(active)
+                }
+
+                LazyColumn(state = listState, modifier = Modifier.weight(1f, fill = false)) {
+                    itemsIndexed(segments, key = { _, s -> s.id }) { index, segment ->
+                        TranscriptLine(
+                            segment = segment,
+                            isActive = index == active,
+                            onClick = { onSeekTo(segment.startMs) }
+                        )
+                    }
                 }
             }
         }
@@ -142,7 +167,11 @@ fun TranscriptSheet(
  * no speaker data reads as ordinary timestamped text instead of looking broken.
  */
 @Composable
-private fun TranscriptLine(segment: TranscriptSegmentEntry, onClick: () -> Unit) {
+private fun TranscriptLine(
+    segment: TranscriptSegmentEntry,
+    isActive: Boolean,
+    onClick: () -> Unit
+) {
     // The whole line mirrors, not just the words. Setting only the text's direction left the timestamp
     // column stranded on the left of a Hebrew transcript and short lines hugging the wrong edge,
     // because "start" still meant left. Providing the layout direction moves the column to the correct
@@ -157,6 +186,12 @@ private fun TranscriptLine(segment: TranscriptSegmentEntry, onClick: () -> Unit)
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
+                // A tint rather than bolder text: re-weighting the line would reflow it, so every
+                // line would twitch sideways as the highlight passed through.
+                .background(
+                    if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    else Color.Transparent
+                )
                 .padding(horizontal = 24.dp, vertical = 6.dp),
             verticalAlignment = Alignment.Top
         ) {

@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.CallMade
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallReceived
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -100,6 +101,8 @@ fun PlaybackScreen(
     onSkip: (Int) -> Unit,
     onCycleSpeed: () -> Unit,
     onOpenTranscript: () -> Unit,
+    onTranscribe: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isActive = playback.activeUri == item.uri
@@ -132,10 +135,13 @@ fun PlaybackScreen(
                 onSkip = onSkip,
                 onCycleSpeed = onCycleSpeed
             )
-            if (transcriptStatus == TranscriptStatus.DONE) {
-                TranscriptDoorway(onOpenTranscript)
-            }
+            TranscriptRow(
+                status = transcriptStatus,
+                onOpen = onOpenTranscript,
+                onTranscribe = onTranscribe
+            )
             NoteCard(note = note, onNoteChange = onNoteChange)
+            DeleteRow(onDelete)
         }
     }
 }
@@ -371,19 +377,67 @@ private fun PlayerCard(
     }
 }
 
+/**
+ * The transcript, in whatever state it is in.
+ *
+ * Present even when there is no transcript yet, because "you could have one" is as useful here as
+ * "here it is" — this screen is where someone has decided to actually deal with the call.
+ */
 @Composable
-private fun TranscriptDoorway(onOpen: () -> Unit) {
-    CvCard(onClick = onOpen, contentPadding = PaddingValues(16.dp)) {
+private fun TranscriptRow(
+    status: TranscriptStatus,
+    onOpen: () -> Unit,
+    onTranscribe: () -> Unit
+) {
+    val busy = status == TranscriptStatus.QUEUED || status == TranscriptStatus.RUNNING
+    val label = when (status) {
+        TranscriptStatus.DONE -> R.string.playback_open_transcript
+        TranscriptStatus.QUEUED, TranscriptStatus.RUNNING -> R.string.transcript_action_busy
+        TranscriptStatus.FAILED -> R.string.transcript_action_retry
+        TranscriptStatus.NONE -> R.string.transcript_action_transcribe
+    }
+
+    CvCard(
+        onClick = if (busy) null else if (status == TranscriptStatus.DONE) onOpen else onTranscribe,
+        contentPadding = PaddingValues(16.dp)
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Article,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = if (status == TranscriptStatus.FAILED) MaterialTheme.colorScheme.error
+                       else MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.width(12.dp))
             Text(
-                text = stringResource(R.string.playback_open_transcript),
+                text = stringResource(label),
                 style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+/**
+ * Deleting the recording, from the screen that is about it.
+ *
+ * At the bottom and error-tinted rather than in the transport: it is the one action here that cannot
+ * be undone, and it should never sit next to the one people reach for by habit.
+ */
+@Composable
+private fun DeleteRow(onDelete: () -> Unit) {
+    CvCard(onClick = onDelete, contentPadding = PaddingValues(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.home_delete),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.weight(1f)
             )
         }

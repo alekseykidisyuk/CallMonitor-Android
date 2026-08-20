@@ -125,6 +125,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * @param status          The current app health status.
      * @param recordings      The full merged, newest-first recordings list (unfiltered source of truth).
      * @param isLoading       Whether a recordings reload is in flight.
+     * @param hasLoaded       Whether the list has finished loading at least once. Distinct from
+     *   [isLoading]: an empty list means "there are none" only once this is true, and before then the
+     *   honest answer is "not known yet" — which is not the same message.
      * @param sourceFilter    The active storage-source facet.
      * @param directionFilter The active call-direction facet.
      * @param contactFilter   The selected contact key, or null for "all contacts".
@@ -134,6 +137,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val status: HomeStatus = HomeStatus.READY,
         val recordings: List<RecordingItem> = emptyList(),
         val isLoading: Boolean = false,
+        val hasLoaded: Boolean = false,
         val sourceFilter: SourceFilter = SourceFilter.ALL,
         val directionFilter: DirectionFilter = DirectionFilter.ALL,
         val contactFilter: String? = null,
@@ -374,6 +378,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 state.copy(
                     recordings = recordings,
                     isLoading = false,
+                    hasLoaded = true,
                     contactFilter = state.contactFilter?.takeIf { it in contacts },
                     dateFilter = state.dateFilter?.takeIf { it in days }
                 )

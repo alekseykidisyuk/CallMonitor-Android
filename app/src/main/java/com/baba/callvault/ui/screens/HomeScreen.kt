@@ -333,7 +333,14 @@ fun HomeScreen(
                 onSeek = { viewModel.seekTo(it) },
                 onSkip = { viewModel.skipPlayback(it) },
                 onCycleSpeed = { viewModel.cyclePlaybackSpeed() },
-                onOpenTranscript = { transcriptFor = displayName }
+                onOpenTranscript = { transcriptFor = displayName },
+                onTranscribe = { startTranscription(displayName) },
+                onDelete = {
+                    // Leave the screen first: the recording is about to stop existing, and the list is
+                    // where the confirmation and the result belong.
+                    playbackFor = null
+                    viewModel.deleteRecording(openItem)
+                }
             )
             // The transcript sheet is rendered by the branch below, which is not composed while the
             // playback screen is open — so it gets its own here.
@@ -344,6 +351,7 @@ fun HomeScreen(
                 TranscriptSheet(
                     transcript = transcript,
                     title = RecordingLabel.forDisplayName(uiState.recordings, name),
+                    positionMs = if (playback.activeUri == openItem.uri) playback.positionMs.toLong() else -1L,
                     onDismiss = { transcriptFor = null },
                     onSeekTo = { startMs -> viewModel.playFrom(openItem.uri, startMs.toInt()) },
                     onCopy = { text -> context.copyToClipboard(name, text) },
@@ -424,6 +432,7 @@ fun HomeScreen(
             TranscriptSheet(
                 transcript = transcript,
                 title = RecordingLabel.of(row) ?: BidiText.isolate(displayName),
+                positionMs = if (playback.activeUri == row?.uri) playback.positionMs.toLong() else -1L,
                 onDismiss = { transcriptFor = null },
                 // playFrom, not seekTo: seekTo only works on a track already prepared, so tapping a
                 // line in a recording that is not playing used to do nothing at all.
@@ -638,7 +647,10 @@ fun HomeScreen(
             }
 
             if (recordings.isEmpty()) {
-                item { EmptyRecordings() }
+                // Only once the list has actually been read. Before that the list is *unknown*, and
+                // announcing "no recordings yet" to someone with sixty of them — for the half second
+                // it takes to read the folder — is simply wrong.
+                if (uiState.hasLoaded) item { EmptyRecordings() }
             } else {
                 items(recordings, key = { it.uri.toString() }) { item ->
                     RecordingRow(
@@ -1594,15 +1606,7 @@ private fun RecordingRow(
     // While selecting, a tap picks the row instead of playing it or expanding its copies — otherwise
     // building a selection would start playback of everything on the way past.
     val onCardClick: () -> Unit = {
-        if (selectionMode) {
-            onToggleSelected()
-        } else if (isBoth) {
-            expanded = !expanded
-        } else {
-            // Not gated on "is this row already playing": it used to be, so coming back from the
-            // playback screen left the row active and every further tap did nothing at all.
-            onOpenPlayback()
-        }
+        if (selectionMode) onToggleSelected() else onOpenPlayback()
     }
 
     CvCard(
@@ -1709,8 +1713,10 @@ private fun RecordingRow(
             )
         }
 
-        // Single-source: inline player directly under the row when this copy is active.
-        if (!isBoth && isRowActive) {
+        // Kept, not deleted, and deliberately unreachable: playback belongs on the recording's own
+        // screen now, and two players sharing one MediaPlayer was two things to keep in step. Flip
+        // INLINE_PLAYER_ENABLED to bring it back.
+        if (INLINE_PLAYER_ENABLED && !isBoth && isRowActive) {
             Spacer(Modifier.height(12.dp))
             InlinePlayer(
                 playback = playback,
@@ -1721,8 +1727,8 @@ private fun RecordingRow(
             )
         }
 
-        // BOTH: expanded dropdown listing each copy, each individually playable.
-        if (isBoth && expanded) {
+        // Same: the card no longer expands, so this is unreachable while INLINE_PLAYER_ENABLED is off.
+        if (INLINE_PLAYER_ENABLED && isBoth && expanded) {
             Spacer(Modifier.height(12.dp))
             item.localUri?.let { uri ->
                 CopySubEntry(
@@ -2095,6 +2101,16 @@ private fun InlinePlayer(
  * Not smaller: 40dp is already under Android's 48dp guidance for a touch target, and these are the
  * two controls on the row that are actually tapped.
  */
+/**
+ * Whether a recording plays inside its row.
+ *
+ * Off: tapping a recording opens its own screen, which has the waveform, the skip controls and the
+ * speed the strip had no room for. The strip's code stays because it is a working player and the
+ * decision is a layout one — but two players over a single MediaPlayer is two things to keep in step,
+ * so only one of them is live.
+ */
+private const val INLINE_PLAYER_ENABLED = false
+
 private val ROW_ACTION_SIZE = 40.dp
 
 /**
