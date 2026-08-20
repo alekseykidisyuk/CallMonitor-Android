@@ -14,10 +14,12 @@ import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.services.debug.DebugNotificationHelper
 import com.baba.callvault.system.storage.RetentionScheduler
 import com.baba.callvault.system.storage.SyncScheduler
+import com.baba.callvault.transcription.TranscriptionQueue
 import com.baba.callvault.system.updates.UpdateScheduler
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.services.recording.VoipCaptureController
 import com.baba.callvault.utils.AppLogger
+import kotlinx.coroutines.runBlocking
 
 /**
  * CallVaultApplication is run when the app process is created. Can be seen as the very first entry point of the app.
@@ -82,6 +84,17 @@ class CallVaultApplication : Application() {
         // longer uses, batch-uploading alongside the per-recording copy.
         runCatching { SyncScheduler.apply(applicationContext) }
             .onFailure { AppLogger.w(TAG, "Sync scheduler apply failed: ${it.message}") }
+
+        // Release any transcript row left RUNNING by a run that no longer exists. A cancelled or
+        // killed worker cannot tidy up after itself — whisper sits inside a blocking native call, so
+        // the interruption may never reach the Kotlin that would reset the row. Left alone the row
+        // shows an untappable spinner for ever, and the queue skips RUNNING so no automatic sweep
+        // would rescue it either. A fresh process means nothing from before is still transcribing.
+        Thread {
+            runCatching { runBlocking { TranscriptionQueue.releaseStaleRunning(applicationContext) } }
+                .onSuccess { if (it > 0) AppLogger.i(TAG, "Released $it stale transcription row(s)") }
+                .onFailure { AppLogger.w(TAG, "Releasing stale transcription rows failed: ${it.message}") }
+        }.start()
 
         // If ADB was already paired, proactively bring up the persistent recorder daemon in the
         // background: this (transiently) enables Wireless debugging if needed, launches the daemon,

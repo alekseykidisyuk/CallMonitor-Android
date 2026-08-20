@@ -116,12 +116,17 @@ object TranscriptionScheduler {
      * afterwards by [apply], which also keeps this honest in MANUAL mode — there, apply cancels, so
      * stopping does not conjure a sweep the user never asked for.
      */
-    fun stopNow(context: Context) {
+    suspend fun stopNow(context: Context) {
         val workManager = WorkManager.getInstance(context)
         workManager.cancelUniqueWork(MANUAL_WORK_NAME)
         workManager.cancelUniqueWork(WORK_NAME)
         apply(context)
-        AppLogger.i(TAG, "Transcription stopped on request; schedule re-applied.")
+
+        // The cancelled worker cannot be trusted to reset the row it was working on — whisper sits in
+        // a blocking native call, so the cancellation may never reach the Kotlin that would do it.
+        // Do it here instead, from a process that is definitely still alive.
+        val released = TranscriptionQueue.releaseStaleRunning(context)
+        AppLogger.i(TAG, "Transcription stopped on request; schedule re-applied, $released row(s) released.")
     }
 
     /** Millis from now until the next occurrence of [hour]:[minute] (today if ahead, else tomorrow). */

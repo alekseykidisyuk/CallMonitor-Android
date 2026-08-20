@@ -18,6 +18,8 @@ import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
 import com.baba.callvault.data.transcripts.db.TranscriptState
 import com.baba.callvault.utils.AppLogger
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 /**
  * Turns audio into stored segments. Substituted in tests, because the real one loads a native
@@ -76,18 +78,26 @@ class TranscriptionRunner(
             // the run forward, and a counter that stalls on a bad file looks like a hang.
             onProgress(reached, displayNames.size, displayName)
             reached++
-            if (runOne(modelId, modelPath, language, displayName)) transcribed++
+            if (runOne(modelId, modelPath, language, displayName, shouldStop)) transcribed++
         }
 
         return transcribed
     }
 
-    /** Transcribes one recording. Returns true when it finished and was stored. */
+    /**
+     * Transcribes one recording. Returns true when it finished and was stored.
+     *
+     * @param shouldStop consulted only if the attempt throws, to tell an interruption apart from a
+     *   genuine failure. It cannot be inferred from the exception: `whisper_full` is a blocking
+     *   native call that coroutine cancellation cannot interrupt, so a stopped run surfaces as
+     *   whatever the engine throws on the way out, not as a [CancellationException].
+     */
     suspend fun runOne(
         modelId: String,
         modelPath: String,
         language: String?,
-        displayName: String
+        displayName: String,
+        shouldStop: () -> Boolean = { false }
     ): Boolean {
         // The checkpoint. A resumed run re-offers everything it was given, so finished work must be
         // recognised and skipped rather than paid for twice.
@@ -106,17 +116,21 @@ class TranscriptionRunner(
 
         return runCatching { transcriber.transcribe(context, uri, modelPath, language) }
             .onFailure { error ->
-                // runCatching swallows CancellationException like any other, and a stop is not a
-                // failure of this recording. Recording it as FAILED is the worst outcome —
-                // TranscriptionQueue never re-offers a FAILED recording, so one tap on Stop would
-                // exclude that call from every future automatic run until someone retried it by hand.
-                // QUEUED is no better: the row renders that as a spinner, which in Manual mode would
-                // spin for ever with nothing behind it. Removing the row restores exactly the state
-                // before the run: the row offers "Transcribe", and the queue counts it as pending.
-                // The cancellation is then rethrown so the worker can report that it was stopped.
-                if (error is CancellationException) {
-                    dao.deleteFor(displayName)
-                    throw error
+                // A stop is not a failure of this recording, and recording it as FAILED is the worst
+                // outcome available: TranscriptionQueue deliberately never re-offers a FAILED
+                // recording, so one tap on Stop would exclude that call from every future automatic
+                // run until someone retried it by hand. QUEUED is no better — the row renders that as
+                // a spinner, which in Manual mode would spin for ever with nothing behind it.
+                // Removing the row restores exactly the state before the run: the row offers
+                // "Transcribe" again, and a recording with no row is what the queue counts as pending.
+                //
+                // NonCancellable because by this point the coroutine usually is cancelled, and a
+                // plain suspend call would abandon the cleanup that is the whole point here.
+                if (error is CancellationException || shouldStop()) {
+                    withContext(NonCancellable) { dao.deleteFor(displayName) }
+                    AppLogger.i(TAG, "Transcription of $displayName was stopped; left for a later run")
+                    if (error is CancellationException) throw error
+                    return false
                 }
             }
             .fold(

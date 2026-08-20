@@ -185,6 +185,35 @@ class TranscriptionRunnerTest {
         )
     }
 
+    @Test
+    fun a_run_stopped_mid_recording_is_not_recorded_as_a_failure() = runBlocking {
+        // The case that actually happens on the phone. `whisper_full` is a blocking native call that
+        // coroutine cancellation cannot interrupt, so a stopped run does NOT surface as a
+        // CancellationException — it surfaces as whatever the engine throws on the way out. Deciding
+        // from the exception type therefore misses it, which is why the OP12 still showed a red
+        // "failed" row after Stop even once CancellationException was handled. The stop flag is the
+        // only reliable signal.
+        catalogued("interrupted.ogg")
+        var stopping = false
+        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+            stopping = true                       // the worker has been told to stop…
+            error("interrupted")                  // …and the native call dies with an ordinary error
+        }
+
+        // Act
+        runner.runBatch(
+            MODEL_ID, MODEL_PATH, LANGUAGE, listOf("interrupted.ogg"),
+            shouldStop = { stopping }
+        )
+
+        // Assert
+        assertNull("a stopped recording must not be left marked failed", transcript("interrupted.ogg"))
+        assertTrue(
+            "a stopped recording must be offered again",
+            TranscriptionQueue.pending(context).contains("interrupted.ogg")
+        )
+    }
+
     private fun runnerReturning(segments: List<TranscriptSegment>) =
         TranscriptionRunner(context) { _, _, _, _ -> segments }
 

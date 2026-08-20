@@ -18,6 +18,7 @@ import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.TranscriptionMode
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -81,7 +82,7 @@ class TranscriptionSchedulerTest {
         AppPreferences(context).setTranscriptionMode(TranscriptionMode.AUTOMATIC)
         TranscriptionScheduler.apply(context)
 
-        TranscriptionScheduler.stopNow(context)
+        runBlocking { TranscriptionScheduler.stopNow(context) }
 
         assertEquals(listOf(WorkInfo.State.ENQUEUED), sweepStates())
     }
@@ -92,7 +93,7 @@ class TranscriptionSchedulerTest {
         AppPreferences(context).setTranscriptionMode(TranscriptionMode.MANUAL)
         TranscriptionScheduler.runNow(context, "call.ogg")
 
-        TranscriptionScheduler.stopNow(context)
+        runBlocking { TranscriptionScheduler.stopNow(context) }
 
         assertTrue(sweepStates().none { it == WorkInfo.State.ENQUEUED })
     }
@@ -102,7 +103,7 @@ class TranscriptionSchedulerTest {
         AppPreferences(context).setTranscriptionMode(TranscriptionMode.MANUAL)
         TranscriptionScheduler.runNow(context, "call.ogg")
 
-        TranscriptionScheduler.stopNow(context)
+        runBlocking { TranscriptionScheduler.stopNow(context) }
 
         val manual = WorkManager.getInstance(context)
             .getWorkInfosForUniqueWork(TranscriptionScheduler.MANUAL_WORK_NAME)

@@ -30,6 +30,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,7 @@ import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.transcription.TranscriptionScheduler
 import com.baba.callvault.transcription.TranscriptionWorker
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 
 /**
  * Observes whether anything is being transcribed, and what.
@@ -178,9 +180,11 @@ fun TranscribingSheet(
                 .padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.End
         ) {
+            val scope = rememberCoroutineScope()
             TextButton(onClick = {
-                // Stops the run without giving up the nightly schedule — see stopNow.
-                TranscriptionScheduler.stopNow(context)
+                // Stops the run without giving up the nightly schedule, and releases the row it was
+                // working on — see stopNow. Off the main thread: it touches the database.
+                scope.launch { TranscriptionScheduler.stopNow(context) }
                 onStopped()
             }) {
                 Text(stringResource(R.string.transcribing_sheet_stop))
