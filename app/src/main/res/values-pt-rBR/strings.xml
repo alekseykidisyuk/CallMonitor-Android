@@ -289,7 +289,7 @@
     <string name="transcribe_confirm_title">Isso vai levar cerca de %1$s</string>
     <string name="transcribe_confirm_title_unknown">Transcrever esta chamada?</string>
     <string name="transcribe_estimate_hours">%1$d h %2$d min</string>
-    <string name="transcribe_estimate_minutes">%1$d minutos</string>
+    <string name="transcribe_estimate_minutes">%1$d min</string>
     <string name="transcribe_estimate_under_minute">menos de um minuto</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
     <string name="transcribing_pill_working">Transcrevendo</string>

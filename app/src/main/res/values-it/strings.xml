@@ -286,7 +286,7 @@
     <string name="transcribe_confirm_title">Ci vorranno circa %1$s</string>
     <string name="transcribe_confirm_title_unknown">Trascrivere questa chiamata?</string>
     <string name="transcribe_estimate_hours">%1$d h %2$d min</string>
-    <string name="transcribe_estimate_minutes">%1$d minuti</string>
+    <string name="transcribe_estimate_minutes">%1$d min</string>
     <string name="transcribe_estimate_under_minute">meno di un minuto</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
     <string name="transcribing_pill_working">Trascrizione</string>

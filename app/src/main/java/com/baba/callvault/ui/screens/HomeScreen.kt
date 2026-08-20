@@ -342,35 +342,11 @@ fun HomeScreen(
                     viewModel.deleteRecording(openItem)
                 }
             )
-            // The transcript sheet is rendered by the branch below, which is not composed while the
-            // playback screen is open — so it gets its own here.
-            transcriptFor?.let { name ->
-                val transcript by remember(name) {
-                    TranscriptRepository.transcript(context, name)
-                }.collectAsState(initial = null)
-                TranscriptSheet(
-                    transcript = transcript,
-                    title = RecordingLabel.forDisplayName(uiState.recordings, name),
-                    positionMs = if (playback.activeUri == openItem.uri) playback.positionMs.toLong() else -1L,
-                    onDismiss = { transcriptFor = null },
-                    onSeekTo = { startMs -> viewModel.playFrom(openItem.uri, startMs.toInt()) },
-                    onCopy = { text -> context.copyToClipboard(name, text) },
-                    onShare = { text -> context.sharePlainText(name, text) },
-                    onRetranscribe = {
-                        startTranscription(name)
-                        transcriptFor = null
-                    },
-                    onDelete = {
-                        transcriptFor = null
-                        deleteTranscriptFor = name
-                    }
-                )
-            }
-            return
         }
     }
 
-    CvScaffold(
+    // Only the list, and only when a recording is not open over it.
+    if (playbackFor == null) CvScaffold(
         modifier = modifier.fillMaxSize(),
         title =
             if (selectionMode) pluralStringResource(R.plurals.home_selected_count, selection.size, selection.size)
@@ -422,72 +398,6 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        transcriptFor?.let { displayName ->
-            val transcript by remember(displayName) {
-                TranscriptRepository.transcript(context, displayName)
-            }.collectAsState(initial = null)
-
-            val row = uiState.filteredRecordings.firstOrNull { it.displayName == displayName }
-
-            TranscriptSheet(
-                transcript = transcript,
-                title = RecordingLabel.of(row) ?: BidiText.isolate(displayName),
-                positionMs = if (playback.activeUri == row?.uri) playback.positionMs.toLong() else -1L,
-                onDismiss = { transcriptFor = null },
-                // playFrom, not seekTo: seekTo only works on a track already prepared, so tapping a
-                // line in a recording that is not playing used to do nothing at all.
-                onSeekTo = { startMs ->
-                    row?.uri?.let { viewModel.playFrom(it, startMs.toInt()) }
-                },
-                onCopy = { text -> context.copyToClipboard(displayName, text) },
-                onShare = { text -> context.sharePlainText(displayName, text) },
-                onRetranscribe = {
-                    startTranscription(displayName)
-                    transcriptFor = null
-                },
-                // Close the sheet first: an AlertDialog raised over a ModalBottomSheet leaves the
-                // user looking at the very text they asked to destroy.
-                onDelete = {
-                    transcriptFor = null
-                    deleteTranscriptFor = displayName
-                }
-            )
-        }
-
-        confirmTranscribe?.let { (displayName, estimateMs) ->
-            TranscribeConfirmDialog(
-                title = RecordingLabel.forDisplayName(uiState.recordings, displayName),
-                estimate = estimateMs?.let { formatEstimate(it) },
-                onDismiss = { confirmTranscribe = null },
-                onConfirm = { dontAskAgain ->
-                    if (dontAskAgain) AppPreferences(context).setTranscriptionConfirmBeforeRun(false)
-                    confirmTranscribe = null
-                    enqueueTranscription(displayName)
-                }
-            )
-        }
-
-        if (showModelMissing) {
-            AlertDialog(
-                onDismissRequest = { showModelMissing = false },
-                title = { Text(stringResource(R.string.transcript_no_model_title)) },
-                text = { Text(stringResource(R.string.transcript_no_model_message)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showModelMissing = false
-                        onOpenSettings()
-                    }) {
-                        Text(stringResource(R.string.transcript_no_model_open_settings))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showModelMissing = false }) {
-                        Text(stringResource(R.string.general_cancel))
-                    }
-                }
-            )
-        }
-
         if (showTranscribingSheet) {
             TranscribingSheet(
                 state = transcribing,
@@ -507,21 +417,6 @@ fun HomeScreen(
                     showTranscriptSearch = false
                     viewModel.playFrom(row.uri, row.startMs.toInt())
                 }
-            )
-        }
-
-        deleteTranscriptFor?.let { displayName ->
-            val row = uiState.filteredRecordings.firstOrNull { it.displayName == displayName }
-            val label = RecordingLabel.of(row) ?: BidiText.isolate(displayName)
-            DeleteRecordingDialog(
-                name = label,
-                title = stringResource(R.string.transcript_delete_confirm_title),
-                message = stringResource(R.string.transcript_delete_confirm_message, label),
-                onConfirm = {
-                    transcriptScope.launch { TranscriptRepository.delete(context, displayName) }
-                    deleteTranscriptFor = null
-                },
-                onDismiss = { deleteTranscriptFor = null }
             )
         }
 
@@ -691,6 +586,92 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    // Dialogs and sheets that either screen can raise.
+    //
+    // Kept OUT of the scaffold: it is not composed while a recording is open, so a confirmation
+    // raised from the playback screen was queued and only appeared once the user went back to
+    // the list — which is exactly how it was found.
+    transcriptFor?.let { displayName ->
+        val transcript by remember(displayName) {
+            TranscriptRepository.transcript(context, displayName)
+        }.collectAsState(initial = null)
+
+        val row = uiState.recordings.firstOrNull { it.displayName == displayName }
+
+        TranscriptSheet(
+            transcript = transcript,
+            title = RecordingLabel.of(row) ?: BidiText.isolate(displayName),
+            positionMs = if (playback.activeUri == row?.uri) playback.positionMs.toLong() else -1L,
+            onDismiss = { transcriptFor = null },
+            // playFrom, not seekTo: seekTo only works on a track already prepared, so tapping a
+            // line in a recording that is not playing used to do nothing at all.
+            onSeekTo = { startMs ->
+                row?.uri?.let { viewModel.playFrom(it, startMs.toInt()) }
+            },
+            onCopy = { text -> context.copyToClipboard(displayName, text) },
+            onShare = { text -> context.sharePlainText(displayName, text) },
+            onRetranscribe = {
+                startTranscription(displayName)
+                transcriptFor = null
+            },
+            // Close the sheet first: an AlertDialog raised over a ModalBottomSheet leaves the
+            // user looking at the very text they asked to destroy.
+            onDelete = {
+                transcriptFor = null
+                deleteTranscriptFor = displayName
+            }
+        )
+    }
+
+    confirmTranscribe?.let { (displayName, estimateMs) ->
+        TranscribeConfirmDialog(
+            title = RecordingLabel.forDisplayName(uiState.recordings, displayName),
+            estimate = estimateMs?.let { formatEstimate(it) },
+            onDismiss = { confirmTranscribe = null },
+            onConfirm = { dontAskAgain ->
+                if (dontAskAgain) AppPreferences(context).setTranscriptionConfirmBeforeRun(false)
+                confirmTranscribe = null
+                enqueueTranscription(displayName)
+            }
+        )
+    }
+
+    if (showModelMissing) {
+        AlertDialog(
+            onDismissRequest = { showModelMissing = false },
+            title = { Text(stringResource(R.string.transcript_no_model_title)) },
+            text = { Text(stringResource(R.string.transcript_no_model_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showModelMissing = false
+                    onOpenSettings()
+                }) {
+                    Text(stringResource(R.string.transcript_no_model_open_settings))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showModelMissing = false }) {
+                    Text(stringResource(R.string.general_cancel))
+                }
+            }
+        )
+    }
+
+    deleteTranscriptFor?.let { displayName ->
+        val row = uiState.recordings.firstOrNull { it.displayName == displayName }
+        val label = RecordingLabel.of(row) ?: BidiText.isolate(displayName)
+        DeleteRecordingDialog(
+            name = label,
+            title = stringResource(R.string.transcript_delete_confirm_title),
+            message = stringResource(R.string.transcript_delete_confirm_message, label),
+            onConfirm = {
+                transcriptScope.launch { TranscriptRepository.delete(context, displayName) }
+                deleteTranscriptFor = null
+            },
+            onDismiss = { deleteTranscriptFor = null }
+        )
     }
 }
 
