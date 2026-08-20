@@ -1195,7 +1195,11 @@ private fun SourceBadge(source: RecordingSource) {
         modifier = Modifier
             .clip(CircleShape)
             .background(color.copy(alpha = 0.12f))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            // Sized to sit *inside* the play disc's 46dp. At its old padding the pill came to ~59dp,
+            // so centring it under the disc overflowed both edges and read as misaligned rather than
+            // as centred. Two glyphs plus this padding come to ~37dp, which leaves a clear, even
+            // margin either side.
+            .padding(horizontal = 5.dp, vertical = 4.dp)
             .semantics { contentDescription = label },
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1204,7 +1208,7 @@ private fun SourceBadge(source: RecordingSource) {
                 imageVector = Icons.Filled.Smartphone,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(BADGE_GLYPH_SIZE)
             )
         }
         if (source == RecordingSource.BOTH) Spacer(Modifier.width(3.dp))
@@ -1213,7 +1217,7 @@ private fun SourceBadge(source: RecordingSource) {
                 imageVector = Icons.Filled.Cloud,
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(BADGE_GLYPH_SIZE)
             )
         }
     }
@@ -1604,9 +1608,10 @@ private fun RecordingRow(
             modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(modifier = Modifier.width(META_INDENT), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.width(PLAY_DISC_SIZE), contentAlignment = Alignment.Center) {
                 SourceBadge(source = item.source)
             }
+            Spacer(Modifier.width(META_INDENT - PLAY_DISC_SIZE))
             Text(
                 text = buildSubtitle(item),
                 style = MaterialTheme.typography.bodySmall,
@@ -1798,7 +1803,7 @@ private fun PlayDisc(
     Box(contentAlignment = Alignment.Center) {
         Box(
             modifier = Modifier
-                .size(46.dp)
+                .size(PLAY_DISC_SIZE)
                 .clip(CircleShape)
                 .background(primary.copy(alpha = if (isActive) 0.22f else 0.14f)),
             contentAlignment = Alignment.Center
@@ -2003,6 +2008,17 @@ private fun InlinePlayer(
  * two controls on the row that are actually tapped.
  */
 private val ROW_ACTION_SIZE = 40.dp
+
+/**
+ * The play disc's diameter, shared with the source badge that sits under it.
+ *
+ * Centring the badge in the details indent instead put it ~8dp right of the disc's centre — close
+ * enough to look like a mistake rather than a choice. Both now measure from the same number.
+ */
+private val PLAY_DISC_SIZE = 46.dp
+
+/** Badge glyphs, sized so two of them plus padding fit within [PLAY_DISC_SIZE]. */
+private val BADGE_GLYPH_SIZE = 13.dp
 
 private val META_INDENT = 62.dp
 
