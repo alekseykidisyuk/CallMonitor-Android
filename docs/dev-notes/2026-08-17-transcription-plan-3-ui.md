@@ -50,6 +50,13 @@ not run, the same UI shows timestamps only with no code change.
    the periodic sweep, which deletes the *schedule* along with the run. `stopNow` cancels then
    re-applies; both modes are tested.
 
+### One step of an "already done" task had not been done
+
+Task 2's step 5 — *"If no model is installed, tapping Transcribe must explain"* — was unticked, and it
+mattered. `TranscriptionWorker` returns `Result.retry()` while its model is absent, which is correct for
+a download still in flight but means a tap on a phone with no model does nothing, for ever, with the row
+still inviting the tap. Fixed in `bc8dbf2`.
+
 ### Deviations worth knowing
 
 - **Search ignores the facet filters** deliberately: someone reaching for search cannot find the call
@@ -103,7 +110,7 @@ private phone call; `AppLogger` may record counts and states, never text.
   - `TranscriptRepository.transcript(displayName): Flow<TranscriptWithSegments?>`
   - `TranscriptRepository.transcribeNow(displayName)`, `retry(displayName)`, `delete(displayName)`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```kotlin
 @Test
@@ -118,7 +125,7 @@ fun `state updates flow to observers when a worker finishes`() { /* ... */ }
 fun `states are emitted for every requested name even when the table is empty`() { /* ... */ }
 ```
 
-- [ ] **Step 2: FAIL. Step 3: Implement. Step 4: Green. Step 5: Commit.**
+- [x] **Step 2: FAIL. Step 3: Implement. Step 4: Green. Step 5: Commit.**
 
 > Query states for the **visible** rows only. Home lists years of calls; observing every transcript
 > to render a handful of icons would read the whole table on every change.
@@ -136,7 +143,7 @@ fun `states are emitted for every requested name even when the table is empty`()
 - Consumes: `TranscriptState`, and new `RecordingRow` params `transcriptState: TranscriptState`,
   `onTranscribe: () -> Unit`, `onOpenTranscript: () -> Unit`.
 
-- [ ] **Step 1: Write the failing tests** — one per state, asserting the right content description
+- [x] **Step 1: Write the failing tests** — one per state, asserting the right content description
   and the right callback:
 
 ```kotlin
@@ -146,13 +153,13 @@ fun `states are emitted for every requested name even when the table is empty`()
 @Test fun `offers retry when the last attempt failed`() { /* ... */ }
 ```
 
-- [ ] **Step 2: FAIL. Step 3: Implement one composable, `TranscriptAction`,** switching on the state.
+- [x] **Step 2: FAIL. Step 3: Implement one composable, `TranscriptAction`,** switching on the state.
   Every state needs a distinct `contentDescription` — this is the only affordance whose meaning
   changes under the user, so a screen reader must not read all four as "button".
-- [ ] **Step 4: Green.**
-- [ ] **Step 5: Handle the no-model case.** If no model is installed, tapping Transcribe must explain
+- [x] **Step 4: Green.**
+- [x] **Step 5: Handle the no-model case.** If no model is installed, tapping Transcribe must explain
   and offer to download rather than silently enqueuing work that will `retry()` forever. Test it.
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ---
 
@@ -185,7 +192,7 @@ full-screen dialog.
 └─────────────────────────────────────┘
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```kotlin
 @Test
@@ -212,11 +219,11 @@ fun `shows an explicit empty state when no speech was recognised`() {
 fun `lays out right to left for Hebrew segments`() { /* ... */ }
 ```
 
-- [ ] **Step 2: FAIL. Step 3: Implement** with a `LazyColumn` — a long call is thousands of segments.
-- [ ] **Step 4: Green.**
-- [ ] **Step 5: RTL check.** These transcripts are mostly Hebrew. Verify on device that segment text
+- [x] **Step 2: FAIL. Step 3: Implement** with a `LazyColumn` — a long call is thousands of segments.
+- [x] **Step 4: Green.**
+- [ ] **Step 5: RTL check.** These transcripts are mostly Hebrew. Verify on device that segment text  ← **deferred to the device pass (B9)**
   is right-aligned and that the timestamp/speaker columns do not visually collide with it.
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ---
 
