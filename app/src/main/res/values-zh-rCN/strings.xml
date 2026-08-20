@@ -128,6 +128,8 @@
     <string name="placeholder_date_desc">当前日期和时间</string>
     <string name="placeholder_direction_desc">主叫/被叫</string>
     <string name="placeholder_phone_number_desc">对方号码</string>
+    <string name="playback_note_hint">这通电话讲了什么…</string>
+    <string name="playback_note_title">备注</string>
     <string name="playback_open_transcript">阅读文字记录</string>
     <string name="playback_skip_back">后退 10 秒</string>
     <string name="playback_skip_forward">前进 10 秒</string>

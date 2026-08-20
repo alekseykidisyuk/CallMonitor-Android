@@ -1,0 +1,44 @@
+/*
+ * CallVault: FOSS call recording, self-contained over embedded ADB
+ *  Copyright (C) 2026-present The CallVault Authors
+ *  This software is licensed under the GNU General Public License v3 or later, with additional terms as permitted under Section 7.
+ *  The full license text is available in the LICENSE file at the root of this project.
+ *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+package com.baba.callvault.data.transcripts.db
+
+import androidx.room.Dao
+import androidx.room.Query
+import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
+
+/** Notes the user wrote, and the cached shapes used to draw a recording. */
+@Dao
+interface RecordingNoteDao {
+
+    @Query("SELECT * FROM recording_notes WHERE displayName = :displayName")
+    fun observeNote(displayName: String): Flow<RecordingNoteEntry?>
+
+    @Upsert
+    suspend fun upsertNote(entry: RecordingNoteEntry)
+
+    /**
+     * Removes a note.
+     *
+     * Called when the text is emptied rather than storing a blank row: an empty note is the absence of
+     * a note, and keeping the row would make "this call has a note" true for every recording the user
+     * has ever opened and typed into by accident.
+     */
+    @Query("DELETE FROM recording_notes WHERE displayName = :displayName")
+    suspend fun deleteNote(displayName: String)
+
+    @Query("SELECT peaks FROM recording_waveforms WHERE displayName = :displayName")
+    suspend fun waveform(displayName: String): String?
+
+    @Upsert
+    suspend fun upsertWaveform(entry: RecordingWaveformEntry)
+
+    @Query("DELETE FROM recording_waveforms WHERE displayName = :displayName")
+    suspend fun deleteWaveform(displayName: String)
+}

@@ -131,6 +131,8 @@
     <string name="placeholder_date_desc">A data e a hora atuais</string>
     <string name="placeholder_direction_desc">O sentido da chamada (recebida/efetuada)</string>
     <string name="placeholder_phone_number_desc">O número de telefone</string>
+    <string name="playback_note_hint">Sobre o que foi esta chamada…</string>
+    <string name="playback_note_title">Nota</string>
     <string name="playback_open_transcript">Ler a transcrição</string>
     <string name="playback_skip_back">10 segundos atrás</string>
     <string name="playback_skip_forward">10 segundos à frente</string>

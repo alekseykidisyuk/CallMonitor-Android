@@ -21,6 +21,7 @@ import com.baba.callvault.server.IRecorderService
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.system.storage.SafHelper
 import com.baba.callvault.data.recordings.RecordingCatalog
+import com.baba.callvault.data.waveform.RecordingExtrasRepository
 import com.baba.callvault.transcription.TranscriptionScheduler
 import com.baba.callvault.system.storage.StorageRouter
 import kotlinx.coroutines.CoroutineScope
@@ -160,6 +161,9 @@ object VoipRecordingCoordinator {
                     RecordingCatalog.recordLocal(context, name, saf.uri, size, System.currentTimeMillis())
                     // Same order as the carrier path: catalog first, then queue.
                     TranscriptionScheduler.transcribeAfterCallIfEnabled(context, name)
+                    // Draw it now rather than when the user opens it: this phone has just come
+                    // off a call, and they have not asked to wait for anything yet.
+                    RecordingExtrasRepository.precomputeWaveform(context, name, saf.uri)
                     // SafHelper.fileSize() returns -1 specifically for "unknown" (a provider that can't
                     // report a length right now), never for "empty" — that's 0. CallOutcomes.of() cannot
                     // tell the two apart and would judge a negative size as EMPTY_FILE, so an unknowable

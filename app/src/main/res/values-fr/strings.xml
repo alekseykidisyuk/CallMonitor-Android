@@ -128,6 +128,8 @@
     <string name="placeholder_date_desc">La date et l\'heure actuelles</string>
     <string name="placeholder_direction_desc">Sens de l\'appel (in/out)</string>
     <string name="placeholder_phone_number_desc">Le numéro de téléphone</string>
+    <string name="playback_note_hint">De quoi parlait cet appel…</string>
+    <string name="playback_note_title">Note</string>
     <string name="playback_open_transcript">Lire la transcription</string>
     <string name="playback_skip_back">10 secondes en arrière</string>
     <string name="playback_skip_forward">10 secondes en avant</string>

@@ -13,6 +13,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Transcripts, deliberately in their **own** database rather than in
@@ -36,9 +38,11 @@ import androidx.room.TypeConverters
     entities = [
         TranscriptEntry::class,
         TranscriptSegmentEntry::class,
-        TranscriptSegmentFts::class
+        TranscriptSegmentFts::class,
+        RecordingNoteEntry::class,
+        RecordingWaveformEntry::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(TranscriptStateConverter::class)
@@ -46,9 +50,37 @@ abstract class TranscriptDatabase : RoomDatabase() {
 
     abstract fun transcriptDao(): TranscriptDao
 
+    abstract fun noteDao(): RecordingNoteDao
+
     companion object {
 
         private const val DB_NAME = "transcripts.db"
+
+        /**
+         * v1 → v2: notes and cached waveforms.
+         *
+         * Hand-written rather than destructive because of what is in here: a note is the user's own
+         * words and cannot be regenerated from anything. `CREATE TABLE IF NOT EXISTS` with the exact
+         * column types Room expects, so the schema it validates against on open matches.
+         */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `recording_notes` (" +
+                        "`displayName` TEXT NOT NULL, " +
+                        "`text` TEXT NOT NULL, " +
+                        "`updatedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`displayName`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `recording_waveforms` (" +
+                        "`displayName` TEXT NOT NULL, " +
+                        "`peaks` TEXT NOT NULL, " +
+                        "`updatedAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`displayName`))"
+                )
+            }
+        }
 
         @Volatile
         private var INSTANCE: TranscriptDatabase? = null
@@ -59,7 +91,8 @@ abstract class TranscriptDatabase : RoomDatabase() {
                     context.applicationContext,
                     TranscriptDatabase::class.java,
                     DB_NAME
-                ).build().also { INSTANCE = it } // no destructive fallback — see the class KDoc
+                ).addMigrations(MIGRATION_1_2)
+                    .build().also { INSTANCE = it } // no destructive fallback — see the class KDoc
             }
 
         /**

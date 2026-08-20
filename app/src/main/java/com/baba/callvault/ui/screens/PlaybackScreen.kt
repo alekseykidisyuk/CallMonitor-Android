@@ -19,12 +19,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.CallMade
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallReceived
@@ -38,6 +40,7 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -54,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
@@ -63,6 +67,7 @@ import com.baba.callvault.data.transcripts.TranscriptStatus
 import com.baba.callvault.ui.common.CvCard
 import com.baba.callvault.ui.common.CvScaffold
 import com.baba.callvault.ui.common.RecordingLabel
+import com.baba.callvault.ui.common.WaveformBar
 import com.baba.callvault.ui.common.TranscriptTimestamp
 import com.baba.callvault.ui.viewmodels.PlaybackControls
 import com.baba.callvault.ui.viewmodels.RecordingPlaybackController
@@ -84,6 +89,9 @@ fun PlaybackScreen(
     item: RecordingItem,
     playback: RecordingPlaybackController.PlaybackState,
     transcriptStatus: TranscriptStatus,
+    peaks: FloatArray,
+    note: String,
+    onNoteChange: (String) -> Unit,
     onBack: () -> Unit,
     onPlay: () -> Unit,
     onPause: () -> Unit,
@@ -112,7 +120,7 @@ fun PlaybackScreen(
         ) {
             CallHeaderCard(item)
             PlayerCard(
-                item = item,
+                peaks = peaks,
                 playback = playback,
                 isActive = isActive,
                 isPlaying = isPlaying,
@@ -127,6 +135,7 @@ fun PlaybackScreen(
             if (transcriptStatus == TranscriptStatus.DONE) {
                 TranscriptDoorway(onOpenTranscript)
             }
+            NoteCard(note = note, onNoteChange = onNoteChange)
         }
     }
 }
@@ -232,7 +241,7 @@ private fun DirectionChip(direction: RecordingDirection) {
 /** The transport: a scrubber, skip either way, play, and the speed the call is reviewed at. */
 @Composable
 private fun PlayerCard(
-    item: RecordingItem,
+    peaks: FloatArray,
     playback: RecordingPlaybackController.PlaybackState,
     isActive: Boolean,
     isPlaying: Boolean,
@@ -254,54 +263,29 @@ private fun PlayerCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Dragging must not fight the ticker: while a drag is in progress the slider shows the
-            // finger's position, and only on release does the player move. Otherwise every tick would
-            // snatch the thumb back to where playback actually is.
-            var scrubbing by remember { mutableStateOf(false) }
-            var scrubTo by remember { mutableFloatStateOf(0f) }
+            // The waveform IS the scrubber. A Material Slider on top of it would be a second control
+            // for one job — and its thumb is far heavier than the inline player's thin bar, which is
+            // what made this card look like a different app.
+            WaveformBar(
+                peaks = peaks,
+                progress = if (duration > 0) position / duration.toFloat() else 0f,
+                onSeekTo = { fraction -> onSeek((fraction * duration).toInt()) }
+            )
 
-            val fraction = when {
-                scrubbing -> scrubTo
-                duration > 0 -> position / duration.toFloat()
-                else -> 0f
-            }
-
-            Column(Modifier.fillMaxWidth()) {
-                Slider(
-                    value = fraction.coerceIn(0f, 1f),
-                    onValueChange = {
-                        scrubbing = true
-                        scrubTo = it
-                    },
-                    onValueChangeFinished = {
-                        onSeek((scrubTo * duration).toInt())
-                        scrubbing = false
-                    },
-                    enabled = isActive && duration > 0,
-                    colors = SliderDefaults.colors(
-                        thumbColor = accent,
-                        activeTrackColor = accent,
-                        inactiveTrackColor = accent.copy(alpha = 0.2f)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = TranscriptTimestamp.format(position.toLong()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = TranscriptTimestamp.format(
-                            (if (scrubbing) scrubTo * duration else position.toFloat()).toLong()
-                        ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = TranscriptTimestamp.format(duration.toLong()),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = TranscriptTimestamp.format(duration.toLong()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Row(
@@ -422,6 +406,42 @@ private fun playbackDate(item: RecordingItem): String? {
         DateUtils.WEEK_IN_MILLIS,
         0
     ).toString()
+}
+
+/**
+ * What the user made of the call, in their own words.
+ *
+ * Not a duplicate of the transcript: a transcript records what was said, a note records what it meant
+ * — the price agreed, the thing to chase. Saved as it is typed, because a note behind a Save button is
+ * a note somebody loses.
+ */
+@Composable
+private fun NoteCard(note: String, onNoteChange: (String) -> Unit) {
+    CvCard(contentPadding = PaddingValues(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Notes,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.playback_note_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = note,
+            onValueChange = onNoteChange,
+            placeholder = { Text(stringResource(R.string.playback_note_hint)) },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
+            // Content direction: these notes are written in the same language the call was in.
+            textStyle = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
+        )
+    }
 }
 
 /** "1×", "1.5×" — a trailing ".0" on a speed reads like a measurement rather than a setting. */

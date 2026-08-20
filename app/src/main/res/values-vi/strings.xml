@@ -128,6 +128,8 @@
     <string name="placeholder_date_desc">Ngày và giờ hiện tại</string>
     <string name="placeholder_direction_desc">Hướng cuộc gọi (đến/đi)</string>
     <string name="placeholder_phone_number_desc">Số điện thoại</string>
+    <string name="playback_note_hint">Cuộc gọi này nói về điều gì…</string>
+    <string name="playback_note_title">Ghi chú</string>
     <string name="playback_open_transcript">Đọc bản chép lời</string>
     <string name="playback_skip_back">Lùi 10 giây</string>
     <string name="playback_skip_forward">Tiến 10 giây</string>

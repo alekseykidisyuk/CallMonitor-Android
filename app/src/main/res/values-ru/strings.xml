@@ -128,6 +128,8 @@
     <string name="placeholder_date_desc">Текущая дата и время</string>
     <string name="placeholder_direction_desc">Направление звонка (вх./исх.)</string>
     <string name="placeholder_phone_number_desc">Номер телефона</string>
+    <string name="playback_note_hint">О чём был этот звонок…</string>
+    <string name="playback_note_title">Заметка</string>
     <string name="playback_open_transcript">Читать расшифровку</string>
     <string name="playback_skip_back">На 10 секунд назад</string>
     <string name="playback_skip_forward">На 10 секунд вперёд</string>

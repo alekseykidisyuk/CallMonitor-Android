@@ -99,6 +99,7 @@ import androidx.compose.runtime.setValue
 import com.baba.callvault.ui.common.OfflineDialogMode
 import com.baba.callvault.ui.common.OfflineRecordingDialog
 import com.baba.callvault.data.transcripts.TranscriptRepository
+import com.baba.callvault.data.waveform.RecordingExtrasRepository
 import com.baba.callvault.data.transcripts.TranscriptStatus
 import com.baba.callvault.ui.common.TranscriptActionButton
 import com.baba.callvault.transcription.model.ModelRepository
@@ -303,10 +304,28 @@ fun HomeScreen(
             playbackFor = null
         } else {
             BackHandler { playbackFor = null }
+
+            // Computed off the main thread and cached, so a ninety-minute call is decoded once. Keyed
+            // by the recording, so opening a different one starts again rather than showing the last.
+            val peaks by produceState(FloatArray(0), displayName) {
+                value = FloatArray(0)
+                value = RecordingExtrasRepository.waveform(context, displayName, openItem.uri)
+            }
+            val note by remember(displayName) {
+                RecordingExtrasRepository.note(context, displayName)
+            }.collectAsState(initial = "")
+
             PlaybackScreen(
                 item = openItem,
                 playback = playback,
                 transcriptStatus = transcriptStatuses[displayName] ?: TranscriptStatus.NONE,
+                peaks = peaks,
+                note = note,
+                onNoteChange = { text ->
+                    transcriptScope.launch {
+                        RecordingExtrasRepository.saveNote(context, displayName, text)
+                    }
+                },
                 onBack = { playbackFor = null },
                 onPlay = { viewModel.play(openItem.uri) },
                 onPause = { viewModel.pausePlayback() },
