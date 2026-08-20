@@ -11,6 +11,7 @@ package com.baba.callvault.transcription
 import android.content.Context
 import android.net.Uri
 import androidx.core.net.toUri
+import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
 import com.baba.callvault.data.transcripts.db.TranscriptEntry
@@ -117,6 +118,8 @@ class TranscriptionRunner(
 
         mark(displayName, TranscriptState.RUNNING, modelId, language)
 
+        val audioMs = AudioDecoder.durationMs(context, uri)
+        val startedAt = System.currentTimeMillis()
         val attempt = runCatching { transcriber.transcribe(context, uri, modelPath, language) }
 
         // A stop is not a result, and neither the exception nor `shouldStop` can be trusted to say so:
@@ -142,6 +145,9 @@ class TranscriptionRunner(
             onSuccess = { segments ->
                 dao.replaceSegments(displayName, segments.map { it.toEntry(displayName) })
                 mark(displayName, TranscriptState.DONE, modelId, language)
+                // What it really cost on this phone, so the next estimate is measured rather than
+                // inherited from whatever hardware the published figure came from.
+                recordSpeed(modelId, audioMs, System.currentTimeMillis() - startedAt)
                 // Count, never content: a transcript is the substance of a private call.
                 AppLogger.i(TAG, "Transcribed $displayName (${segments.size} segment(s))")
                 true
@@ -152,6 +158,19 @@ class TranscriptionRunner(
                 false
             }
         )
+    }
+
+    /** Folds one run's observed speed into this phone's stored factor for [modelId]. */
+    private fun recordSpeed(modelId: String, audioMs: Long, elapsedMs: Long) {
+        val measured = TranscriptionEstimate.measure(audioMs, elapsedMs) ?: return
+        val prefs = AppPreferences(context)
+        val blended = TranscriptionEstimate.blend(
+            stored = prefs.getTranscriptionRtf(modelId),
+            measured = measured,
+            fallback = measured
+        )
+        prefs.setTranscriptionRtf(modelId, blended)
+        AppLogger.i(TAG, "Measured %.2fx real time for %s; stored %.2fx".format(measured, modelId, blended))
     }
 
     private suspend fun localUriFor(displayName: String): Uri? =

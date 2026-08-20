@@ -738,6 +738,7 @@ private fun TranscriptionSection(
     val minute = remember(updateTrigger) { preferences.getTranscriptionMinute() }
     val requiresCharging = remember(updateTrigger) { preferences.getTranscriptionRequiresCharging() }
     val batchLimit = remember(updateTrigger) { preferences.getTranscriptionBatchLimit() }
+    val confirmBeforeRun = remember(updateTrigger) { preferences.getTranscriptionConfirmBeforeRun() }
     val modelId = remember(updateTrigger) { preferences.getTranscriptionModelId() }
     val language = remember(updateTrigger) { preferences.getTranscriptionLanguage() }
     val installed = remember(updateTrigger) { ModelRepository.installedModels(context) }
@@ -878,6 +879,16 @@ private fun TranscriptionSection(
                 }
             )
         }
+
+        // Its home is here so the "don't ask again" checkbox in the dialog can be undone — a dialog
+        // that can permanently remove itself with no way back would be a trap.
+        SettingsToggleRow(
+            icon = Icons.Filled.Schedule,
+            label = stringResource(R.string.transcription_confirm_title),
+            description = stringResource(R.string.transcription_confirm_subtitle),
+            checked = confirmBeforeRun,
+            onCheckedChange = { actions.setTranscriptionConfirmBeforeRun(it) }
+        )
 
         // The model is the gate: nothing can be transcribed until one is on the device, so its state
         // is stated plainly rather than left for the user to infer from a button that does nothing.
@@ -2357,6 +2368,7 @@ private fun SettingsScreenPreview() {
             override fun setTranscriptionHour(hour: Int) {}
             override fun setTranscriptionMinute(minute: Int) {}
             override fun setTranscriptionRequiresCharging(required: Boolean) {}
+        override fun setTranscriptionConfirmBeforeRun(confirm: Boolean) {}
             override fun setTranscriptionBatchLimit(limit: Int) {}
             override fun setTranscriptionModelId(id: String) {}
             override fun setTranscriptionLanguage(language: String?) {}

@@ -110,6 +110,33 @@ object AudioDecoder {
     }
 
     /**
+     * The recording's length in milliseconds, read from the container without decoding it.
+     *
+     * Milliseconds of work, because it only reads the track format — which is what makes an estimate
+     * possible the instant Transcribe is tapped, with nothing to wait for. Returns 0 when the container
+     * declares no duration; callers must treat that as "unknown", not "empty".
+     */
+    fun durationMs(context: Context, uri: Uri): Long {
+        val extractor = MediaExtractor()
+        return try {
+            context.contentResolver.openFileDescriptor(uri, "r").use { pfd ->
+                requireNotNull(pfd) { "Cannot open $uri" }
+                extractor.setDataSource(pfd.fileDescriptor)
+            }
+            val track = (0 until extractor.trackCount).firstOrNull { i ->
+                extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
+            } ?: return 0L
+            val format = extractor.getTrackFormat(track)
+            if (format.containsKey(MediaFormat.KEY_DURATION)) format.getLong(MediaFormat.KEY_DURATION) / 1000L else 0L
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "Could not read the duration of $uri: ${e.message}")
+            0L
+        } finally {
+            extractor.release()
+        }
+    }
+
+    /**
      * Decodes [uri] to 16 kHz mono float. Blocking and CPU-bound — [TranscriptionEngine] is what moves
      * it off the main thread; do not call it directly from UI code.
      *

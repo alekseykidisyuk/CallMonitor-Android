@@ -102,6 +102,7 @@ class AppPreferences(context: Context) {
         // right answer depends entirely on call length: 25 short calls is a quick sweep, 25 long ones
         // is most of a night.
         const val TRANSCRIPTION_BATCH_LIMIT = 25
+        const val TRANSCRIPTION_CONFIRM_BEFORE_RUN = true
         val TRANSCRIPTION_MODEL_ID = TranscriptionModel.DEFAULT.id
         // Null means auto-detect. Our JNI sets whisper's detect_language whenever no language is
         // given, so null is genuine detection rather than a silent fall back to English — that
@@ -201,6 +202,7 @@ class AppPreferences(context: Context) {
         TRANSCRIPTION_MINUTE("transcription_minute"),
         TRANSCRIPTION_REQUIRES_CHARGING("transcription_requires_charging"),
         TRANSCRIPTION_BATCH_LIMIT("transcription_batch_limit"),
+        TRANSCRIPTION_CONFIRM_BEFORE_RUN("transcription_confirm_before_run"),
         TRANSCRIPTION_MODEL_ID("transcription_model_id"),
         TRANSCRIPTION_LANGUAGE("transcription_language"),
 
@@ -567,6 +569,28 @@ class AppPreferences(context: Context) {
 
     /** Sets how many recordings one automatic run takes on; 0 means no limit. */
     fun setTranscriptionBatchLimit(limit: Int) = setInt(Key.TRANSCRIPTION_BATCH_LIMIT, limit)
+
+    /** Whether tapping Transcribe asks first, showing how long it will take. On by default. */
+    fun getTranscriptionConfirmBeforeRun() =
+        getBoolean(Key.TRANSCRIPTION_CONFIRM_BEFORE_RUN, DefaultsValue.TRANSCRIPTION_CONFIRM_BEFORE_RUN)
+
+    /** Sets whether tapping Transcribe asks first. Reachable from Settings, so it can be undone. */
+    fun setTranscriptionConfirmBeforeRun(confirm: Boolean) =
+        setBoolean(Key.TRANSCRIPTION_CONFIRM_BEFORE_RUN, confirm)
+
+    /**
+     * This phone's measured real-time factor for [modelId], or null before it has ever run.
+     *
+     * Keyed by model because they differ by roughly 3x, and stored per device because the published
+     * figures were measured on one phone. Held as a string: SharedPreferences has no double, and a
+     * float would round a figure used to multiply hour-long recordings.
+     */
+    fun getTranscriptionRtf(modelId: String): Double? =
+        prefs.getString("transcription_rtf_" + modelId, null)?.toDoubleOrNull()
+
+    /** Records this phone's measured real-time factor for [modelId]. */
+    fun setTranscriptionRtf(modelId: String, rtf: Double) =
+        prefs.edit { putString("transcription_rtf_" + modelId, rtf.toString()) }
 
     /** Gets the chosen model tier. */
     fun getTranscriptionModelId(): String =

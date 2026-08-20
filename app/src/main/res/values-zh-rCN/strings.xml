@@ -274,6 +274,13 @@
     <string name="support_appeal_body">CallVault 由我一个人利用业余时间开发——免费、开源、无广告、无追踪。☕ 如果它对你有用，一点小小的支持能让我继续做下去。无论如何，谢谢！🙏</string>
     <string name="support_appeal_title">由一个人开发 👋</string>
     <string name="support_not_now">以后再说</string>
+    <string name="transcribe_confirm_dont_ask">不再询问</string>
+    <string name="transcribe_confirm_message">转写 %1$s 会占用手机并明显耗电。你可以随时停止。\n\n可在设置的“转写”中重新开启此提示。</string>
+    <string name="transcribe_confirm_title">大约需要 %1$s</string>
+    <string name="transcribe_confirm_title_unknown">要转写这通电话吗？</string>
+    <string name="transcribe_estimate_hours">%1$d 小时 %2$d 分</string>
+    <string name="transcribe_estimate_minutes">%1$d 分钟</string>
+    <string name="transcribe_estimate_under_minute">不到一分钟</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
     <string name="transcribing_pill_working">转写中</string>
     <string name="transcribing_sheet_remaining">剩余：%1$d</string>
@@ -284,6 +291,7 @@
     <string name="transcript_action_open">阅读转写</string>
     <string name="transcript_action_retry">转写失败 — 重试</string>
     <string name="transcript_action_transcribe">转写这通通话</string>
+    <string name="transcript_action_transcribe_short">转写</string>
     <string name="transcript_copy">复制</string>
     <string name="transcript_delete">删除文字</string>
     <string name="transcript_delete_confirm_message">%1$s 的文字记录将被删除。录音本身会保留，稍后可以重新转写。</string>
@@ -302,6 +310,8 @@
     <string name="transcription_batch_no_limit">不限</string>
     <string name="transcription_charging_subtitle">转写会大量占用处理器并消耗电量。</string>
     <string name="transcription_charging_title">仅在充电时</string>
+    <string name="transcription_confirm_subtitle">显示需要多久，并允许取消。</string>
+    <string name="transcription_confirm_title">转写前询问</string>
     <string name="transcription_hour_label">小时</string>
     <string name="transcription_language_arabic">阿拉伯语</string>
     <string name="transcription_language_auto">自动检测</string>

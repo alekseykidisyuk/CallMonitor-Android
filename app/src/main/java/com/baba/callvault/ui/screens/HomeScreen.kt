@@ -94,7 +94,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.setValue
 import com.baba.callvault.ui.common.OfflineDialogMode
 import com.baba.callvault.ui.common.OfflineRecordingDialog
@@ -103,7 +105,12 @@ import com.baba.callvault.data.transcripts.TranscriptStatus
 import com.baba.callvault.ui.common.TranscriptActionButton
 import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
+import com.baba.callvault.transcription.AudioDecoder
+import com.baba.callvault.transcription.TranscriptionEstimate
+import com.baba.callvault.ui.common.RecordingLabel
+import com.baba.callvault.ui.common.TranscribeConfirmDialog
 import com.baba.callvault.ui.common.TranscribingPill
+import com.baba.callvault.ui.common.formatEstimate
 import com.baba.callvault.ui.common.TranscribingSheet
 import com.baba.callvault.ui.common.rememberTranscribingPillState
 import com.baba.callvault.ui.common.TranscriptSearchSheet
@@ -223,16 +230,37 @@ fun HomeScreen(
      * in flight but wrong for a tap: nothing would appear to happen, for ever. So the same condition
      * the worker checks is checked here, where it can be said out loud.
      */
+    /** The recording awaiting a "this will take N minutes" confirmation, or null. */
+    var confirmTranscribe by remember { mutableStateOf<Pair<String, Long?>?>(null) }
+
+    /** Enqueues without asking. retry() clears the row and enqueues; clearing nothing is a no-op, so
+     *  it serves a first transcription, a retry and "transcribe again" alike — and the queue skips
+     *  FAILED and DONE rows, so leaving the row in place would make the tap do nothing. */
+    val enqueueTranscription: (String) -> Unit = { displayName ->
+        transcriptScope.launch { TranscriptRepository.retry(context, displayName) }
+    }
+
     val startTranscription: (String) -> Unit = { displayName ->
-        val model = TranscriptionModel.fromId(AppPreferences(context).getTranscriptionModelId())
-            ?: TranscriptionModel.DEFAULT
-        if (ModelRepository.isInstalled(context, model)) {
-            // retry() clears the row and enqueues. Clearing nothing is a no-op, so this one call
-            // serves a first transcription, a retry after failure, and "transcribe again" alike —
-            // and the queue skips FAILED rows, so a retry that left the row would do nothing.
-            transcriptScope.launch { TranscriptRepository.retry(context, displayName) }
-        } else {
+        val prefs = AppPreferences(context)
+        val model = TranscriptionModel.fromId(prefs.getTranscriptionModelId()) ?: TranscriptionModel.DEFAULT
+        if (!ModelRepository.isInstalled(context, model)) {
             showModelMissing = true
+        } else if (!prefs.getTranscriptionConfirmBeforeRun()) {
+            enqueueTranscription(displayName)
+        } else {
+            // Estimating is arithmetic on a duration read from the container — microseconds — so the
+            // dialog can open with the answer already in it rather than spinning first.
+            transcriptScope.launch {
+                val estimate = withContext(Dispatchers.IO) {
+                    val uri = uiState.recordings.firstOrNull { it.displayName == displayName }?.uri
+                    val audioMs = uri?.let { AudioDecoder.durationMs(context, it) } ?: 0L
+                    if (audioMs <= 0L) null else TranscriptionEstimate.estimateMs(
+                        audioMs = audioMs,
+                        rtf = prefs.getTranscriptionRtf(model.id) ?: model.realTimeFactor
+                    )
+                }
+                confirmTranscribe = displayName to estimate
+            }
         }
     }
 
@@ -343,6 +371,19 @@ fun HomeScreen(
                 onDelete = {
                     transcriptFor = null
                     deleteTranscriptFor = displayName
+                }
+            )
+        }
+
+        confirmTranscribe?.let { (displayName, estimateMs) ->
+            TranscribeConfirmDialog(
+                title = RecordingLabel.forDisplayName(uiState.recordings, displayName),
+                estimate = estimateMs?.let { formatEstimate(it) },
+                onDismiss = { confirmTranscribe = null },
+                onConfirm = { dontAskAgain ->
+                    if (dontAskAgain) AppPreferences(context).setTranscriptionConfirmBeforeRun(false)
+                    confirmTranscribe = null
+                    enqueueTranscription(displayName)
                 }
             )
         }

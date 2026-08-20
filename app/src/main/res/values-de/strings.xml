@@ -274,6 +274,13 @@
     <string name="support_appeal_body">Ich entwickle CallVault allein, in meiner Freizeit – kostenlos, quelloffen, ohne Werbung, ohne Tracking. ☕ Wenn es dir nützt, hält mich eine kleine Spende am Ball. So oder so: danke! 🙏</string>
     <string name="support_appeal_title">Von einer Person gemacht 👋</string>
     <string name="support_not_now">Jetzt nicht</string>
+    <string name="transcribe_confirm_dont_ask">Nicht mehr fragen</string>
+    <string name="transcribe_confirm_message">Das Transkribieren von %1$s hält Ihr Telefon beschäftigt und verbraucht spürbar Akku. Sie können es jederzeit anhalten.\n\nDiese Frage lässt sich unter Transkription in den Einstellungen wieder aktivieren.</string>
+    <string name="transcribe_confirm_title">Das dauert etwa %1$s</string>
+    <string name="transcribe_confirm_title_unknown">Diesen Anruf transkribieren?</string>
+    <string name="transcribe_estimate_hours">%1$d Std. %2$d Min.</string>
+    <string name="transcribe_estimate_minutes">%1$d Minuten</string>
+    <string name="transcribe_estimate_under_minute">unter einer Minute</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
     <string name="transcribing_pill_working">Transkribiert</string>
     <string name="transcribing_sheet_remaining">Verbleibend: %1$d</string>
@@ -284,6 +291,7 @@
     <string name="transcript_action_open">Transkript lesen</string>
     <string name="transcript_action_retry">Transkription fehlgeschlagen – erneut versuchen</string>
     <string name="transcript_action_transcribe">Dieses Gespräch transkribieren</string>
+    <string name="transcript_action_transcribe_short">Transkribieren</string>
     <string name="transcript_copy">Kopieren</string>
     <string name="transcript_delete">Text löschen</string>
     <string name="transcript_delete_confirm_message">Das Transkript von %1$s wird gelöscht. Die Aufnahme selbst bleibt erhalten, und Sie können sie später erneut transkribieren.</string>
@@ -302,6 +310,8 @@
     <string name="transcription_batch_no_limit">Ohne Begrenzung</string>
     <string name="transcription_charging_subtitle">Die Transkription belastet den Prozessor stark und entlädt den Akku.</string>
     <string name="transcription_charging_title">Nur beim Laden</string>
+    <string name="transcription_confirm_subtitle">Zeigt die Dauer und lässt Sie abbrechen.</string>
+    <string name="transcription_confirm_title">Vor dem Transkribieren fragen</string>
     <string name="transcription_hour_label">Stunde</string>
     <string name="transcription_language_arabic">Arabisch</string>
     <string name="transcription_language_auto">Automatisch erkennen</string>

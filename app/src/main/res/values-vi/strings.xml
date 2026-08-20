@@ -274,6 +274,13 @@
     <string name="support_appeal_body">Tôi tự phát triển CallVault trong thời gian rảnh — miễn phí, mã nguồn mở, không quảng cáo, không theo dõi. ☕ Nếu thấy hữu ích, một khoản nhỏ giúp tôi tiếp tục. Dù sao thì, cảm ơn bạn! 🙏</string>
     <string name="support_appeal_title">Do một người làm 👋</string>
     <string name="support_not_now">Để sau</string>
+    <string name="transcribe_confirm_dont_ask">Đừng hỏi lại</string>
+    <string name="transcribe_confirm_message">Chép lời %1$s sẽ khiến máy bận và hao pin rõ rệt. Bạn có thể dừng bất cứ lúc nào.\n\nCâu hỏi này có thể bật lại trong mục Chép lời ở Cài đặt.</string>
+    <string name="transcribe_confirm_title">Việc này mất khoảng %1$s</string>
+    <string name="transcribe_confirm_title_unknown">Chép lời cuộc gọi này?</string>
+    <string name="transcribe_estimate_hours">%1$d giờ %2$d phút</string>
+    <string name="transcribe_estimate_minutes">%1$d phút</string>
+    <string name="transcribe_estimate_under_minute">chưa đến một phút</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
     <string name="transcribing_pill_working">Đang chép lời</string>
     <string name="transcribing_sheet_remaining">Còn lại: %1$d</string>
@@ -284,6 +291,7 @@
     <string name="transcript_action_open">Đọc bản ghi lời</string>
     <string name="transcript_action_retry">Chuyển thất bại — thử lại</string>
     <string name="transcript_action_transcribe">Chuyển cuộc gọi này thành văn bản</string>
+    <string name="transcript_action_transcribe_short">Chép lời</string>
     <string name="transcript_copy">Sao chép</string>
     <string name="transcript_delete">Xoá văn bản</string>
     <string name="transcript_delete_confirm_message">Bản chép lời của %1$s sẽ bị xoá. Bản ghi âm vẫn được giữ lại và bạn có thể chép lời lại sau.</string>
@@ -302,6 +310,8 @@
     <string name="transcription_batch_no_limit">Không giới hạn</string>
     <string name="transcription_charging_subtitle">Việc chuyển lời nói dùng nhiều CPU và sẽ hao pin.</string>
     <string name="transcription_charging_title">Chỉ khi đang sạc</string>
+    <string name="transcription_confirm_subtitle">Cho biết sẽ mất bao lâu và cho phép huỷ.</string>
+    <string name="transcription_confirm_title">Hỏi trước khi chép lời</string>
     <string name="transcription_hour_label">Giờ</string>
     <string name="transcription_language_arabic">Tiếng Ả Rập</string>
     <string name="transcription_language_auto">Tự động nhận diện</string>

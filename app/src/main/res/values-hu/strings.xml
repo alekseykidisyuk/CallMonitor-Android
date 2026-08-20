@@ -274,6 +274,13 @@
     <string name="support_appeal_body">A CallVaultot egyedül fejlesztem, a szabadidőmben – ingyenes, nyílt forráskódú, nincs hirdetés és nyomkövetés. ☕ Ha hasznos neked, egy kis támogatás segít folytatni. Így is, úgy is: köszönöm! 🙏</string>
     <string name="support_appeal_title">Egyetlen ember készíti 👋</string>
     <string name="support_not_now">Most nem</string>
+    <string name="transcribe_confirm_dont_ask">Ne kérdezze többet</string>
+    <string name="transcribe_confirm_message">A(z) %1$s átírása leköti a telefont, és érezhetően fogyasztja az akkumulátort. Bármikor leállíthatja.\n\nEz a kérdés a Beállítások Átírás részében kapcsolható vissza.</string>
+    <string name="transcribe_confirm_title">Ez körülbelül %1$s lesz</string>
+    <string name="transcribe_confirm_title_unknown">Átírja ezt a hívást?</string>
+    <string name="transcribe_estimate_hours">%1$d ó %2$d p</string>
+    <string name="transcribe_estimate_minutes">%1$d perc</string>
+    <string name="transcribe_estimate_under_minute">kevesebb mint egy perc</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
     <string name="transcribing_pill_working">Átírás folyamatban</string>
     <string name="transcribing_sheet_remaining">Hátravan: %1$d</string>
@@ -284,6 +291,7 @@
     <string name="transcript_action_open">Átirat elolvasása</string>
     <string name="transcript_action_retry">Az átírás nem sikerült – próbáld újra</string>
     <string name="transcript_action_transcribe">Hívás átírása</string>
+    <string name="transcript_action_transcribe_short">Átírás</string>
     <string name="transcript_copy">Másolás</string>
     <string name="transcript_delete">Szöveg törlése</string>
     <string name="transcript_delete_confirm_message">A(z) %1$s átirata törlődik. Maga a felvétel megmarad, és később újra átírható.</string>
@@ -302,6 +310,8 @@
     <string name="transcription_batch_no_limit">Nincs korlát</string>
     <string name="transcription_charging_subtitle">Az átírás erősen terheli a processzort, és meríti az akkumulátort.</string>
     <string name="transcription_charging_title">Csak töltés közben</string>
+    <string name="transcription_confirm_subtitle">Megmutatja, mennyi ideig tart, és megszakíthatja.</string>
+    <string name="transcription_confirm_title">Kérdezzen átírás előtt</string>
     <string name="transcription_hour_label">Óra</string>
     <string name="transcription_language_arabic">Arab</string>
     <string name="transcription_language_auto">Automatikus felismerés</string>
