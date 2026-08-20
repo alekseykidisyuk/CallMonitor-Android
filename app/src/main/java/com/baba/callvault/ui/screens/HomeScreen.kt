@@ -1283,7 +1283,7 @@ private fun RecordingRowMenu(shareUri: Uri, shareName: String, onDelete: () -> U
     var open by remember { mutableStateOf(false) }
 
     Box {
-        IconButton(onClick = { open = true }) {
+        IconButton(onClick = { open = true }, modifier = Modifier.size(ROW_ACTION_SIZE)) {
             Icon(
                 imageVector = Icons.Filled.MoreVert,
                 contentDescription = stringResource(R.string.home_row_menu),
@@ -1539,21 +1539,25 @@ private fun RecordingRow(
             )
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                // The name has this line to itself. It previously shared it with the source badge and,
-                // once transcription arrived, with three icon buttons — leaving about 56dp, or five
-                // characters, so every contact read as "At…". The badge now sits on the line below,
-                // directly under the overflow button, which costs no height at all.
-                Text(
-                    text = primaryLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                // The badge belongs beside the name — it says what this recording *is*, so it reads as
+                // part of the identity rather than as another fact on the details line. The width it
+                // needs comes from the two icon buttons instead: see ROW_ACTION_SIZE.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = primaryLabel,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    SourceBadge(source = item.source)
+                }
 
             }
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(4.dp))
             // No expand chevron: tapping the card already expands a BOTH row, so it was a second
             // control for an action the whole card performs — and it was spending 48dp of the width
             // the contact name needed. The copies still appear on tap; the source badge below says
@@ -1585,7 +1589,8 @@ private fun RecordingRow(
                     status = transcriptStatus,
                     onTranscribe = onTranscribe,
                     onOpen = onOpenTranscript,
-                    onRetry = onRetryTranscript
+                    onRetry = onRetryTranscript,
+                    modifier = Modifier.size(ROW_ACTION_SIZE)
                 )
                 RecordingRowMenu(
                     // Share the device copy when there is one: it needs no network to read, and for a
@@ -1603,25 +1608,14 @@ private fun RecordingRow(
         // sliver left between the play disc and two icon buttons — about twenty characters — so it
         // truncated mid-duration ("Yesterday 17:33 · 23…") no matter which fields were dropped. Here it
         // has the card's full width, indented to line up under the name.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = META_INDENT, top = 2.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = buildSubtitle(item),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                // fill = true: the text claims the slack so the badge is pushed to the far right,
-                // landing directly under the overflow button rather than trailing the date.
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(8.dp))
-            SourceBadge(source = item.source)
-        }
+        Text(
+            text = buildSubtitle(item),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = META_INDENT, top = 2.dp)
+        )
 
         // Single-source: inline player directly under the row when this copy is active.
         if (!isBoth && isRowActive) {
@@ -1999,6 +1993,18 @@ private fun InlinePlayer(
 // -------- Formatting helpers
 
 /** Play disc (48dp) plus its gap (14dp), so the meta line starts under the name rather than the disc. */
+/**
+ * The two row actions sit at 40dp rather than the default 48dp.
+ *
+ * A default IconButton centres a 24dp icon in a 48dp box, so two of them side by side put 24dp of
+ * dead space between the glyphs — width the contact name did not have. At 40dp they read as a pair
+ * and the name gains about 20dp with them, on a row where five characters was the whole budget.
+ *
+ * Not smaller: 40dp is already under Android's 48dp guidance for a touch target, and these are the
+ * two controls on the row that are actually tapped.
+ */
+private val ROW_ACTION_SIZE = 40.dp
+
 private val META_INDENT = 62.dp
 
 /**
