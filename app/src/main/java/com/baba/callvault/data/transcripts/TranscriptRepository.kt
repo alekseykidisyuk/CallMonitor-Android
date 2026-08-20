@@ -10,6 +10,7 @@ package com.baba.callvault.data.transcripts
 
 import android.content.Context
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
+import com.baba.callvault.data.transcripts.db.TranscriptEntry
 import com.baba.callvault.data.transcripts.db.TranscriptSearchHit
 import com.baba.callvault.data.transcripts.db.TranscriptState
 import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
@@ -87,14 +88,29 @@ object TranscriptRepository {
     }
 
     /**
-     * Retries a recording whose last attempt failed.
+     * Asks for [displayName] to be transcribed, from a tap.
      *
-     * Clearing the row is the point, not a side effect: [com.baba.callvault.transcription.TranscriptionQueue]
-     * deliberately skips FAILED so an undecodable file is not retried nightly forever, which also means
-     * a retry that left the row in place would do nothing at all.
+     * Serves a first transcription, a retry after failure and "transcribe again" alike.
+     *
+     * Clearing the row first is the point, not a side effect:
+     * [com.baba.callvault.transcription.TranscriptionQueue] deliberately skips FAILED so an undecodable
+     * file is not retried nightly forever, and skips DONE so finished work is not paid for twice —
+     * either would make a tap do nothing at all.
+     *
+     * It is then marked QUEUED **before** the work is enqueued, so the row shows that it is waiting the
+     * moment it is tapped. Taps chain — one run at a time — so without this a second tapped call sits
+     * looking exactly like an untapped one, inviting the user to tap it again.
      */
     suspend fun retry(context: Context, displayName: String) {
-        dao(context).deleteFor(displayName)
+        val dao = dao(context)
+        dao.deleteFor(displayName)
+        dao.upsertTranscript(
+            TranscriptEntry(
+                displayName = displayName,
+                state = TranscriptState.QUEUED,
+                updatedAt = System.currentTimeMillis()
+            )
+        )
         transcribeNow(context, displayName)
     }
 

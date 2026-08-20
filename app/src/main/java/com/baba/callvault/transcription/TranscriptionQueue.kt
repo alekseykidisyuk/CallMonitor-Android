@@ -70,7 +70,8 @@ object TranscriptionQueue {
     }
 
     /**
-     * Clears rows left [TranscriptState.RUNNING] by a run that is no longer happening.
+     * Clears rows left [TranscriptState.RUNNING] or [TranscriptState.QUEUED] by work that is no longer
+     * happening.
      *
      * A worker that is cancelled — or killed outright — cannot be relied on to tidy up after itself:
      * whisper runs inside a blocking native call, so the interruption may never reach the Kotlin that
@@ -78,15 +79,21 @@ object TranscriptionQueue {
      * untappable, while nothing was running; and the queue skips RUNNING, so an automatic sweep would
      * not have rescued it either.
      *
+     * QUEUED is included because a tap marks a row queued before its work is enqueued: if that work
+     * never runs, the row would sit on the busy spinner for ever, and this mode's queue skips QUEUED's
+     * sibling RUNNING anyway. Deleting is safe even if the work does still run — the worker marks the
+     * row again when it starts, and a recording with no row is exactly what [pending] offers.
+     *
      * Called from the app process by whoever does the stopping, which is still alive to finish the job.
      *
      * @return how many rows were released.
      */
-    suspend fun releaseStaleRunning(context: Context): Int {
+    suspend fun releaseStaleWork(context: Context): Int {
         if (!TranscriptDatabase.exists(context)) return 0
 
         val dao = TranscriptDatabase.get(context).transcriptDao()
-        val stale = dao.displayNamesWithState(TranscriptState.RUNNING)
+        val stale = dao.displayNamesWithState(TranscriptState.RUNNING) +
+            dao.displayNamesWithState(TranscriptState.QUEUED)
         stale.forEach { dao.deleteFor(it) }
         return stale.size
     }

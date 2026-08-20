@@ -91,7 +91,7 @@ class CallVaultApplication : Application() {
         // shows an untappable spinner for ever, and the queue skips RUNNING so no automatic sweep
         // would rescue it either. A fresh process means nothing from before is still transcribing.
         Thread {
-            runCatching { runBlocking { TranscriptionQueue.releaseStaleRunning(applicationContext) } }
+            runCatching { runBlocking { TranscriptionQueue.releaseStaleWork(applicationContext) } }
                 .onSuccess { if (it > 0) AppLogger.i(TAG, "Released $it stale transcription row(s)") }
                 .onFailure { AppLogger.w(TAG, "Releasing stale transcription rows failed: ${it.message}") }
         }.start()

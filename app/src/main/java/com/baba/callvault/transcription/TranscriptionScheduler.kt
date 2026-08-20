@@ -135,7 +135,7 @@ object TranscriptionScheduler {
         // The cancelled worker cannot be trusted to reset the row it was working on — whisper sits in
         // a blocking native call, so the cancellation may never reach the Kotlin that would do it.
         // Do it here instead, from a process that is definitely still alive.
-        val released = TranscriptionQueue.releaseStaleRunning(context)
+        val released = TranscriptionQueue.releaseStaleWork(context)
         AppLogger.i(TAG, "Transcription stopped on request; schedule re-applied, $released row(s) released.")
     }
 
