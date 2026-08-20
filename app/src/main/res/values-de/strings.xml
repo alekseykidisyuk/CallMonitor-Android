@@ -286,6 +286,9 @@
     <string name="transcript_delete_confirm_message">Das Transkript von %1$s wird gelöscht. Die Aufnahme selbst bleibt erhalten, und Sie können sie später erneut transkribieren.</string>
     <string name="transcript_delete_confirm_title">Dieses Transkript löschen?</string>
     <string name="transcript_loading">Transkript wird geladen…</string>
+    <string name="transcript_no_model_message">Die Transkription läuft auf diesem Telefon, daher muss zuerst ein Sprachmodell heruntergeladen werden. In den Einstellungen können Sie eines auswählen und laden.</string>
+    <string name="transcript_no_model_open_settings">Einstellungen öffnen</string>
+    <string name="transcript_no_model_title">Noch kein Sprachmodell</string>
     <string name="transcript_no_speech">In dieser Aufnahme wurde keine Sprache erkannt.</string>
     <string name="transcript_retranscribe">Erneut transkribieren</string>
     <string name="transcript_search_empty">Kein Anruf enthält diese Wörter. Es werden nur ganze Wörter gefunden — versuchen Sie eine andere Wortform.</string>

@@ -20,25 +20,48 @@ not run, the same UI shows timestamps only with no code change.
 
 ---
 
-## STATUS — 2026-08-17
+## STATUS — 2026-08-20 — **Plan 3 complete**
 
 | task | state |
 |---|---|
 | 1 — per-row transcript status | ✅ `0074c76` — 9 tests |
 | 2 — the row button | ✅ `995517b` — 7 tests |
 | 3 — the transcript sheet | ✅ `995517b` — 5 timestamp tests |
-| 4 — search across transcripts | ⬜ not started (the repository half is built and tested) |
-| 5 — share / copy / delete | 🟡 share + copy + re-transcribe done in the sheet; **delete-transcript-only not surfaced** |
-| 6 — the progress pill | ⬜ not started |
+| 4 — search across transcripts | ✅ `3eb4af2` — 12 tests |
+| 5 — share / copy / delete | ✅ `6af6afb` — delete-transcript-only surfaced |
+| 6 — the progress pill | ✅ `86c958e` — 13 tests |
 
-**400 unit tests, 0 failures.** `assembleDebug` green; 10 locales at 536 strings each.
+**425 unit tests, 0 failures.** `assembleDebug` green; 10 locales at 549 strings each.
 
-**The feature is now usable end to end**: a recording row offers to transcribe, shows progress, and
-then opens the transcript. That was the milestone — everything before it was invisible plumbing.
+### Three things the plan got wrong, found while executing it
 
-**Notes for whoever picks up Task 4:** `TranscriptRepository.search` is already built and tested,
-including the FTS-quoting that stops a typed apostrophe becoming a syntax error. What remains is
-purely the Home search UI and jumping to the matched timestamp.
+1. **Task 4 said "extend the existing search affordance."** There was none. The only search in the
+   app was inside the contact picker, so search was built from scratch: a top-bar action, a sheet, and
+   `TranscriptSearch` to join hits back onto openable recordings.
+
+2. **Jumping to a timestamp did not work, including in the already-shipped Task 3.** Both paths called
+   `seekTo`, and `MediaPlayer.seekTo` on a track that is not prepared is clamped against a duration of
+   zero — so tapping a line in any recording that was not already playing silently started from the
+   beginning. The position is now carried into the prepared callback, and `PlaybackJump` decides which
+   of the two paths a jump needs.
+
+3. **Task 6 assumed progress could be observed.** The worker published none. `runBatch` now announces
+   each recording as it reaches it, and — the trap — stopping a run had to avoid `cancelUniqueWork` on
+   the periodic sweep, which deletes the *schedule* along with the run. `stopNow` cancels then
+   re-applies; both modes are tested.
+
+### Deviations worth knowing
+
+- **Search ignores the facet filters** deliberately: someone reaching for search cannot find the call
+  by scrolling, so honouring an active contact or date filter would hide the very result they wanted.
+- **Counts are phrased count-neutrally** ("Remaining: %1$d"), following how this repo already avoids
+  plural rules in ru/pl. `merge-translations.py` handles `<string>` only, not `<plurals>`.
+- **The delete confirmation reuses `DeleteRecordingDialog`** with an overridden title and message
+  rather than introducing a second dialog.
+
+**Still deferred to the device:** RTL rendering, seek-on-tap, and search-finds-a-spoken-word are
+collected as B9 in `docs/dev-notes/2026-08-17-transcription-device-test-plan.md`. Nothing in this plan
+has been exercised on the phone.
 
 ---
 
@@ -207,7 +230,7 @@ fun `lays out right to left for Hebrew segments`() { /* ... */ }
 **Interfaces:**
 - Consumes: `TranscriptDao.search` (Plan 2, Task 1).
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 ```kotlin
 @Test fun `finds a recording by a word spoken inside it`() { /* ... */ }
@@ -219,7 +242,7 @@ fun `lays out right to left for Hebrew segments`() { /* ... */ }
 }
 ```
 
-- [ ] **Step 2: FAIL. Step 3: Implement. Step 4: Green. Step 5: Commit.**
+- [x] **Step 2: FAIL. Step 3: Implement. Step 4: Green. Step 5: Commit.**
 
 > Known and accepted from the spec: `unicode61` does whole-word matching with no Hebrew stemming, so
 > inflected forms will not match. Say so in the empty-state copy rather than letting it read as a bug.
@@ -248,7 +271,7 @@ rejected as too heavy for something the user did not ask to be interrupted about
         ▲ tap → sheet: current call + Cancel
 ```
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 ```kotlin
 @Test fun `is absent when nothing is being transcribed`() { /* the common case */ }
@@ -260,22 +283,22 @@ rejected as too heavy for something the user did not ask to be interrupted about
 }
 ```
 
-- [ ] **Step 2: FAIL. Step 3: Implement**, driven by `WorkManager.getWorkInfosForUniqueWorkLiveData`
+- [x] **Step 2: FAIL. Step 3: Implement**, driven by `WorkManager.getWorkInfosForUniqueWorkLiveData`
   for the sweep and manual work names, so the pill reflects real worker state rather than a guess.
-- [ ] **Step 4: Green.**
-- [ ] **Step 5:** Confirm the pill and `SupportPill` never collide — decide which wins the slot when
+- [x] **Step 4: Green.**
+- [x] **Step 5:** Confirm the pill and `SupportPill` never collide — decide which wins the slot when
   both would show, and test it.
-- [ ] **Step 6: Commit.**
+- [x] **Step 6: Commit.**
 
 ---
 
 ## Task 5: Share, copy, delete
 
-- [ ] Share/copy the transcript as plain text with timestamps, via the existing share sheet.
-- [ ] **Deleting a transcript must be possible without deleting the recording** — a user may want the
+- [x] Share/copy the transcript as plain text with timestamps, via the existing share sheet.
+- [x] **Deleting a transcript must be possible without deleting the recording** — a user may want the
   audio but not a searchable text of it. Wire to `TranscriptRepository.delete`.
-- [ ] Re-transcribe replaces in place (Plan 2's `replaceSegments` already guarantees no duplicates).
-- [ ] Commit.
+- [x] Re-transcribe replaces in place (Plan 2's `replaceSegments` already guarantees no duplicates).
+- [x] Commit.
 
 ---
 

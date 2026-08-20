@@ -286,6 +286,9 @@
     <string name="transcript_delete_confirm_message">La transcription de %1$s sera supprimée. L\'enregistrement est conservé et vous pourrez le transcrire à nouveau plus tard.</string>
     <string name="transcript_delete_confirm_title">Supprimer cette transcription ?</string>
     <string name="transcript_loading">Chargement de la transcription…</string>
+    <string name="transcript_no_model_message">La transcription se fait sur ce téléphone : un modèle vocal doit donc être téléchargé au préalable. Vous pouvez en choisir et en télécharger un dans les paramètres.</string>
+    <string name="transcript_no_model_open_settings">Ouvrir les paramètres</string>
+    <string name="transcript_no_model_title">Pas encore de modèle vocal</string>
     <string name="transcript_no_speech">Aucune parole n\'a été reconnue dans cet enregistrement.</string>
     <string name="transcript_retranscribe">Transcrire à nouveau</string>
     <string name="transcript_search_empty">Aucun appel ne contient ces mots. Seuls les mots entiers correspondent, essayez une autre forme du mot.</string>

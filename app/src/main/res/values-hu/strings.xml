@@ -286,6 +286,9 @@
     <string name="transcript_delete_confirm_message">A(z) %1$s átirata törlődik. Maga a felvétel megmarad, és később újra átírható.</string>
     <string name="transcript_delete_confirm_title">Törli ezt az átiratot?</string>
     <string name="transcript_loading">Átirat betöltése…</string>
+    <string name="transcript_no_model_message">Az átírás ezen a telefonon készül, ezért előbb le kell tölteni egy beszédmodellt. A Beállításokban választhat és tölthet le egyet.</string>
+    <string name="transcript_no_model_open_settings">Beállítások megnyitása</string>
+    <string name="transcript_no_model_title">Még nincs beszédmodell</string>
     <string name="transcript_no_speech">Ebben a felvételben nem ismerhető fel beszéd.</string>
     <string name="transcript_retranscribe">Átírás újra</string>
     <string name="transcript_search_empty">Egyetlen hívás sem tartalmazza ezeket a szavakat. Csak teljes szavakra keres, próbáljon másik szóalakot.</string>

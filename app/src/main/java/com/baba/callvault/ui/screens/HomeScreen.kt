@@ -101,6 +101,8 @@ import com.baba.callvault.ui.common.OfflineRecordingDialog
 import com.baba.callvault.data.transcripts.TranscriptRepository
 import com.baba.callvault.data.transcripts.TranscriptStatus
 import com.baba.callvault.ui.common.TranscriptActionButton
+import com.baba.callvault.transcription.model.ModelRepository
+import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.ui.common.TranscribingPill
 import com.baba.callvault.ui.common.TranscribingSheet
 import com.baba.callvault.ui.common.rememberTranscribingPillState
@@ -208,7 +210,32 @@ fun HomeScreen(
     /** What transcription is doing right now, for the pill beside the title. Hidden when idle. */
     val transcribing by rememberTranscribingPillState()
     var showTranscribingSheet by remember { mutableStateOf(false) }
+
     val transcriptScope = rememberCoroutineScope()
+
+    /** Raised when transcription is asked for but the model it needs is not installed. */
+    var showModelMissing by remember { mutableStateOf(false) }
+
+    /**
+     * Starts transcription, or explains why it cannot.
+     *
+     * The worker retries indefinitely while its model is absent, which is right for a download still
+     * in flight but wrong for a tap: nothing would appear to happen, for ever. So the same condition
+     * the worker checks is checked here, where it can be said out loud.
+     */
+    val startTranscription: (String) -> Unit = { displayName ->
+        val model = TranscriptionModel.fromId(AppPreferences(context).getTranscriptionModelId())
+            ?: TranscriptionModel.DEFAULT
+        if (ModelRepository.isInstalled(context, model)) {
+            // retry() clears the row and enqueues. Clearing nothing is a no-op, so this one call
+            // serves a first transcription, a retry after failure, and "transcribe again" alike —
+            // and the queue skips FAILED rows, so a retry that left the row would do nothing.
+            transcriptScope.launch { TranscriptRepository.retry(context, displayName) }
+        } else {
+            showModelMissing = true
+        }
+    }
+
     val selectionMode = selection.isNotEmpty()
     val selectedItems = remember(selection, uiState.recordings) {
         uiState.recordings.filter { it.uri in selection }
@@ -308,7 +335,7 @@ fun HomeScreen(
                 onCopy = { text -> context.copyToClipboard(displayName, text) },
                 onShare = { text -> context.sharePlainText(displayName, text) },
                 onRetranscribe = {
-                    transcriptScope.launch { TranscriptRepository.retry(context, displayName) }
+                    startTranscription(displayName)
                     transcriptFor = null
                 },
                 // Close the sheet first: an AlertDialog raised over a ModalBottomSheet leaves the
@@ -316,6 +343,27 @@ fun HomeScreen(
                 onDelete = {
                     transcriptFor = null
                     deleteTranscriptFor = displayName
+                }
+            )
+        }
+
+        if (showModelMissing) {
+            AlertDialog(
+                onDismissRequest = { showModelMissing = false },
+                title = { Text(stringResource(R.string.transcript_no_model_title)) },
+                text = { Text(stringResource(R.string.transcript_no_model_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showModelMissing = false
+                        onOpenSettings()
+                    }) {
+                        Text(stringResource(R.string.transcript_no_model_open_settings))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showModelMissing = false }) {
+                        Text(stringResource(R.string.general_cancel))
+                    }
                 }
             )
         }
@@ -498,11 +546,11 @@ fun HomeScreen(
                         onDeleteAll = { viewModel.deleteRecording(item) },
                         onDeleteUri = { uri -> viewModel.deleteUri(uri) },
                         transcriptStatus = transcriptStatuses[item.displayName] ?: TranscriptStatus.NONE,
-                        onTranscribe = { TranscriptRepository.transcribeNow(context, item.displayName) },
+                        onTranscribe = { startTranscription(item.displayName) },
                         onOpenTranscript = { transcriptFor = item.displayName },
-                        onRetryTranscript = {
-                            transcriptScope.launch { TranscriptRepository.retry(context, item.displayName) }
-                        }
+                        // Retry runs through the same gate: without a model it would fail exactly the
+                        // same silent way a first attempt does.
+                        onRetryTranscript = { startTranscription(item.displayName) }
                     )
                 }
             }

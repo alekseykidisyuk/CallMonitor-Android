@@ -286,6 +286,9 @@
     <string name="transcript_delete_confirm_message">Se eliminará la transcripción de %1$s. La grabación se conserva y puedes transcribirla de nuevo más adelante.</string>
     <string name="transcript_delete_confirm_title">¿Eliminar esta transcripción?</string>
     <string name="transcript_loading">Cargando la transcripción…</string>
+    <string name="transcript_no_model_message">La transcripción se hace en este teléfono, así que primero hay que descargar un modelo de voz. Puedes elegir y descargar uno en Ajustes.</string>
+    <string name="transcript_no_model_open_settings">Abrir ajustes</string>
+    <string name="transcript_no_model_title">Aún no hay modelo de voz</string>
     <string name="transcript_no_speech">No se reconoció ninguna voz en esta grabación.</string>
     <string name="transcript_retranscribe">Transcribir de nuevo</string>
     <string name="transcript_search_empty">Ninguna llamada contiene esas palabras. Solo coinciden palabras completas, prueba con otra forma de la palabra.</string>

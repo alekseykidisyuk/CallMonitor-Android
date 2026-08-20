@@ -286,6 +286,9 @@
     <string name="transcript_delete_confirm_message">Bản chép lời của %1$s sẽ bị xoá. Bản ghi âm vẫn được giữ lại và bạn có thể chép lời lại sau.</string>
     <string name="transcript_delete_confirm_title">Xoá bản chép lời này?</string>
     <string name="transcript_loading">Đang tải bản ghi lời…</string>
+    <string name="transcript_no_model_message">Việc chép lời diễn ra ngay trên điện thoại này, nên cần tải một mô hình giọng nói trước. Bạn có thể chọn và tải trong Cài đặt.</string>
+    <string name="transcript_no_model_open_settings">Mở cài đặt</string>
+    <string name="transcript_no_model_title">Chưa có mô hình giọng nói</string>
     <string name="transcript_no_speech">Không nhận ra giọng nói nào trong bản ghi âm này.</string>
     <string name="transcript_retranscribe">Chuyển lại</string>
     <string name="transcript_search_empty">Không cuộc gọi nào chứa những từ đó. Chỉ khớp từ nguyên vẹn, hãy thử dạng khác của từ.</string>

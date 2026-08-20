@@ -508,6 +508,9 @@
     <string name="transcript_share">Share</string>
     <string name="transcript_retranscribe">Transcribe again</string>
     <string name="home_search_transcripts">Search what was said</string>
+    <string name="transcript_no_model_title">No speech model yet</string>
+    <string name="transcript_no_model_message">Transcribing happens on this phone, so it needs a speech model downloaded first. You can choose and download one in Settings.</string>
+    <string name="transcript_no_model_open_settings">Open settings</string>
     <string name="transcribing_pill_working">Transcribing</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
     <string name="transcribing_sheet_title">Transcribing</string>

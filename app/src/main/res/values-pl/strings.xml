@@ -286,6 +286,9 @@
     <string name="transcript_delete_confirm_message">Transkrypcja %1$s zostanie usunięta. Samo nagranie pozostanie i możesz je ponownie przepisać później.</string>
     <string name="transcript_delete_confirm_title">Usunąć tę transkrypcję?</string>
     <string name="transcript_loading">Wczytywanie transkrypcji…</string>
+    <string name="transcript_no_model_message">Transkrypcja odbywa się na tym telefonie, więc najpierw trzeba pobrać model mowy. Możesz go wybrać i pobrać w Ustawieniach.</string>
+    <string name="transcript_no_model_open_settings">Otwórz ustawienia</string>
+    <string name="transcript_no_model_title">Brak modelu mowy</string>
     <string name="transcript_no_speech">W tym nagraniu nie rozpoznano mowy.</string>
     <string name="transcript_retranscribe">Transkrybuj ponownie</string>
     <string name="transcript_search_empty">Żadna rozmowa nie zawiera tych słów. Dopasowywane są tylko całe słowa — spróbuj innej formy.</string>
