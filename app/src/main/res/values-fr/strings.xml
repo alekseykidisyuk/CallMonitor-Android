@@ -76,6 +76,7 @@
     <string name="home_recordings_empty">Aucun enregistrement pour l\'instant.</string>
     <string name="home_recordings_title">Enregistrements</string>
     <string name="home_row_menu">Plus d\'options</string>
+    <string name="home_search_transcripts">Rechercher ce qui a été dit</string>
     <string name="home_share">Partager</string>
     <string name="home_share_chooser">Partager l\'enregistrement</string>
     <string name="home_status_dev_options_off_suggestion">CallVault enregistre via le débogage sans fil, qui nécessite les options pour les développeurs. L\'enregistrement ne peut pas fonctionner tant que vous ne réactivez pas les options pour les développeurs (et le débogage sans fil) dans les paramètres du système.</string>
@@ -281,6 +282,9 @@
     <string name="transcript_loading">Chargement de la transcription…</string>
     <string name="transcript_no_speech">Aucune parole n\'a été reconnue dans cet enregistrement.</string>
     <string name="transcript_retranscribe">Transcrire à nouveau</string>
+    <string name="transcript_search_empty">Aucun appel ne contient ces mots. Seuls les mots entiers correspondent, essayez une autre forme du mot.</string>
+    <string name="transcript_search_hint">Rechercher ce qui a été dit</string>
+    <string name="transcript_search_idle">Saisissez un mot pour chercher dans toutes vos transcriptions.</string>
     <string name="transcript_share">Partager</string>
     <string name="transcription_batch_label">Appels par exécution</string>
     <string name="transcription_batch_no_limit">Sans limite</string>

@@ -507,6 +507,10 @@
     <string name="transcript_copy">Copy</string>
     <string name="transcript_share">Share</string>
     <string name="transcript_retranscribe">Transcribe again</string>
+    <string name="home_search_transcripts">Search what was said</string>
+    <string name="transcript_search_hint">Search what was said</string>
+    <string name="transcript_search_idle">Type a word to search across every transcript you have.</string>
+    <string name="transcript_search_empty">No call contains those words. Only whole words match, so try another form of the word.</string>
     <string name="transcript_delete">Delete text</string>
     <string name="transcript_delete_confirm_title">Delete this transcript?</string>
     <string name="transcript_delete_confirm_message">The transcript of %1$s will be deleted. The recording itself is kept, and you can transcribe it again later.</string>

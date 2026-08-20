@@ -65,7 +65,7 @@ class RecordingPlaybackController {
      * @param context Application context used to open the SAF content URI.
      * @param uri     The recording's content URI.
      */
-    fun play(context: Context, uri: Uri) {
+    fun play(context: Context, uri: Uri, startAtMs: Int = 0) {
         releasePlayer()
         _state.update { PlaybackState(activeUri = uri, phase = Phase.LOADING) }
 
@@ -73,8 +73,14 @@ class RecordingPlaybackController {
             MediaPlayer().apply {
                 setDataSource(context.applicationContext, uri)
                 setOnPreparedListener { mp ->
+                    val duration = mp.duration.coerceAtLeast(0)
+                    // Seek here rather than at the call site: until this callback runs the duration
+                    // is unknown, and seekTo clamps against it — so an earlier seek would silently
+                    // land at zero instead of at the moment the user asked for.
+                    val start = startAtMs.coerceIn(0, duration)
+                    if (start > 0) mp.seekTo(start)
                     _state.update {
-                        it.copy(phase = Phase.PLAYING, durationMs = mp.duration.coerceAtLeast(0))
+                        it.copy(phase = Phase.PLAYING, positionMs = start, durationMs = duration)
                     }
                     mp.start()
                 }

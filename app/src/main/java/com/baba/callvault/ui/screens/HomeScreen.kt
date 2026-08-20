@@ -68,6 +68,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
@@ -100,6 +101,7 @@ import com.baba.callvault.ui.common.OfflineRecordingDialog
 import com.baba.callvault.data.transcripts.TranscriptRepository
 import com.baba.callvault.data.transcripts.TranscriptStatus
 import com.baba.callvault.ui.common.TranscriptActionButton
+import com.baba.callvault.ui.common.TranscriptSearchSheet
 import com.baba.callvault.ui.common.TranscriptSheet
 import com.baba.callvault.system.copyToClipboard
 import com.baba.callvault.system.sharePlainText
@@ -196,6 +198,9 @@ fun HomeScreen(
 
     /** Which recording's transcript is awaiting a delete confirmation, or null. */
     var deleteTranscriptFor by remember { mutableStateOf<String?>(null) }
+
+    /** Whether the search-across-transcripts sheet is open. */
+    var showTranscriptSearch by remember { mutableStateOf(false) }
     val transcriptScope = rememberCoroutineScope()
     val selectionMode = selection.isNotEmpty()
     val selectedItems = remember(selection, uiState.recordings) {
@@ -252,6 +257,13 @@ fun HomeScreen(
                     )
                 }
             } else {
+                IconButton(onClick = { showTranscriptSearch = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        contentDescription = stringResource(R.string.home_search_transcripts),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 IconButton(onClick = onOpenSettings) {
                     Icon(
                         imageVector = Icons.Filled.Tune,
@@ -273,7 +285,11 @@ fun HomeScreen(
                 transcript = transcript,
                 title = row?.contactName ?: row?.number ?: displayName,
                 onDismiss = { transcriptFor = null },
-                onSeekTo = { startMs -> viewModel.seekTo(startMs.toInt()) },
+                // playFrom, not seekTo: seekTo only works on a track already prepared, so tapping a
+                // line in a recording that is not playing used to do nothing at all.
+                onSeekTo = { startMs ->
+                    row?.uri?.let { viewModel.playFrom(it, startMs.toInt()) }
+                },
                 onCopy = { text -> context.copyToClipboard(displayName, text) },
                 onShare = { text -> context.sharePlainText(displayName, text) },
                 onRetranscribe = {
@@ -285,6 +301,19 @@ fun HomeScreen(
                 onDelete = {
                     transcriptFor = null
                     deleteTranscriptFor = displayName
+                }
+            )
+        }
+
+        if (showTranscriptSearch) {
+            TranscriptSearchSheet(
+                // The whole library, not uiState.filteredRecordings: someone searching is looking for
+                // a call they could not find by scrolling, and an active filter would hide it.
+                recordings = uiState.recordings,
+                onDismiss = { showTranscriptSearch = false },
+                onOpen = { row ->
+                    showTranscriptSearch = false
+                    viewModel.playFrom(row.uri, row.startMs.toInt())
                 }
             )
         }

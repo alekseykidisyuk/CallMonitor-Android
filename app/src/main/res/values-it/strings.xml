@@ -76,6 +76,7 @@
     <string name="home_recordings_empty">Ancora nessuna registrazione.</string>
     <string name="home_recordings_title">Registrazioni</string>
     <string name="home_row_menu">Altre opzioni</string>
+    <string name="home_search_transcripts">Cerca ciò che è stato detto</string>
     <string name="home_share">Condividi</string>
     <string name="home_share_chooser">Condividi registrazione</string>
     <string name="home_status_dev_options_off_suggestion">CallVault registra tramite il debug wireless, che richiede le opzioni sviluppatore. La registrazione non può funzionare finché non riattivi le opzioni sviluppatore (e il debug wireless) nelle impostazioni di sistema.</string>
@@ -281,6 +282,9 @@
     <string name="transcript_loading">Caricamento della trascrizione…</string>
     <string name="transcript_no_speech">Nessun parlato riconosciuto in questa registrazione.</string>
     <string name="transcript_retranscribe">Trascrivi di nuovo</string>
+    <string name="transcript_search_empty">Nessuna chiamata contiene quelle parole. Vengono trovate solo parole intere, prova un\'altra forma della parola.</string>
+    <string name="transcript_search_hint">Cerca ciò che è stato detto</string>
+    <string name="transcript_search_idle">Digita una parola per cercare in tutte le tue trascrizioni.</string>
     <string name="transcript_share">Condividi</string>
     <string name="transcription_batch_label">Chiamate per esecuzione</string>
     <string name="transcription_batch_no_limit">Nessun limite</string>

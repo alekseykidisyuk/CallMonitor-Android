@@ -32,6 +32,7 @@ import com.baba.callvault.data.recordings.RecordingsRepository
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingSource
 import com.baba.callvault.integrations.adb.AdbShell
+import com.baba.callvault.ui.common.PlaybackJump
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.system.updates.UpdateInstallWorker
@@ -590,6 +591,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Seeks the inline player to [positionMs]. */
     fun seekTo(positionMs: Int) = playbackController.seekTo(positionMs)
+
+    /**
+     * Plays [uri] from [positionMs], whether or not it is the track already loaded.
+     *
+     * This is what a timestamp is *for* — tapping a transcript line, or a search result, means "play
+     * from there". A plain [seekTo] cannot do it: on any recording that is not already prepared it is
+     * clamped to a duration of zero and silently starts from the beginning instead.
+     */
+    fun playFrom(uri: Uri, positionMs: Int) {
+        when (PlaybackJump.planFor(playback.value.activeUri, playback.value.phase, uri)) {
+            PlaybackJump.SEEK_NOW -> playbackController.seekTo(positionMs)
+            PlaybackJump.LOAD_THEN_SEEK -> playbackController.play(appContext, uri, positionMs)
+        }
+    }
 
     /** Pushes the latest player position into state; called by a UI ticker while playing. */
     fun syncPlaybackPosition() = playbackController.syncPosition()

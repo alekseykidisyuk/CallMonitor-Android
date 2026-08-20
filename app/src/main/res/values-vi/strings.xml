@@ -76,6 +76,7 @@
     <string name="home_recordings_empty">Chưa có bản ghi âm nào.</string>
     <string name="home_recordings_title">Bản ghi âm</string>
     <string name="home_row_menu">Tùy chọn khác</string>
+    <string name="home_search_transcripts">Tìm trong nội dung đã nói</string>
     <string name="home_share">Chia sẻ</string>
     <string name="home_share_chooser">Chia sẻ bản ghi</string>
     <string name="home_status_dev_options_off_suggestion">CallVault ghi âm qua gỡ lỗi không dây, tính năng này cần Tùy chọn nhà phát triển. Không thể ghi âm cho đến khi bạn bật lại Tùy chọn nhà phát triển (và Gỡ lỗi không dây) trong cài đặt hệ thống.</string>
@@ -281,6 +282,9 @@
     <string name="transcript_loading">Đang tải bản ghi lời…</string>
     <string name="transcript_no_speech">Không nhận ra giọng nói nào trong bản ghi âm này.</string>
     <string name="transcript_retranscribe">Chuyển lại</string>
+    <string name="transcript_search_empty">Không cuộc gọi nào chứa những từ đó. Chỉ khớp từ nguyên vẹn, hãy thử dạng khác của từ.</string>
+    <string name="transcript_search_hint">Tìm trong nội dung đã nói</string>
+    <string name="transcript_search_idle">Nhập một từ để tìm trong mọi bản chép lời của bạn.</string>
     <string name="transcript_share">Chia sẻ</string>
     <string name="transcription_batch_label">Số cuộc gọi mỗi lần chạy</string>
     <string name="transcription_batch_no_limit">Không giới hạn</string>

@@ -76,6 +76,7 @@
     <string name="home_recordings_empty">暂无录音。</string>
     <string name="home_recordings_title">录音</string>
     <string name="home_row_menu">更多选项</string>
+    <string name="home_search_transcripts">搜索通话内容</string>
     <string name="home_share">分享</string>
     <string name="home_share_chooser">分享录音</string>
     <string name="home_status_dev_options_off_suggestion">CallVault 通过无线调试进行录音，需要开发者选项。在系统设置中重新启用开发者选项（和无线调试）之前，无法录音。</string>
@@ -281,6 +282,9 @@
     <string name="transcript_loading">正在加载转写…</string>
     <string name="transcript_no_speech">这段录音中未识别到语音。</string>
     <string name="transcript_retranscribe">重新转写</string>
+    <string name="transcript_search_empty">没有通话包含这些词。只匹配完整词语，请换一种词形试试。</string>
+    <string name="transcript_search_hint">搜索通话内容</string>
+    <string name="transcript_search_idle">输入词语即可搜索你的全部文字记录。</string>
     <string name="transcript_share">分享</string>
     <string name="transcription_batch_label">每次运行的通话数</string>
     <string name="transcription_batch_no_limit">不限</string>

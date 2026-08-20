@@ -79,6 +79,7 @@
     <string name="home_recordings_empty">Nenhuma gravação ainda.</string>
     <string name="home_recordings_title">Gravações</string>
     <string name="home_row_menu">Mais opções</string>
+    <string name="home_search_transcripts">Buscar o que foi dito</string>
     <string name="home_share">Compartilhar</string>
     <string name="home_share_chooser">Compartilhar gravação</string>
     <string name="home_status_dev_options_off_suggestion">O CallVault grava por meio da Depuração sem fio, que depende das Opções do desenvolvedor. A gravação não tem como funcionar até você reativar as Opções do desenvolvedor (e a Depuração sem fio) nas configurações do sistema.</string>
@@ -284,6 +285,9 @@
     <string name="transcript_loading">Carregando a transcrição…</string>
     <string name="transcript_no_speech">Nenhuma fala foi reconhecida nesta gravação.</string>
     <string name="transcript_retranscribe">Transcrever novamente</string>
+    <string name="transcript_search_empty">Nenhuma chamada contém essas palavras. Só há correspondência de palavras inteiras, tente outra forma da palavra.</string>
+    <string name="transcript_search_hint">Buscar o que foi dito</string>
+    <string name="transcript_search_idle">Digite uma palavra para buscar em todas as suas transcrições.</string>
     <string name="transcript_share">Compartilhar</string>
     <string name="transcription_batch_label">Chamadas por execução</string>
     <string name="transcription_batch_no_limit">Sem limite</string>
