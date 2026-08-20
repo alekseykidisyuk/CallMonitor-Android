@@ -508,6 +508,12 @@
     <string name="transcript_share">Share</string>
     <string name="transcript_retranscribe">Transcribe again</string>
     <string name="home_search_transcripts">Search what was said</string>
+    <string name="transcribing_pill_working">Transcribing</string>
+    <string name="transcribing_pill_progress">%1$d/%2$d</string>
+    <string name="transcribing_sheet_title">Transcribing</string>
+    <string name="transcribing_sheet_starting">Starting…</string>
+    <string name="transcribing_sheet_remaining">Remaining: %1$d</string>
+    <string name="transcribing_sheet_stop">Stop</string>
     <string name="transcript_search_hint">Search what was said</string>
     <string name="transcript_search_idle">Type a word to search across every transcript you have.</string>
     <string name="transcript_search_empty">No call contains those words. Only whole words match, so try another form of the word.</string>

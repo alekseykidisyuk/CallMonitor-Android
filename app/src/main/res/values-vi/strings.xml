@@ -271,6 +271,12 @@
     <string name="support_appeal_body">Tôi tự phát triển CallVault trong thời gian rảnh — miễn phí, mã nguồn mở, không quảng cáo, không theo dõi. ☕ Nếu thấy hữu ích, một khoản nhỏ giúp tôi tiếp tục. Dù sao thì, cảm ơn bạn! 🙏</string>
     <string name="support_appeal_title">Do một người làm 👋</string>
     <string name="support_not_now">Để sau</string>
+    <string name="transcribing_pill_progress">%1$d/%2$d</string>
+    <string name="transcribing_pill_working">Đang chép lời</string>
+    <string name="transcribing_sheet_remaining">Còn lại: %1$d</string>
+    <string name="transcribing_sheet_starting">Đang bắt đầu…</string>
+    <string name="transcribing_sheet_stop">Dừng</string>
+    <string name="transcribing_sheet_title">Đang chép lời</string>
     <string name="transcript_action_busy">Đang chuyển…</string>
     <string name="transcript_action_open">Đọc bản ghi lời</string>
     <string name="transcript_action_retry">Chuyển thất bại — thử lại</string>

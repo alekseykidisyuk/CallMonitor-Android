@@ -271,6 +271,12 @@
     <string name="support_appeal_body">Ich entwickle CallVault allein, in meiner Freizeit – kostenlos, quelloffen, ohne Werbung, ohne Tracking. ☕ Wenn es dir nützt, hält mich eine kleine Spende am Ball. So oder so: danke! 🙏</string>
     <string name="support_appeal_title">Von einer Person gemacht 👋</string>
     <string name="support_not_now">Jetzt nicht</string>
+    <string name="transcribing_pill_progress">%1$d/%2$d</string>
+    <string name="transcribing_pill_working">Transkribiert</string>
+    <string name="transcribing_sheet_remaining">Verbleibend: %1$d</string>
+    <string name="transcribing_sheet_starting">Wird gestartet…</string>
+    <string name="transcribing_sheet_stop">Anhalten</string>
+    <string name="transcribing_sheet_title">Transkribiert</string>
     <string name="transcript_action_busy">Transkribiere…</string>
     <string name="transcript_action_open">Transkript lesen</string>
     <string name="transcript_action_retry">Transkription fehlgeschlagen – erneut versuchen</string>

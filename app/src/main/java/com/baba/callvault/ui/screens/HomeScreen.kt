@@ -101,6 +101,9 @@ import com.baba.callvault.ui.common.OfflineRecordingDialog
 import com.baba.callvault.data.transcripts.TranscriptRepository
 import com.baba.callvault.data.transcripts.TranscriptStatus
 import com.baba.callvault.ui.common.TranscriptActionButton
+import com.baba.callvault.ui.common.TranscribingPill
+import com.baba.callvault.ui.common.TranscribingSheet
+import com.baba.callvault.ui.common.rememberTranscribingPillState
 import com.baba.callvault.ui.common.TranscriptSearchSheet
 import com.baba.callvault.ui.common.TranscriptSheet
 import com.baba.callvault.system.copyToClipboard
@@ -201,6 +204,10 @@ fun HomeScreen(
 
     /** Whether the search-across-transcripts sheet is open. */
     var showTranscriptSearch by remember { mutableStateOf(false) }
+
+    /** What transcription is doing right now, for the pill beside the title. Hidden when idle. */
+    val transcribing by rememberTranscribingPillState()
+    var showTranscribingSheet by remember { mutableStateOf(false) }
     val transcriptScope = rememberCoroutineScope()
     val selectionMode = selection.isNotEmpty()
     val selectedItems = remember(selection, uiState.recordings) {
@@ -236,7 +243,15 @@ fun HomeScreen(
             if (selectionMode) pluralStringResource(R.plurals.home_selected_count, selection.size, selection.size)
             else stringResource(R.string.app_name),
         onBack = if (selectionMode) clearSelection else null,
-        titleTrailing = if (selectionMode) null else ({ SupportPill(onClick = { showSupport = true }) }),
+        // One slot, two claimants. Transcription wins while it is working: it is transient and
+        // explains something happening right now, whereas the support pill is always there and loses
+        // nothing by waiting a few minutes.
+        titleTrailing = when {
+            selectionMode -> null
+            transcribing.occupiesTitleSlot ->
+                ({ TranscribingPill(state = transcribing, onClick = { showTranscribingSheet = true }) })
+            else -> ({ SupportPill(onClick = { showSupport = true }) })
+        },
         actions = {
             if (selectionMode) {
                 IconButton(onClick = {
@@ -302,6 +317,14 @@ fun HomeScreen(
                     transcriptFor = null
                     deleteTranscriptFor = displayName
                 }
+            )
+        }
+
+        if (showTranscribingSheet) {
+            TranscribingSheet(
+                state = transcribing,
+                onDismiss = { showTranscribingSheet = false },
+                onStopped = { showTranscribingSheet = false }
             )
         }
 

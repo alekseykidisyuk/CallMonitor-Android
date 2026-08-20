@@ -113,7 +113,10 @@ class TranscriptionRunnerTest {
         }
 
         // Act
-        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("one.ogg", "two.ogg")) { calls >= 1 }
+        runner.runBatch(
+            MODEL_ID, MODEL_PATH, LANGUAGE, listOf("one.ogg", "two.ogg"),
+            shouldStop = { calls >= 1 }
+        )
 
         // Assert
         assertEquals(1, calls)

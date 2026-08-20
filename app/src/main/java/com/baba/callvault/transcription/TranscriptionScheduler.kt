@@ -108,6 +108,22 @@ object TranscriptionScheduler {
         AppLogger.i(TAG, "Transcription requested (${displayName ?: "whole queue"}).")
     }
 
+    /**
+     * Stops whatever is transcribing right now, without giving up the nightly sweep.
+     *
+     * WorkManager has no "stop this execution, keep the schedule" call: cancelling the unique
+     * periodic work removes the *schedule* as well as the run. So the schedule is rebuilt immediately
+     * afterwards by [apply], which also keeps this honest in MANUAL mode — there, apply cancels, so
+     * stopping does not conjure a sweep the user never asked for.
+     */
+    fun stopNow(context: Context) {
+        val workManager = WorkManager.getInstance(context)
+        workManager.cancelUniqueWork(MANUAL_WORK_NAME)
+        workManager.cancelUniqueWork(WORK_NAME)
+        apply(context)
+        AppLogger.i(TAG, "Transcription stopped on request; schedule re-applied.")
+    }
+
     /** Millis from now until the next occurrence of [hour]:[minute] (today if ahead, else tomorrow). */
     private fun nextDailyDelayMillis(hour: Int, minute: Int): Long {
         val now = System.currentTimeMillis()

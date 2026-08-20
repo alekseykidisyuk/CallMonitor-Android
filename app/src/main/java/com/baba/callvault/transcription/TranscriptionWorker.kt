@@ -11,6 +11,7 @@ package com.baba.callvault.transcription
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
@@ -63,7 +64,16 @@ class TranscriptionWorker(
             modelPath = modelPath,
             language = prefs.getTranscriptionLanguage(),
             displayNames = names,
-            shouldStop = { isStopped }
+            shouldStop = { isStopped },
+            onProgress = { completed, total, current ->
+                setProgress(
+                    workDataOf(
+                        KEY_COMPLETED to completed,
+                        KEY_TOTAL to total,
+                        KEY_CURRENT to current
+                    )
+                )
+            }
         )
 
         // Anything left unfinished stays queued, so a later run resumes rather than restarts.
@@ -75,5 +85,16 @@ class TranscriptionWorker(
 
         /** Input key naming a single recording, for the manual button. Absent means "drain the queue". */
         const val KEY_DISPLAY_NAME = "displayName"
+
+        /**
+         * Progress keys read by Home's transcribing pill.
+         *
+         * Published rather than logged: a run can last hours, and the only alternative to showing it
+         * is a phone that is inexplicably warm. The name is the recording's, which the runner already
+         * logs — the transcript *text* is never put anywhere outside the database.
+         */
+        const val KEY_COMPLETED = "completed"
+        const val KEY_TOTAL = "total"
+        const val KEY_CURRENT = "current"
     }
 }

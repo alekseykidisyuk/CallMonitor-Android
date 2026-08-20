@@ -271,6 +271,12 @@
     <string name="support_appeal_body">A CallVaultot egyedül fejlesztem, a szabadidőmben – ingyenes, nyílt forráskódú, nincs hirdetés és nyomkövetés. ☕ Ha hasznos neked, egy kis támogatás segít folytatni. Így is, úgy is: köszönöm! 🙏</string>
     <string name="support_appeal_title">Egyetlen ember készíti 👋</string>
     <string name="support_not_now">Most nem</string>
+    <string name="transcribing_pill_progress">%1$d/%2$d</string>
+    <string name="transcribing_pill_working">Átírás folyamatban</string>
+    <string name="transcribing_sheet_remaining">Hátravan: %1$d</string>
+    <string name="transcribing_sheet_starting">Indítás…</string>
+    <string name="transcribing_sheet_stop">Leállítás</string>
+    <string name="transcribing_sheet_title">Átírás folyamatban</string>
     <string name="transcript_action_busy">Átírás folyamatban…</string>
     <string name="transcript_action_open">Átirat elolvasása</string>
     <string name="transcript_action_retry">Az átírás nem sikerült – próbáld újra</string>

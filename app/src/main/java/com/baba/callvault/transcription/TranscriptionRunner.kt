@@ -51,6 +51,8 @@ class TranscriptionRunner(
      *
      * @param shouldStop consulted between recordings; when it returns true the batch ends early and
      *   whatever finished stays finished.
+     * @param onProgress announced before each recording is started, so something on screen can say
+     *   what is happening during a run that may last hours.
      * @return how many recordings were transcribed.
      */
     suspend fun runBatch(
@@ -58,15 +60,21 @@ class TranscriptionRunner(
         modelPath: String,
         language: String?,
         displayNames: List<String>,
-        shouldStop: () -> Boolean = { false }
+        shouldStop: () -> Boolean = { false },
+        onProgress: suspend (completed: Int, total: Int, current: String) -> Unit = { _, _, _ -> }
     ): Int {
         var transcribed = 0
+        var reached = 0
 
         for (displayName in displayNames) {
             if (shouldStop()) {
                 AppLogger.i(TAG, "Stopping after $transcribed recording(s); the rest stay queued")
                 break
             }
+            // Count recordings reached rather than transcribed: a skipped or failed one still moves
+            // the run forward, and a counter that stalls on a bad file looks like a hang.
+            onProgress(reached, displayNames.size, displayName)
+            reached++
             if (runOne(modelId, modelPath, language, displayName)) transcribed++
         }
 
