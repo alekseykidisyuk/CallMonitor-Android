@@ -212,6 +212,9 @@ fun HomeScreen(
     /** Which recording's transcript is awaiting a delete confirmation, or null. */
     var deleteTranscriptFor by remember { mutableStateOf<String?>(null) }
 
+    /** Which recording is open on the playback screen, or null for the list. */
+    var playbackFor by remember { mutableStateOf<String?>(null) }
+
     /** Whether the search-across-transcripts sheet is open. */
     var showTranscriptSearch by remember { mutableStateOf(false) }
 
@@ -290,6 +293,53 @@ fun HomeScreen(
         while (playback.phase == RecordingPlaybackController.Phase.PLAYING) {
             viewModel.syncPlaybackPosition()
             delay(500)
+        }
+    }
+
+    playbackFor?.let { displayName ->
+        val openItem = uiState.recordings.firstOrNull { it.displayName == displayName }
+        if (openItem == null) {
+            // The recording went away underneath us — a retention sweep, or a delete from elsewhere.
+            playbackFor = null
+        } else {
+            BackHandler { playbackFor = null }
+            PlaybackScreen(
+                item = openItem,
+                playback = playback,
+                transcriptStatus = transcriptStatuses[displayName] ?: TranscriptStatus.NONE,
+                onBack = { playbackFor = null },
+                onPlay = { viewModel.play(openItem.uri) },
+                onPause = { viewModel.pausePlayback() },
+                onResume = { viewModel.resumePlayback() },
+                onSeek = { viewModel.seekTo(it) },
+                onSkip = { viewModel.skipPlayback(it) },
+                onCycleSpeed = { viewModel.cyclePlaybackSpeed() },
+                onOpenTranscript = { transcriptFor = displayName }
+            )
+            // The transcript sheet is rendered by the branch below, which is not composed while the
+            // playback screen is open — so it gets its own here.
+            transcriptFor?.let { name ->
+                val transcript by remember(name) {
+                    TranscriptRepository.transcript(context, name)
+                }.collectAsState(initial = null)
+                TranscriptSheet(
+                    transcript = transcript,
+                    title = RecordingLabel.forDisplayName(uiState.recordings, name),
+                    onDismiss = { transcriptFor = null },
+                    onSeekTo = { startMs -> viewModel.playFrom(openItem.uri, startMs.toInt()) },
+                    onCopy = { text -> context.copyToClipboard(name, text) },
+                    onShare = { text -> context.sharePlainText(name, text) },
+                    onRetranscribe = {
+                        startTranscription(name)
+                        transcriptFor = null
+                    },
+                    onDelete = {
+                        transcriptFor = null
+                        deleteTranscriptFor = name
+                    }
+                )
+            }
+            return
         }
     }
 
@@ -582,7 +632,13 @@ fun HomeScreen(
                             selection = if (item.uri in selection) selection - item.uri
                                         else selection + item.uri
                         },
-                        onPlayUri = { uri -> viewModel.play(uri) },
+                        // Playing opens the recording's own screen and starts it there. The inline
+                        // strip could hold a play button and a slider and nothing else; skipping back
+                        // over a missed sentence, and speed, are what a long call actually needs.
+                        onPlayUri = { uri ->
+                            playbackFor = item.displayName
+                            viewModel.play(uri)
+                        },
                         onPause = { viewModel.pausePlayback() },
                         onResume = { viewModel.resumePlayback() },
                         onSeek = { viewModel.seekTo(it) },

@@ -43,12 +43,14 @@ class RecordingPlaybackController {
      * @param phase        The coarse playback phase.
      * @param positionMs   Current playback position in millis (0 unless playing/paused).
      * @param durationMs   Track duration in millis (0 until prepared / unknown).
+     * @param speed        Playback rate; 1f is normal. Survives a seek, not a new track.
      */
     data class PlaybackState(
         val activeUri: Uri? = null,
         val phase: Phase = Phase.IDLE,
         val positionMs: Int = 0,
-        val durationMs: Int = 0
+        val durationMs: Int = 0,
+        val speed: Float = 1f
     )
 
     private val _state = MutableStateFlow(PlaybackState())
@@ -67,7 +69,7 @@ class RecordingPlaybackController {
      */
     fun play(context: Context, uri: Uri, startAtMs: Int = 0) {
         releasePlayer()
-        _state.update { PlaybackState(activeUri = uri, phase = Phase.LOADING) }
+        _state.update { PlaybackState(activeUri = uri, phase = Phase.LOADING, speed = it.speed) }
 
         runCatching {
             MediaPlayer().apply {
@@ -83,6 +85,7 @@ class RecordingPlaybackController {
                         it.copy(phase = Phase.PLAYING, positionMs = start, durationMs = duration)
                     }
                     mp.start()
+                    applySpeed(_state.value.speed)
                 }
                 setOnCompletionListener {
                     _state.update { it.copy(phase = Phase.PAUSED, positionMs = it.durationMs) }
@@ -119,6 +122,7 @@ class RecordingPlaybackController {
             player?.let {
                 it.start()
                 _state.update { s -> s.copy(phase = Phase.PLAYING) }
+                applySpeed(_state.value.speed)
             }
         }
     }
@@ -132,6 +136,31 @@ class RecordingPlaybackController {
                 _state.update { s -> s.copy(positionMs = clamped) }
             }
         }
+    }
+
+    /** Moves [PlaybackControls.SKIP_MS] in either direction, clamped inside the recording. */
+    fun skip(deltaMs: Int) {
+        val state = _state.value
+        seekTo(PlaybackControls.skipTo(state.positionMs, deltaMs, state.durationMs))
+    }
+
+    /**
+     * Advances the playback rate to the next step in the cycle.
+     *
+     * Applied only while actually playing: `setPlaybackParams` on a paused MediaPlayer *starts* it,
+     * which would turn a speed tap into an unexpected resume. Paused, the rate is remembered and takes
+     * effect on the next resume.
+     */
+    fun cycleSpeed() {
+        val next = PlaybackControls.nextSpeed(_state.value.speed)
+        _state.update { it.copy(speed = next) }
+        applySpeed(next)
+    }
+
+    private fun applySpeed(speed: Float) {
+        runCatching {
+            player?.takeIf { it.isPlaying }?.let { it.playbackParams = it.playbackParams.setSpeed(speed) }
+        }.onFailure { AppLogger.w(TAG, "Could not set playback speed to $speed: ${it.message}") }
     }
 
     /** Refreshes [PlaybackState.positionMs] from the player; call on a UI ticker while playing. */

@@ -128,6 +128,11 @@
     <string name="placeholder_date_desc">La fecha y hora actuales</string>
     <string name="placeholder_direction_desc">La dirección de la llamada (entrante/saliente)</string>
     <string name="placeholder_phone_number_desc">El número de teléfono</string>
+    <string name="playback_open_transcript">Leer la transcripción</string>
+    <string name="playback_skip_back">10 segundos atrás</string>
+    <string name="playback_skip_forward">10 segundos adelante</string>
+    <string name="playback_speed">%1$s×</string>
+    <string name="playback_title">Grabación</string>
     <string name="recording_error_daemon_died">El daemon de grabación se detuvo: esta llamada NO se está grabando. Comprueba que las opciones de desarrollador y la depuración inalámbrica estén activadas.</string>
     <string name="recording_error_drive_copy_failed">No se pudo copiar una grabación a tu carpeta en la nube. Sigue guardada en este dispositivo: revisa la carpeta en Ajustes.</string>
     <string name="recording_error_empty_file">La grabación está vacía: no se capturó audio porque el daemon de grabación no estaba en ejecución. Comprueba que las opciones de desarrollador y la depuración inalámbrica estén activadas.</string>

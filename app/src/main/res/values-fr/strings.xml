@@ -128,6 +128,11 @@
     <string name="placeholder_date_desc">La date et l\'heure actuelles</string>
     <string name="placeholder_direction_desc">Sens de l\'appel (in/out)</string>
     <string name="placeholder_phone_number_desc">Le numéro de téléphone</string>
+    <string name="playback_open_transcript">Lire la transcription</string>
+    <string name="playback_skip_back">10 secondes en arrière</string>
+    <string name="playback_skip_forward">10 secondes en avant</string>
+    <string name="playback_speed">%1$s×</string>
+    <string name="playback_title">Enregistrement</string>
     <string name="recording_error_daemon_died">Le démon d\'enregistrement s\'est arrêté — cet appel n\'est PAS enregistré. Vérifiez que les options pour les développeurs et le débogage sans fil sont activés.</string>
     <string name="recording_error_drive_copy_failed">Un enregistrement n\'a pas pu être copié dans votre dossier cloud. Il reste enregistré sur cet appareil — vérifiez le dossier dans les Paramètres.</string>
     <string name="recording_error_empty_file">L\'enregistrement est vide — aucun audio n\'a été capturé car le démon d\'enregistrement n\'était pas actif. Vérifiez que les options pour les développeurs et le débogage sans fil sont activés.</string>

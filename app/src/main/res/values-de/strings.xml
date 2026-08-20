@@ -128,6 +128,11 @@
     <string name="placeholder_date_desc">Das aktuelle Datum und die Uhrzeit</string>
     <string name="placeholder_direction_desc">Die Anrufrichtung (ein/aus)</string>
     <string name="placeholder_phone_number_desc">Die Telefonnummer</string>
+    <string name="playback_open_transcript">Transkript lesen</string>
+    <string name="playback_skip_back">10 Sekunden zurück</string>
+    <string name="playback_skip_forward">10 Sekunden vor</string>
+    <string name="playback_speed">%1$s×</string>
+    <string name="playback_title">Aufnahme</string>
     <string name="recording_error_daemon_died">Der Aufnahme-Daemon wurde beendet — dieser Anruf wird NICHT aufgezeichnet. Prüfen Sie, ob die Entwickleroptionen und das drahtlose Debugging aktiviert sind.</string>
     <string name="recording_error_drive_copy_failed">Eine Aufnahme konnte nicht in Ihren Cloud-Ordner kopiert werden. Sie ist weiterhin auf diesem Gerät gespeichert — prüfen Sie den Ordner in den Einstellungen.</string>
     <string name="recording_error_empty_file">Die Aufnahme ist leer — es wurde kein Audio aufgezeichnet, da der Aufnahme-Daemon nicht lief. Prüfen Sie, ob die Entwickleroptionen und das drahtlose Debugging aktiviert sind.</string>

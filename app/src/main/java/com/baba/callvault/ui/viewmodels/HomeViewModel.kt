@@ -617,6 +617,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Moves playback by [deltaMs], clamped inside the recording. */
+    fun skipPlayback(deltaMs: Int) = playbackController.skip(deltaMs)
+
+    /** Steps the playback rate to the next value in the cycle. */
+    fun cyclePlaybackSpeed() = playbackController.cycleSpeed()
+
     /** Pushes the latest player position into state; called by a UI ticker while playing. */
     fun syncPlaybackPosition() = playbackController.syncPosition()
 

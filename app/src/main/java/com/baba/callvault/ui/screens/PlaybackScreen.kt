@@ -1,0 +1,430 @@
+/*
+ * CallVault: FOSS call recording, self-contained over embedded ADB
+ *  Copyright (C) 2026-present The CallVault Authors
+ *  This software is licensed under the GNU General Public License v3 or later, with additional terms as permitted under Section 7.
+ *  The full license text is available in the LICENSE file at the root of this project.
+ *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+package com.baba.callvault.ui.screens
+
+import android.text.format.DateUtils
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.filled.CallMade
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.CallReceived
+import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.baba.callvault.R
+import com.baba.callvault.data.recordings.RecordingDirection
+import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
+import com.baba.callvault.data.transcripts.TranscriptStatus
+import com.baba.callvault.ui.common.CvCard
+import com.baba.callvault.ui.common.CvScaffold
+import com.baba.callvault.ui.common.RecordingLabel
+import com.baba.callvault.ui.common.TranscriptTimestamp
+import com.baba.callvault.ui.viewmodels.PlaybackControls
+import com.baba.callvault.ui.viewmodels.RecordingPlaybackController
+import java.util.Locale
+
+/**
+ * One recording, on its own screen: who it was with, and the controls to listen to it properly.
+ *
+ * Exists because the inline player could only ever be a strip — it shares a row with the list, so it
+ * could hold a play button and a slider and nothing else. Reviewing a ninety-minute call needs more
+ * than that: somewhere to skip back over a sentence you missed, and a speed control, which is the
+ * single thing that makes a long call reviewable at all.
+ *
+ * The transcript is a doorway rather than a panel here. It already has a sheet that does timestamps,
+ * right-to-left text and seek-on-tap; duplicating any of that would mean two things to keep correct.
+ */
+@Composable
+fun PlaybackScreen(
+    item: RecordingItem,
+    playback: RecordingPlaybackController.PlaybackState,
+    transcriptStatus: TranscriptStatus,
+    onBack: () -> Unit,
+    onPlay: () -> Unit,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onSeek: (Int) -> Unit,
+    onSkip: (Int) -> Unit,
+    onCycleSpeed: () -> Unit,
+    onOpenTranscript: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isActive = playback.activeUri == item.uri
+    val isPlaying = isActive && playback.phase == RecordingPlaybackController.Phase.PLAYING
+    val isLoading = isActive && playback.phase == RecordingPlaybackController.Phase.LOADING
+
+    CvScaffold(
+        modifier = modifier.fillMaxSize(),
+        title = stringResource(R.string.playback_title),
+        onBack = onBack
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CallHeaderCard(item)
+            PlayerCard(
+                item = item,
+                playback = playback,
+                isActive = isActive,
+                isPlaying = isPlaying,
+                isLoading = isLoading,
+                onPlay = onPlay,
+                onPause = onPause,
+                onResume = onResume,
+                onSeek = onSeek,
+                onSkip = onSkip,
+                onCycleSpeed = onCycleSpeed
+            )
+            if (transcriptStatus == TranscriptStatus.DONE) {
+                TranscriptDoorway(onOpenTranscript)
+            }
+        }
+    }
+}
+
+/** Who the call was with, which way it went, and when. */
+@Composable
+private fun CallHeaderCard(item: RecordingItem) {
+    val accent = MaterialTheme.colorScheme.primary
+    val label = RecordingLabel.of(item) ?: item.displayName
+
+    CvCard(contentPadding = PaddingValues(20.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // The initial, not a contact photo. Loading photos means querying the contacts provider
+            // per row and holding bitmaps; the letter identifies the call just as well here, where
+            // the name is already spelled out beside it.
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(accent.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                val initial = item.contactName?.firstOrNull { it.isLetter() }?.uppercase()
+                if (initial != null) {
+                    Text(
+                        text = initial,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = accent
+                    )
+                } else {
+                    // An unknown caller has no initial — "+97237406200" yielded an avatar reading "9",
+                    // which says nothing. A glyph is honest about not knowing who this was.
+                    Icon(
+                        imageVector = Icons.Filled.Call,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                // Only when it adds something. The earlier test compared against the bidi-isolated
+                // label, which never equals the raw number, so an unknown caller had their number
+                // printed twice. The real question is whether a name is what the title is showing.
+                item.number?.takeIf { item.contactName != null }?.let { number ->
+                    Text(
+                        text = number,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                playbackDate(item)?.let { date ->
+                    Text(
+                        text = date,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            item.direction?.let { DirectionChip(it) }
+        }
+    }
+}
+
+@Composable
+private fun DirectionChip(direction: RecordingDirection) {
+    val accent = MaterialTheme.colorScheme.primary
+    val incoming = direction == RecordingDirection.INCOMING
+
+    Surface(shape = CircleShape, color = accent.copy(alpha = 0.12f)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (incoming) Icons.Filled.CallReceived else Icons.Filled.CallMade,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = stringResource(
+                    if (incoming) R.string.general_incoming else R.string.general_outgoing
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = accent
+            )
+        }
+    }
+}
+
+/** The transport: a scrubber, skip either way, play, and the speed the call is reviewed at. */
+@Composable
+private fun PlayerCard(
+    item: RecordingItem,
+    playback: RecordingPlaybackController.PlaybackState,
+    isActive: Boolean,
+    isPlaying: Boolean,
+    isLoading: Boolean,
+    onPlay: () -> Unit,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onSeek: (Int) -> Unit,
+    onSkip: (Int) -> Unit,
+    onCycleSpeed: () -> Unit
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    val duration = if (isActive) playback.durationMs else 0
+    val position = if (isActive) playback.positionMs else 0
+
+    CvCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Dragging must not fight the ticker: while a drag is in progress the slider shows the
+            // finger's position, and only on release does the player move. Otherwise every tick would
+            // snatch the thumb back to where playback actually is.
+            var scrubbing by remember { mutableStateOf(false) }
+            var scrubTo by remember { mutableFloatStateOf(0f) }
+
+            val fraction = when {
+                scrubbing -> scrubTo
+                duration > 0 -> position / duration.toFloat()
+                else -> 0f
+            }
+
+            Column(Modifier.fillMaxWidth()) {
+                Slider(
+                    value = fraction.coerceIn(0f, 1f),
+                    onValueChange = {
+                        scrubbing = true
+                        scrubTo = it
+                    },
+                    onValueChangeFinished = {
+                        onSeek((scrubTo * duration).toInt())
+                        scrubbing = false
+                    },
+                    enabled = isActive && duration > 0,
+                    colors = SliderDefaults.colors(
+                        thumbColor = accent,
+                        activeTrackColor = accent,
+                        inactiveTrackColor = accent.copy(alpha = 0.2f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = TranscriptTimestamp.format(
+                            (if (scrubbing) scrubTo * duration else position.toFloat()).toLong()
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = TranscriptTimestamp.format(duration.toLong()),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilledTonalIconButton(
+                    onClick = { onSkip(-PlaybackControls.SKIP_MS) },
+                    enabled = isActive,
+                    modifier = Modifier.size(52.dp),
+                    // NOT the default: secondaryContainer in this theme is CoralDeep, so a tonal
+                    // button comes out maroon and reads as an error — the same trap RecordingRow's
+                    // selected-card colour records.
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = accent.copy(alpha = 0.14f),
+                        contentColor = accent
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Replay10,
+                        contentDescription = stringResource(R.string.playback_skip_back),
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+
+                FilledIconButton(
+                    onClick = {
+                        when {
+                            !isActive -> onPlay()
+                            isPlaying -> onPause()
+                            else -> onResume()
+                        }
+                    },
+                    modifier = Modifier.size(68.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = accent)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(26.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            contentDescription = stringResource(
+                                if (isPlaying) R.string.general_pause else R.string.general_resume
+                            ),
+                            modifier = Modifier.size(34.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+
+                FilledTonalIconButton(
+                    onClick = { onSkip(PlaybackControls.SKIP_MS) },
+                    enabled = isActive,
+                    modifier = Modifier.size(52.dp),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = accent.copy(alpha = 0.14f),
+                        contentColor = accent
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Forward10,
+                        contentDescription = stringResource(R.string.playback_skip_forward),
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            }
+
+            // A cycling button rather than a menu: it sits in a row of transport controls, and one tap
+            // per step is fewer taps than opening a list to change by one notch.
+            TextButton(onClick = onCycleSpeed) {
+                Text(
+                    text = stringResource(R.string.playback_speed, formatSpeed(playback.speed)),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TranscriptDoorway(onOpen: () -> Unit) {
+    CvCard(onClick = onOpen, contentPadding = PaddingValues(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Article,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.playback_open_transcript),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+/**
+ * The call's time, worded as the list words it — "Today 16:26", not "2026-08-20 16:26".
+ *
+ * Two screens describing the same call two different ways makes the user check whether they are
+ * looking at the same recording.
+ */
+@Composable
+private fun playbackDate(item: RecordingItem): String? {
+    val millis = item.startedAtMillis ?: return item.displayDate
+    return DateUtils.getRelativeDateTimeString(
+        LocalContext.current,
+        millis,
+        DateUtils.MINUTE_IN_MILLIS,
+        DateUtils.WEEK_IN_MILLIS,
+        0
+    ).toString()
+}
+
+/** "1×", "1.5×" — a trailing ".0" on a speed reads like a measurement rather than a setting. */
+private fun formatSpeed(speed: Float): String =
+    if (speed == speed.toInt().toFloat()) speed.toInt().toString()
+    else String.format(Locale.US, "%.2f", speed).trimEnd('0').trimEnd('.')

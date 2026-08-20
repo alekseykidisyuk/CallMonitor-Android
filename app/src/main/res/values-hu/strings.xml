@@ -128,6 +128,11 @@
     <string name="placeholder_date_desc">A jelenlegi dátum és idő</string>
     <string name="placeholder_direction_desc">Hívás iránya (bejövő/kimenő)</string>
     <string name="placeholder_phone_number_desc">Telefonszám</string>
+    <string name="playback_open_transcript">Átirat elolvasása</string>
+    <string name="playback_skip_back">10 másodperccel vissza</string>
+    <string name="playback_skip_forward">10 másodperccel előre</string>
+    <string name="playback_speed">%1$s×</string>
+    <string name="playback_title">Felvétel</string>
     <string name="recording_error_daemon_died">A rögzítő démon leállt — ez a hívás NINCS rögzítve. Ellenőrizze, hogy a fejlesztői beállítások és a vezeték nélküli hibakeresés engedélyezve vannak-e.</string>
     <string name="recording_error_drive_copy_failed">Egy felvételt nem sikerült a felhőmappájába másolni. Továbbra is mentve van ezen az eszközön — ellenőrizze a mappát a Beállításokban.</string>
     <string name="recording_error_empty_file">A felvétel üres — nem történt hangrögzítés, mert a rögzítő démon nem futott. Ellenőrizze, hogy a fejlesztői beállítások és a vezeték nélküli hibakeresés engedélyezve vannak-e.</string>
