@@ -27,10 +27,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
 import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
@@ -140,35 +143,43 @@ fun TranscriptSheet(
  */
 @Composable
 private fun TranscriptLine(segment: TranscriptSegmentEntry, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = TranscriptTimestamp.format(segment.startMs),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(TIMESTAMP_WIDTH)
-        )
+    // The whole line mirrors, not just the words. Setting only the text's direction left the timestamp
+    // column stranded on the left of a Hebrew transcript and short lines hugging the wrong edge,
+    // because "start" still meant left. Providing the layout direction moves the column to the correct
+    // side and makes start-alignment mean the right edge, in one stroke.
+    //
+    // Per line rather than per transcript: a call that switches language mid-way still reads correctly
+    // throughout, and each line is judged only on what it actually says.
+    val direction = if (BidiText.isRtl(segment.text)) LayoutDirection.Rtl else LayoutDirection.Ltr
 
-        Column(modifier = Modifier.weight(1f)) {
-            segment.speaker?.let { speaker ->
+    CompositionLocalProvider(LocalLayoutDirection provides direction) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 24.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Text(
+                text = TranscriptTimestamp.format(segment.startMs),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(TIMESTAMP_WIDTH)
+            )
+
+            Column(modifier = Modifier.weight(1f)) {
+                segment.speaker?.let { speaker ->
+                    Text(
+                        text = speaker,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Text(
-                    text = speaker,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    text = segment.text,
+                    style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
                 )
             }
-            // Content direction, not the app's: these calls are mostly Hebrew while the UI is usually
-            // English, so each line must take its direction from its own first strong character. The
-            // timestamp column is outside this Text and so keeps the layout's direction.
-            Text(
-                text = segment.text,
-                style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
-            )
         }
     }
 }

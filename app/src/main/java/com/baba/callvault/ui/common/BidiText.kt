@@ -41,4 +41,35 @@ object BidiText {
         text.first() == FSI && text.last() == PDI -> text
         else -> "$FSI$text$PDI"
     }
+
+    /**
+     * Whether [text] should be laid out right-to-left.
+     *
+     * Decided by the **first strong character**, which is the same rule the isolates above apply — so a
+     * line opening with a timestamp, a quote or a Spanish "¿" is judged on its first actual letter
+     * rather than on punctuation that has no direction of its own.
+     *
+     * Taken from the text and never from the language setting. That is what makes it right for all 99
+     * languages whisper supports rather than the handful in the dropdown, and right for a call that
+     * changes language halfway through — each line simply reads the way it is written.
+     *
+     * Text with no strong character at all (digits, punctuation) is treated as left-to-right. Either
+     * answer would be defensible, but it must be a fixed one: choosing per line would make a transcript
+     * jump about as it scrolled.
+     */
+    fun isRtl(text: String): Boolean {
+        for (ch in text) {
+            when (Character.getDirectionality(ch)) {
+                Character.DIRECTIONALITY_LEFT_TO_RIGHT -> return false
+
+                Character.DIRECTIONALITY_RIGHT_TO_LEFT,
+                Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC -> return true
+
+                // Everything else — digits, spaces, punctuation, the isolate markers themselves — is
+                // neutral and carries no direction, so keep looking.
+                else -> Unit
+            }
+        }
+        return false
+    }
 }
