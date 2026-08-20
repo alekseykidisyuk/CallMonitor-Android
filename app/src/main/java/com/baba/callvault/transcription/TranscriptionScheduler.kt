@@ -117,6 +117,10 @@ object TranscriptionScheduler {
      * stopping does not conjure a sweep the user never asked for.
      */
     suspend fun stopNow(context: Context) {
+        // First, because it is the only thing that actually stops the work: cancelling the worker
+        // does not interrupt whisper, which sits in one blocking native call.
+        TranscriptionEngine.requestAbort()
+
         val workManager = WorkManager.getInstance(context)
         workManager.cancelUniqueWork(MANUAL_WORK_NAME)
         workManager.cancelUniqueWork(WORK_NAME)

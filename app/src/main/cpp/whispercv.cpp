@@ -12,10 +12,24 @@
 // Nothing is locked here; TranscriptionEngine serialises every call onto a single thread instead.
 
 #include <jni.h>
+#include <atomic>
 #include "whisper.h"
 
 static inline whisper_context *ctx_of(jlong p) {
     return reinterpret_cast<whisper_context *>(p);
+}
+
+// Set from any thread to abort a run in progress.
+//
+// Without this, Stop cannot stop anything: whisper_full is a single blocking call that neither
+// coroutine cancellation nor WorkManager can interrupt, so tapping Stop left the phone at ~600% CPU
+// until the run finished on its own — minutes on a short call, hours on a long one — with the row
+// still showing a spinner the whole time. whisper calls abort_callback before each ggml computation,
+// so returning true here ends the run in a fraction of a second.
+static std::atomic<bool> g_abort{false};
+
+static bool abort_requested(void *) {
+    return g_abort.load(std::memory_order_relaxed);
 }
 
 extern "C" {
@@ -37,6 +51,13 @@ Java_com_baba_callvault_transcription_WhisperNative_initContext(JNIEnv *env, job
 JNIEXPORT void JNICALL
 Java_com_baba_callvault_transcription_WhisperNative_freeContext(JNIEnv *, jobject, jlong ptr) {
     if (ptr != 0) whisper_free(ctx_of(ptr));
+}
+
+// Deliberately takes no context pointer: the caller asking to stop is not the thread inside
+// whisper_full, and only one transcription ever runs at a time (TranscriptionEngine serialises them).
+JNIEXPORT void JNICALL
+Java_com_baba_callvault_transcription_WhisperNative_requestAbort(JNIEnv *, jobject) {
+    g_abort.store(true, std::memory_order_relaxed);
 }
 
 JNIEXPORT void JNICALL
@@ -67,6 +88,12 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
     const char *lang = (language != nullptr) ? env->GetStringUTFChars(language, nullptr) : nullptr;
     params.language        = (lang != nullptr) ? lang : "auto";
     params.detect_language = false;
+
+    // Cleared here rather than by the caller, so an abort left over from a previous run can never
+    // kill the next one before it starts.
+    g_abort.store(false, std::memory_order_relaxed);
+    params.abort_callback           = abort_requested;
+    params.abort_callback_user_data = nullptr;
 
     const jsize n = env->GetArrayLength(audio);
     jfloat *samples = env->GetFloatArrayElements(audio, nullptr);

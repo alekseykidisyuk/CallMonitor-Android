@@ -17,6 +17,9 @@ import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.utils.AppLogger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -59,6 +62,21 @@ class TranscriptionWorker(
 
         AppLogger.i(TAG, "Transcribing ${names.size} recording(s) with ${model.id}")
 
+        // Watch for a stop and pass it to whisper. `onStopped` is final on CoroutineWorker, and the
+        // batch only consults isStopped *between* recordings — so without this a stop mid-recording
+        // would leave the phone at ~600% CPU until that recording finished on its own. Covers the
+        // routes stopNow cannot: a lost constraint, or a system-imposed cancellation.
+        val abortWatcher = launch {
+            while (isActive) {
+                if (isStopped) {
+                    AppLogger.i(TAG, "Stopped; asking whisper to abort")
+                    TranscriptionEngine.requestAbort()
+                    break
+                }
+                delay(ABORT_POLL_MS)
+            }
+        }
+
         val transcribed = TranscriptionRunner(applicationContext).runBatch(
             modelId = model.id,
             modelPath = modelPath,
@@ -76,12 +94,17 @@ class TranscriptionWorker(
             }
         )
 
+        abortWatcher.cancel()
+
         // Anything left unfinished stays queued, so a later run resumes rather than restarts.
         if (isStopped && transcribed < names.size) Result.retry() else Result.success()
     }
 
     companion object {
         private const val TAG = "CV:TranscriptionWorker"
+
+        /** How often the abort watcher checks for a stop. Cheap, and a stop should feel instant. */
+        private const val ABORT_POLL_MS = 400L
 
         /** Input key naming a single recording, for the manual button. Absent means "drain the queue". */
         const val KEY_DISPLAY_NAME = "displayName"

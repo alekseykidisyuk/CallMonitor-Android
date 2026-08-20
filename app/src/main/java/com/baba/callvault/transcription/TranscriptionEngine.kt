@@ -14,6 +14,7 @@ import com.baba.callvault.utils.AppLogger
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The single entry point for turning a recording into text.
@@ -49,6 +50,25 @@ object TranscriptionEngine {
     fun preferredThreadCount(): Int = threadCountFor(Runtime.getRuntime().availableProcessors())
 
     /**
+     * Asks a run in progress to stop, from any thread.
+     *
+     * Best-effort by design: it returns immediately, and the run ends shortly afterwards with
+     * whatever it had. Safe to call when nothing is running — the flag is cleared before each run.
+     * Wrapped because it touches the native library, which may not have loaded on a device where the
+     * ABI is unsupported, and failing to stop must never crash the caller.
+     */
+    fun requestAbort() {
+        // Two halves, because a run has two uninterruptible phases: decoding (Kotlin, reads this
+        // flag) and whisper itself (native, reads its own).
+        abortRequested.set(true)
+        runCatching { WhisperNative.requestAbort() }
+            .onFailure { AppLogger.w(TAG, "Abort request failed: ${it.message}") }
+    }
+
+    /** Set by [requestAbort], cleared at the start of every run so a stale abort cannot kill the next. */
+    private val abortRequested = AtomicBoolean(false)
+
+    /**
      * Transcribes [uri] using the model at [modelPath].
      *
      * @param language ISO code such as "he", or null to auto-detect. Passing the wrong language is
@@ -63,7 +83,8 @@ object TranscriptionEngine {
         modelPath: String,
         language: String?,
     ): List<TranscriptSegment> = withContext(dispatcher) {
-        val audio = AudioDecoder.decodeToMono16k(context, uri)
+        abortRequested.set(false)
+        val audio = AudioDecoder.decodeToMono16k(context, uri) { abortRequested.get() }
         if (audio.isEmpty()) {
             AppLogger.w(TAG, "Decoded no audio from $uri")
             return@withContext emptyList()

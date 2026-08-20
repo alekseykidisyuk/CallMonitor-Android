@@ -41,6 +41,17 @@ object WhisperNative {
      */
     external fun transcribe(ptr: Long, audio: FloatArray, threads: Int, language: String?)
 
+    /**
+     * Asks a run in progress to stop, from any thread.
+     *
+     * [transcribe] is one blocking call that neither coroutine cancellation nor WorkManager can
+     * interrupt, so without this Stop stopped nothing: the phone stayed at ~600% CPU until the run
+     * finished by itself. whisper checks before each computation step, so this lands in well under a
+     * second. The flag is cleared at the start of every [transcribe], so a stale abort cannot kill
+     * the following run.
+     */
+    external fun requestAbort()
+
     external fun segmentCount(ptr: Long): Int
 
     /** Milliseconds from the start of the recording (whisper's centiseconds are converted natively). */

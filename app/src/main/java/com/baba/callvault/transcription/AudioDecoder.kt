@@ -113,10 +113,18 @@ object AudioDecoder {
      * Decodes [uri] to 16 kHz mono float. Blocking and CPU-bound — [TranscriptionEngine] is what moves
      * it off the main thread; do not call it directly from UI code.
      *
+     * @param shouldStop consulted while decoding so a stop is honoured here too. Decoding a long
+     *   recording is otherwise uninterruptible — a 1.5-hour call kept burning CPU for ~12 seconds
+     *   after Stop was tapped, because it had not reached whisper yet.
      * @throws IllegalStateException if the decode produces an implausible amount of audio, rather than
      *   letting a malformed buffer reach whisper where it costs minutes of silent CPU burn.
+     * @throws InterruptedException if [shouldStop] becomes true while decoding.
      */
-    fun decodeToMono16k(context: Context, uri: Uri): FloatArray {
+    fun decodeToMono16k(
+        context: Context,
+        uri: Uri,
+        shouldStop: () -> Boolean = { false }
+    ): FloatArray {
         val extractor = MediaExtractor()
         try {
             context.contentResolver.openFileDescriptor(uri, "r").use { pfd ->
@@ -133,7 +141,7 @@ object AudioDecoder {
             val expectedDurationUs =
                 if (inputFormat.containsKey(MediaFormat.KEY_DURATION)) inputFormat.getLong(MediaFormat.KEY_DURATION) else 0L
 
-            val decoded = decodePcm(extractor, inputFormat, mime)
+            val decoded = decodePcm(extractor, inputFormat, mime, shouldStop)
             val mono = pcm16ToMonoFloat(decoded.pcm, decoded.channels)
 
             check(isPlausibleDuration(mono.size, decoded.sampleRate, expectedDurationUs)) {
@@ -164,7 +172,12 @@ object AudioDecoder {
      * Bytes are accumulated rather than boxed `Short`s on purpose: a ten-minute call is ~29 million
      * samples, and a `List<Short>` of that would cost hundreds of megabytes in object headers alone.
      */
-    private fun decodePcm(extractor: MediaExtractor, inputFormat: MediaFormat, mime: String): DecodedPcm {
+    private fun decodePcm(
+        extractor: MediaExtractor,
+        inputFormat: MediaFormat,
+        mime: String,
+        shouldStop: () -> Boolean
+    ): DecodedPcm {
         val codec = MediaCodec.createDecoderByType(mime)
         val sink = ByteArrayOutputStream()
 
@@ -180,6 +193,11 @@ object AudioDecoder {
             var sawOutputEnd = false
 
             while (!sawOutputEnd) {
+                // Decoding a long recording takes a while and is otherwise uninterruptible: a
+                // 1.5-hour call spent ~12 seconds here after Stop was tapped, still burning CPU. The
+                // check is per output buffer, so it costs nothing and reacts within milliseconds.
+                if (shouldStop()) throw InterruptedException("decode stopped")
+
                 if (!sawInputEnd) {
                     val inIndex = codec.dequeueInputBuffer(DEQUEUE_TIMEOUT_US)
                     if (inIndex >= 0) {
