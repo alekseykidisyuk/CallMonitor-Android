@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="home_copies_collapse">隐藏副本</string>
-    <string name="home_copies_expand">显示副本</string>
     <string name="home_copy_device">设备</string>
     <string name="home_copy_drive">Drive</string>
     <string name="home_delete_confirm_device_message">删除 %1$s 的设备副本？Drive 副本将保留。</string>

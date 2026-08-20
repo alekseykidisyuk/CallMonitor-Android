@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="home_copies_collapse">Ẩn các bản sao</string>
-    <string name="home_copies_expand">Hiện các bản sao</string>
     <string name="home_copy_device">Thiết bị</string>
     <string name="home_copy_drive">Drive</string>
     <string name="home_delete_confirm_device_message">Xóa bản sao trên Thiết bị của %1$s? Bản sao trên Drive vẫn được giữ lại.</string>

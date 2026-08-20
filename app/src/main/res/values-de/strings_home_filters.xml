@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="home_copies_collapse">Kopien ausblenden</string>
-    <string name="home_copies_expand">Kopien anzeigen</string>
     <string name="home_copy_device">Gerät</string>
     <string name="home_copy_drive">Drive</string>
     <string name="home_delete_confirm_device_message">Die Gerätekopie von %1$s löschen? Die Drive-Kopie bleibt erhalten.</string>

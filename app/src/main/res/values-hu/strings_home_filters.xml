@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Auto-completed translations. Do not hand-edit placeholders (%1$s etc.). -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="home_copies_collapse">Másolatok elrejtése</string>
-    <string name="home_copies_expand">Másolatok megjelenítése</string>
     <string name="home_copy_device">Eszköz</string>
     <string name="home_copy_drive">Drive</string>
     <string name="home_delete_confirm_device_message">Törli %1$s eszközön tárolt másolatát? A Drive-on lévő másolat megmarad.</string>

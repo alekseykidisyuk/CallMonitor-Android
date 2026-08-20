@@ -65,8 +65,6 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.MoreVert
@@ -1541,38 +1539,25 @@ private fun RecordingRow(
             )
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                // The badge rides with the NAME, not with the meta line below. On the meta line it took
-                // the width that the date, duration and size need, which is what kept truncating them
-                // to "Yesterday 1…" — a name has slack to give up, a line of four facts does not.
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = primaryLabel,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    SourceBadge(source = item.source)
-                }
+                // The name has this line to itself. It previously shared it with the source badge and,
+                // once transcription arrived, with three icon buttons — leaving about 56dp, or five
+                // characters, so every contact read as "At…". The badge now sits on the line below,
+                // directly under the overflow button, which costs no height at all.
+                Text(
+                    text = primaryLabel,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
             }
             Spacer(Modifier.width(8.dp))
-            // BOTH rows expose an expand chevron; single-source rows expose only delete.
-            if (isBoth) {
-                IconButton(onClick = { expanded = !expanded }) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = stringResource(
-                            if (expanded) R.string.home_copies_collapse else R.string.home_copies_expand
-                        ),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
+            // No expand chevron: tapping the card already expands a BOTH row, so it was a second
+            // control for an action the whole card performs — and it was spending 48dp of the width
+            // the contact name needed. The copies still appear on tap; the source badge below says
+            // there are two.
             // Main-row overflow: Share, then Delete. A single icon rather than one per action —
             // the row is width-bound (the meta line had to move below it for the same reason), and a
             // BOTH row already spends a slot on its chevron.
@@ -1618,14 +1603,25 @@ private fun RecordingRow(
         // sliver left between the play disc and two icon buttons — about twenty characters — so it
         // truncated mid-duration ("Yesterday 17:33 · 23…") no matter which fields were dropped. Here it
         // has the card's full width, indented to line up under the name.
-        Text(
-            text = buildSubtitle(item),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = META_INDENT, top = 2.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = META_INDENT, top = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = buildSubtitle(item),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                // fill = true: the text claims the slack so the badge is pushed to the far right,
+                // landing directly under the overflow button rather than trailing the date.
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(8.dp))
+            SourceBadge(source = item.source)
+        }
 
         // Single-source: inline player directly under the row when this copy is active.
         if (!isBoth && isRowActive) {

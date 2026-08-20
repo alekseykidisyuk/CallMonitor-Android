@@ -42,8 +42,6 @@
     <string name="home_source_badge_both">Device + Drive</string>
 
     <!-- Device + Drive row: expandable per-copy section -->
-    <string name="home_copies_expand">Show copies</string>
-    <string name="home_copies_collapse">Hide copies</string>
     <string name="home_copy_device">Device</string>
     <string name="home_copy_drive">Drive</string>
 
