@@ -67,6 +67,7 @@
     <string name="home_delete">Usuń</string>
     <string name="home_delete_confirm_message">Spowoduje to trwałe usunięcie %1$s.</string>
     <string name="home_delete_confirm_title">Usunąć nagranie?</string>
+    <string name="home_hero_pill_recovery_stuck">Nie nagrywa</string>
     <string name="home_open_settings">Ustawienia</string>
     <string name="home_player_error">Nie udało się odtworzyć tego pliku.</string>
     <string name="home_player_loading">Ładowanie…</string>
@@ -87,6 +88,8 @@
     <string name="home_status_not_paired_title">Konfiguracja nieukończona</string>
     <string name="home_status_ready_suggestion">CallVault nagrywa rozmowy automatycznie zgodnie z Twoimi ustawieniami.</string>
     <string name="home_status_ready_title">Gotowy do nagrywania</string>
+    <string name="home_status_recovery_stuck_suggestion">CallVault nie może ponownie uruchomić rejestratora, więc połączenia nie są nagrywane. Ponowne otwarcie aplikacji zwykle to naprawia.</string>
+    <string name="home_status_recovery_stuck_title">Nagrywanie nie działa</string>
     <string name="home_status_update_regrant_suggestion">Aktualizacja usunęła uprawnienie potrzebne CallVault do wznowienia nagrywania. Na razie może działać — dotknij tutaj i włącz raz debugowanie bezprzewodowe, aby je przywrócić. Nie trzeba instalować ponownie.</string>
     <string name="home_status_update_regrant_title">Połącz ponownie, aby nagrywać</string>
     <string name="notif_info_channel">Powiadomienia CallVault</string>

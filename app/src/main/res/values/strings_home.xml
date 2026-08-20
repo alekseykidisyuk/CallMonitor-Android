@@ -32,7 +32,7 @@
     <string name="home_update_banner_installing">Installing…</string>
     <string name="home_updated_banner_text">CallVault updated to %1$s</string>
     <string name="home_whatsnew_title">What\'s new</string>
-    <string name="home_whatsnew_body">• Record calls even without Wi-Fi (turn it on below)\n• Recording is ready faster after your phone has been idle\n• A new, lighter audio engine — no more clipped call beginnings</string>
+    <string name="home_whatsnew_body">• Recording now recovers by itself if it ever gets stuck\n• Home tells you when recording is down, instead of staying quiet\n• A phone call is no longer mistaken for an app call</string>
     <string name="home_whatsnew_offline_cta">Turn on off-Wi-Fi recording</string>
     <string name="home_whatsnew_offline_enabled">Offline recording enabled.</string>
     <string name="home_whatsnew_offline_failed">Couldn\'t enable — connect to Wi-Fi once, then try from Settings.</string>

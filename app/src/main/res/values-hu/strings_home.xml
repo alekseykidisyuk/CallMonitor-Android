@@ -40,7 +40,7 @@
     <string name="home_usb_advisory_fix">Javítás</string>
     <string name="home_usb_advisory_text">Az USB adatmódban van. Koppints a Csak töltés beállításához.</string>
     <string name="home_usb_advisory_title">A rögzítés leállhat a képernyő zárolásakor</string>
-    <string name="home_whatsnew_body">• Hívások rögzítése Wi-Fi nélkül is (kapcsolja be lent)\n• A felvétel gyorsabban áll készen, miután a telefon tétlen volt\n• Új, könnyebb hangmotor — nincs több levágott híváskezdet</string>
+    <string name="home_whatsnew_body">• A rögzítés mostantól magától helyreáll, ha elakad\n• A kezdőlap szól, ha nincs rögzítés, ahelyett hogy hallgatna\n• A telefonhívást többé nem téveszti össze alkalmazáshívással</string>
     <string name="home_whatsnew_offline_cta">Wi-Fi nélküli rögzítés bekapcsolása</string>
     <string name="home_whatsnew_offline_enabled">Offline rögzítés bekapcsolva.</string>
     <string name="home_whatsnew_offline_enabling">Wi-Fi nélküli rögzítés bekapcsolása…</string>

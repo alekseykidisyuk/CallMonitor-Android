@@ -40,7 +40,7 @@
     <string name="home_usb_advisory_fix">Correggi</string>
     <string name="home_usb_advisory_text">L\'USB è in modalità dati. Tocca per impostare Solo ricarica.</string>
     <string name="home_usb_advisory_title">La registrazione può fermarsi al blocco</string>
-    <string name="home_whatsnew_body">• Registra le chiamate anche senza Wi-Fi (attivalo qui sotto)\n• La registrazione è pronta più velocemente dopo che il telefono è rimasto inattivo\n• Un nuovo motore audio più leggero — niente più inizi di chiamata tagliati</string>
+    <string name="home_whatsnew_body">• La registrazione ora si riprende da sola se si blocca\n• La schermata iniziale avvisa quando non si registra, invece di tacere\n• Una chiamata telefonica non viene più scambiata per una chiamata da app</string>
     <string name="home_whatsnew_offline_cta">Attiva la registrazione senza Wi-Fi</string>
     <string name="home_whatsnew_offline_enabled">Registrazione offline attivata.</string>
     <string name="home_whatsnew_offline_enabling">Attivazione della registrazione senza Wi-Fi…</string>

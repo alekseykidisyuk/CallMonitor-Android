@@ -40,7 +40,7 @@
     <string name="home_usb_advisory_fix">Napraw</string>
     <string name="home_usb_advisory_text">USB jest w trybie danych. Dotknij, aby ustawić Tylko ładowanie.</string>
     <string name="home_usb_advisory_title">Nagrywanie może się zatrzymać po zablokowaniu</string>
-    <string name="home_whatsnew_body">• Nagrywaj rozmowy nawet bez Wi-Fi (włącz to poniżej)\n• Nagrywanie jest gotowe szybciej, gdy telefon był bezczynny\n• Nowy, lżejszy silnik audio — koniec z ucinanymi początkami rozmów</string>
+    <string name="home_whatsnew_body">• Nagrywanie samo się teraz podnosi, jeśli się zatnie\n• Ekran główny informuje, gdy nagrywanie nie działa, zamiast milczeć\n• Połączenie telefoniczne nie jest już mylone z połączeniem w aplikacji</string>
     <string name="home_whatsnew_offline_cta">Włącz nagrywanie bez Wi-Fi</string>
     <string name="home_whatsnew_offline_enabled">Nagrywanie offline włączone.</string>
     <string name="home_whatsnew_offline_enabling">Włączanie nagrywania bez Wi-Fi…</string>

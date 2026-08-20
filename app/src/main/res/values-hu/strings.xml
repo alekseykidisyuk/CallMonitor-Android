@@ -67,6 +67,7 @@
     <string name="home_delete">Törlés</string>
     <string name="home_delete_confirm_message">Ez véglegesen törli a következőt: %1$s.</string>
     <string name="home_delete_confirm_title">Törli a felvételt?</string>
+    <string name="home_hero_pill_recovery_stuck">Nem rögzít</string>
     <string name="home_open_settings">Beállítások</string>
     <string name="home_player_error">Ezt a fájlt nem sikerült lejátszani.</string>
     <string name="home_player_loading">Betöltés…</string>
@@ -87,6 +88,8 @@
     <string name="home_status_not_paired_title">A beállítás nem fejeződött be</string>
     <string name="home_status_ready_suggestion">A CallVault a beállításai szerint automatikusan rögzíti a hívásokat.</string>
     <string name="home_status_ready_title">Készen áll a rögzítésre</string>
+    <string name="home_status_recovery_stuck_suggestion">A CallVault nem tudja újraindítani a rögzítőt, így a hívások nem kerülnek rögzítésre. Az alkalmazás újranyitása általában megoldja.</string>
+    <string name="home_status_recovery_stuck_title">A rögzítés leállt</string>
     <string name="home_status_update_regrant_suggestion">Egy frissítés törölt egy engedélyt, amelyre a CallVaultnak szüksége van a rögzítés újraindításához. Lehet, hogy még működik – koppints ide, majd kapcsold be egyszer a vezeték nélküli hibakeresést a visszaállításához. Nincs szükség újratelepítésre.</string>
     <string name="home_status_update_regrant_title">Csatlakozz újra a rögzítéshez</string>
     <string name="notif_info_channel">CallVault értesítések</string>

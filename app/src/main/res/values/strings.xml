@@ -523,4 +523,7 @@
     <string name="transcript_delete">Delete text</string>
     <string name="transcript_delete_confirm_title">Delete this transcript?</string>
     <string name="transcript_delete_confirm_message">The transcript of %1$s will be deleted. The recording itself is kept, and you can transcribe it again later.</string>
+    <string name="home_status_recovery_stuck_title">Recording is down</string>
+    <string name="home_status_recovery_stuck_suggestion">CallVault keeps failing to restart its recorder, so calls are not being recorded. Reopening the app usually clears it.</string>
+    <string name="home_hero_pill_recovery_stuck">Not recording</string>
 </resources>

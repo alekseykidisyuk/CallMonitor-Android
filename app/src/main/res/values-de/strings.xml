@@ -67,6 +67,7 @@
     <string name="home_delete">Löschen</string>
     <string name="home_delete_confirm_message">Dadurch wird %1$s dauerhaft gelöscht.</string>
     <string name="home_delete_confirm_title">Aufnahme löschen?</string>
+    <string name="home_hero_pill_recovery_stuck">Nimmt nicht auf</string>
     <string name="home_open_settings">Einstellungen</string>
     <string name="home_player_error">Diese Datei konnte nicht abgespielt werden.</string>
     <string name="home_player_loading">Wird geladen…</string>
@@ -87,6 +88,8 @@
     <string name="home_status_not_paired_title">Einrichtung nicht abgeschlossen</string>
     <string name="home_status_ready_suggestion">CallVault zeichnet Anrufe automatisch gemäß Ihren Einstellungen auf.</string>
     <string name="home_status_ready_title">Bereit zur Aufnahme</string>
+    <string name="home_status_recovery_stuck_suggestion">CallVault kann den Recorder nicht neu starten, daher werden Anrufe nicht aufgezeichnet. Die App erneut zu öffnen behebt das meistens.</string>
+    <string name="home_status_recovery_stuck_title">Aufnahme ist ausgefallen</string>
     <string name="home_status_update_regrant_suggestion">Ein Update hat eine Berechtigung entfernt, die CallVault zum Neustarten der Aufnahme braucht. Es funktioniert vielleicht noch – tippe hier und aktiviere das WLAN-Debugging einmal, um sie wiederherzustellen. Keine Neuinstallation nötig.</string>
     <string name="home_status_update_regrant_title">Verbindung für Aufnahme wiederherstellen</string>
     <string name="notif_info_channel">CallVault-Hinweise</string>

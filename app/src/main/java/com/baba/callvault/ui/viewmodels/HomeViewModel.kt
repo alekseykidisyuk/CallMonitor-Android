@@ -21,6 +21,7 @@ import com.baba.callvault.data.health.SetupFingerprint
 import com.baba.callvault.data.health.SetupHealth
 import com.baba.callvault.data.health.SetupHealthDeriver
 import com.baba.callvault.data.health.SetupHealthStore
+import com.baba.callvault.services.recording.DaemonKeepAliveService
 import com.baba.callvault.services.recording.RecordingPolicy
 import com.baba.callvault.data.health.Prerequisite
 import com.baba.callvault.data.health.SetupPrerequisites
@@ -83,6 +84,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         NOT_PAIRED(R.string.home_status_not_paired_title, R.string.home_status_not_paired_suggestion),
         DEV_OPTIONS_OFF(R.string.home_status_dev_options_off_title, R.string.home_status_dev_options_off_suggestion),
         UPDATE_REGRANT_NEEDED(R.string.home_status_update_regrant_title, R.string.home_status_update_regrant_suggestion),
+        RECOVERY_STUCK(R.string.home_status_recovery_stuck_title, R.string.home_status_recovery_stuck_suggestion),
         READY(R.string.home_status_ready_title, R.string.home_status_ready_suggestion, isReady = true)
     }
 
@@ -449,7 +451,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      *                        this does NOT alarm — showing "recording paused" then was a false warning
      *                        a user hit. refresh() still tries a silent, non-churning self-heal whenever
      *                        the grant is missing.
-     *  5. READY            — everything looks good.
+     *  5. RECOVERY_STUCK   — everything is configured, but relaunching the recorder daemon has failed
+     *                        repeatedly, so the next call would not be recorded. Gated on the failure
+     *                        streak, NOT on the daemon being down: an idle daemon is normal (see below)
+     *                        and must never alarm. Added after 2026-08-18, where a device sat with a
+     *                        dead recorder across an app restart and a reboot and the app said nothing
+     *                        at all — the outage was invisible until someone thought to check.
+     *  6. READY            — everything looks good.
      *
      * By design, Wireless Debugging (ADB) is INTENTIONALLY transient: it is turned off between
      * calls and recording flows over the privileged daemon's binder, not over ADB. So a live
@@ -465,7 +473,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         Prerequisite.ADB_PAIRING -> HomeStatus.NOT_PAIRED
         Prerequisite.DEVELOPER_OPTIONS -> HomeStatus.DEV_OPTIONS_OFF
         Prerequisite.SECURE_SETTINGS_GRANT -> HomeStatus.UPDATE_REGRANT_NEEDED
-        null -> HomeStatus.READY
+        // Everything is configured, so the only remaining question is whether the recorder can actually
+        // be brought up. Gated on the recovery streak rather than on the daemon simply being down —
+        // an idle daemon is the normal, healthy state and must never turn the card red.
+        null -> if (DaemonKeepAliveService.isRecoveryStuck) HomeStatus.RECOVERY_STUCK else HomeStatus.READY
     }
 
     /**

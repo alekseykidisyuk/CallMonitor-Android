@@ -67,6 +67,15 @@ class DaemonKeepAliveService : Service() {
 
     /** Serialises and throttles relaunch attempts, and expires one that never came back. */
     private val rewarmGate = RewarmGate(stuckAfterMs = REWARM_STUCK_MS, throttleMs = REWARM_THROTTLE_MS)
+
+    /**
+     * Decides how to recover, and notices when recovery itself has stopped working.
+     *
+     * Process-wide rather than per-service-instance ([stuckRecovery]) so the failure streak survives the
+     * service being restarted — the 2026-08-18 wedge outlived both an app restart and a reboot, and a
+     * streak that resets on every restart would never reach the escalation it needs.
+     */
+    private val recoveryPolicy get() = stuckRecovery
     /** Consecutive "daemon down" readings — we only relaunch after a couple, to not churn on a blip. */
     private var downStreak = 0
 
@@ -316,19 +325,42 @@ class DaemonKeepAliveService : Service() {
         if (!rewarmGate.tryEnter(SystemClock.elapsedRealtime(), force)) return
         Thread {
             AppLogger.i(TAG, "keep-alive: daemon down — relaunching (force=$force offline=$offline)")
-            // Restore a transport FIRST, explicitly. `adbd` only runs while USB debugging or Wireless
-            // debugging is enabled; with neither there is nothing to launch the daemon over, and the
-            // connect path only rediscovers that after ~12 s of failing loopback probes. Turning
-            // Wireless debugging back on here is the difference between recovering in seconds and
-            // sitting on "starting up" indefinitely — which is what happened on a OnePlus 12 after USB
-            // debugging was switched off: twenty minutes down, and it only came back when the app was
-            // opened by hand.
-            if (!AdbShell.isUsbDebuggingEnabled(applicationContext) &&
-                !AdbShell.isWirelessDebuggingEnabled(applicationContext)
+            // Restore a usable endpoint FIRST, explicitly. The connect path only rediscovers a missing
+            // one after ~12 s of failing loopback probes, so doing it here is the difference between
+            // recovering in seconds and sitting on "starting up" indefinitely — which is what happened
+            // on a OnePlus 12 after USB debugging was switched off: twenty minutes down, and it only
+            // came back when the app was opened by hand.
+            //
+            // What counts as "usable" is [DaemonRecoveryPolicy]'s job, and getting it wrong cost a
+            // silent multi-hour outage on 2026-08-18 — see that class. In short: USB debugging being
+            // enabled is NOT a transport this app can dial, and an attempt that keeps timing out must
+            // be escalated rather than repeated.
+            when (
+                recoveryPolicy.nextStep(
+                    wirelessDebuggingEnabled = AdbShell.isWirelessDebuggingEnabled(applicationContext),
+                    usbDebuggingEnabled = AdbShell.isUsbDebuggingEnabled(applicationContext),
+                    loopbackArmed = AdbShell.isLoopbackArmed(applicationContext),
+                )
             ) {
-                AppLogger.w(TAG, "keep-alive: adbd has no transport — switching Wireless debugging back on")
-                runCatching { AdbShell.enableWirelessDebugging(applicationContext) }
-                    .onFailure { AppLogger.w(TAG, "keep-alive: could not re-enable Wireless debugging: ${it.message}") }
+                RecoveryStep.RESTORE_WIRELESS_DEBUGGING -> {
+                    AppLogger.w(TAG, "keep-alive: no TCP endpoint to dial — switching Wireless debugging back on")
+                    runCatching { AdbShell.enableWirelessDebugging(applicationContext) }
+                        .onFailure { AppLogger.w(TAG, "keep-alive: could not re-enable Wireless debugging: ${it.message}") }
+                }
+
+                RecoveryStep.REBUILD_CONNECTION -> {
+                    // The endpoint looks fine and attempts still time out, so stop trusting it: drop the
+                    // connection outright, and make sure Wireless debugging is on so there is a second
+                    // endpoint to reach even if the loopback one is the wedged half. Manually enabling
+                    // Wireless debugging is exactly what un-wedged the 2026-08-18 device.
+                    AppLogger.w(TAG, "keep-alive: relaunch keeps timing out — rebuilding the ADB connection")
+                    runCatching { AdbShell.dropConnection(applicationContext) }
+                        .onFailure { AppLogger.w(TAG, "keep-alive: could not drop the ADB connection: ${it.message}") }
+                    runCatching { AdbShell.enableWirelessDebugging(applicationContext) }
+                        .onFailure { AppLogger.w(TAG, "keep-alive: could not re-enable Wireless debugging: ${it.message}") }
+                }
+
+                RecoveryStep.CONNECT -> Unit
             }
             val ok = try {
                 launchDaemonBounded()
@@ -337,6 +369,8 @@ class DaemonKeepAliveService : Service() {
                 // this is the normal path, and leaving it to the net would cost a whole stuck window.
                 rewarmGate.leave()
             }
+            // Feed the outcome back so a run of failures escalates instead of repeating unchanged.
+            if (ok) recoveryPolicy.onAttemptSucceeded() else recoveryPolicy.onAttemptFailed()
             // Flip the notification to "ready" the INSTANT the relaunch succeeds — don't wait for the next
             // 60s watchdog tick. Without this the daemon reconnects in seconds but the user would still see
             // "starting up" for up to a minute (a perceived-but-false slow recovery).
@@ -494,6 +528,24 @@ class DaemonKeepAliveService : Service() {
          * knows whether an app-call recording is running. See [VoipTelephonyGate].
          */
         const val ACTION_CARRIER_CALL_STARTED = "com.baba.callvault.CARRIER_CALL_STARTED"
+
+        /**
+         * Recovery state for the whole process.
+         *
+         * Deliberately not a field of the service. The 2026-08-18 wedge survived the app being
+         * force-quit and a full reboot, and a failure streak that reset whenever the service restarted
+         * would never reach the escalation that ends it. Held here so the streak outlives the instance,
+         * and so the UI can ask whether recovery is stuck without binding to the service.
+         */
+        val stuckRecovery = DaemonRecoveryPolicy()
+
+        /**
+         * Whether daemon recovery has been failing repeatedly.
+         *
+         * Home reads this to say recording is down and why. The original outage was invisible: the app
+         * showed nothing at all while recording was dead for hours.
+         */
+        val isRecoveryStuck: Boolean get() = stuckRecovery.isStuck
 
         /** Low-importance channel for one-off explanations, kept apart from the permanent status note. */
         private const val INFO_CHANNEL_ID = "callvault_info"

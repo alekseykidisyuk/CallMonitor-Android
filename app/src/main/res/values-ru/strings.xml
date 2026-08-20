@@ -67,6 +67,7 @@
     <string name="home_delete">Удалить</string>
     <string name="home_delete_confirm_message">Это безвозвратно удалит «%1$s».</string>
     <string name="home_delete_confirm_title">Удалить запись?</string>
+    <string name="home_hero_pill_recovery_stuck">Не записывает</string>
     <string name="home_open_settings">Настройки</string>
     <string name="home_player_error">Не удалось воспроизвести этот файл.</string>
     <string name="home_player_loading">Загрузка…</string>
@@ -87,6 +88,8 @@
     <string name="home_status_not_paired_title">Настройка не завершена</string>
     <string name="home_status_ready_suggestion">CallVault записывает звонки автоматически согласно вашим настройкам.</string>
     <string name="home_status_ready_title">Готово к записи</string>
+    <string name="home_status_recovery_stuck_suggestion">CallVault не может перезапустить свой рекордер, поэтому звонки не записываются. Обычно помогает повторное открытие приложения.</string>
+    <string name="home_status_recovery_stuck_title">Запись не работает</string>
     <string name="home_status_update_regrant_suggestion">Обновление сбросило разрешение, необходимое CallVault для перезапуска записи. Пока может работать — нажмите здесь и один раз включите беспроводную отладку, чтобы восстановить его. Переустановка не нужна.</string>
     <string name="home_status_update_regrant_title">Переподключитесь для записи</string>
     <string name="notif_info_channel">Уведомления CallVault</string>

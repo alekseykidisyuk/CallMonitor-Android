@@ -41,7 +41,7 @@
     <string name="home_usb_advisory_fix">Corriger</string>
     <string name="home_usb_advisory_text">L\'USB est en mode données. Appuie pour choisir Charge uniquement.</string>
     <string name="home_usb_advisory_title">L\'enregistrement peut s\'arrêter au verrouillage</string>
-    <string name="home_whatsnew_body">• Enregistrez les appels même sans Wi-Fi (activez-le ci-dessous)\n• L\'enregistrement est prêt plus vite après une période d\'inactivité du téléphone\n• Un nouveau moteur audio plus léger — fini les débuts d\'appel coupés</string>
+    <string name="home_whatsnew_body">• L\'enregistrement se rétablit désormais tout seul s\'il se bloque\n• L\'accueil vous prévient quand rien n\'est enregistré, au lieu de rester muet\n• Un appel téléphonique n\'est plus pris pour un appel d\'application</string>
     <string name="home_whatsnew_offline_cta">Activer l\'enregistrement sans Wi-Fi</string>
     <string name="home_whatsnew_offline_enabled">Enregistrement hors ligne activé.</string>
     <string name="home_whatsnew_offline_enabling">Activation de l\'enregistrement sans Wi-Fi…</string>

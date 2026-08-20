@@ -40,7 +40,7 @@
     <string name="home_usb_advisory_fix">修复</string>
     <string name="home_usb_advisory_text">USB 处于数据模式。点按设为仅充电。</string>
     <string name="home_usb_advisory_title">锁屏时录音可能中断</string>
-    <string name="home_whatsnew_body">• 即使没有 Wi-Fi 也能录制通话（在下方开启）\n• 手机闲置后，录音准备就绪更快\n• 全新、更轻量的音频引擎 — 通话开头不再被截断</string>
+    <string name="home_whatsnew_body">• 录音卡住时现在会自行恢复\n• 未在录音时首页会告知，而不是保持沉默\n• 通话不再被误认为应用内通话</string>
     <string name="home_whatsnew_offline_cta">开启无 Wi-Fi 录音</string>
     <string name="home_whatsnew_offline_enabled">已启用离线录音。</string>
     <string name="home_whatsnew_offline_enabling">正在启用无 Wi-Fi 录音…</string>

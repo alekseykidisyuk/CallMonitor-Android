@@ -40,7 +40,7 @@
     <string name="home_usb_advisory_fix">Beheben</string>
     <string name="home_usb_advisory_text">USB ist auf einen Datenmodus eingestellt. Tippe, um „Nur Laden“ zu wählen.</string>
     <string name="home_usb_advisory_title">Aufnahme kann bei Sperrbildschirm stoppen</string>
-    <string name="home_whatsnew_body">• Anrufe auch ohne Wi-Fi aufzeichnen (unten aktivieren)\n• Die Aufnahme ist schneller bereit, nachdem Ihr Telefon im Leerlauf war\n• Eine neue, leichtere Audio-Engine — keine abgeschnittenen Anrufanfänge mehr</string>
+    <string name="home_whatsnew_body">• Die Aufnahme erholt sich jetzt von selbst, falls sie hängen bleibt\n• Die Startseite sagt Bescheid, wenn nicht aufgezeichnet wird, statt zu schweigen\n• Ein Telefonanruf wird nicht mehr für einen App-Anruf gehalten</string>
     <string name="home_whatsnew_offline_cta">Aufnahme ohne Wi-Fi aktivieren</string>
     <string name="home_whatsnew_offline_enabled">Offline-Aufnahme aktiviert.</string>
     <string name="home_whatsnew_offline_enabling">Aufnahme ohne Wi-Fi wird aktiviert…</string>
