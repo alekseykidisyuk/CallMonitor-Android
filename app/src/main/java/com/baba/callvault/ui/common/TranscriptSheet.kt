@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
 import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
@@ -161,9 +162,13 @@ private fun TranscriptLine(segment: TranscriptSegmentEntry, onClick: () -> Unit)
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            // No textAlign override: the text follows the ambient layout direction, so Hebrew renders
-            // right-to-left without the timestamp column being dragged along with it.
-            Text(text = segment.text, style = MaterialTheme.typography.bodyMedium)
+            // Content direction, not the app's: these calls are mostly Hebrew while the UI is usually
+            // English, so each line must take its direction from its own first strong character. The
+            // timestamp column is outside this Text and so keeps the layout's direction.
+            Text(
+                text = segment.text,
+                style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content)
+            )
         }
     }
 }

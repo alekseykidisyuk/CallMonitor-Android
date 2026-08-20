@@ -107,6 +107,7 @@ import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.transcription.AudioDecoder
 import com.baba.callvault.transcription.TranscriptionEstimate
+import com.baba.callvault.ui.common.BidiText
 import com.baba.callvault.ui.common.RecordingLabel
 import com.baba.callvault.ui.common.TranscribeConfirmDialog
 import com.baba.callvault.ui.common.TranscribingPill
@@ -353,7 +354,7 @@ fun HomeScreen(
 
             TranscriptSheet(
                 transcript = transcript,
-                title = row?.contactName ?: row?.number ?: displayName,
+                title = RecordingLabel.of(row) ?: BidiText.isolate(displayName),
                 onDismiss = { transcriptFor = null },
                 // playFrom, not seekTo: seekTo only works on a track already prepared, so tapping a
                 // line in a recording that is not playing used to do nothing at all.
@@ -433,7 +434,7 @@ fun HomeScreen(
 
         deleteTranscriptFor?.let { displayName ->
             val row = uiState.filteredRecordings.firstOrNull { it.displayName == displayName }
-            val label = row?.contactName ?: row?.number ?: displayName
+            val label = RecordingLabel.of(row) ?: BidiText.isolate(displayName)
             DeleteRecordingDialog(
                 name = label,
                 title = stringResource(R.string.transcript_delete_confirm_title),
@@ -1358,7 +1359,7 @@ private fun BulkDeleteDialog(
     val keptSubject = when {
         skipped.isEmpty() -> null
         skipped.size <= MAX_NAMED_SKIPPED ->
-            skipped.joinToString(", ") { it.contactName ?: it.number ?: it.displayName }
+            skipped.joinToString(", ") { RecordingLabel.of(it) ?: it.displayName }
         else -> pluralStringResource(R.plurals.home_bulk_delete_kept_count, skipped.size, skipped.size)
     }
 
@@ -1475,7 +1476,7 @@ private fun RecordingRow(
     val isRowActive = activeUri != null && activeUri in rowUris
 
     // Prefer the contact name, then the parsed number, then the raw file name.
-    val primaryLabel = item.contactName ?: item.number ?: item.displayName
+    val primaryLabel = RecordingLabel.of(item) ?: item.displayName
 
     deleteTarget?.let { target ->
         val message = when (target) {

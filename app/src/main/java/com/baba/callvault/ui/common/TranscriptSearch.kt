@@ -58,7 +58,7 @@ object TranscriptSearch {
             TranscriptSearchRow(
                 displayName = item.displayName,
                 uri = item.uri,
-                title = item.contactName ?: item.number ?: item.displayName,
+                title = RecordingLabel.of(item) ?: item.displayName,
                 snippet = hit.snippet.collapseWhitespace(),
                 startMs = hit.startMs
             )

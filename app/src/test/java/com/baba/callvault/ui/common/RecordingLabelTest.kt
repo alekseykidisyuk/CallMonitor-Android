@@ -19,6 +19,9 @@ import org.robolectric.annotation.Config
 /**
  * How a recording is named to the user.
  *
+ * Every expectation is wrapped in [BidiText.isolate] because that is part of the rule, not decoration:
+ * these names sit inside English sentences and must keep their own direction.
+ *
  * One rule, in one place: contact, else number, else the file name. It was written out by hand at four
  * call sites, and the fourth got it wrong — the transcribing sheet showed
  * `20260819_201239.877+0300_in_2<name>.ogg` where every other surface said who the call was with.
@@ -45,31 +48,31 @@ class RecordingLabelTest {
 
     @Test
     fun prefers_the_contact_name() {
-        assertEquals("Dana", RecordingLabel.of(recording("a.ogg", contactName = "Dana", number = "+972500000000")))
+        assertEquals(BidiText.isolate("Dana"), RecordingLabel.of(recording("a.ogg", contactName = "Dana", number = "+972500000000")))
     }
 
     @Test
     fun falls_back_to_the_number_when_the_caller_is_not_a_contact() {
-        assertEquals("+972500000000", RecordingLabel.of(recording("a.ogg", number = "+972500000000")))
+        assertEquals(BidiText.isolate("+972500000000"), RecordingLabel.of(recording("a.ogg", number = "+972500000000")))
     }
 
     @Test
     fun falls_back_to_the_file_name_when_nothing_else_is_known() {
-        assertEquals("a.ogg", RecordingLabel.of(recording("a.ogg")))
+        assertEquals(BidiText.isolate("a.ogg"), RecordingLabel.of(recording("a.ogg")))
     }
 
     @Test
     fun resolves_a_display_name_against_the_library() {
         val library = listOf(recording("a.ogg", contactName = "Dana"), recording("b.ogg", number = "+9721111111"))
 
-        assertEquals("Dana", RecordingLabel.forDisplayName(library, "a.ogg"))
-        assertEquals("+9721111111", RecordingLabel.forDisplayName(library, "b.ogg"))
+        assertEquals(BidiText.isolate("Dana"), RecordingLabel.forDisplayName(library, "a.ogg"))
+        assertEquals(BidiText.isolate("+9721111111"), RecordingLabel.forDisplayName(library, "b.ogg"))
     }
 
     @Test
     fun returns_the_display_name_when_the_recording_is_not_in_the_library() {
         // The transcribing sheet learns the name from WorkManager progress, which can outlive the
         // recording. Showing the raw name is right here; showing nothing would leave a blank sheet.
-        assertEquals("gone.ogg", RecordingLabel.forDisplayName(emptyList(), "gone.ogg"))
+        assertEquals(BidiText.isolate("gone.ogg"), RecordingLabel.forDisplayName(emptyList(), "gone.ogg"))
     }
 }

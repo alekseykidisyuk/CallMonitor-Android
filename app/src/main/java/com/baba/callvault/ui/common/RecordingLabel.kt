@@ -16,12 +16,17 @@ import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
  * One rule in one place. It was written out by hand at each call site, and the transcribing sheet got
  * it wrong — showing `20260819_201239.877+0300_in_<name>.ogg` where every other surface said who the
  * call was with.
+ *
+ * Every name here is bidi-isolated, because this is a Hebrew-speaking user's contacts inside an English
+ * UI: without it a name is just characters in whatever direction the surrounding paragraph resolved to,
+ * and one of Hebrew-plus-a-digit rendered as "2 גבריאלb". Isolating at the single point every label
+ * comes from is what stops that being re-broken at the next call site.
  */
 object RecordingLabel {
 
     /** The best available name for [item], or null when there is no item. */
     fun of(item: RecordingItem?): String? =
-        item?.let { it.contactName ?: it.number ?: it.displayName }
+        item?.let { BidiText.isolate(it.contactName ?: it.number ?: it.displayName) }
 
     /**
      * The best available name for [displayName], looked up in [recordings].
@@ -31,5 +36,5 @@ object RecordingLabel {
      * is still better than a blank sheet.
      */
     fun forDisplayName(recordings: List<RecordingItem>, displayName: String): String =
-        of(recordings.firstOrNull { it.displayName == displayName }) ?: displayName
+        of(recordings.firstOrNull { it.displayName == displayName }) ?: BidiText.isolate(displayName)
 }

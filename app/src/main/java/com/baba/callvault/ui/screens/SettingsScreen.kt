@@ -864,9 +864,15 @@ private fun TranscriptionSection(
             )
         }
 
-        val languageOptions = TranscriptionLabels.LANGUAGE_OPTIONS.map { code ->
-            OptionItem(code ?: TranscriptionLabels.AUTO_DETECT_KEY, stringResource(TranscriptionLabels.languageOf(code)))
-        }
+        // Sorted by the translated name, so the list reads A-Z in whatever language the app is in.
+        val languageOptions = TranscriptionLabels
+            .sortLanguageOptions(
+                TranscriptionLabels.LANGUAGE_OPTIONS.map { code ->
+                    (code ?: TranscriptionLabels.AUTO_DETECT_KEY) to
+                        stringResource(TranscriptionLabels.languageOf(code))
+                }
+            )
+            .map { (key, label) -> OptionItem(key, label) }
         DropdownRow {
             M3DropdownField(
                 label = stringResource(R.string.transcription_language_label),

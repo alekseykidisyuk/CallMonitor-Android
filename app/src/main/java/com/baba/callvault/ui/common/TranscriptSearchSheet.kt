@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
@@ -137,11 +138,10 @@ private fun SearchResultRow(row: TranscriptSearchRow, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            // No textAlign override: the snippet follows the ambient layout direction so Hebrew
-            // renders right-to-left without dragging the rest of the row with it.
+            // Content direction: the snippet is spoken words, usually Hebrew, inside an English UI.
             Text(
                 text = row.snippet,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

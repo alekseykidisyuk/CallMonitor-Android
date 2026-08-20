@@ -9,6 +9,7 @@
 package com.baba.callvault.ui.common
 
 import androidx.annotation.StringRes
+import java.text.Collator
 import com.baba.callvault.R
 import com.baba.callvault.data.TranscriptionMode
 import com.baba.callvault.transcription.model.TranscriptionModel
@@ -46,6 +47,23 @@ object TranscriptionLabels {
     val LANGUAGE_OPTIONS: List<String?> = listOf(
         "he", "en", "ar", "zh", "fr", "de", "hu", "it", "pl", "pt", "ru", "es", "vi", null
     )
+
+    /**
+     * [options] as (key, displayed name), ordered A-Z by the **name**, with auto-detect pinned last.
+     *
+     * By the name rather than the code, because the names are translated: ordering by "de"/"he"/"zh"
+     * would look arbitrary in every language, English included. A [Collator] rather than a plain string
+     * sort, because a plain sort files every accented letter after Z — which would leave a French or
+     * German list looking broken.
+     *
+     * Auto-detect is not a language and is kept at the end, so the one entry that is the default is not
+     * buried somewhere in the middle of the alphabet.
+     */
+    fun sortLanguageOptions(options: List<Pair<String, String>>): List<Pair<String, String>> {
+        val collator = Collator.getInstance()
+        val (auto, languages) = options.partition { it.first == AUTO_DETECT_KEY }
+        return languages.sortedWith { a, b -> collator.compare(a.second, b.second) } + auto
+    }
 
     @StringRes
     fun titleOf(mode: TranscriptionMode): Int = when (mode) {

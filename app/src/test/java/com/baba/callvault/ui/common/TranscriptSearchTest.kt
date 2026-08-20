@@ -56,7 +56,7 @@ class TranscriptSearchTest {
         )
 
         assertEquals(1, rows.size)
-        assertEquals("Dana", rows[0].title)
+        assertEquals(BidiText.isolate("Dana"), rows[0].title)
         assertEquals(12_000L, rows[0].startMs)
         assertEquals("the invoice is paid", rows[0].snippet)
     }
@@ -96,8 +96,8 @@ class TranscriptSearchTest {
         )
 
         val titles = rows.associate { it.displayName to it.title }
-        assertEquals("+972500000000", titles["by-number.ogg"])
-        assertEquals("by-name.ogg", titles["by-name.ogg"])
+        assertEquals(BidiText.isolate("+972500000000"), titles["by-number.ogg"])
+        assertEquals(BidiText.isolate("by-name.ogg"), titles["by-name.ogg"])
     }
 
     @Test
