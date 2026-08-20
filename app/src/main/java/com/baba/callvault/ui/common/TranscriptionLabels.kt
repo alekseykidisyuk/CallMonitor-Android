@@ -43,11 +43,14 @@ object TranscriptionLabels {
      * but is not the default: whisper decodes an unspecified language as English, which for a Hebrew
      * call produces fluent nonsense rather than an error the user could recognise.
      */
-    val LANGUAGE_OPTIONS: List<String?> = listOf("he", "en", "ar", "ru", "fr", "es", null)
+    val LANGUAGE_OPTIONS: List<String?> = listOf(
+        "he", "en", "ar", "zh", "fr", "de", "hu", "it", "pl", "pt", "ru", "es", "vi", null
+    )
 
     @StringRes
     fun titleOf(mode: TranscriptionMode): Int = when (mode) {
         TranscriptionMode.MANUAL -> R.string.transcription_mode_manual
+        TranscriptionMode.AFTER_EACH_CALL -> R.string.transcription_mode_after_each_call
         TranscriptionMode.AUTOMATIC -> R.string.transcription_mode_automatic
     }
 
@@ -63,9 +66,16 @@ object TranscriptionLabels {
         "he" -> R.string.transcription_language_hebrew
         "en" -> R.string.transcription_language_english
         "ar" -> R.string.transcription_language_arabic
-        "ru" -> R.string.transcription_language_russian
+        "zh" -> R.string.transcription_language_chinese
         "fr" -> R.string.transcription_language_french
+        "de" -> R.string.transcription_language_german
+        "hu" -> R.string.transcription_language_hungarian
+        "it" -> R.string.transcription_language_italian
+        "pl" -> R.string.transcription_language_polish
+        "pt" -> R.string.transcription_language_portuguese
+        "ru" -> R.string.transcription_language_russian
         "es" -> R.string.transcription_language_spanish
+        "vi" -> R.string.transcription_language_vietnamese
         else -> R.string.transcription_language_auto
     }
 }

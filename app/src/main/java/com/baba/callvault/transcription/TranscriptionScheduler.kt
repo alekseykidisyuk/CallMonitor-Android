@@ -9,6 +9,7 @@
 package com.baba.callvault.transcription
 
 import android.content.Context
+import android.os.BatteryManager
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -54,7 +55,9 @@ object TranscriptionScheduler {
         val mode = prefs.getTranscriptionMode()
         val workManager = WorkManager.getInstance(context)
 
-        if (mode == TranscriptionMode.MANUAL) {
+        // Manual and per-call both mean "no sweep": per-call keeps up with new calls and deliberately
+        // never touches the back catalogue.
+        if (!mode.needsPeriodicSweep) {
             workManager.cancelUniqueWork(WORK_NAME)
             AppLogger.i(TAG, "Periodic transcription cancelled (mode=$mode).")
             return
@@ -89,11 +92,14 @@ object TranscriptionScheduler {
      * them find a charger first would be obtuse. [displayName] names a single recording; null drains
      * the queue.
      */
-    fun runNow(context: Context, displayName: String? = null) {
+    fun runNow(context: Context, displayName: String? = null, requiresCharging: Boolean = false) {
         val request = OneTimeWorkRequestBuilder<TranscriptionWorker>()
             .apply {
                 if (displayName != null) {
                     setInputData(workDataOf(TranscriptionWorker.KEY_DISPLAY_NAME to displayName))
+                }
+                if (requiresCharging) {
+                    setConstraints(Constraints.Builder().setRequiresCharging(true).build())
                 }
             }
             .build()
@@ -131,6 +137,30 @@ object TranscriptionScheduler {
         // Do it here instead, from a process that is definitely still alive.
         val released = TranscriptionQueue.releaseStaleRunning(context)
         AppLogger.i(TAG, "Transcription stopped on request; schedule re-applied, $released row(s) released.")
+    }
+
+    /**
+     * Transcribes [displayName] if the user asked for each call to be done as it ends.
+     *
+     * A no-op in every other mode, so the recording path can call it unconditionally and stays free of
+     * transcription policy.
+     *
+     * Honours the charging preference as a **constraint rather than a veto**: a call can end anywhere,
+     * and a 30-minute one costs about 30 minutes of all-core CPU, so it should wait for a charger — but
+     * only waiting, never skipping. This mode schedules no sweep, so anything dropped here would never
+     * be transcribed at all.
+     */
+    fun transcribeAfterCallIfEnabled(context: Context, displayName: String) {
+        val prefs = AppPreferences(context)
+        if (!prefs.getTranscriptionMode().transcribesOnCallEnd) return
+
+        val requiresCharging = prefs.getTranscriptionRequiresCharging()
+        AppLogger.i(
+            TAG,
+            "Queueing $displayName: the call just ended" +
+                if (requiresCharging) " (waits for a charger)" else ""
+        )
+        runNow(context, displayName, requiresCharging)
     }
 
     /** Millis from now until the next occurrence of [hour]:[minute] (today if ahead, else tomorrow). */

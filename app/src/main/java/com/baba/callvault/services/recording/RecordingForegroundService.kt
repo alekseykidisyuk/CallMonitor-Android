@@ -29,6 +29,7 @@ import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.R
 import com.baba.callvault.data.recordings.RecordingCatalog
+import com.baba.callvault.transcription.TranscriptionScheduler
 import com.baba.callvault.data.recordings.RecordingDirection
 import com.baba.callvault.data.recordings.RecordingMetadata
 import com.baba.callvault.system.storage.SafHelper
@@ -531,6 +532,9 @@ class RecordingForegroundService : Service() {
         // CallLog fallback above). Written for every storage target, regardless of where the file lands.
         CoroutineScope(Dispatchers.IO).launch {
             RecordingCatalog.recordLocal(applicationContext, name, uri, sizeBytes, lastModified)
+            // After the catalog entry exists, never before: the transcription runner resolves the
+            // audio through the catalog, so queueing first would race it to "no longer in the catalog".
+            TranscriptionScheduler.transcribeAfterCallIfEnabled(applicationContext, name)
         }
         recordHealth(sizeBytes, name)
         StorageRouter.route(applicationContext, uri, name, mimeType)

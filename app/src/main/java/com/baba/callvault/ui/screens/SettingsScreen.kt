@@ -85,6 +85,8 @@ import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.ui.common.TranscriptionLabels
+import com.baba.callvault.ui.common.TranscriptionTimeDialog
+import com.baba.callvault.ui.common.formatRunTime
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.integrations.scrcpy.RECOMMENDED_AUDIO_BIT_RATE
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
@@ -122,6 +124,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
@@ -750,37 +753,72 @@ private fun TranscriptionSection(
             OptionItem(it.key, stringResource(TranscriptionLabels.titleOf(it)))
         }
 
+        // Turning an automatic mode ON is confirmed; turning it off never is. The cost being warned
+        // about is the cost of it running, so there is nothing to warn about when stopping.
+        var pendingAutoMode by remember { mutableStateOf<TranscriptionMode?>(null) }
+        var showTimePicker by remember { mutableStateOf(false) }
+
         DropdownRow {
             M3DropdownField(
                 label = stringResource(R.string.transcription_mode_label),
                 selected = modeOptions.find { it.key == mode.key } ?: modeOptions.first(),
                 options = modeOptions,
-                onOptionSelected = { actions.setTranscriptionMode(TranscriptionMode.fromKey(it.key)) }
+                onOptionSelected = { option ->
+                    val chosen = TranscriptionMode.fromKey(option.key)
+                    if (chosen != TranscriptionMode.MANUAL && chosen != mode) {
+                        pendingAutoMode = chosen
+                    } else {
+                        actions.setTranscriptionMode(chosen)
+                    }
+                }
             )
         }
 
-        // Revealed only by Automatic — there is no run time to choose when nothing runs on its own.
+        pendingAutoMode?.let { chosen ->
+            AlertDialog(
+                onDismissRequest = { pendingAutoMode = null },
+                icon = { Icon(imageVector = Icons.Filled.BatteryChargingFull, contentDescription = null) },
+                title = { Text(stringResource(R.string.transcription_warning_title)) },
+                text = { Text(stringResource(R.string.transcription_warning_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        actions.setTranscriptionMode(chosen)
+                        pendingAutoMode = null
+                    }) {
+                        Text(stringResource(R.string.transcription_warning_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingAutoMode = null }) {
+                        Text(stringResource(R.string.general_cancel))
+                    }
+                }
+            )
+        }
+
+        // Only the scheduled sweep has a run time and a backlog size to choose. Per-call has neither:
+        // it runs when a call ends, and only ever on that one call.
         if (mode == TranscriptionMode.AUTOMATIC) {
-            val hourOptions = (0..23).map { OptionItem(it.toString(), it.toString().padStart(2, '0')) }
-            val minuteOptions = TranscriptionLabels.MINUTE_OPTIONS.map {
-                OptionItem(it.toString(), it.toString().padStart(2, '0'))
-            }
-            DropdownRow {
-                M3DropdownField(
-                    label = stringResource(R.string.transcription_hour_label),
-                    selected = hourOptions.find { it.key == hour.toString() } ?: hourOptions.first(),
-                    options = hourOptions,
-                    onOptionSelected = { actions.setTranscriptionHour(it.key.toIntOrNull() ?: 2) }
+            NavigationRow(
+                icon = Icons.Filled.Schedule,
+                label = stringResource(R.string.transcription_time_label),
+                value = formatRunTime(hour, minute),
+                onClick = { showTimePicker = true }
+            )
+
+            if (showTimePicker) {
+                TranscriptionTimeDialog(
+                    hour = hour,
+                    minute = minute,
+                    onDismiss = { showTimePicker = false },
+                    onConfirm = { h, m ->
+                        actions.setTranscriptionHour(h)
+                        actions.setTranscriptionMinute(m)
+                        showTimePicker = false
+                    }
                 )
             }
-            DropdownRow {
-                M3DropdownField(
-                    label = stringResource(R.string.transcription_minute_label),
-                    selected = minuteOptions.find { it.key == minute.toString() } ?: minuteOptions.first(),
-                    options = minuteOptions,
-                    onOptionSelected = { actions.setTranscriptionMinute(it.key.toIntOrNull() ?: 0) }
-                )
-            }
+
             val batchOptions = TranscriptionLabels.BATCH_LIMIT_OPTIONS.map { limit ->
                 OptionItem(
                     limit.toString(),
@@ -799,7 +837,11 @@ private fun TranscriptionSection(
                     onOptionSelected = { actions.setTranscriptionBatchLimit(it.key.toIntOrNull() ?: 25) }
                 )
             }
+        }
 
+        // Shown for both automatic modes. It matters most for per-call, where a call can end anywhere:
+        // the run then waits for a charger rather than being skipped.
+        if (mode != TranscriptionMode.MANUAL) {
             SettingsToggleRow(
                 icon = Icons.Filled.BatteryChargingFull,
                 label = stringResource(R.string.transcription_charging_title),
@@ -860,8 +902,11 @@ private fun TranscriptionSection(
 
         Text(
             text = stringResource(
-                if (mode == TranscriptionMode.MANUAL) R.string.transcription_note_manual
-                else R.string.transcription_note_automatic
+                when (mode) {
+                    TranscriptionMode.MANUAL -> R.string.transcription_note_manual
+                    TranscriptionMode.AFTER_EACH_CALL -> R.string.transcription_note_after_each_call
+                    TranscriptionMode.AUTOMATIC -> R.string.transcription_note_automatic
+                }
             ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
