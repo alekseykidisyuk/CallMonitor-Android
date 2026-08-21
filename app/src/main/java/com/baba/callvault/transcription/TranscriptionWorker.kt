@@ -66,6 +66,24 @@ class TranscriptionWorker(
         // batch only consults isStopped *between* recordings — so without this a stop mid-recording
         // would leave the phone at ~600% CPU until that recording finished on its own. Covers the
         // routes stopNow cannot: a lost constraint, or a system-imposed cancellation.
+        // Progress has two halves that arrive from different places: which recording of how many
+        // (from the runner, between files) and how far through this one (from whisper, continuously).
+        // The UI needs both at once, so they are held here and always published together.
+        var latestCompleted = 0
+        var latestTotal = names.size
+        var latestCurrent = ""
+
+        suspend fun publishProgress(percent: Int) {
+            setProgress(
+                workDataOf(
+                    KEY_COMPLETED to latestCompleted,
+                    KEY_TOTAL to latestTotal,
+                    KEY_CURRENT to latestCurrent,
+                    KEY_PERCENT to percent
+                )
+            )
+        }
+
         val abortWatcher = launch {
             while (isActive) {
                 if (isStopped) {
@@ -73,6 +91,10 @@ class TranscriptionWorker(
                     TranscriptionEngine.requestAbort()
                     break
                 }
+                // Republish on the same tick. The percentage lives in native memory and changes
+                // continuously, so it can only reach the UI by being sampled — and this loop was
+                // already running, so it costs nothing to add.
+                publishProgress(TranscriptionEngine.progressPercent())
                 delay(ABORT_POLL_MS)
             }
         }
@@ -84,13 +106,13 @@ class TranscriptionWorker(
             displayNames = names,
             shouldStop = { isStopped },
             onProgress = { completed, total, current ->
-                setProgress(
-                    workDataOf(
-                        KEY_COMPLETED to completed,
-                        KEY_TOTAL to total,
-                        KEY_CURRENT to current
-                    )
-                )
+                // Remembered as well as published, because the abort watcher republishes the whole
+                // set every tick and setProgress replaces rather than merges — dropping these would
+                // blank the "2 of 5" the moment the first percentage arrived.
+                latestCompleted = completed
+                latestTotal = total
+                latestCurrent = current
+                publishProgress(percent = 0)
             }
         )
 
@@ -119,5 +141,8 @@ class TranscriptionWorker(
         const val KEY_COMPLETED = "completed"
         const val KEY_TOTAL = "total"
         const val KEY_CURRENT = "current"
+
+        /** How far through the current recording, 0-100. Absent or 0 means "not known yet". */
+        const val KEY_PERCENT = "percent"
     }
 }

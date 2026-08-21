@@ -304,7 +304,14 @@ fun HomeScreen(
             // The recording went away underneath us — a retention sweep, or a delete from elsewhere.
             playbackFor = null
         } else {
-            BackHandler { playbackFor = null }
+            // Leaving stops the audio. A recording that went on playing from a screen the user had
+            // already left is how this was noticed — and on a private call, sound continuing after
+            // you have visibly closed it is the wrong kind of surprise.
+            val closePlayback = {
+                viewModel.stopPlayback()
+                playbackFor = null
+            }
+            BackHandler { closePlayback() }
 
             // Computed off the main thread and cached, so a ninety-minute call is decoded once. Keyed
             // by the recording, so opening a different one starts again rather than showing the last.
@@ -327,7 +334,7 @@ fun HomeScreen(
                         RecordingExtrasRepository.saveNote(context, displayName, text)
                     }
                 },
-                onBack = { playbackFor = null },
+                onBack = closePlayback,
                 onPlay = { viewModel.play(openItem.uri) },
                 onPause = { viewModel.pausePlayback() },
                 onResume = { viewModel.resumePlayback() },

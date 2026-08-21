@@ -291,6 +291,8 @@
     <string name="transcribe_estimate_minutes">%1$d Min.</string>
     <string name="transcribe_estimate_under_minute">unter einer Minute</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
+    <string name="transcribing_pill_percent">%1$d%%</string>
+    <string name="transcribing_pill_progress_percent">%1$d/%2$d · %3$d%%</string>
     <string name="transcribing_pill_working">Transkribiert</string>
     <string name="transcribing_sheet_remaining">Verbleibend: %1$d</string>
     <string name="transcribing_sheet_starting">Wird gestartet…</string>

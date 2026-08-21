@@ -164,6 +164,10 @@ class TranscriptionRunner(
     private fun recordSpeed(modelId: String, audioMs: Long, elapsedMs: Long) {
         val measured = TranscriptionEstimate.measure(audioMs, elapsedMs) ?: return
         val prefs = AppPreferences(context)
+        // Speeds measured under a different thread policy describe a machine that no longer exists.
+        // Discarded here rather than averaged away, which would quote a wrong estimate on each of
+        // the next several runs while it converged.
+        prefs.setRtfCalibrationThreads(TranscriptionEngine.preferredThreadCount())
         val blended = TranscriptionEstimate.blend(
             stored = prefs.getTranscriptionRtf(modelId),
             measured = measured,

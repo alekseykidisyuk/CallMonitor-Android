@@ -592,6 +592,27 @@ class AppPreferences(context: Context) {
     fun setTranscriptionRtf(modelId: String, rtf: Double) =
         prefs.edit { putString("transcription_rtf_" + modelId, rtf.toString()) }
 
+    /**
+     * The thread policy the stored speeds were measured under.
+     *
+     * A measured factor only describes the machine that produced it, and the number of threads
+     * whisper runs on is part of that machine. When the policy changes, every stored speed becomes a
+     * confident description of a configuration that no longer exists — so it is discarded rather than
+     * slowly averaged away over the next several runs, each of which would quote a wrong estimate.
+     */
+    fun getRtfCalibrationThreads(): Int = prefs.getInt("transcription_rtf_threads", 0)
+
+    /** Records the policy and forgets speeds measured under a different one. */
+    fun setRtfCalibrationThreads(threads: Int) {
+        if (getRtfCalibrationThreads() == threads) return
+        prefs.edit {
+            prefs.all.keys
+                .filter { it.startsWith("transcription_rtf_") && it != "transcription_rtf_threads" }
+                .forEach { remove(it) }
+            putInt("transcription_rtf_threads", threads)
+        }
+    }
+
     /** Gets the chosen model tier. */
     fun getTranscriptionModelId(): String =
         getString(Key.TRANSCRIPTION_MODEL_ID, DefaultsValue.TRANSCRIPTION_MODEL_ID)

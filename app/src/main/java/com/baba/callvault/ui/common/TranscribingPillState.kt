@@ -31,10 +31,15 @@ sealed interface TranscribingPillState {
     data object Starting : TranscribingPillState
 
     /** One recording, transcribed because the user asked for it. Shown without a count. */
-    data class Single(val current: String?) : TranscribingPillState
+    data class Single(val current: String?, val percent: Int = 0) : TranscribingPillState
 
-    /** A backlog: which one is in hand, and how many there are. */
-    data class Batch(val position: Int, val total: Int, val current: String?) : TranscribingPillState
+    /** A backlog: which one is in hand, how many there are, and how far into this one. */
+    data class Batch(
+        val position: Int,
+        val total: Int,
+        val current: String?,
+        val percent: Int = 0
+    ) : TranscribingPillState
 
     companion object {
 
@@ -45,22 +50,27 @@ sealed interface TranscribingPillState {
          * @param completed how many recordings this run has finished.
          * @param total how many it was given.
          * @param current the recording in hand, when known.
+         * @param percent how far into the current recording, 0-100. Zero means "not known yet",
+         *   which is honest for the first moments of a run and is shown as no number rather than
+         *   as 0% — a bar pinned at zero looks stuck, which is the very impression to avoid.
          */
         fun from(
             isRunning: Boolean,
             completed: Int,
             total: Int,
-            current: String?
+            current: String?,
+            percent: Int = 0
         ): TranscribingPillState = when {
             !isRunning -> Hidden
             total <= 0 -> Starting
-            total == 1 -> Single(current)
+            total == 1 -> Single(current, percent)
             // People count the item being worked on, not the ones behind it — so the first of twelve
             // is "1/12". Capped, so the last is "12/12" rather than "13/12".
             else -> Batch(
                 position = (completed + 1).coerceAtMost(total),
                 total = total,
-                current = current
+                current = current,
+                percent = percent
             )
         }
     }

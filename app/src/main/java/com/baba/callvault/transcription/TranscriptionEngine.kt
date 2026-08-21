@@ -28,6 +28,19 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object TranscriptionEngine {
 
+    /**
+     * Whether a recording is being transcribed right now.
+     *
+     * Exists so background work can stand aside. Transcription saturates the CPU for minutes, and
+     * anything else decoding audio at the same time both slows it down and poisons the timing the
+     * estimate calibrates from — a factor learned while something else was stealing cores is wrong
+     * for every run afterwards.
+     */
+    @Volatile
+    var isRunning: Boolean = false
+        private set
+
+
     private const val TAG = "CV:Transcribe"
 
     private val dispatcher = Executors.newSingleThreadExecutor { r ->
@@ -45,7 +58,30 @@ object TranscriptionEngine {
      * Clamped to at least 1: `availableProcessors()` may change between calls and has been observed
      * returning nonsense, and whisper.cpp divides work by whatever it is handed.
      */
-    fun threadCountFor(availableProcessors: Int): Int = availableProcessors.coerceAtLeast(1)
+    /**
+     * How many threads to give whisper, from a core count.
+     *
+     * **Not every core.** Phone CPUs are heterogeneous — the OP12's eight are six performance cores
+     * and two efficiency cores — and ggml synchronises its threads at every layer. A thread pinned
+     * to a little core therefore does not add its share of work; it makes the other five wait for it
+     * at each barrier. Using all eight measured slower than using the big ones alone, and burned the
+     * little cores' power for the privilege.
+     *
+     * Two are left out, which lands on exactly the performance cores of the common 6+2 phones, and
+     * degrades sensibly elsewhere: a 4-core phone gets 2, a single-core one still gets 1. Capped at
+     * six because past that the gains flatten while contention with the rest of the phone does not.
+     *
+     * Changing this changes how long a run takes, so it invalidates the speed this device has
+     * already calibrated — see [TranscriptionEstimate].
+     */
+    fun threadCountFor(availableProcessors: Int): Int =
+        (availableProcessors - RESERVED_CORES).coerceIn(1, MAX_THREADS)
+
+    /** Left for the OS, the UI and whatever else the phone is doing while this runs. */
+    private const val RESERVED_CORES = 2
+
+    /** Past this, ggml's gains flatten while contention with the rest of the phone does not. */
+    private const val MAX_THREADS = 6
 
     fun preferredThreadCount(): Int = threadCountFor(Runtime.getRuntime().availableProcessors())
 
@@ -64,6 +100,9 @@ object TranscriptionEngine {
         runCatching { WhisperNative.requestAbort() }
             .onFailure { AppLogger.w(TAG, "Abort request failed: ${it.message}") }
     }
+
+    /** How far through the current recording whisper is, 0-100. Zero when nothing is running. */
+    fun progressPercent(): Int = WhisperNative.progressPercent()
 
     /** Set by [requestAbort], cleared at the start of every run so a stale abort cannot kill the next. */
     private val abortRequested = AtomicBoolean(false)
@@ -95,6 +134,10 @@ object TranscriptionEngine {
         language: String?,
     ): List<TranscriptSegment> = withContext(dispatcher) {
         abortRequested.set(false)
+        // Set before the decode, not after: decoding the audio is itself minutes of CPU on a long
+        // call, and that is exactly when other background work must stand aside.
+        isRunning = true
+        try {
         val audio = AudioDecoder.decodeToMono16k(context, uri) { abortRequested.get() }
         if (audio.isEmpty()) {
             AppLogger.w(TAG, "Decoded no audio from $uri")
@@ -121,6 +164,9 @@ object TranscriptionEngine {
                 .also { AppLogger.i(TAG, "Produced ${it.size} segments from $count raw") }
         } finally {
             WhisperNative.freeContext(ptr)
+        }
+        } finally {
+            isRunning = false
         }
     }
 }

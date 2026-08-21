@@ -291,6 +291,8 @@
     <string name="transcribe_estimate_minutes">%1$d 分钟</string>
     <string name="transcribe_estimate_under_minute">不到一分钟</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
+    <string name="transcribing_pill_percent">%1$d%%</string>
+    <string name="transcribing_pill_progress_percent">%1$d/%2$d · %3$d%%</string>
     <string name="transcribing_pill_working">转写中</string>
     <string name="transcribing_sheet_remaining">剩余：%1$d</string>
     <string name="transcribing_sheet_starting">正在开始…</string>

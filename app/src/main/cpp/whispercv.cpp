@@ -28,6 +28,19 @@ static inline whisper_context *ctx_of(jlong p) {
 // so returning true here ends the run in a fraction of a second.
 static std::atomic<bool> g_abort{false};
 
+/**
+ * How far through the current recording whisper is, 0-100.
+ *
+ * Polled rather than pushed: a callback into Kotlin would arrive on whisper's own thread and need
+ * AttachCurrentThread, and the UI reads this on a tick it already runs. An int is atomic and the
+ * reader only ever wants the latest value, so there is nothing to synchronise.
+ */
+static std::atomic<int> g_progress{0};
+
+static void progress_reported(struct whisper_context *, struct whisper_state *, int progress, void *) {
+    g_progress.store(progress, std::memory_order_relaxed);
+}
+
 static bool abort_requested(void *) {
     return g_abort.load(std::memory_order_relaxed);
 }
@@ -51,6 +64,11 @@ Java_com_baba_callvault_transcription_WhisperNative_initContext(JNIEnv *env, job
 JNIEXPORT void JNICALL
 Java_com_baba_callvault_transcription_WhisperNative_freeContext(JNIEnv *, jobject, jlong ptr) {
     if (ptr != 0) whisper_free(ctx_of(ptr));
+}
+
+JNIEXPORT jint JNICALL
+Java_com_baba_callvault_transcription_WhisperNative_progressPercent(JNIEnv *, jobject) {
+    return g_progress.load(std::memory_order_relaxed);
 }
 
 // Deliberately takes no context pointer: the caller asking to stop is not the thread inside
@@ -94,6 +112,12 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
     g_abort.store(false, std::memory_order_relaxed);
     params.abort_callback           = abort_requested;
     params.abort_callback_user_data = nullptr;
+
+    // Zeroed here, not on completion: a run that ended by abort or error must not leave the last
+    // percentage behind for the next one to start from.
+    g_progress.store(0, std::memory_order_relaxed);
+    params.progress_callback           = progress_reported;
+    params.progress_callback_user_data = nullptr;
 
     const jsize n = env->GetArrayLength(audio);
     jfloat *samples = env->GetFloatArrayElements(audio, nullptr);

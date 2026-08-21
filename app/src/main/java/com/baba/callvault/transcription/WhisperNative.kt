@@ -52,6 +52,18 @@ object WhisperNative {
      */
     external fun requestAbort()
 
+    /**
+     * How far through the current recording whisper is, 0-100.
+     *
+     * Polled, not pushed. A callback would arrive on whisper's own thread and have to attach itself
+     * to the JVM to say anything; the UI already runs a tick, and the only value it ever wants is
+     * the latest one.
+     *
+     * Exists because a run over a long call showed nothing but a spinning circle for minutes, which
+     * is indistinguishable from a hang — the user cannot tell whether to wait or to force-stop.
+     */
+    external fun progressPercent(): Int
+
     external fun segmentCount(ptr: Long): Int
 
     /** Milliseconds from the start of the recording (whisper's centiseconds are converted natively). */

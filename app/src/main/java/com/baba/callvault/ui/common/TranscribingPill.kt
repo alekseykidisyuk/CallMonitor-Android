@@ -76,7 +76,8 @@ private fun WorkInfo?.toPillState(): TranscribingPillState {
         isRunning = state == WorkInfo.State.RUNNING,
         completed = progress.getInt(TranscriptionWorker.KEY_COMPLETED, 0),
         total = progress.getInt(TranscriptionWorker.KEY_TOTAL, 0),
-        current = progress.getString(TranscriptionWorker.KEY_CURRENT)
+        current = progress.getString(TranscriptionWorker.KEY_CURRENT),
+        percent = progress.getInt(TranscriptionWorker.KEY_PERCENT, 0)
     )
 }
 
@@ -118,9 +119,15 @@ fun TranscribingPill(state: TranscribingPillState, onClick: () -> Unit) {
 private fun TranscribingPillState.label(): String = when (this) {
     TranscribingPillState.Hidden,
     TranscribingPillState.Starting -> stringResource(R.string.transcribing_pill_working)
-    is TranscribingPillState.Single -> stringResource(R.string.transcribing_pill_working)
+    // The percentage replaces the word rather than joining it. "Transcribing" said nothing that the
+    // spinner beside it was not already saying, and a run over a long call sat there for minutes
+    // looking identical to a hang.
+    is TranscribingPillState.Single ->
+        if (percent > 0) stringResource(R.string.transcribing_pill_percent, percent)
+        else stringResource(R.string.transcribing_pill_working)
     is TranscribingPillState.Batch ->
-        stringResource(R.string.transcribing_pill_progress, position, total)
+        if (percent > 0) stringResource(R.string.transcribing_pill_progress_percent, position, total, percent)
+        else stringResource(R.string.transcribing_pill_progress, position, total)
 }
 
 /**
