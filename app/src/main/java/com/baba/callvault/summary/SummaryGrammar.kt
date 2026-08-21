@@ -32,26 +32,21 @@ object SummaryGrammar {
     /**
      * GBNF for the summary object.
      *
-     * `string` deliberately excludes the control characters JSON forbids and allows the standard
-     * escapes, so a Hebrew summary containing a quotation mark cannot produce a document that fails
-     * to parse — which is the entire point of being here.
+     * **Every rule is on one line.** GBNF ends a rule at the newline, so a `root` spread over
+     * several lines parses as several broken rules — "expecting name". Worse, that failure is
+     * silent in practice: the native side logs it and generates unconstrained, so the output looks
+     * plausible and the constraint simply is not there. It was caught by running the grammar
+     * through llama-cli on a desktop, which refuses to start rather than carrying on.
+     *
+     * `string` allows the standard JSON escapes, so a Hebrew summary containing a quotation mark
+     * cannot produce a document that fails to parse — which is the entire point of being here.
      */
     val JSON: String = """
-        root ::= "{" ws
-          "\"intent\":" ws string ","      ws
-          "\"summary\":" ws string ","     ws
-          "\"keyPoints\":" ws array ","    ws
-          "\"decisions\":" ws array ","    ws
-          "\"actionItems\":" ws array ","  ws
-          "\"keyFacts\":" ws array         ws
-        "}"
-
+        root ::= "{" ws "\"intent\":" ws string "," ws "\"summary\":" ws string "," ws "\"keyPoints\":" ws array "," ws "\"decisions\":" ws array "," ws "\"actionItems\":" ws array "," ws "\"keyFacts\":" ws array ws "}"
         array ::= "[" ws (string (ws "," ws string)*)? ws "]"
-
         string ::= "\"" char* "\""
-        char ::= [^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" hex hex hex hex)
+        char ::= [^"\\] | "\\" (["\\/bfnrt] | "u" hex hex hex hex)
         hex ::= [0-9a-fA-F]
-
         ws ::= [ \t\n]*
     """.trimIndent()
 }
