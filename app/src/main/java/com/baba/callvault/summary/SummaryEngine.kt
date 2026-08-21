@@ -8,6 +8,7 @@
 
 package com.baba.callvault.summary
 
+import com.baba.callvault.transcription.TranscriptionEngine
 import com.baba.callvault.utils.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -28,8 +29,15 @@ object SummaryEngine {
 
     private const val TAG = "CV:SummaryEngine"
 
-    /** Leaves cores for the rest of the phone; the whole device must stay usable while this runs. */
-    private const val THREADS = 4
+    /**
+     * The same thread policy transcription uses, and for the same measured reason.
+     *
+     * Both drive ggml, which synchronises its threads at every layer, so a thread on one of the
+     * phone's efficiency cores does not add its share — it makes the others wait for it at each
+     * barrier. Sharing the policy also means one place to change when it is measured again, rather
+     * than two that quietly disagree.
+     */
+    private val threads: Int get() = TranscriptionEngine.preferredThreadCount()
 
     private val mutex = Mutex()
 
@@ -80,7 +88,7 @@ object SummaryEngine {
         /** Completes [prompt]. Returns whatever was produced before the stop when aborted. */
         fun generate(prompt: String, maxTokens: Int): String {
             aborted.set(false)
-            val out = LlamaNative.generate(ptr, prompt, maxTokens, THREADS)
+            val out = LlamaNative.generate(ptr, prompt, maxTokens, threads)
             if (aborted.get()) AppLogger.i(TAG, "A summary run was stopped before it finished")
             return out
         }
