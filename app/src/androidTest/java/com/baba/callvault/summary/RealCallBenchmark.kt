@@ -44,8 +44,10 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class RealCallBenchmark {
 
-    private val maxTokensPerChunk = 220
-    private val maxTokensForMerge = 320
+    // 220 cut a real summary off mid-word: "...the speaker asked to wai". A budget that truncates
+    // is worse than one that costs a little more, because half a sentence reads as a crash.
+    private val maxTokensPerChunk = 420
+    private val maxTokensForMerge = 520
 
     @Test
     fun measure() = runBlocking {

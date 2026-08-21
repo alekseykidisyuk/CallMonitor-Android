@@ -92,12 +92,24 @@ object SummaryPrompt {
             appendLine("Below is part of a recorded phone call, transcribed automatically.")
             appendLine("The transcription is imperfect and some words may be wrong.")
             appendLine()
-            appendLine("Write a short summary of what this part of the call was about.")
+            appendLine("Write a short summary of this part of the call, in a few flowing sentences.")
+            // Naming what a summary is FOR, rather than only its length.
+            //
+            // "A short summary" produced an inventory — "the call covered X, and also Y, and
+            // mentioned Z" — which is true, useless, and not what anyone opens a summary to find.
+            // Someone returning to a call months later wants what it was about, what was settled,
+            // and what they promised to do. Asking for those three turns a list into an account.
+            appendLine("Say what the conversation was about, what was decided or agreed, and " +
+                "anything either person said they would do.")
             // Said outright, because the failure was not a misunderstanding of the task but a
             // literal answer to it: it copied. "In your own words" is the instruction that was
             // missing, and it costs nothing to be explicit about the rest as well.
             appendLine("Write it in your own words. Do not copy sentences from the transcript.")
             appendLine("Cover the whole of the text below, not only its beginning.")
+            // The transcript is machine-made and sometimes wrong. Left unsaid, the model treats a
+            // mangled phrase as a topic and solemnly reports that the call "mentioned" it.
+            appendLine("Ignore words that are clearly mis-transcribed rather than reporting them.")
+            appendLine("Do not use headings, labels or bullet points. Do not repeat yourself.")
             appendLine(languageClause(language))
             appendLine(NO_INVENTION)
             appendLine()
