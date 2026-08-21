@@ -474,6 +474,48 @@ adb -s <serial> shell cat /sdcard/Android/data/com.baba.callvault/files/summary-
 
 - [ ] **Step 5: Decide against the gate below, and write the verdict at the end of this document.**
 
+## Results
+
+### Qwen3.5-4B, Q4_K_M — measured 2026-08-21 on the OP12
+
+Four runs: an invented Hebrew call and an English one, each summarised whole and again split into
+two chunks so the merge path was exercised rather than assumed. Six threads, CPU only.
+
+| Sample | Chunks | Load | Total | Peak PSS | In the right language? |
+|---|---|---|---|---|---|
+| Hebrew, 476 chars | 1 | 2461 ms | **43.1 s** | 2907 MB | yes |
+| Hebrew, 476 chars | 2 + merge | 732 ms | **213.4 s** | 2903 MB | — no summary reached |
+| English, 596 chars | 1 | 1120 ms | **66.1 s** | 2821 MB | — no summary reached |
+| English, 596 chars | 2 + merge | 1086 ms | **204.7 s** | 2907 MB | — no summary reached |
+
+**Verdict: fails the gate, on three counts of five.**
+
+- **Speed, by a wide margin.** Those samples are about 500 characters — twenty seconds of talk.
+  Forty-three seconds for that is roughly fifty times too slow for the ten-minute call the gate is
+  written against. Chunking made it *worse*, not better: two chunks took 213 s, of which the merge
+  alone was 94 s. That is the wrong direction for the case the feature exists for.
+- **Memory: 2.9 GB** against a 2.5 GB bar.
+- **It invented.** The one summary that completed said the delivery window was *"between 9 and 10"*.
+  The call said between nine and **eleven**. Fluent, confident, and wrong about the fact a person
+  would act on — exactly the failure that makes a summary worse than none.
+
+**It is a reasoning model, which is the wrong tool for this job.** Qwen3.5 thinks out loud in a
+`<think>` block first, and on **three of four runs it spent the whole token budget thinking and never
+reached a summary**. What came back was its own deliberation, including *"Correction: I need to look
+at the actual user input."* That is now stripped before anything reaches a user (`SummaryText`), but
+stripping is a bandage: the budget is still spent on reasoning nobody asked for.
+
+The one summary it did produce was, apart from that number, genuinely good — fluent Hebrew, right
+speakers, right substance. The capability is there; the cost and the reliability are not.
+
+### What this says about the gate
+
+The 60-second bar assumed summarising is quick next to transcribing. It is not: generation is
+serial, and a phone does perhaps eight tokens a second at this size. If a later model is accurate but
+slow, the bar worth revisiting is this one — transcription already takes tens of minutes and is
+accepted, because it says so up front and runs in the background. **The invention bar is not
+negotiable in the same way.**
+
 ## Decision gate
 
 Proposed thresholds. A model ships only if it clears all five; adjust before running, not after
