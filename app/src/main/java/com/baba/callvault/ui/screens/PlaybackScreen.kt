@@ -41,6 +41,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -70,6 +71,7 @@ import com.baba.callvault.data.transcripts.TranscriptStatus
 import com.baba.callvault.ui.common.CvCard
 import com.baba.callvault.ui.common.CvScaffold
 import com.baba.callvault.ui.common.RecordingLabel
+import com.baba.callvault.ui.common.TranscriptActionButton
 import com.baba.callvault.ui.common.WaveformBar
 import com.baba.callvault.ui.common.TranscriptTimestamp
 import com.baba.callvault.ui.viewmodels.PlaybackControls
@@ -129,7 +131,13 @@ fun PlaybackScreen(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CallHeaderCard(item)
+            CallHeaderCard(
+                item = item,
+                transcriptStatus = transcriptStatus,
+                onOpenTranscript = onOpenTranscript,
+                onTranscribe = onTranscribe,
+                onDelete = onDelete
+            )
             PlayerCard(
                 peaks = peaks,
                 playback = playback,
@@ -143,20 +151,26 @@ fun PlaybackScreen(
                 onSkip = onSkip,
                 onCycleSpeed = onCycleSpeed
             )
-            TranscriptRow(
-                status = transcriptStatus,
-                onOpen = onOpenTranscript,
-                onTranscribe = onTranscribe
-            )
             NoteCard(note = note, onNoteChange = onNoteChange)
-            DeleteRow(onDelete)
         }
     }
 }
 
-/** Who the call was with, which way it went, and when. */
+/**
+ * Who the call was with, which way it went, when — and what can be done to it.
+ *
+ * The two actions live here rather than in cards of their own further down. Both were a full-width
+ * row apiece below the player, which put the transcript a scroll away and the delete off the bottom
+ * of the screen entirely; as icons beside the name they are visible the moment the screen opens.
+ */
 @Composable
-private fun CallHeaderCard(item: RecordingItem) {
+private fun CallHeaderCard(
+    item: RecordingItem,
+    transcriptStatus: TranscriptStatus,
+    onOpenTranscript: () -> Unit,
+    onTranscribe: () -> Unit,
+    onDelete: () -> Unit
+) {
     val accent = MaterialTheme.colorScheme.primary
     val label = RecordingLabel.of(item) ?: item.displayName
 
@@ -211,18 +225,65 @@ private fun CallHeaderCard(item: RecordingItem) {
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                playbackDate(item)?.let { date ->
-                    Text(
-                        text = date,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                // The direction rides with the date instead of sitting at the end of the row.
+                //
+                // As a chip on the right it cost about 85dp beside two action icons, and the name —
+                // the one thing this card exists to say — was left with barely a hundred: "גבריאל
+                // 2b" came out as "גברי…" and the date wrapped mid-word. Down here the line is the
+                // full width of the column and both fit comfortably.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    item.direction?.let {
+                        DirectionChip(it)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    playbackDate(item)?.let { date ->
+                        Text(
+                            text = date,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
-            item.direction?.let { DirectionChip(it) }
+
+            // The same one-slot control the list rows use — transcribe / in progress / read / retry
+            // — rather than a second thing that means the same. Retry is transcribe: on this screen
+            // there is one recording and one thing a failed run can do next.
+            TranscriptActionButton(
+                status = transcriptStatus,
+                onTranscribe = onTranscribe,
+                onOpen = onOpenTranscript,
+                onRetry = onTranscribe,
+                modifier = Modifier.size(ACTION_TARGET)
+            )
+
+            // On the card rather than at the foot of the screen. It lived in a row below the note,
+            // which meant scrolling to reach a control most people look for first — and briefly
+            // meant not being able to reach it at all. Error-tinted and icon-only: it is one glyph
+            // among a name and a chip, and the word "Delete" beside them would read as a label for
+            // the call rather than as an action.
+            IconButton(onClick = onDelete, modifier = Modifier.size(ACTION_TARGET)) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.home_delete),
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
         }
     }
 }
+
+/**
+ * The action targets on the header card: 40dp, not the default 48dp.
+ *
+ * They share the row with the avatar, the name and the direction chip, and at 48 the pair took
+ * another sixteen from a name that has to ellipsize anyway. Same size as the two actions on a list
+ * row, and for the same reason recorded there.
+ */
+private val ACTION_TARGET = 40.dp
 
 @Composable
 private fun DirectionChip(direction: RecordingDirection) {
@@ -381,73 +442,6 @@ private fun PlayerCard(
                     fontWeight = FontWeight.SemiBold
                 )
             }
-        }
-    }
-}
-
-/**
- * The transcript, in whatever state it is in.
- *
- * Present even when there is no transcript yet, because "you could have one" is as useful here as
- * "here it is" — this screen is where someone has decided to actually deal with the call.
- */
-@Composable
-private fun TranscriptRow(
-    status: TranscriptStatus,
-    onOpen: () -> Unit,
-    onTranscribe: () -> Unit
-) {
-    val busy = status == TranscriptStatus.QUEUED || status == TranscriptStatus.RUNNING
-    val label = when (status) {
-        TranscriptStatus.DONE -> R.string.playback_open_transcript
-        TranscriptStatus.QUEUED, TranscriptStatus.RUNNING -> R.string.transcript_action_busy
-        TranscriptStatus.FAILED -> R.string.transcript_action_retry
-        TranscriptStatus.NONE -> R.string.transcript_action_transcribe
-    }
-
-    CvCard(
-        onClick = if (busy) null else if (status == TranscriptStatus.DONE) onOpen else onTranscribe,
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Article,
-                contentDescription = null,
-                tint = if (status == TranscriptStatus.FAILED) MaterialTheme.colorScheme.error
-                       else MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = stringResource(label),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-/**
- * Deleting the recording, from the screen that is about it.
- *
- * At the bottom and error-tinted rather than in the transport: it is the one action here that cannot
- * be undone, and it should never sit next to the one people reach for by habit.
- */
-@Composable
-private fun DeleteRow(onDelete: () -> Unit) {
-    CvCard(onClick = onDelete, contentPadding = PaddingValues(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Filled.Delete,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = stringResource(R.string.home_delete),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.weight(1f)
-            )
         }
     }
 }

@@ -9,6 +9,7 @@
 package com.baba.callvault.ui.viewmodels
 
 import android.app.Application
+import android.media.AudioManager
 import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
@@ -39,7 +40,10 @@ import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.system.updates.UpdateInstallWorker
 import com.baba.callvault.system.updates.UpdateScheduler
 import androidx.work.WorkManager
+import com.baba.callvault.data.waveform.RecordingExtrasRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -341,6 +345,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * Recomputes the [HomeStatus] (synchronous, cheap) and reloads the recordings list off the main
      * thread. Safe to call on first composition and on every ON_RESUME.
      */
+    /** The background draw pass; cancelled and restarted on every reload so it cannot pile up. */
+    private var waveformJob: Job? = null
+
     fun refresh() {
         val updatedTo = preferences.getUpdateSuccessBannerVersion()
         val status = computeStatus()
@@ -382,6 +389,44 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     contactFilter = state.contactFilter?.takeIf { it in contacts },
                     dateFilter = state.dateFilter?.takeIf { it in days }
                 )
+            }
+            precomputeWaveforms(recordings)
+        }
+    }
+
+    /**
+     * Draws the newest recordings ahead of time, so opening one has nothing to wait for.
+     *
+     * The shape has to be read off the audio, and until it has been, the playback screen shows a
+     * resting line where the waveform goes — which looks like an empty control that later fills in
+     * with a jolt. Doing the work here spends it while the user is still looking at the list.
+     *
+     * Only recordings made since the shape started being cached at call end have one; everything
+     * recorded before that arrives here uncached, which is why this exists at all.
+     *
+     * Newest first, matching the list order, because that is the order they get opened in. Strictly
+     * sequential: this is background work behind whatever the user is actually doing, and running
+     * several decodes at once would compete with playback for the same cores.
+     */
+    private fun precomputeWaveforms(recordings: List<RecordingItem>) {
+        waveformJob?.cancel()
+        waveformJob = viewModelScope.launch(Dispatchers.IO) {
+            val audio = appContext.getSystemService(AudioManager::class.java)
+            recordings.take(WAVEFORM_PRECOMPUTE_LIMIT).forEach { item ->
+                // Cheap and cached-checked inside, so a second pass over a drawn library costs one
+                // indexed lookup each. ensureActive so leaving the screen actually stops the work.
+                ensureActive()
+
+                // Never while a call is up. Drawing means running the audio decoder, and the one
+                // job this app must not disturb is the recording of the call happening right now.
+                // Abandoning the pass rather than pausing it: the next reload starts it again, and
+                // the recording that just ended gets drawn by the call-end path anyway.
+                if (audio?.mode != AudioManager.MODE_NORMAL) {
+                    AppLogger.i(TAG, "Not drawing recordings while a call is in progress")
+                    return@launch
+                }
+
+                RecordingExtrasRepository.precomputeWaveform(appContext, item.displayName, item.uri)
             }
         }
     }
@@ -648,6 +693,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val TAG = "CV:HomeViewModel"
+
+        /**
+         * How many recordings the background draw pass covers per reload.
+         *
+         * A cap rather than the whole library: a user with hundreds of calls would otherwise spend
+         * minutes of CPU decoding audio nobody asked to see. Thirty is comfortably more than fits on
+         * a screen, so the ones within reach of a scroll are ready — and after the first pass they
+         * are cached, making every later pass a handful of indexed lookups.
+         */
+        private const val WAVEFORM_PRECOMPUTE_LIMIT = 30
 
         /**
          * Whether the release note is due: only right after an update, and only once per version.
