@@ -597,16 +597,28 @@ fun HomeScreen(
 
         val row = uiState.recordings.firstOrNull { it.displayName == displayName }
 
+        // Explicitly row != null: activeUri is null when nothing is loaded, so comparing it against
+        // a null row?.uri would call an idle player "this recording".
+        val isThisTrack = row != null && playback.activeUri == row.uri
+
         TranscriptSheet(
             transcript = transcript,
             title = RecordingLabel.of(row) ?: BidiText.isolate(displayName),
-            positionMs = if (playback.activeUri == row?.uri) playback.positionMs.toLong() else -1L,
+            positionMs = if (isThisTrack) playback.positionMs.toLong() else -1L,
+            durationMs = if (isThisTrack) playback.durationMs.toLong() else 0L,
+            isPlaying = isThisTrack && playback.phase == RecordingPlaybackController.Phase.PLAYING,
+            isLoading = isThisTrack && playback.phase == RecordingPlaybackController.Phase.LOADING,
             onDismiss = { transcriptFor = null },
             // playFrom, not seekTo: seekTo only works on a track already prepared, so tapping a
             // line in a recording that is not playing used to do nothing at all.
             onSeekTo = { startMs ->
                 row?.uri?.let { viewModel.playFrom(it, startMs.toInt()) }
             },
+            onPlay = { row?.uri?.let { viewModel.play(it) } },
+            onPause = { viewModel.pausePlayback() },
+            onResume = { viewModel.resumePlayback() },
+            onSeek = { viewModel.seekTo(it) },
+            onSkip = { viewModel.skipPlayback(it) },
             onCopy = { text -> context.copyToClipboard(displayName, text) },
             onShare = { text -> context.sharePlainText(displayName, text) },
             onRetranscribe = {

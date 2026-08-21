@@ -617,7 +617,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun playFrom(uri: Uri, positionMs: Int) {
         when (PlaybackJump.planFor(playback.value.activeUri, playback.value.phase, uri)) {
-            PlaybackJump.SEEK_NOW -> playbackController.seekTo(positionMs)
+            PlaybackJump.SEEK_NOW -> {
+                playbackController.seekTo(positionMs)
+                // Then play. Tapping a line asks to *hear* it, not to move a cursor — and a seek
+                // that left a paused player paused read as the tap having done nothing at all.
+                // Harmless while already playing: start() on a started MediaPlayer is a no-op.
+                playbackController.resume()
+            }
             PlaybackJump.LOAD_THEN_SEEK -> playbackController.play(appContext, uri, positionMs)
         }
     }

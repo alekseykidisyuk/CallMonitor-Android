@@ -55,8 +55,10 @@ import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
  *
  * @param transcript      the transcript to show, or null while it is still loading.
  * @param title           who the call was with, for the header.
- * @param onSeekTo        jump playback to a segment's start; a transcript you cannot navigate from is
- *                        only text, which is why the timestamps are stored at all.
+ * @param onSeekTo        start playing from a segment's start; a transcript you cannot navigate from
+ *                        is only text, which is why the timestamps are stored at all. It starts
+ *                        playback rather than merely seeking, so a tap works on a call that is not
+ *                        loaded yet.
  * @param onRetranscribe  run it again, e.g. after switching to a better model.
  * @param onDelete        discard the text and keep the audio. Someone may want the recording without
  *                        a searchable transcript of what was said in it.
@@ -66,10 +68,21 @@ import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
 fun TranscriptSheet(
     transcript: TranscriptWithSegments?,
     title: String,
-    /** Where playback has reached, so the line being spoken can be lit. -1 when nothing is playing. */
+    /**
+     * Where playback has reached, so the line being spoken can be lit and the transport bar knows
+     * what to show. -1 when this recording is not the loaded track.
+     */
     positionMs: Long = -1L,
+    durationMs: Long = 0L,
+    isPlaying: Boolean = false,
+    isLoading: Boolean = false,
     onDismiss: () -> Unit,
     onSeekTo: (Long) -> Unit,
+    onPlay: () -> Unit,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onSeek: (Int) -> Unit,
+    onSkip: (Int) -> Unit,
     onCopy: (String) -> Unit,
     onShare: (String) -> Unit,
     onRetranscribe: () -> Unit,
@@ -126,6 +139,24 @@ fun TranscriptSheet(
                 }
             }
         }
+
+        // Pinned below the transcript rather than scrolling with it: the point of these controls is
+        // to pause or step back while reading, which is when they would have scrolled away.
+        //
+        // Present in every state, including "still loading" and "no speech was recognised" — the
+        // recording exists and is playable whether or not there are words to show for it.
+        TranscriptPlayerBar(
+            positionMs = positionMs,
+            durationMs = durationMs,
+            isPlaying = isPlaying,
+            isLoading = isLoading,
+            onPlay = onPlay,
+            onPause = onPause,
+            onResume = onResume,
+            onSeek = onSeek,
+            onSkip = onSkip,
+            modifier = Modifier.padding(top = 4.dp)
+        )
 
         // FlowRow, not Row: four actions do not fit on one line on a narrow screen in every locale,
         // and wrapping is better than squeezing labels until they ellipsize.
