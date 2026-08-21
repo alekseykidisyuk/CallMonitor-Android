@@ -67,21 +67,44 @@ object SummaryPrompt {
         "Use only what is said in the text below. Do not invent names, numbers, dates or " +
             "commitments, and do not guess at anything that is unclear."
 
-    /** One chunk of a call, rendered for the model with its speakers where they are known. */
+    /**
+     * One chunk of a call, rendered for the model.
+     *
+     * Measured on a real Hebrew call: handed 176 separate lines, Gemma returned the **first four,
+     * copied word for word**, and ignored the rest. whisper cuts at every pause, so a real
+     * transcript is fragments — "yes", "okay", half a sentence — and a wall of them does not read as
+     * a conversation to anything. Lines with no speaker are therefore joined into flowing text
+     * before the model sees them, which is what they were before whisper cut them up.
+     *
+     * A transcript that *does* name its speakers keeps its line breaks: there the breaks carry the
+     * turn-taking, which is information rather than noise.
+     */
     fun forChunk(segments: List<TranscriptSegmentEntry>, language: String?): String {
-        val body = segments.joinToString("\n") { segment ->
-            // The speaker column is omitted rather than left blank when unknown, so a transcript
-            // with no speaker data reads as ordinary dialogue instead of looking damaged.
-            segment.speaker?.let { "$it: ${segment.text}" } ?: segment.text
+        val hasSpeakers = segments.any { it.speaker != null }
+        val body = if (hasSpeakers) {
+            segments.joinToString("\n") { segment ->
+                segment.speaker?.let { "$it: ${segment.text}" } ?: segment.text
+            }
+        } else {
+            segments.joinToString(" ") { it.text.trim() }
         }
         return buildString {
-            appendLine("Summarise this part of a recorded phone call in a few short sentences.")
+            appendLine("Below is part of a recorded phone call, transcribed automatically.")
+            appendLine("The transcription is imperfect and some words may be wrong.")
+            appendLine()
+            appendLine("Write a short summary of what this part of the call was about.")
+            // Said outright, because the failure was not a misunderstanding of the task but a
+            // literal answer to it: it copied. "In your own words" is the instruction that was
+            // missing, and it costs nothing to be explicit about the rest as well.
+            appendLine("Write it in your own words. Do not copy sentences from the transcript.")
+            appendLine("Cover the whole of the text below, not only its beginning.")
             appendLine(languageClause(language))
             appendLine(NO_INVENTION)
             appendLine()
+            appendLine("TRANSCRIPT:")
             appendLine(body)
             appendLine()
-            append("Summary:")
+            append("SUMMARY:")
         }
     }
 

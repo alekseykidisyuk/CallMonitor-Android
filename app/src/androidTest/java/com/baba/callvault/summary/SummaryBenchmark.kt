@@ -144,7 +144,7 @@ class SummaryBenchmark {
                 }
 
                 lines.appendLine("total:      ${SystemClock.elapsedRealtime() - runStart} ms")
-                lines.appendLine("peak pss:   ${peakPssMb()} MB")
+                lines.appendLine("pss while loaded: ${pssWhileLoadedMb()} MB")
                 lines.appendLine("--- everything that is actually true in this call ---")
                 sample.facts.forEach { lines.appendLine("  - $it") }
                 lines.appendLine("--- summary; anything above is fair, anything else is invented ---")
@@ -159,7 +159,14 @@ class SummaryBenchmark {
         }
     }
 
-    private fun peakPssMb(): Int {
+    /**
+     * Process PSS right now, read while the weights are still resident.
+     *
+     * Not a peak — Android exposes no high-water mark, and this is the present moment. Read inside
+     * the model's lifetime on purpose: the same call made after the model is freed understates a
+     * run by nearly four times.
+     */
+    private fun pssWhileLoadedMb(): Int {
         val info = Debug.MemoryInfo()
         Debug.getMemoryInfo(info)
         return info.totalPss / 1024
