@@ -111,6 +111,36 @@ recommendation.
 
 ---
 
+## Progress
+
+- **Task 1 — done** (`493c942`). See the correction below.
+- **Task 2 — done** (`5165b54`). Three tests pass on the OP12.
+- **Task 3 — done** (`0c2e390`). 503 unit tests green.
+- **Task 4 — not started.** Needs several GB of model downloads.
+- **Task 5 — not started.** Needs sustained time on the phone.
+
+### Correction: the plan was wrong about ggml, in both directions
+
+The plan said to set `LLAMA_USE_SYSTEM_GGML`. **Don't** — that makes llama.cpp look for an
+*installed* system libggml, which does not exist here. Both projects already guard their ggml with
+`if (NOT TARGET ggml)`, so whichever is added first creates the target and the second reuses it. No
+switch, no duplicate-target failure, and the APK carries one libggml.
+
+What the plan under-estimated is the cost. whisper.cpp was pinned to **v1.7.4, January 2025** —
+nineteen months stale, from before `gguf.h` was split out of `ggml.h`. Today's llama.cpp would not
+compile against it: `fatal error: 'gguf.h' file not found`. Sharing a ggml means the submodules must
+be contemporaries, so **whisper moved to v1.9.3** (released 2026-08-20). Pinning llama.cpp back to
+January 2025 instead was never an option — that predates every architecture worth summarising with.
+
+**Therefore: bumping whisper is load-bearing, not housekeeping.** It carries nineteen months of
+upstream change into the shipped transcription engine. It builds and the suite is green, but
+**transcription has not been re-verified on a device**, and that gates anything past this spike.
+
+### Outstanding before Task 4
+
+- [ ] Transcribe a short recording on the OP12 and confirm the text is still right after the
+      whisper v1.7.4 → v1.9.3 bump.
+
 ## Task 1: Build llama.cpp beside whisper.cpp
 
 **Files:**
