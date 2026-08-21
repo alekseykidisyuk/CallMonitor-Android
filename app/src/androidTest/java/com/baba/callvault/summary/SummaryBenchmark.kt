@@ -8,15 +8,10 @@
 
 package com.baba.callvault.summary
 
-import android.content.Context
 import android.os.Debug
 import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.baba.callvault.data.transcripts.db.TranscriptDatabase
-import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
-import com.baba.callvault.ui.common.BidiText
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -27,25 +22,21 @@ import java.io.File
  * The measurement this whole spike exists for: can a small local model summarise a real call, in the
  * language it was spoken in, at a cost a phone can pay?
  *
- * Not a pass/fail test. It runs every model it finds against every transcript it is given and writes
- * down what happened; a human then reads the summaries and decides. Written as an instrumented test
- * only because that is the cheapest way to run real code on a real phone with the app's own data.
+ * Not a pass/fail test. It runs every model it finds against every sample and writes down what
+ * happened; a human then reads the summaries and decides. Written as an instrumented test only
+ * because that is the cheapest way to run real code on a real phone.
  *
- * **Nothing it produces leaves the device.** The report is written to the app's own external files
- * directory, which is readable over adb and deletable in one command. Summaries and transcript text
- * are a private conversation; the numbers are what the decision needs, and the words are for the
- * maintainer to read on the phone.
+ * The calls are invented rather than real — see [SummarySamples] for why, and for the list of what
+ * is actually true in each, which is what makes "did it invent anything" checkable at all.
  *
- * Put one or more `.gguf` files in /sdcard/Download and run:
+ * Push one or more `.gguf` files into the isolated build's own files directory and run:
  *
+ *     adb push model.gguf /sdcard/Android/data/com.baba.callvault.instrtest/files/
  *     ./gradlew :app:connectedDebugAndroidTest -PisolateTestApp \
  *       -Pandroid.testInstrumentationRunnerArguments.class=com.baba.callvault.summary.SummaryBenchmark
  */
 @RunWith(AndroidJUnit4::class)
 class SummaryBenchmark {
-
-    /** How many transcripts to run. Enough to see a pattern, few enough to finish in an evening. */
-    private val transcriptLimit = 4
 
     /** Room for a summary of a chunk. Beyond this the model is padding, not summarising. */
     private val maxTokensPerChunk = 220
@@ -56,17 +47,30 @@ class SummaryBenchmark {
     fun measure() = runBlocking {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-        val models = File("/sdcard/Download")
-            .listFiles { file -> file.isFile && file.name.endsWith(".gguf") }
-            .orEmpty()
+        // The app's own external files directory, not /sdcard/Download.
+        //
+        // Under scoped storage an app cannot list Download at all — listFiles returns null and the
+        // run skipped without measuring anything, which is how this was found. This directory is
+        // readable, writable, visible over adb, and removed when the app is uninstalled.
+        // Shared storage first, then the app's own directory.
+        //
+        // A model is gigabytes and the isolated build is uninstalled after every run, which would
+        // take it — and the report — with it. So both live in Download, which survives, and reading
+        // them from there is why the debug manifest asks for MANAGE_EXTERNAL_STORAGE. The app's own
+        // directory is still searched, for a model pushed there deliberately.
+        val shared = File("/sdcard/Download")
+        val own = context.getExternalFilesDir(null)
+        val models = listOfNotNull(shared, own)
+            .flatMap { dir -> dir.listFiles { f -> f.isFile && f.name.endsWith(".gguf") }.orEmpty().toList() }
             .sortedBy { it.length() }
 
-        // Skipped rather than failed when there is no model: an empty Download folder means the
-        // measurement was not set up, which is not the same as the code being broken.
-        assumeTrue("no .gguf in /sdcard/Download — push a model first", models.isNotEmpty())
-
-        val transcripts = loadTranscripts(context)
-        assumeTrue("no transcripts on this device to summarise", transcripts.isNotEmpty())
+        // Skipped rather than failed when there is no model: a missing model means the measurement
+        // was not set up, which is not the same as the code being broken.
+        assumeTrue(
+            "no .gguf in ${shared.absolutePath} or ${own?.absolutePath} — push a model, and grant " +
+                "MANAGE_EXTERNAL_STORAGE if it is in shared storage",
+            models.isNotEmpty()
+        )
 
         val report = StringBuilder()
         report.appendLine("CallVault summarisation benchmark")
@@ -75,34 +79,43 @@ class SummaryBenchmark {
         report.appendLine()
 
         models.forEach { model ->
-            transcripts.forEach { (name, segments) ->
-                report.appendLine(runOne(model, name, segments))
+            SummarySamples.all.forEach { sample ->
+                // Twice per sample: once whole, and once with a small chunk limit so the split and
+                // merge path is exercised too. Merging is where a summary of a long call is made or
+                // lost, and it would otherwise go unmeasured on anything short enough to run here.
+                report.appendLine(runOne(model, sample, chunkChars = SummaryChunking.DEFAULT_MAX_CHARS))
+                report.appendLine()
+                report.appendLine(runOne(model, sample, chunkChars = 400))
                 report.appendLine()
             }
         }
 
-        val out = File(context.getExternalFilesDir(null), "summary-benchmark.txt")
-        out.writeText(report.toString())
+        // Written where it survives the test app being uninstalled, falling back to the app's own
+        // directory if shared storage turns out not to be writable.
+        val out = runCatching {
+            File(shared, "summary-benchmark.txt").apply { writeText(report.toString()) }
+        }.getOrElse {
+            File(own, "summary-benchmark.txt").apply { writeText(report.toString()) }
+        }
         // The path, never the contents.
         println("benchmark written to ${out.absolutePath}")
     }
 
     private suspend fun runOne(
         modelFile: File,
-        displayName: String,
-        segments: List<TranscriptSegmentEntry>
+        sample: SummarySamples.Sample,
+        chunkChars: Int
     ): String {
-        val chunks = SummaryChunking.chunk(segments)
-        // The transcript's own script decides the language asked for, which is what the shipped
-        // version would do. Whether the model obeys is the thing being measured.
-        val language = if (BidiText.isRtl(segments.joinToString(" ") { it.text })) "he" else "en"
+        val segments = sample.asSegments()
+        val chunks = SummaryChunking.chunk(segments, maxChars = chunkChars)
+        val language = sample.language
 
         val lines = StringBuilder()
         lines.appendLine("model:      ${modelFile.name}  (${modelFile.length() / 1_000_000} MB)")
-        lines.appendLine("recording:  $displayName")
+        lines.appendLine("sample:     ${sample.name}")
         lines.appendLine("transcript: ${segments.size} segments, " +
             "${segments.sumOf { it.text.length }} chars, asked for: $language")
-        lines.appendLine("chunks:     ${chunks.size}")
+        lines.appendLine("chunks:     ${chunks.size} (limit $chunkChars chars)")
 
         val loadStart = SystemClock.elapsedRealtime()
 
@@ -132,7 +145,9 @@ class SummaryBenchmark {
 
                 lines.appendLine("total:      ${SystemClock.elapsedRealtime() - runStart} ms")
                 lines.appendLine("peak pss:   ${peakPssMb()} MB")
-                lines.appendLine("--- summary, to be read and rated by a human ---")
+                lines.appendLine("--- everything that is actually true in this call ---")
+                sample.facts.forEach { lines.appendLine("  - $it") }
+                lines.appendLine("--- summary; anything above is fair, anything else is invented ---")
                 lines.appendLine(summary)
                 lines.toString()
             }
@@ -142,21 +157,6 @@ class SummaryBenchmark {
             lines.appendLine("FAILED: ${failure.message}")
             lines.toString()
         }
-    }
-
-    private suspend fun loadTranscripts(
-        context: Context
-    ): List<Pair<String, List<TranscriptSegmentEntry>>> {
-        if (!TranscriptDatabase.exists(context)) return emptyList()
-        val dao = TranscriptDatabase.get(context).transcriptDao()
-        return dao.allTranscripts()
-            .mapNotNull { entry -> dao.observe(entry.displayName).first() }
-            .map { it.transcript.displayName to it.segments }
-            // Longest first: a two-word transcript measures nothing, and the interesting behaviour —
-            // chunking, merging, staying in the right language across a long call — only appears on
-            // a substantial one.
-            .sortedByDescending { (_, segments) -> segments.sumOf { it.text.length } }
-            .take(transcriptLimit)
     }
 
     private fun peakPssMb(): Int {
