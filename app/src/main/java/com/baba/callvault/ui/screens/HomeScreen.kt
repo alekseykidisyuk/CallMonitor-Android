@@ -108,7 +108,7 @@ import com.baba.callvault.ui.common.TranscribeConfirmDialog
 import com.baba.callvault.ui.common.TranscribingPill
 import com.baba.callvault.ui.common.formatEstimate
 import com.baba.callvault.ui.common.TranscribingSheet
-import com.baba.callvault.ui.common.rememberSmoothedPercent
+import com.baba.callvault.ui.common.rememberTranscribingDisplay
 import com.baba.callvault.ui.common.rememberTranscribingPillState
 import com.baba.callvault.ui.common.TranscriptSearchSheet
 import com.baba.callvault.ui.common.DeleteCopiesDialog
@@ -227,8 +227,7 @@ fun HomeScreen(
     // whisper only reports at chunk boundaries, so the raw figure sits still for long stretches —
     // long enough to read as a hang, which is the complaint this answers. The clock fills the gaps
     // between its anchors; see TranscriptionProgress for what is and is not invented.
-    val smoothPercent by rememberSmoothedPercent(transcribing, uiState.recordings)
-    val transcribingShown = transcribing.withPercent(smoothPercent)
+    val transcribingShown = rememberTranscribingDisplay(transcribing, uiState.recordings)
     var showTranscribingSheet by remember { mutableStateOf(false) }
 
     val transcriptScope = rememberCoroutineScope()
@@ -370,7 +369,7 @@ fun HomeScreen(
         // nothing by waiting a few minutes.
         titleTrailing = when {
             selectionMode -> null
-            transcribing.occupiesTitleSlot ->
+            transcribingShown.occupiesTitleSlot ->
                 ({ TranscribingPill(state = transcribingShown, onClick = { showTranscribingSheet = true }) })
             else -> ({ SupportPill(onClick = { showSupport = true }) })
         },

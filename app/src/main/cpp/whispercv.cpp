@@ -160,7 +160,15 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
     // Set before the run so the segment callback can turn an end timestamp into a share of the whole.
     g_total_ms.store((static_cast<int64_t>(n) * 1000) / WHISPER_SAMPLE_RATE, std::memory_order_relaxed);
     jfloat *samples = env->GetFloatArrayElements(audio, nullptr);
-    whisper_full(ctx_of(ptr), params, samples, n);
+    const int rc = whisper_full(ctx_of(ptr), params, samples, n);
+
+    // Finished is a fact, not a prediction, and it is the one number the running figure can never
+    // reach on its own: the segment timestamps stop at the last words spoken, and any trailing
+    // silence is progress nothing reports. Without this the figure vanished around seventy, which
+    // reads as giving up rather than finishing.
+    if (rc == 0 && !g_abort.load(std::memory_order_relaxed)) {
+        g_progress.store(100, std::memory_order_relaxed);
+    }
     // JNI_ABORT: whisper never writes to the input, so there is nothing to copy back.
     env->ReleaseFloatArrayElements(audio, samples, JNI_ABORT);
 
