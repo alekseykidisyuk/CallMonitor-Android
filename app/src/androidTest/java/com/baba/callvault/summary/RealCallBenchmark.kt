@@ -69,15 +69,29 @@ class RealCallBenchmark {
         )
 
         val shared = File("/sdcard/Download")
+        // Logged before the assumptions, because the runner reports a skipped assumption as "OK"
+        // with no reason attached — a silent pass that looks identical to a successful measurement.
+        val own0 = context.getExternalFilesDir(null)
+        android.util.Log.i(
+            "CV:Bench",
+            "own=${own0?.absolutePath} exists=${own0?.exists()} " +
+                "ownFiles=${own0?.listFiles()?.joinToString { it.name }} " +
+                "sharedFiles=${File("/sdcard/Download").listFiles()?.size}"
+        )
         // By name, not by extension. The phone already had unrelated .bin files in Download from
         // someone else's experiments, and "the first .bin" picked one of those and then blamed
         // whisper for failing to load it. ggml- is whisper.cpp's own naming.
-        val speechModel = shared
-            .listFiles { f -> f.name.startsWith("ggml-") && f.name.endsWith(".bin") }
-            .orEmpty()
-            .firstOrNull()
-        val summaryModel = shared.listFiles { f -> f.name.endsWith(".gguf") }.orEmpty().firstOrNull()
-        assumeTrue("no .gguf in ${shared.absolutePath}", summaryModel != null)
+        // Both directories, because which one holds the model depends on the phone. Shared storage
+        // needs MANAGE_EXTERNAL_STORAGE, which ColorOS will not let adb grant without a setting the
+        // phone's owner has to toggle by hand; the app's own directory always works. Searching only
+        // Download is why the OP9 run skipped — and reported OK while measuring nothing.
+        val dirs = listOfNotNull(shared, context.getExternalFilesDir(null))
+        fun find(match: (File) -> Boolean): File? =
+            dirs.flatMap { it.listFiles()?.toList().orEmpty() }.firstOrNull { it.isFile && match(it) }
+
+        val speechModel = find { it.name.startsWith("ggml-") && it.name.endsWith(".bin") }
+        val summaryModel = find { it.name.endsWith(".gguf") }
+        assumeTrue("no .gguf in ${dirs.joinToString { it.absolutePath }}", summaryModel != null)
 
         val lines = StringBuilder()
         lines.appendLine("CallVault real-call summarisation benchmark")
