@@ -140,6 +140,7 @@ fun PlaybackScreen(
             )
             PlayerCard(
                 peaks = peaks,
+                knownDurationMs = ((item.durationSeconds ?: 0L) * 1000L).toInt(),
                 playback = playback,
                 isActive = isActive,
                 isPlaying = isPlaying,
@@ -290,26 +291,23 @@ private fun DirectionChip(direction: RecordingDirection) {
     val accent = MaterialTheme.colorScheme.primary
     val incoming = direction == RecordingDirection.INCOMING
 
+    // The arrow alone, no word beside it.
+    //
+    // "outgoing" plus "Yesterday, 15:57" did not fit the column, and it was the date that lost —
+    // truncated to "Yeste…", which is the half that actually identifies the call. An arrow pointing
+    // out of the phone is not made clearer by the word "outgoing" printed next to it, so the word is
+    // what goes. Screen readers still hear it: it moves to the content description.
     Surface(shape = CircleShape, color = accent.copy(alpha = 0.12f)) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = if (incoming) Icons.Filled.CallReceived else Icons.Filled.CallMade,
-                contentDescription = null,
-                tint = accent,
-                modifier = Modifier.size(14.dp)
-            )
-            Spacer(Modifier.width(5.dp))
-            Text(
-                text = stringResource(
-                    if (incoming) R.string.general_incoming else R.string.general_outgoing
-                ),
-                style = MaterialTheme.typography.labelSmall,
-                color = accent
-            )
-        }
+        Icon(
+            imageVector = if (incoming) Icons.Filled.CallReceived else Icons.Filled.CallMade,
+            contentDescription = stringResource(
+                if (incoming) R.string.general_incoming else R.string.general_outgoing
+            ),
+            tint = accent,
+            modifier = Modifier
+                .padding(5.dp)
+                .size(14.dp)
+        )
     }
 }
 
@@ -317,6 +315,8 @@ private fun DirectionChip(direction: RecordingDirection) {
 @Composable
 private fun PlayerCard(
     peaks: FloatArray,
+    /** The call's length as the list knows it, for before anything is loaded. */
+    knownDurationMs: Int,
     playback: RecordingPlaybackController.PlaybackState,
     isActive: Boolean,
     isPlaying: Boolean,
@@ -329,7 +329,10 @@ private fun PlayerCard(
     onCycleSpeed: () -> Unit
 ) {
     val accent = MaterialTheme.colorScheme.primary
-    val duration = if (isActive) playback.durationMs else 0
+    // Falls back to the length from the call log rather than showing 0:00 for a recording that is
+    // simply not loaded yet. Nothing is playing until the play button is pressed, and a player that
+    // claims a call is zero seconds long looks broken rather than idle.
+    val duration = if (isActive && playback.durationMs > 0) playback.durationMs else knownDurationMs
     val position = if (isActive) playback.positionMs else 0
 
     CvCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp)) {

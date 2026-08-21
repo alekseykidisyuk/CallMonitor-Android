@@ -564,12 +564,11 @@ fun HomeScreen(
                             playbackFor = item.displayName
                             viewModel.play(uri)
                         },
-                        onOpenPlayback = {
-                            playbackFor = item.displayName
-                            // Only start it if this recording is not already the one loaded, so
-                            // reopening the screen does not restart a call from the beginning.
-                            if (playback.activeUri != item.uri) viewModel.play(item.uri)
-                        },
+                        // Opens the recording. Deliberately does NOT start it: a tap meant to look
+                        // at a call would begin playing it out loud, which on a recording of a
+                        // private conversation is the wrong default in a room with other people.
+                        // The play button is right there and says what it does.
+                        onOpenPlayback = { playbackFor = item.displayName },
                         onPause = { viewModel.pausePlayback() },
                         onResume = { viewModel.resumePlayback() },
                         onSeek = { viewModel.seekTo(it) },
