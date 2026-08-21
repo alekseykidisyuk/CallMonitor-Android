@@ -3,6 +3,115 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [Unreleased]
+
+The release that gives a recording somewhere to live: transcripts, a playback screen, notes, and
+search across everything that was ever said.
+
+### Added
+
+- **Transcription, entirely on this phone.** Recordings can be turned into text by a speech model
+  that runs locally — nothing is uploaded, and it works with no network at all. Choose a model in
+  Settings by the trade you want: faster, or more accurate. Fourteen languages, including Hebrew,
+  Arabic, Chinese and Vietnamese, plus **Detect automatically**, which leads the list and is the
+  default.
+
+- **Three ways to have it happen.** Transcribe a single call by tapping the button on its row;
+  transcribe every call as it ends; or leave it to run at a time you pick, so the work lands
+  overnight instead of while you are using the phone. The scheduled option is one line showing the
+  time, and tapping it opens a picker.
+
+- **It says what it is doing.** A pill beside the title while a run is going, showing how far
+  through it is as a percentage, which recording is in hand, and how many are left. Tapping it opens
+  the details and a way to stop. Before a run starts, an estimate of how long it will take, measured
+  from how fast *this* phone actually turned out to be rather than a published figure.
+
+- **A warning before the automatic modes**, once, with "don't ask again" — and a Settings switch to
+  bring it back if you regret it.
+
+- **Search what was said.** Search across every transcript you have and jump straight to the moment
+  in the call. Whole words only.
+
+- **A screen for each recording.** Tapping a call opens it: who it was with, a waveform drawn from
+  the actual audio that you can tap or drag to scrub, ten-second skips both ways, and a speed
+  control — the thing that makes a ninety-minute call reviewable at all.
+
+- **A note on any recording.** A free-text field for what the call was about, kept separately from
+  the transcript because it is the one thing that cannot be regenerated from the audio. Notes are
+  deleted with the recording, exactly like transcripts: a note about a private call is as private as
+  the call.
+
+- **Playback controls inside the transcript.** Scrub, skip, play and pause without leaving the text,
+  and the line being spoken lights up as it plays. Tapping any line plays the call from there.
+
+- **Right-to-left transcripts render correctly.** Each line is judged on its own text, so a call that
+  switches language mid-way reads correctly throughout, and the timestamps sit on the correct side.
+
+- **Delete a transcript without deleting the recording**, for when you want the audio but not a
+  searchable record of what was said in it.
+
+### Changed
+
+- **Deleting a recording kept in two places now asks which copies.** A card is not a file: a
+  recording saved both on the device and in Drive is one row carrying two, so "delete this" was
+  ambiguous and answered by guessing — it removed both. The confirmation now offers Both / Device
+  only / Drive only, each with its size, and names what will survive. A recording that exists in one
+  place is not asked at all.
+
+- **The recording list gives the contact name room to be read.** The source badge moved under the
+  play button and the row actions gave up their padding, after names were being cut to four
+  characters.
+
+- **Language lists are sorted A–Z** in the reader's own language.
+
+### Fixed
+
+- **Automatic language detection produced empty transcripts, for everyone.** Asking whisper to detect
+  the language told it to detect the language *and stop*, so every automatic run returned nothing at
+  all. This was the default setting.
+
+- **Stop now actually stops.** Pressing stop left the phone at full CPU until the run finished by
+  itself, because the work is one long call that cannot be interrupted from outside. It also left the
+  recording marked as failed, and could leave half a transcript behind that looked complete. A stop
+  is now a stop: it lands in under a second, keeps nothing partial, and is never reported as an
+  error.
+
+- **Transcription was slower than it needed to be, and said nothing while it ran.** The speech model
+  ran on every core including the efficiency ones, which made the fast cores wait at every step
+  rather than adding speed. And a long run showed a spinning circle and nothing else for minutes,
+  which is indistinguishable from being stuck.
+
+- **A background task could keep the phone busy indefinitely.** Preparing waveforms restarted itself
+  every time the app came to the foreground, so it began again from the top of the list each time and
+  never finished — measurable as sustained CPU use on a phone doing nothing. It now runs once, stands
+  aside while a transcription is going, and only prepares the few most recent short recordings.
+
+- **Opening a recording no longer starts playing it**, and leaving the screen stops the audio.
+  Playing a private call out loud because a card was tapped is the wrong default, and it continued
+  after the screen was closed.
+
+- **The list no longer claims to be empty while it is still loading**, which made a library of sixty
+  announce itself as empty for half a second on every launch.
+
+- **Confirmations raised from a recording's screen appear there**, instead of waiting silently and
+  ambushing you on the list afterwards.
+
+- **A recording's own screen can be scrolled**, so the controls at the bottom of it can be reached at
+  all.
+
+- **"1 minutes"** — estimates now read correctly in every language.
+
+### Under the hood
+
+- **whisper.cpp moves from v1.7.4 (January 2025) to v1.9.3.** Nineteen months of upstream change,
+  taken deliberately rather than for tidiness: llama.cpp is being vendored alongside it for
+  summarisation, the two share one copy of ggml, and sharing requires them to be contemporaries.
+  Anyone reproducing a build needs the submodules at these pins.
+
+- **The speech model now runs on the performance cores only**, which changes how long a run takes.
+  A phone's measured speed is therefore discarded when the thread policy changes, rather than being
+  averaged away over several runs that would each quote a wrong estimate.
+
 ## [1.5.8] - 2026-08-18
 
 ### Fixed

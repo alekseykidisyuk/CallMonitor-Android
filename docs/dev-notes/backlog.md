@@ -22,6 +22,36 @@ with `&&`/`||` chains and silently reported the opposite answer while this was b
 
 ---
 
+## Current state — 2026-08-21
+
+Sixty-eight commits sit unreleased on `worktree-feat+transcription-engine` (and its descendant
+`spike/summarisation`), all documented under **[Unreleased]** in `CHANGELOG.md`. Neither branch is
+merged or pushed.
+
+### 🔵 Before that release can be cut
+
+- **Re-verify transcription broadly after the whisper bump.** v1.7.4 → v1.9.3 is nineteen months of
+  upstream change. One Hebrew recording was transcribed correctly on the OP12 on 2026-08-21, which
+  retires the "does it work at all" question and nothing more. Worth a pass over several languages
+  and a long call before shipping.
+- **Re-measure transcription speed.** Every stored figure predates two changes that alter it: the
+  thread policy, and the removal of a background task that was competing for the same cores. The
+  estimate recalibrates itself from real runs, so this is a matter of doing a few.
+- **Bump `ciVersionName`.** This is a feature release, so 1.6.0 rather than 1.5.9.
+- **The B1–B9 device pass is still largely unrun** — deletion cascade, survival across restarts,
+  speaker mapping, and section C.
+
+### 🔵 Known gaps, agreed but not done
+
+- **Per-recording summaries** — spike plan at `docs/dev-notes/2026-08-21-summarisation-spike-plan.md`.
+  Tasks 1–3 done; the measurement that decides the whole feature is not.
+- **Estimates are still one number times a length.** A short recording pays a fixed cost — loading a
+  model, decoding the audio — that a real-time factor cannot express, so short calls are quoted
+  optimistically. A two-part estimate (fixed overhead plus a per-second factor) would fit reality
+  better. Not started; raised on 2026-08-21 after a 1:17 call was quoted two minutes.
+
+---
+
 ## Current state — 2026-08-05, status reconciled against the tags 2026-08-14
 
 Kept at the top so a session can start from disk instead of from recall. **Update it whenever a
