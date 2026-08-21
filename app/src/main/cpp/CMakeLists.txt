@@ -36,3 +36,25 @@ add_subdirectory(${WHISPER_ROOT} ${CMAKE_CURRENT_BINARY_DIR}/whisper.cpp)
 
 add_library(whispercv SHARED whispercv.cpp)
 target_link_libraries(whispercv whisper ${log-lib})
+
+# --- On-device summarisation (llama.cpp) ---
+#
+# Same org and the same ggml as whisper.cpp above. Both projects vendor ggml and both guard it with
+# `if (NOT TARGET ggml)`, so whichever is added first creates the target and the second reuses it --
+# no duplicate-target failure, and no second copy of ggml in the APK. Order therefore decides WHOSE
+# ggml both engines compile against, which is the thing to check when either fails to build.
+#
+# GGML_OPENMP / the Debug -O3 override above apply to these targets too, and matter just as much:
+# summarisation is the same ggml kernels doing the same arithmetic.
+set(LLAMA_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../../third_party/llama.cpp)
+
+set(LLAMA_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_SERVER   OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TOOLS    OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_COMMON   OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(${LLAMA_ROOT} ${CMAKE_CURRENT_BINARY_DIR}/llama.cpp)
+
+add_library(llamacv SHARED llamacv.cpp)
+target_link_libraries(llamacv llama ${log-lib})
