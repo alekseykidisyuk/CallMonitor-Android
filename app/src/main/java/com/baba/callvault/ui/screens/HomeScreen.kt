@@ -27,10 +27,6 @@ import com.baba.callvault.ui.common.formatByteSize
 import com.baba.callvault.ui.common.SupportDialog
 import com.baba.callvault.system.shareRecordings
 import com.baba.callvault.system.shareRecording
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -114,6 +110,7 @@ import com.baba.callvault.ui.common.formatEstimate
 import com.baba.callvault.ui.common.TranscribingSheet
 import com.baba.callvault.ui.common.rememberTranscribingPillState
 import com.baba.callvault.ui.common.TranscriptSearchSheet
+import com.baba.callvault.ui.common.SeekBar
 import com.baba.callvault.ui.common.TranscriptSheet
 import com.baba.callvault.system.copyToClipboard
 import com.baba.callvault.system.sharePlainText
@@ -2162,54 +2159,6 @@ private fun formatDuration(seconds: Long): String {
 
 /** Formats a byte count as a compact human-readable size (e.g. "1.2 MB"). */
 private fun formatSize(bytes: Long): String = formatByteSize(bytes)
-
-/**
- * A thin, thumbless progress bar for the inline player — cleaner than a Slider but still
- * tap- and drag-seekable: tapping or dragging anywhere along it scrubs to that position.
- */
-@Composable
-private fun SeekBar(
-    positionMs: Int,
-    durationMs: Int,
-    onSeek: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val total = durationMs.takeIf { it > 0 } ?: 1
-    val fraction = (positionMs.toFloat() / total).coerceIn(0f, 1f)
-    val widthPx = remember { mutableStateOf(0) }
-    fun seekToX(x: Float) {
-        val w = widthPx.value
-        if (w > 0) onSeek(((x / w).coerceIn(0f, 1f) * total).toInt())
-    }
-    Box(
-        modifier = modifier
-            .height(28.dp)
-            .onSizeChanged { widthPx.value = it.width }
-            .pointerInput(Unit) { detectTapGestures { offset -> seekToX(offset.x) } }
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragStart = { offset -> seekToX(offset.x) },
-                    onHorizontalDrag = { change, _ -> seekToX(change.position.x); change.consume() },
-                )
-            },
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.outlineVariant),
-        )
-        Box(
-            Modifier
-                .fillMaxWidth(fraction)
-                .height(8.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-        )
-    }
-}
 
 /** Formats a millisecond duration as m:ss. */
 private fun formatMillis(millis: Int): String {
