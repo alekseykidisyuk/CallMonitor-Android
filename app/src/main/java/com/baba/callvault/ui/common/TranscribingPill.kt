@@ -98,10 +98,13 @@ fun TranscribingPill(state: TranscribingPillState, onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // trackColor stated for the same reason as on the row: left to the theme it resolves to
+            // CoralDeep and puts a red ring inside a teal pill.
             CircularProgressIndicator(
                 modifier = Modifier.size(13.dp),
                 strokeWidth = 2.dp,
-                color = accent
+                color = accent,
+                trackColor = accent.copy(alpha = 0.20f)
             )
             Spacer(Modifier.width(6.dp))
             Text(

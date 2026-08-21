@@ -53,16 +53,27 @@ fun TranscriptActionButton(
         // that spins for minutes without filling is indistinguishable from a hang, which is what
         // this row looked like on a long call — the ring filling is the difference between "still
         // working" and "possibly stuck", read at a glance and without any text to fit.
+        // Colours stated, never defaulted. M3 draws a track behind the moving arc and takes it from
+        // a container role, which in this theme is CoralDeep — so the row showed a RED ring with a
+        // teal segment sweeping it, reading as an error on a recording that was working perfectly.
+        // The same trap RecordingRow's selected-card colour records.
+        val accent = MaterialTheme.colorScheme.primary
+        val track = accent.copy(alpha = 0.20f)
+
         if (percent > 0) {
             CircularProgressIndicator(
                 progress = { percent / 100f },
                 modifier = modifier.size(PROGRESS_SIZE),
-                strokeWidth = PROGRESS_STROKE
+                color = accent,
+                strokeWidth = PROGRESS_STROKE,
+                trackColor = track
             )
         } else {
             CircularProgressIndicator(
                 modifier = modifier.size(PROGRESS_SIZE),
-                strokeWidth = PROGRESS_STROKE
+                color = accent,
+                strokeWidth = PROGRESS_STROKE,
+                trackColor = track
             )
         }
         return
