@@ -1,0 +1,60 @@
+/*
+ * CallVault: FOSS call recording, self-contained over embedded ADB
+ *  Copyright (C) 2026-present The CallVault Authors
+ *  This software is licensed under the GNU General Public License v3 or later, with additional terms as permitted under Section 7.
+ *  The full license text is available in the LICENSE file at the root of this project.
+ *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+package com.baba.callvault.summary
+
+/**
+ * JNI bridge to llama.cpp.
+ *
+ * The same contract as [com.baba.callvault.transcription.WhisperNative], for the same reasons: one
+ * model may not be driven from two threads at once, so nothing calls these directly — [SummaryEngine]
+ * owns that serialisation and is the only supported entry point. The raw `Long` is a model pointer
+ * and must be paired with exactly one [freeContext].
+ *
+ * Runs in the app process, never in the privileged recorder daemon. Summarising needs no privilege,
+ * and putting a CPU-saturating job in the capture process would risk the one thing that must not
+ * fail.
+ */
+object LlamaNative {
+    init { System.loadLibrary("llamacv") }
+
+    /** ggml build/CPU feature string. Used to confirm the native library loaded at all. */
+    external fun systemInfo(): String
+
+    /** @return an opaque model pointer, or 0 when the model could not be loaded. */
+    external fun initContext(modelPath: String): Long
+
+    /** Releases a model from [initContext]. Safe to call with 0. */
+    external fun freeContext(ptr: Long)
+
+    /**
+     * How many tokens [text] costs for this model, or negative when it cannot be tokenised.
+     *
+     * Chunking guesses in characters because it has no model to hand; this is how that guess gets
+     * checked against the truth, which differs sharply by script — Hebrew and Arabic carry far more
+     * tokens per character than English.
+     */
+    external fun countTokens(ptr: Long, text: String): Int
+
+    /**
+     * Completes [prompt], greedily, stopping at end-of-generation, [maxTokens], or [requestAbort].
+     *
+     * Greedy rather than sampled: a summary is not creative writing, and determinism is what lets one
+     * model's output be compared with another's.
+     */
+    external fun generate(ptr: Long, prompt: String, maxTokens: Int, threads: Int): String
+
+    /**
+     * Asks a run in progress to stop, from any thread.
+     *
+     * Reaches the prefill as well as the token loop. On a long transcript the prefill *is* the wait,
+     * so an abort that only checked between tokens would look broken for a minute. The flag is
+     * cleared at the start of every [generate], so a stale abort cannot kill the following run.
+     */
+    external fun requestAbort()
+}

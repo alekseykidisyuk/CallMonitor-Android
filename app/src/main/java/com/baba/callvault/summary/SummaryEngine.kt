@@ -1,0 +1,88 @@
+/*
+ * CallVault: FOSS call recording, self-contained over embedded ADB
+ *  Copyright (C) 2026-present The CallVault Authors
+ *  This software is licensed under the GNU General Public License v3 or later, with additional terms as permitted under Section 7.
+ *  The full license text is available in the LICENSE file at the root of this project.
+ *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+package com.baba.callvault.summary
+
+import com.baba.callvault.utils.AppLogger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
+
+/**
+ * The one place a llama.cpp model is loaded, used and freed.
+ *
+ * Everything here exists because the native side has two rules that are easy to break from Kotlin:
+ * one model may not be driven from two threads at once, and every load must be paired with exactly
+ * one free. A [Mutex] enforces the first; `try`/`finally` the second.
+ *
+ * Neither prompts nor generated text are ever logged — they are the substance of a private call.
+ */
+object SummaryEngine {
+
+    private const val TAG = "CV:SummaryEngine"
+
+    /** Leaves cores for the rest of the phone; the whole device must stay usable while this runs. */
+    private const val THREADS = 4
+
+    private val mutex = Mutex()
+
+    /**
+     * Whether the last run was stopped rather than finishing.
+     *
+     * The authority on *how* a run ended. An aborted generate returns normally with a short answer,
+     * so without this a stopped run is indistinguishable from a very terse summary — the same trap
+     * that made a stopped transcription look like a failed one.
+     */
+    private val aborted = AtomicBoolean(false)
+
+    /**
+     * Loads [modelPath], runs [block] against it, and frees it — whatever happens.
+     *
+     * The model stays loaded only for the duration of [block] rather than being cached. A 4B model
+     * at Q4 is well over a gigabyte of resident memory, and holding that for a screen the user may
+     * never open again is not a trade worth making on a phone.
+     */
+    suspend fun <T> withModel(modelPath: String, block: suspend (Session) -> T): T =
+        withContext(Dispatchers.Default) {
+            mutex.withLock {
+                val ptr = LlamaNative.initContext(modelPath)
+                if (ptr == 0L) error("Could not load the summarisation model")
+                try {
+                    block(Session(ptr))
+                } finally {
+                    LlamaNative.freeContext(ptr)
+                }
+            }
+        }
+
+    /** True when [requestAbort] landed during the most recent run. Cleared by the next one. */
+    fun wasAborted(): Boolean = aborted.get()
+
+    /** Asks a run in progress to stop, from any thread. Safe to call when nothing is running. */
+    fun requestAbort() {
+        aborted.set(true)
+        LlamaNative.requestAbort()
+    }
+
+    /** A loaded model, valid only inside [withModel]. */
+    class Session internal constructor(private val ptr: Long) {
+
+        /** How many tokens [text] actually costs this model's tokeniser. */
+        fun countTokens(text: String): Int = LlamaNative.countTokens(ptr, text)
+
+        /** Completes [prompt]. Returns whatever was produced before the stop when aborted. */
+        fun generate(prompt: String, maxTokens: Int): String {
+            aborted.set(false)
+            val out = LlamaNative.generate(ptr, prompt, maxTokens, THREADS)
+            if (aborted.get()) AppLogger.i(TAG, "A summary run was stopped before it finished")
+            return out
+        }
+    }
+}
