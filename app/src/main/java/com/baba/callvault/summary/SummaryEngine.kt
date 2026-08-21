@@ -88,9 +88,10 @@ object SummaryEngine {
         /** Completes [prompt]. Returns whatever was produced before the stop when aborted. */
         fun generate(prompt: String, maxTokens: Int): String {
             aborted.set(false)
-            val out = LlamaNative.generate(ptr, prompt, maxTokens, threads)
+            val raw = LlamaNative.generate(ptr, prompt, maxTokens, threads)
             if (aborted.get()) AppLogger.i(TAG, "A summary run was stopped before it finished")
-            return out
+            // Reasoning models think out loud first. That is theirs, not the user's.
+            return SummaryText.stripReasoning(raw)
         }
     }
 }
