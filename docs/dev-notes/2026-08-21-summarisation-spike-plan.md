@@ -508,6 +508,68 @@ stripping is a bandage: the budget is still spent on reasoning nobody asked for.
 The one summary it did produce was, apart from that number, genuinely good — fluent Hebrew, right
 speakers, right substance. The capability is there; the cost and the reliability are not.
 
+### Gemma 4 E2B-it, Q4_K_M — measured 2026-08-21 on the OP12
+
+Same four runs, same samples, same six threads.
+
+| Sample | Chunks | Load | Total | Peak PSS | Right language? | Invented anything? |
+|---|---|---|---|---|---|---|
+| Hebrew, 476 chars | 1 | 3280 ms | **27.9 s** | 3064 MB | yes | **no** |
+| Hebrew, 476 chars | 2 + merge | 1787 ms | **87.3 s** | 3486 MB | yes | **no** |
+| English, 596 chars | 1 | 1416 ms | **15.1 s** | 3479 MB | yes | **no** |
+| English, 596 chars | 2 + merge | 1411 ms | **43.6 s** | 3473 MB | yes | **no** |
+
+**Nothing was invented in any of the four runs.** It kept the delivery window at nine-to-eleven —
+the exact number Qwen narrowed to nine-to-ten — and got 1200 including delivery, 200 for
+installation, and 1400 as the new total, all correct.
+
+**Chunking made the summaries better, not worse.** The two-chunk Hebrew run mentioned the address and
+the reason for moving the delivery, which the single-chunk run left out; the two-chunk English run
+caught the pressure valve, the extra forty pounds and the promise to ring first, all of which the
+single-chunk run dropped. Smaller chunks mean less to compress at once. That is the opposite of the
+worry that motivated the merge step, and it means chunk size is a **quality** dial, not only a
+context-window workaround.
+
+One artefact to fix rather than a fault: the single-chunk Hebrew run printed its answer, then a
+`**תרגום לעברית:**` heading, then the identical text again. Padding to fill the token budget. A stop
+sequence or a trim handles it.
+
+### Both models, against the gate
+
+| Criterion | Bar | Qwen3.5-4B | Gemma 4 E2B |
+|---|---|---|---|
+| Right language | every run | pass | **pass** |
+| No invented facts | 8 of 10 | **fail** (1 of 1) | **pass** (0 of 4) |
+| Speed | 60 s / 10-min call | fail, ~50x over | fail on the bar; see below |
+| Memory | 2.5 GB | fail, 2.9 GB | fail, 3.5 GB |
+| Download | 3 GB | pass, 2.7 GB | fail, 3.46 GB |
+
+**Recommendation: Gemma 4 E2B, and move the cost bars.**
+
+It is the only one of the two that is *trustworthy*, which is the property that cannot be traded. It
+is also roughly twice as fast on identical work — 15.1 s against 66.1 s on the English sample.
+
+Extrapolating to a real ten-minute call, about 8000 characters: two chunks at the 6000-character
+default plus a merge, with prefill growing with the prompt. **Somewhere around two to four minutes**
+— an extrapolation from 500-character samples, not a measurement, and it should be measured on a
+real transcript before anyone relies on it. That is far outside a 60-second bar and entirely
+reasonable for a background job that says what it is doing, which is exactly what transcription
+already does at tens of minutes per call.
+
+The memory and download bars were guesses made before any evidence. 3.5 GB resident is real and rules
+out smaller phones; that belongs in the feature's requirements rather than in a veto.
+
+## Verdict
+
+**Viable, with Gemma 4 E2B, as a background job — not as something that happens while you wait.**
+
+Still unproven, and worth doing before building any UI:
+
+- **A real transcript.** Everything above used two invented calls of about 500 characters. Real
+  speech is messier and twenty times longer, and both matter. The maintainer should choose the call.
+- **A phone that is not an OP12.** 3.5 GB resident on a 16 GB flagship says nothing about an 8 GB
+  device, and this feature must degrade honestly rather than crash.
+
 ### What this says about the gate
 
 The 60-second bar assumed summarising is quick next to transcribing. It is not: generation is
