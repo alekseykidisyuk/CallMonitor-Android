@@ -196,8 +196,21 @@ Shown once before the first download. The numbers are measured, so quote them.
 
 ## Open questions
 
-1. **Does it run on 8 GB?** Being measured on the OP9 Pro (7.4 GB, Snapdragon 888). If it does not,
-   Task 5's modal becomes a hard gate rather than a warning.
+1. **Does it run on 8 GB? STILL UNANSWERED, and it gates Task 5.** Attempted on the OP9 Pro
+   (7.4 GB, Snapdragon 888) on 2026-08-21 and abandoned after several runs. What is known:
+
+   - The model **loads** — 1.7 GB resident, so memory is not obviously the wall.
+   - Generation then **never starts**: ~35 s of CPU for the load, then every thread sleeping at 0%
+     CPU with the instrumentation still marked active. Not frozen by the OS (freezer cgroup is `/`,
+     cpuset `foreground`), not killed, not out of memory, no native crash in logcat.
+   - One real cause was found and fixed along the way: a killed run leaves `SummaryEngine`'s mutex
+     held, and because the app process survives, the *next* instrumentation attaches to the same
+     process and blocks on it for ever. **Force-stop the app between runs.** That got the model
+     loading; it did not get generation running.
+
+   Worth trying next: run it as a foreground activity rather than an instrumented test, and check
+   whether the OP12 shows the same stall when its process is reused. Do not assume the phone is too
+   small — nothing measured says that yet.
 2. **Chunk size is a quality dial.** Measured: smaller chunks produced *better* summaries, because
    less is compressed at once. Worth tuning deliberately rather than defaulting to "as few as fit".
 3. **Does the merge prompt hold up over a ninety-minute call?** Never tested past two chunks.
