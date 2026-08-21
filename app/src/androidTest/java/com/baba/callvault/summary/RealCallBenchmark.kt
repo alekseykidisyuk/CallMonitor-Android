@@ -138,7 +138,11 @@ class RealCallBenchmark {
         val summary = SummaryEngine.withModel(summaryModel.absolutePath) { session ->
             val runStart = SystemClock.elapsedRealtime()
             val partial = chunks.mapIndexed { index, chunk ->
-                val prompt = SummaryPrompt.forChunk(chunk, language)
+                val prompt = if (args.getString("json") != null) {
+                    SummaryPrompt.forChunkJson(chunk, language, withTimestamps = true)
+                } else {
+                    SummaryPrompt.forChunk(chunk, language)
+                }
                 val started = SystemClock.elapsedRealtime()
                 val text = session.generate(prompt, maxTokensPerChunk)
                 lines.appendLine(
