@@ -66,6 +66,8 @@
     <string name="home_bulk_delete_scope_message">Część jest zapisana i na tym urządzeniu, i na Dysku.</string>
     <string name="home_delete">Usuń</string>
     <string name="home_delete_confirm_message">Spowoduje to trwałe usunięcie %1$s.</string>
+    <string name="home_delete_scope_message">To nagranie jest zapisane na tym urządzeniu i na Dysku.</string>
+    <string name="home_delete_scope_option_size">%1$s (%2$s)</string>
     <string name="home_delete_confirm_title">Usunąć nagranie?</string>
     <string name="home_hero_pill_recovery_stuck">Nie nagrywa</string>
     <string name="home_open_settings">Ustawienia</string>

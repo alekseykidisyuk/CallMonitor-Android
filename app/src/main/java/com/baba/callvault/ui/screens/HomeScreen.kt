@@ -110,6 +110,8 @@ import com.baba.callvault.ui.common.formatEstimate
 import com.baba.callvault.ui.common.TranscribingSheet
 import com.baba.callvault.ui.common.rememberTranscribingPillState
 import com.baba.callvault.ui.common.TranscriptSearchSheet
+import com.baba.callvault.ui.common.DeleteCopiesDialog
+import com.baba.callvault.ui.common.DeleteRecordingDialog
 import com.baba.callvault.ui.common.SeekBar
 import com.baba.callvault.ui.common.TranscriptSheet
 import com.baba.callvault.system.copyToClipboard
@@ -212,6 +214,8 @@ fun HomeScreen(
 
     /** Which recording is open on the playback screen, or null for the list. */
     var playbackFor by remember { mutableStateOf<String?>(null) }
+    /** The recording whose delete is awaiting confirmation, raised from the playback screen. */
+    var confirmDeleteFor by remember { mutableStateOf<String?>(null) }
 
     /** Whether the search-across-transcripts sheet is open. */
     var showTranscriptSearch by remember { mutableStateOf(false) }
@@ -332,12 +336,10 @@ fun HomeScreen(
                 onCycleSpeed = { viewModel.cyclePlaybackSpeed() },
                 onOpenTranscript = { transcriptFor = displayName },
                 onTranscribe = { startTranscription(displayName) },
-                onDelete = {
-                    // Leave the screen first: the recording is about to stop existing, and the list is
-                    // where the confirmation and the result belong.
-                    playbackFor = null
-                    viewModel.deleteRecording(openItem)
-                }
+                // Confirm first, and ask which copies when there are two of them — the same
+                // question the row's menu asks. This used to delete on the spot with nothing to
+                // stop it, on the one screen where a mis-tap costs the whole recording.
+                onDelete = { confirmDeleteFor = displayName }
             )
         }
     }
@@ -632,6 +634,31 @@ fun HomeScreen(
                 deleteTranscriptFor = displayName
             }
         )
+    }
+
+    confirmDeleteFor?.let { displayName ->
+        val row = uiState.recordings.firstOrNull { it.displayName == displayName }
+        if (row == null) {
+            confirmDeleteFor = null
+        } else {
+            DeleteCopiesDialog(
+                item = row,
+                name = RecordingLabel.of(row) ?: BidiText.isolate(displayName),
+                onConfirm = { scope ->
+                    confirmDeleteFor = null
+                    // Leave the screen only once it is settled: the recording is about to stop
+                    // existing, and the list is where the result belongs. Cancelling stays put.
+                    playbackFor = null
+                    deleteByScope(
+                        item = row,
+                        scope = scope,
+                        onDeleteAll = { viewModel.deleteRecording(row) },
+                        onDeleteUri = { viewModel.deleteUri(it) }
+                    )
+                },
+                onDismiss = { confirmDeleteFor = null }
+            )
+        }
     }
 
     confirmTranscribe?.let { (displayName, estimateMs) ->
@@ -1502,10 +1529,47 @@ private fun BulkDeleteDialog(
 private const val MAX_NAMED_SKIPPED = 2
 
 private sealed interface DeleteTarget {
+    /**
+     * Ask which copies, then delete them. The row's own menu always uses this: whether the question
+     * is worth asking depends on where the recording lives, and that is the dialog's judgement.
+     */
+    data object Ask : DeleteTarget
     data object All : DeleteTarget
     data class Single(val uri: Uri) : DeleteTarget
     data class DeviceCopy(val uri: Uri) : DeleteTarget
     data class DriveCopy(val uri: Uri) : DeleteTarget
+}
+
+/**
+ * Applies a chosen [DeleteScope] to one recording.
+ *
+ * Shared by the row's overflow menu and the playback screen so the two cannot drift into deleting
+ * different files from the same answer to the same question.
+ */
+private fun deleteByScope(
+    item: RecordingItem,
+    scope: DeleteScope,
+    onDeleteAll: () -> Unit,
+    onDeleteUri: (Uri) -> Unit
+) {
+    when {
+        // One copy: delete exactly the file this row stands for, and nothing else.
+        //
+        // NOT the delete-every-same-named-copy path, even though it would usually agree. The card
+        // says this recording is in one place; if the catalogue is stale and a second copy exists
+        // that the row never showed, deleting it would destroy a file the user was not told about.
+        item.source != RecordingSource.BOTH -> onDeleteUri(item.uri)
+
+        // Both copies: the long-standing delete-everything-by-this-name path, unchanged. It is a
+        // superset of the two URIs below, which is what "delete this recording" has always meant.
+        scope == DeleteScope.BOTH -> onDeleteAll()
+
+        // One side of a two-copy recording. Delegated rather than hand-rolled: RecordingSelection
+        // is where the bulk delete works out which files a scope means, it is free of Compose, and
+        // it is under test — the last property being the one that matters when the answer is a
+        // list of files about to be destroyed.
+        else -> RecordingSelection.urisToDelete(listOf(item), scope).forEach(onDeleteUri)
+    }
 }
 
 /**
@@ -1560,28 +1624,40 @@ private fun RecordingRow(
     val primaryLabel = RecordingLabel.of(item) ?: item.displayName
 
     deleteTarget?.let { target ->
-        val message = when (target) {
-            is DeleteTarget.All, is DeleteTarget.Single ->
-                stringResource(R.string.home_delete_confirm_message, primaryLabel)
-            is DeleteTarget.DeviceCopy ->
-                stringResource(R.string.home_delete_confirm_device_message, primaryLabel)
-            is DeleteTarget.DriveCopy ->
-                stringResource(R.string.home_delete_confirm_drive_message, primaryLabel)
+        if (target is DeleteTarget.Ask) {
+            DeleteCopiesDialog(
+                item = item,
+                name = primaryLabel,
+                onConfirm = { scope ->
+                    deleteTarget = null
+                    deleteByScope(item, scope, onDeleteAll, onDeleteUri)
+                },
+                onDismiss = { deleteTarget = null }
+            )
+        } else {
+            val message = when (target) {
+                is DeleteTarget.DeviceCopy ->
+                    stringResource(R.string.home_delete_confirm_device_message, primaryLabel)
+                is DeleteTarget.DriveCopy ->
+                    stringResource(R.string.home_delete_confirm_drive_message, primaryLabel)
+                else -> stringResource(R.string.home_delete_confirm_message, primaryLabel)
+            }
+            DeleteRecordingDialog(
+                name = primaryLabel,
+                message = message,
+                onConfirm = {
+                    deleteTarget = null
+                    when (target) {
+                        is DeleteTarget.All -> onDeleteAll()
+                        is DeleteTarget.Single -> onDeleteUri(target.uri)
+                        is DeleteTarget.DeviceCopy -> onDeleteUri(target.uri)
+                        is DeleteTarget.DriveCopy -> onDeleteUri(target.uri)
+                        DeleteTarget.Ask -> Unit // handled above
+                    }
+                },
+                onDismiss = { deleteTarget = null }
+            )
         }
-        DeleteRecordingDialog(
-            name = primaryLabel,
-            message = message,
-            onConfirm = {
-                deleteTarget = null
-                when (target) {
-                    is DeleteTarget.All -> onDeleteAll()
-                    is DeleteTarget.Single -> onDeleteUri(target.uri)
-                    is DeleteTarget.DeviceCopy -> onDeleteUri(target.uri)
-                    is DeleteTarget.DriveCopy -> onDeleteUri(target.uri)
-                }
-            },
-            onDismiss = { deleteTarget = null }
-        )
     }
 
     val cardColor = when {
@@ -1673,7 +1749,7 @@ private fun RecordingRow(
                     shareUri = item.localUri ?: item.driveUri ?: item.uri,
                     shareName = item.displayName,
                     onDelete = {
-                        deleteTarget = if (isBoth) DeleteTarget.All else DeleteTarget.Single(item.uri)
+                        deleteTarget = DeleteTarget.Ask
                     }
                 )
             }
@@ -1975,38 +2051,6 @@ private fun BoxScope.DirectionBadge(direction: RecordingDirection?) {
             modifier = Modifier.size(11.dp)
         )
     }
-}
-
-/**
- * Confirmation dialog shown before permanently deleting a recording (or one copy of it).
- *
- * @param message The pre-resolved confirmation message. Defaults to the delete-all-copies wording;
- *                callers deleting a single Device/Drive copy pass a copy-specific message instead.
- */
-@Composable
-private fun DeleteRecordingDialog(
-    name: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    message: String = stringResource(R.string.home_delete_confirm_message, name),
-    title: String = stringResource(R.string.home_delete_confirm_title)
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = { Icon(imageVector = Icons.Filled.Delete, contentDescription = null) },
-        title = { Text(text = title) },
-        text = { Text(text = message) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(text = stringResource(R.string.home_delete))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.general_cancel))
-            }
-        }
-    )
 }
 
 /** The inline player controls (loading / error / play-pause + teal seek slider + elapsed/total). */

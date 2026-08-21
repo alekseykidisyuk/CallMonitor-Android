@@ -66,6 +66,8 @@
     <string name="home_bulk_delete_scope_message">Certains sont enregistrés à la fois sur cet appareil et dans Drive.</string>
     <string name="home_delete">Supprimer</string>
     <string name="home_delete_confirm_message">Cela supprime définitivement %1$s.</string>
+    <string name="home_delete_scope_message">Cet enregistrement est enregistré sur cet appareil et dans Drive.</string>
+    <string name="home_delete_scope_option_size">%1$s (%2$s)</string>
     <string name="home_delete_confirm_title">Supprimer l\'enregistrement ?</string>
     <string name="home_hero_pill_recovery_stuck">N\'enregistre pas</string>
     <string name="home_open_settings">Paramètres</string>

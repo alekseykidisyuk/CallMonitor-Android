@@ -66,6 +66,8 @@
     <string name="home_bulk_delete_scope_message">Néhány ezen az eszközön és a Drive-ban is el van mentve.</string>
     <string name="home_delete">Törlés</string>
     <string name="home_delete_confirm_message">Ez véglegesen törli a következőt: %1$s.</string>
+    <string name="home_delete_scope_message">Ez a felvétel ezen az eszközön és a Drive-ban is el van mentve.</string>
+    <string name="home_delete_scope_option_size">%1$s (%2$s)</string>
     <string name="home_delete_confirm_title">Törli a felvételt?</string>
     <string name="home_hero_pill_recovery_stuck">Nem rögzít</string>
     <string name="home_open_settings">Beállítások</string>

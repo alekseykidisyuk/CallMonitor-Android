@@ -10,6 +10,8 @@ package com.baba.callvault.ui.screens
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -114,11 +116,17 @@ fun PlaybackScreen(
         title = stringResource(R.string.playback_title),
         onBack = onBack
     ) { innerPadding ->
+        // Scrollable, and not optionally so: the cards below the player are laid out past the
+        // bottom of a 6.7" screen, so without this the Delete row existed but could never be
+        // reached or tapped. The bottom padding keeps that last card clear of the gesture bar
+        // rather than flush against it.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CallHeaderCard(item)

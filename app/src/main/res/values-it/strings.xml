@@ -66,6 +66,8 @@
     <string name="home_bulk_delete_scope_message">Alcune sono salvate sia su questo dispositivo sia su Drive.</string>
     <string name="home_delete">Elimina</string>
     <string name="home_delete_confirm_message">Questa operazione elimina definitivamente %1$s.</string>
+    <string name="home_delete_scope_message">Questa registrazione è salvata su questo dispositivo e su Drive.</string>
+    <string name="home_delete_scope_option_size">%1$s (%2$s)</string>
     <string name="home_delete_confirm_title">Eliminare la registrazione?</string>
     <string name="home_hero_pill_recovery_stuck">Non registra</string>
     <string name="home_open_settings">Impostazioni</string>

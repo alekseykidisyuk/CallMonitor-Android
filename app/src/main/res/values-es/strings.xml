@@ -66,6 +66,8 @@
     <string name="home_bulk_delete_scope_message">Algunas están guardadas en este dispositivo y en Drive.</string>
     <string name="home_delete">Eliminar</string>
     <string name="home_delete_confirm_message">Esto elimina permanentemente %1$s.</string>
+    <string name="home_delete_scope_message">Esta grabación está guardada en este dispositivo y en Drive.</string>
+    <string name="home_delete_scope_option_size">%1$s (%2$s)</string>
     <string name="home_delete_confirm_title">¿Eliminar grabación?</string>
     <string name="home_hero_pill_recovery_stuck">Sin grabar</string>
     <string name="home_open_settings">Ajustes</string>

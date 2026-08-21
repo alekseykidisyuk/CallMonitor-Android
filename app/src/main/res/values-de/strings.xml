@@ -66,6 +66,8 @@
     <string name="home_bulk_delete_scope_message">Einige sind sowohl auf diesem Gerät als auch in Drive gespeichert.</string>
     <string name="home_delete">Löschen</string>
     <string name="home_delete_confirm_message">Dadurch wird %1$s dauerhaft gelöscht.</string>
+    <string name="home_delete_scope_message">Diese Aufnahme ist auf diesem Gerät und in Drive gespeichert.</string>
+    <string name="home_delete_scope_option_size">%1$s (%2$s)</string>
     <string name="home_delete_confirm_title">Aufnahme löschen?</string>
     <string name="home_hero_pill_recovery_stuck">Nimmt nicht auf</string>
     <string name="home_open_settings">Einstellungen</string>
