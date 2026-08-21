@@ -41,6 +41,18 @@ sealed interface TranscribingPillState {
         val percent: Int = 0
     ) : TranscribingPillState
 
+    /**
+     * How far into [displayName], or 0 when that is not the recording being worked on.
+     *
+     * Asked per row rather than pushed, because only one recording is ever in hand: every other row
+     * in a queued batch has not started, and showing them a proportion would be a lie.
+     */
+    fun percentFor(displayName: String): Int = when (this) {
+        is Single -> if (current == displayName) percent else 0
+        is Batch -> if (current == displayName) percent else 0
+        Hidden, Starting -> 0
+    }
+
     companion object {
 
         /**

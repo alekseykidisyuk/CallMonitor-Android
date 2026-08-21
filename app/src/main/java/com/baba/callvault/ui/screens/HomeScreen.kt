@@ -582,6 +582,9 @@ fun HomeScreen(
                         onDeleteAll = { viewModel.deleteRecording(item) },
                         onDeleteUri = { uri -> viewModel.deleteUri(uri) },
                         transcriptStatus = transcriptStatuses[item.displayName] ?: TranscriptStatus.NONE,
+                        // Only the recording actually in hand gets the number; every other row that
+                        // happens to be queued keeps spinning, because none of them has started.
+                        transcriptPercent = transcribing.percentFor(item.displayName),
                         onTranscribe = { startTranscription(item.displayName) },
                         onOpenTranscript = { transcriptFor = item.displayName },
                         // Retry runs through the same gate: without a model it would fail exactly the
@@ -1613,7 +1616,8 @@ private fun RecordingRow(
     transcriptStatus: TranscriptStatus,
     onTranscribe: () -> Unit,
     onOpenTranscript: () -> Unit,
-    onRetryTranscript: () -> Unit
+    onRetryTranscript: () -> Unit,
+    transcriptPercent: Int = 0
 ) {
     // The pending delete target drives the confirm dialog: null = closed.
     var deleteTarget by remember { mutableStateOf<DeleteTarget?>(null) }
@@ -1747,7 +1751,8 @@ private fun RecordingRow(
                     onTranscribe = onTranscribe,
                     onOpen = onOpenTranscript,
                     onRetry = onRetryTranscript,
-                    modifier = Modifier.size(ROW_ACTION_SIZE)
+                    modifier = Modifier.size(ROW_ACTION_SIZE),
+                    percent = transcriptPercent
                 )
                 RecordingRowMenu(
                     // Share the device copy when there is one: it needs no network to read, and for a

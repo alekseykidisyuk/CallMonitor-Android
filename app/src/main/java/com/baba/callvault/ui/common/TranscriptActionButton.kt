@@ -39,7 +39,9 @@ fun TranscriptActionButton(
     onTranscribe: () -> Unit,
     onOpen: () -> Unit,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** How far into this recording, 0-100. Zero means not known, and spins instead. */
+    percent: Int = 0
 ) {
     val action = TranscriptRowAction.forStatus(status)
     val description = stringResource(action.contentDescriptionRes)
@@ -47,10 +49,22 @@ fun TranscriptActionButton(
     // Work in flight is shown, never re-triggerable: a second tap would only queue the same call
     // again, and the first tap already committed the phone to minutes of CPU.
     if (!action.isTappable) {
-        CircularProgressIndicator(
-            modifier = modifier.size(PROGRESS_SIZE),
-            strokeWidth = PROGRESS_STROKE
-        )
+        // Determinate as soon as there is a real number, indeterminate only until then. A circle
+        // that spins for minutes without filling is indistinguishable from a hang, which is what
+        // this row looked like on a long call — the ring filling is the difference between "still
+        // working" and "possibly stuck", read at a glance and without any text to fit.
+        if (percent > 0) {
+            CircularProgressIndicator(
+                progress = { percent / 100f },
+                modifier = modifier.size(PROGRESS_SIZE),
+                strokeWidth = PROGRESS_STROKE
+            )
+        } else {
+            CircularProgressIndicator(
+                modifier = modifier.size(PROGRESS_SIZE),
+                strokeWidth = PROGRESS_STROKE
+            )
+        }
         return
     }
 
