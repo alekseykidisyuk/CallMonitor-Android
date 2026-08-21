@@ -113,12 +113,34 @@ Java_com_baba_callvault_summary_LlamaNative_generate(
     const llama_vocab *vocab = llama_model_get_vocab(model);
 
     const char *c_prompt = env->GetStringUTFChars(prompt, nullptr);
-    const auto prompt_len = (int32_t) strlen(c_prompt);
 
-    const int n_prompt = -llama_tokenize(vocab, c_prompt, prompt_len, nullptr, 0, true, true);
+    // Wrap the prompt in the model's own chat template.
+    //
+    // These are instruct models: they were trained to answer text arriving inside their template,
+    // with the assistant turn opened for them. Handed a bare paragraph they still produce something,
+    // but it is not what they are good at — and measuring that would be measuring our mistake rather
+    // than the model. Falls back to the bare prompt for a model that carries no template.
+    std::string templated;
+    const char *tmpl = llama_model_chat_template(model, nullptr);
+    if (tmpl != nullptr) {
+        llama_chat_message msg{"user", c_prompt};
+        // Twice the input is upstream's recommended allocation; the template adds only control tags.
+        std::vector<char> buf(strlen(c_prompt) * 2 + 1024);
+        const int32_t written =
+                llama_chat_apply_template(tmpl, &msg, 1, true, buf.data(), (int32_t) buf.size());
+        if (written > 0 && written <= (int32_t) buf.size()) {
+            templated.assign(buf.data(), written);
+        }
+    }
+    if (templated.empty()) templated = c_prompt;
+
+    const char *text = templated.c_str();
+    const auto prompt_len = (int32_t) templated.size();
+
+    const int n_prompt = -llama_tokenize(vocab, text, prompt_len, nullptr, 0, true, true);
     std::vector<llama_token> tokens(n_prompt);
     const bool tokenised =
-            llama_tokenize(vocab, c_prompt, prompt_len, tokens.data(), (int32_t) tokens.size(), true, true) >= 0;
+            llama_tokenize(vocab, text, prompt_len, tokens.data(), (int32_t) tokens.size(), true, true) >= 0;
     env->ReleaseStringUTFChars(prompt, c_prompt);
 
     if (!tokenised) {
@@ -153,6 +175,11 @@ Java_com_baba_callvault_summary_LlamaNative_generate(
     std::string out;
     llama_batch batch = llama_batch_get_one(tokens.data(), (int32_t) tokens.size());
 
+    // Declared out here, not inside the loop. llama_batch_get_one keeps a POINTER to the token, and
+    // the batch is read at the top of the next iteration — so a token scoped to the loop body would
+    // be read after it had gone. The upstream example does the same, for the same reason.
+    llama_token sampled = 0;
+
     const int64_t t_start = ggml_time_us();
     int generated = 0;
 
@@ -162,16 +189,16 @@ Java_com_baba_callvault_summary_LlamaNative_generate(
 
         n_pos += batch.n_tokens;
 
-        llama_token id = llama_sampler_sample(sampler, ctx, -1);
-        if (llama_vocab_is_eog(vocab, id)) break;
+        sampled = llama_sampler_sample(sampler, ctx, -1);
+        if (llama_vocab_is_eog(vocab, sampled)) break;
 
         char piece[256];
-        const int n = llama_token_to_piece(vocab, id, piece, sizeof(piece), 0, true);
+        const int n = llama_token_to_piece(vocab, sampled, piece, sizeof(piece), 0, true);
         if (n < 0) break;
         out.append(piece, n);
         generated++;
 
-        batch = llama_batch_get_one(&id, 1);
+        batch = llama_batch_get_one(&sampled, 1);
     }
 
     // Counts and timings only — never the text.
