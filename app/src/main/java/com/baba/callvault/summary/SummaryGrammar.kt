@@ -1,0 +1,57 @@
+/*
+ * CallVault: FOSS call recording, self-contained over embedded ADB
+ *  Copyright (C) 2026-present The CallVault Authors
+ *  This software is licensed under the GNU General Public License v3 or later, with additional terms as permitted under Section 7.
+ *  The full license text is available in the LICENSE file at the root of this project.
+ *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+package com.baba.callvault.summary
+
+/**
+ * The shape a summary is physically unable to break.
+ *
+ * Asked politely for strict JSON, Gemma returned a `summary` string with no closing quote and the
+ * whole object failed to parse. That is not a wording problem: a small model under a token cap drops
+ * a quote, and "return valid JSON" is a request. A grammar is not a request — tokens that would
+ * break the structure are removed from the candidates before the pick, so malformed output cannot be
+ * produced at all.
+ *
+ * **The keys are fixed and ordered.** A grammar cannot express "these keys in any order" without
+ * becoming large and slow, and fixing the order costs nothing: the model has no reason to prefer one.
+ * It also means a parser can rely on every key existing, which removes a whole class of null checks.
+ *
+ * **Two fields from the original design are absent, deliberately.**
+ * - `participants`: measured, it read the ringtone marker `*ביב*` as a person and named them.
+ *   Confidently wrong names are worse than no names. It returns when diarisation can supply them.
+ * - `sentiment`: low value, and being confidently wrong about the tone of someone's private
+ *   conversation is a bad trade for a word nobody asked for.
+ */
+object SummaryGrammar {
+
+    /**
+     * GBNF for the summary object.
+     *
+     * `string` deliberately excludes the control characters JSON forbids and allows the standard
+     * escapes, so a Hebrew summary containing a quotation mark cannot produce a document that fails
+     * to parse — which is the entire point of being here.
+     */
+    val JSON: String = """
+        root ::= "{" ws
+          "\"intent\":" ws string ","      ws
+          "\"summary\":" ws string ","     ws
+          "\"keyPoints\":" ws array ","    ws
+          "\"decisions\":" ws array ","    ws
+          "\"actionItems\":" ws array ","  ws
+          "\"keyFacts\":" ws array         ws
+        "}"
+
+        array ::= "[" ws (string (ws "," ws string)*)? ws "]"
+
+        string ::= "\"" char* "\""
+        char ::= [^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" hex hex hex hex)
+        hex ::= [0-9a-fA-F]
+
+        ws ::= [ \t\n]*
+    """.trimIndent()
+}

@@ -144,7 +144,11 @@ class RealCallBenchmark {
                     SummaryPrompt.forChunk(chunk, language)
                 }
                 val started = SystemClock.elapsedRealtime()
-                val text = session.generate(prompt, maxTokensPerChunk)
+                val text = session.generate(
+                    prompt = prompt,
+                    maxTokens = maxTokensPerChunk,
+                    grammar = if (args.getString("json") != null) SummaryGrammar.JSON else null
+                )
                 lines.appendLine(
                     "  chunk ${index + 1}: ${session.countTokens(prompt)} prompt tokens, " +
                         "${SystemClock.elapsedRealtime() - started} ms"

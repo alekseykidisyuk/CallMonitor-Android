@@ -102,7 +102,8 @@ Java_com_baba_callvault_summary_LlamaNative_countTokens(JNIEnv *env, jobject /* 
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_baba_callvault_summary_LlamaNative_generate(
-        JNIEnv *env, jobject /* this */, jlong ptr, jstring prompt, jint maxTokens, jint threads) {
+        JNIEnv *env, jobject /* this */, jlong ptr, jstring prompt, jint maxTokens, jint threads,
+        jstring grammar) {
 
     if (ptr == 0) return env->NewStringUTF("");
 
@@ -168,6 +169,29 @@ Java_com_baba_callvault_summary_LlamaNative_generate(
     }
 
     llama_sampler *sampler = llama_sampler_chain_init(llama_sampler_chain_default_params());
+
+    // A grammar, when one is given, BEFORE the greedy pick.
+    //
+    // Measured: asked for strict JSON, Gemma returned a summary string with no closing quote, and
+    // the whole object failed to parse. No wording fixes that — a small model under a token cap
+    // drops a quote, and "please emit valid JSON" is a request. A grammar is not a request: tokens
+    // that would break the structure are removed from consideration before the pick, so malformed
+    // output becomes unsampleable rather than unlikely.
+    //
+    // Ordering matters. The grammar must filter the candidates the greedy sampler then chooses
+    // from; after it, the choice is already made and the constraint would do nothing.
+    if (grammar != nullptr) {
+        const char *c_grammar = env->GetStringUTFChars(grammar, nullptr);
+        if (c_grammar != nullptr && *c_grammar != '\0') {
+            llama_sampler *g = llama_sampler_init_grammar(vocab, c_grammar, "root");
+            // Null means the grammar itself failed to parse. Carrying on unconstrained is the right
+            // failure: a summary that needs repairing beats no summary, and the log says why.
+            if (g != nullptr) llama_sampler_chain_add(sampler, g);
+            else LOGW("grammar failed to parse; generating unconstrained");
+        }
+        env->ReleaseStringUTFChars(grammar, c_grammar);
+    }
+
     // Greedy. A summary is not creative writing, and a deterministic run is one a measurement can
     // actually compare across models.
     llama_sampler_chain_add(sampler, llama_sampler_init_greedy());

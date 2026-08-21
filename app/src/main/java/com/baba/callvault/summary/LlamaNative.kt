@@ -46,8 +46,17 @@ object LlamaNative {
      *
      * Greedy rather than sampled: a summary is not creative writing, and determinism is what lets one
      * model's output be compared with another's.
+     *
+     * @param grammar GBNF constraining the output, or null to generate freely. Given one, output
+     *   that would break the grammar is not merely discouraged — the tokens are never candidates.
      */
-    external fun generate(ptr: Long, prompt: String, maxTokens: Int, threads: Int): String
+    external fun generate(
+        ptr: Long,
+        prompt: String,
+        maxTokens: Int,
+        threads: Int,
+        grammar: String?
+    ): String
 
     /**
      * Asks a run in progress to stop, from any thread.

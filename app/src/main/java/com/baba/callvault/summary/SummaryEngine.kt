@@ -85,10 +85,14 @@ object SummaryEngine {
         /** How many tokens [text] actually costs this model's tokeniser. */
         fun countTokens(text: String): Int = LlamaNative.countTokens(ptr, text)
 
-        /** Completes [prompt]. Returns whatever was produced before the stop when aborted. */
-        fun generate(prompt: String, maxTokens: Int): String {
+        /**
+         * Completes [prompt]. Returns whatever was produced before the stop when aborted.
+         *
+         * @param grammar GBNF the output must satisfy, or null for free text.
+         */
+        fun generate(prompt: String, maxTokens: Int, grammar: String? = null): String {
             aborted.set(false)
-            val raw = LlamaNative.generate(ptr, prompt, maxTokens, threads)
+            val raw = LlamaNative.generate(ptr, prompt, maxTokens, threads, grammar)
             if (aborted.get()) AppLogger.i(TAG, "A summary run was stopped before it finished")
             // Reasoning models think out loud first. That is theirs, not the user's.
             return SummaryText.stripReasoning(raw)

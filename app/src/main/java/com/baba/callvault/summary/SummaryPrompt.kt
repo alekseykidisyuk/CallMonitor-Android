@@ -161,11 +161,9 @@ object SummaryPrompt {
             appendLine("{")
             appendLine("""  "intent": string,        // the purpose of the call — why it happened""")
             appendLine("""  "summary": string,       // 2-4 sentences on what was discussed""")
-            appendLine("""  "participants": string[],// who was on the call (names/roles if stated)""")
             appendLine("""  "keyPoints": string[],   // the main points raised""")
             appendLine("""  "decisions": string[],   // what was decided or agreed""")
             appendLine("""  "actionItems": string[], // follow-ups (with owner if stated)""")
-            appendLine("""  "sentiment": "positive" | "neutral" | "negative" | "mixed",""")
             appendLine("""  "keyFacts": string[]     // concrete dates, numbers, names worth keeping""")
             appendLine("}")
             appendLine("Use [] for anything not present. Do not invent facts that are not in the " +
