@@ -522,7 +522,7 @@
     <string name="playback_note_hint">What this call was about…</string>
     <string name="transcript_action_transcribe">Transcribe this call</string>
     <string name="transcript_action_transcribe_short">Transcribe</string>
-    <string name="transcribe_estimate_under_minute">under a minute</string>
+    <string name="transcribe_estimate_under_minute">a minute</string>
     <string name="transcribe_estimate_minutes">%1$d min</string>
     <string name="transcribe_estimate_hours">%1$d h %2$d min</string>
     <string name="transcribe_confirm_title">This will take about %1$s</string>

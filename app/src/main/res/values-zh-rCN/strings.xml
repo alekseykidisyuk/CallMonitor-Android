@@ -289,7 +289,7 @@
     <string name="transcribe_confirm_title_unknown">要转写这通电话吗？</string>
     <string name="transcribe_estimate_hours">%1$d 小时 %2$d 分</string>
     <string name="transcribe_estimate_minutes">%1$d 分钟</string>
-    <string name="transcribe_estimate_under_minute">不到一分钟</string>
+    <string name="transcribe_estimate_under_minute">一分钟</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
     <string name="transcribing_pill_percent">%1$d%%</string>
     <string name="transcribing_pill_progress_percent">%1$d/%2$d · %3$d%%</string>

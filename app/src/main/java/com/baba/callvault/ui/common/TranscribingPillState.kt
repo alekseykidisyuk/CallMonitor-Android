@@ -41,6 +41,20 @@ sealed interface TranscribingPillState {
         val percent: Int = 0
     ) : TranscribingPillState
 
+    /** The recording being worked on, when one is known. */
+    fun currentName(): String? = when (this) {
+        is Single -> current
+        is Batch -> current
+        Hidden, Starting -> null
+    }
+
+    /** The same state, showing [percent] instead of whatever it was carrying. */
+    fun withPercent(percent: Int): TranscribingPillState = when (this) {
+        is Single -> copy(percent = percent)
+        is Batch -> copy(percent = percent)
+        Hidden, Starting -> this
+    }
+
     /**
      * How far into [displayName], or 0 when that is not the recording being worked on.
      *

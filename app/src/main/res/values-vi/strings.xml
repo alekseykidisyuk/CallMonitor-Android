@@ -289,7 +289,7 @@
     <string name="transcribe_confirm_title_unknown">Chép lời cuộc gọi này?</string>
     <string name="transcribe_estimate_hours">%1$d giờ %2$d phút</string>
     <string name="transcribe_estimate_minutes">%1$d phút</string>
-    <string name="transcribe_estimate_under_minute">chưa đến một phút</string>
+    <string name="transcribe_estimate_under_minute">một phút</string>
     <string name="transcribing_pill_progress">%1$d/%2$d</string>
     <string name="transcribing_pill_percent">%1$d%%</string>
     <string name="transcribing_pill_progress_percent">%1$d/%2$d · %3$d%%</string>

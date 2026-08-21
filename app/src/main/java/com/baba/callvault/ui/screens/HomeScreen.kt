@@ -108,6 +108,7 @@ import com.baba.callvault.ui.common.TranscribeConfirmDialog
 import com.baba.callvault.ui.common.TranscribingPill
 import com.baba.callvault.ui.common.formatEstimate
 import com.baba.callvault.ui.common.TranscribingSheet
+import com.baba.callvault.ui.common.rememberSmoothedPercent
 import com.baba.callvault.ui.common.rememberTranscribingPillState
 import com.baba.callvault.ui.common.TranscriptSearchSheet
 import com.baba.callvault.ui.common.DeleteCopiesDialog
@@ -222,6 +223,12 @@ fun HomeScreen(
 
     /** What transcription is doing right now, for the pill beside the title. Hidden when idle. */
     val transcribing by rememberTranscribingPillState()
+
+    // whisper only reports at chunk boundaries, so the raw figure sits still for long stretches —
+    // long enough to read as a hang, which is the complaint this answers. The clock fills the gaps
+    // between its anchors; see TranscriptionProgress for what is and is not invented.
+    val smoothPercent by rememberSmoothedPercent(transcribing, uiState.recordings)
+    val transcribingShown = transcribing.withPercent(smoothPercent)
     var showTranscribingSheet by remember { mutableStateOf(false) }
 
     val transcriptScope = rememberCoroutineScope()
@@ -364,7 +371,7 @@ fun HomeScreen(
         titleTrailing = when {
             selectionMode -> null
             transcribing.occupiesTitleSlot ->
-                ({ TranscribingPill(state = transcribing, onClick = { showTranscribingSheet = true }) })
+                ({ TranscribingPill(state = transcribingShown, onClick = { showTranscribingSheet = true }) })
             else -> ({ SupportPill(onClick = { showSupport = true }) })
         },
         actions = {
@@ -584,7 +591,7 @@ fun HomeScreen(
                         transcriptStatus = transcriptStatuses[item.displayName] ?: TranscriptStatus.NONE,
                         // Only the recording actually in hand gets the number; every other row that
                         // happens to be queued keeps spinning, because none of them has started.
-                        transcriptPercent = transcribing.percentFor(item.displayName),
+                        transcriptPercent = transcribingShown.percentFor(item.displayName),
                         onTranscribe = { startTranscription(item.displayName) },
                         onOpenTranscript = { transcriptFor = item.displayName },
                         // Retry runs through the same gate: without a model it would fail exactly the

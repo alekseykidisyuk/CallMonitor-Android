@@ -37,8 +37,43 @@ static std::atomic<bool> g_abort{false};
  */
 static std::atomic<int> g_progress{0};
 
+/** Total audio length of the run in progress, so a segment's end time can be turned into a share. */
+static std::atomic<int64_t> g_total_ms{0};
+
+/** Monotonic: progress that retreats reads as a fault even when the newer figure is the better one. */
+static void raise_progress(int percent) {
+    if (percent < 0) percent = 0;
+    if (percent > 99) percent = 99;   // 100 belongs to the caller, when the run has really finished
+    int seen = g_progress.load(std::memory_order_relaxed);
+    while (percent > seen &&
+           !g_progress.compare_exchange_weak(seen, percent, std::memory_order_relaxed)) {
+    }
+}
+
 static void progress_reported(struct whisper_context *, struct whisper_state *, int progress, void *) {
-    g_progress.store(progress, std::memory_order_relaxed);
+    // Coarse: one step per thirty seconds of audio. Kept because it is the only thing that moves
+    // through a silence, where no segments are produced at all.
+    raise_progress(progress);
+}
+
+/**
+ * Fine-grained progress, from where in the call each transcribed phrase ended.
+ *
+ * The progress callback above fires once per thirty-second chunk, so a short call produces about
+ * three updates in total and the figure appears stuck between them. Segments arrive several times
+ * per chunk and carry a real timestamp, so this is genuinely continuous rather than a prediction —
+ * it is the same number, measured more often.
+ */
+static void segment_reported(struct whisper_context *, struct whisper_state *state, int, void *) {
+    const int64_t total = g_total_ms.load(std::memory_order_relaxed);
+    if (total <= 0) return;
+
+    const int n = whisper_full_n_segments_from_state(state);
+    if (n <= 0) return;
+
+    // Centiseconds upstream; milliseconds here, as everywhere else in this file.
+    const int64_t end_ms = whisper_full_get_segment_t1_from_state(state, n - 1) * 10;
+    raise_progress(static_cast<int>((end_ms * 100) / total));
 }
 
 static bool abort_requested(void *) {
@@ -116,10 +151,14 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
     // Zeroed here, not on completion: a run that ended by abort or error must not leave the last
     // percentage behind for the next one to start from.
     g_progress.store(0, std::memory_order_relaxed);
-    params.progress_callback           = progress_reported;
-    params.progress_callback_user_data = nullptr;
+    params.progress_callback              = progress_reported;
+    params.progress_callback_user_data    = nullptr;
+    params.new_segment_callback           = segment_reported;
+    params.new_segment_callback_user_data = nullptr;
 
     const jsize n = env->GetArrayLength(audio);
+    // Set before the run so the segment callback can turn an end timestamp into a share of the whole.
+    g_total_ms.store((static_cast<int64_t>(n) * 1000) / WHISPER_SAMPLE_RATE, std::memory_order_relaxed);
     jfloat *samples = env->GetFloatArrayElements(audio, nullptr);
     whisper_full(ctx_of(ptr), params, samples, n);
     // JNI_ABORT: whisper never writes to the input, so there is nothing to copy back.
