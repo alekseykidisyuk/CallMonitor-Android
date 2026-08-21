@@ -8,6 +8,8 @@
 
 package com.baba.callvault.ui.common
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
@@ -17,10 +19,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.baba.callvault.R
 import com.baba.callvault.data.transcripts.TranscriptStatus
 
 /**
@@ -61,13 +67,26 @@ fun TranscriptActionButton(
         val track = accent.copy(alpha = 0.20f)
 
         if (percent > 0) {
-            CircularProgressIndicator(
-                progress = { percent / 100f },
-                modifier = modifier.size(PROGRESS_SIZE),
-                color = accent,
-                strokeWidth = PROGRESS_STROKE,
-                trackColor = track
-            )
+            // The ring takes the whole slot rather than the 20dp the spinner used, because it now
+            // has to hold a number. At 20dp there is no room for two digits at a legible size; at
+            // the full 40dp the reading sits comfortably inside the arc that describes it.
+            Box(modifier = modifier, contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    progress = { percent / 100f },
+                    modifier = Modifier.fillMaxSize(),
+                    color = accent,
+                    strokeWidth = PROGRESS_STROKE,
+                    trackColor = track
+                )
+                Text(
+                    text = stringResource(R.string.transcribing_pill_percent, percent),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = PERCENT_TEXT_SIZE,
+                    lineHeight = PERCENT_TEXT_SIZE,
+                    color = accent,
+                    maxLines = 1
+                )
+            }
         } else {
             CircularProgressIndicator(
                 modifier = modifier.size(PROGRESS_SIZE),
@@ -107,4 +126,12 @@ fun TranscriptActionButton(
 }
 
 private val PROGRESS_SIZE = 20.dp
+
+/**
+ * Small enough for "100%" to fit inside a 40dp ring, large enough to read at arm's length.
+ *
+ * Below Material's smallest label size on purpose: this is a number inside a glyph-sized control,
+ * not body text, and the ring beside it already says what kind of number it is.
+ */
+private val PERCENT_TEXT_SIZE = 9.sp
 private val PROGRESS_STROKE = 2.dp
