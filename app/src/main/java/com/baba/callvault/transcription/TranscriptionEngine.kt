@@ -101,8 +101,21 @@ object TranscriptionEngine {
             .onFailure { AppLogger.w(TAG, "Abort request failed: ${it.message}") }
     }
 
-    /** How far through the current recording whisper is, 0-100. Zero when nothing is running. */
-    fun progressPercent(): Int = WhisperNative.progressPercent()
+    /**
+     * How far through the current recording whisper is, 0-100. Zero when nothing is running.
+     *
+     * Gated on [whisperActive] rather than read straight from native, because the native counter is
+     * a global that survives the run that filled it. It is zeroed when `whisper_full` is entered —
+     * but loading the model and decoding the audio happen first and take seconds, and a poller
+     * asking during that window used to get the PREVIOUS run's figure. Re-transcribing therefore
+     * opened at the last run's percentage rather than at nothing, which reads as a job already
+     * nearly done. The doc above promised zero; only this keeps the promise.
+     */
+    fun progressPercent(): Int = if (whisperActive) WhisperNative.progressPercent() else 0
+
+    /** True only while native decoding is actually under way — see [progressPercent]. */
+    @Volatile
+    private var whisperActive: Boolean = false
 
     /** Set by [requestAbort], cleared at the start of every run so a stale abort cannot kill the next. */
     private val abortRequested = AtomicBoolean(false)
@@ -149,7 +162,14 @@ object TranscriptionEngine {
         try {
             val threads = preferredThreadCount()
             AppLogger.i(TAG, "Transcribing ${audio.size / AudioDecoder.TARGET_SAMPLE_RATE}s with $threads threads, lang=${language ?: "auto"}")
-            WhisperNative.transcribe(ptr, audio, threads, language)
+            // Bracketed as tightly as possible around the native call: outside it, the counter
+            // still holds whatever the previous run left behind.
+            whisperActive = true
+            try {
+                WhisperNative.transcribe(ptr, audio, threads, language)
+            } finally {
+                whisperActive = false
+            }
 
             val count = WhisperNative.segmentCount(ptr)
             (0 until count)
