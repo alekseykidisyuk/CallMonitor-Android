@@ -6,9 +6,36 @@ All notable changes to CallVault are documented here. The format is based on
 ## [Unreleased]
 
 The release that gives a recording somewhere to live: transcripts, a playback screen, notes, and
-search across everything that was ever said.
+search across everything that was ever said — and now a summary of what was said.
 
 ### Added
+
+- **Call summaries, written on this phone.** A finished transcript can be turned into a short
+  account of the call: what it was about, what was decided, and what anyone said they would do.
+  Nothing is uploaded and it works with no network at all, exactly like transcription. The summary
+  appears on the recording's own screen, above the transcript.
+
+- **Items that jump into the call.** Where the summary can tell which moment a decision or a
+  follow-up belongs to, it puts the time beside it — and tapping that time seeks the player straight
+  there. A summary made of jump points is a table of contents for a conversation.
+
+- **Every summary says where it came from.** "Generated from the transcript" sits at the foot of the
+  card, next to a button to write it again. A summary is a machine's reading of a machine's
+  transcription; when it looks wrong, the transcript is one tap away.
+
+- **The summariser is downloaded, not bundled.** It is a 3.5 GB model, so it is fetched over Wi-Fi
+  only, resumes byte-for-byte if it is interrupted, and can be deleted or discarded part-way from
+  Settings — which says how much has already arrived rather than offering to start again. Before the
+  first download, a dialog states what it costs: the download, about 3.5 GB of memory while it runs,
+  roughly a minute or two for a short call, and that it needs a recent phone. Measured on real
+  hardware, not estimated.
+
+- **It refuses rather than guesses.** No summary without a finished transcript that has words in it,
+  none while a transcription is running — they cannot share the phone — and none at all if the model
+  produced something that did not parse. Nothing partial is ever stored: half a call summarised is
+  not a summary of the call.
+
+### Added (earlier in this release)
 
 - **Transcription, entirely on this phone.** Recordings can be turned into text by a speech model
   that runs locally — nothing is uploaded, and it works with no network at all. Choose a model in
