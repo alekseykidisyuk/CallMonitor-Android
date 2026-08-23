@@ -76,6 +76,9 @@
     <string name="whatsnew_156_title">Entscheiden, was aufgenommen wird – und Aufnahmen aufräumen</string>
     <string name="whatsnew_156_where">Einstellungen ▸ Aufnahme ▸ Telefonanrufe</string>
     <string name="whatsnew_157_body">Wenn Sie Aufnahmen automatisch löschen lassen, blieben manche stillschweigend für immer erhalten — die Prüfung sah nur Aufnahmen, von denen CallVault noch wusste; alle anderen wurden nie entfernt, egal wie alt sie waren. Auf einem Telefon mit einer Woche Aufbewahrung hatten 131 Dateien diese Frist überdauert.\n\nDie tägliche Prüfung liest nun auch Ihre Aufnahmeordner, sodass allein das Alter entscheidet. Angefasst werden nur Dateien, die CallVault selbst benannt hat, und alles ohne feststellbares Datum bleibt unberührt.\n\nEine Änderung der Uhrzeit wirkt außerdem sofort statt erst am nächsten Tag.</string>
+    <string name="whatsnew_160_title">Zusammenfassungen Ihrer Gespräche, auf Ihrem Telefon erstellt</string>
+    <string name="whatsnew_160_body">Ein transkribiertes Gespräch lässt sich jetzt zusammenfassen: worum es ging, was entschieden wurde und was wer zugesagt hat. Alles geschieht auf Ihrem Telefon – nichts wird hochgeladen, und es funktioniert ganz ohne Netz.\n\nWenn erkennbar ist, zu welchem Moment etwas gehört, steht die Zeit daneben; ein Tippen darauf springt im Player genau dorthin.\n\nZuvor ist ein Download von 3,5 GB über WLAN nötig, und etwa ebenso viel Arbeitsspeicher während der Ausführung – deshalb wird vorher gefragt, und es braucht ein neueres Telefon.</string>
+    <string name="whatsnew_160_where">Einstellungen ▸ Gesprächszusammenfassungen, dann ein transkribiertes Gespräch öffnen</string>
     <string name="whatsnew_157_title">Das automatische Löschen entfernt jetzt alles, was es soll</string>
     <string name="whatsnew_157_where">Einstellungen ▸ Speicher ▸ Aufbewahrung</string>
 </resources>

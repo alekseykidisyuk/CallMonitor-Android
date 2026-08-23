@@ -36,6 +36,14 @@ object ReleaseHighlights {
 
     private val ALL = listOf(
         ReleaseHighlight(
+            version = "1.6.0",
+            title = R.string.whatsnew_160_title,
+            body = R.string.whatsnew_160_body,
+            // This is the only place someone finds out the feature exists, and it costs a 3.5 GB
+            // download — so the note says where to start rather than leaving them to go looking.
+            whereToFind = R.string.whatsnew_160_where,
+        ),
+        ReleaseHighlight(
             version = "1.5.7",
             title = R.string.whatsnew_157_title,
             body = R.string.whatsnew_157_body,

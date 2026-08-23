@@ -76,6 +76,9 @@
     <string name="whatsnew_156_title">Escolha o que é gravado e organize as gravações</string>
     <string name="whatsnew_156_where">Configurações ▸ Gravação ▸ Chamadas telefônicas</string>
     <string name="whatsnew_157_body">Se você configurou a exclusão automática, algumas gravações eram mantidas para sempre sem aviso: a verificação só enxergava as gravações das quais o CallVault ainda tinha registro, e as demais nunca eram removidas, por mais antigas que fossem. Em um celular configurado para guardar uma semana, 131 arquivos haviam ultrapassado esse prazo.\n\nA verificação diária agora também lê suas pastas de gravação, então só a idade decide. Apenas arquivos nomeados pelo CallVault são tocados, e os que não podem ser datados ficam intactos.\n\nMudar o horário da verificação também passa a valer na hora, em vez de esperar um dia.</string>
+    <string name="whatsnew_160_title">Resumos das suas chamadas, escritos no seu telefone</string>
+    <string name="whatsnew_160_body">Uma chamada já transcrita agora pode ser resumida: do que se tratou, o que foi decidido e o que cada um disse que faria. Tudo acontece no seu telefone — nada é enviado, e funciona sem rede alguma.\n\nQuando o resumo consegue saber a que momento algo pertence, coloca o horário ao lado, e tocar nele leva o player exatamente para lá.\n\nAntes é preciso baixar 3,5 GB por Wi-Fi, e cerca do mesmo tanto de memória enquanto roda — por isso ele pergunta antes de começar, e precisa de um telefone recente.</string>
+    <string name="whatsnew_160_where">Configurações ▸ Resumos de chamadas, depois abra uma chamada transcrita</string>
     <string name="whatsnew_157_title">A exclusão automática agora remove tudo o que deveria</string>
     <string name="whatsnew_157_where">Configurações ▸ Armazenamento ▸ Retenção</string>
 </resources>

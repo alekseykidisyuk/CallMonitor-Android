@@ -76,6 +76,9 @@
     <string name="whatsnew_156_title">Quyết định những gì được ghi âm, và dọn dẹp bản ghi</string>
     <string name="whatsnew_156_where">Cài đặt ▸ Ghi âm ▸ Cuộc gọi điện thoại</string>
     <string name="whatsnew_157_body">Nếu bạn bật tự động xóa, một số bản ghi vẫn âm thầm được giữ lại mãi mãi: quá trình kiểm tra chỉ thấy những bản ghi mà CallVault còn theo dõi, số còn lại không bao giờ bị xóa dù cũ đến đâu. Trên một máy đặt lưu một tuần, 131 tệp đã quá hạn đó.\n\nLần kiểm tra hằng ngày giờ đọc cả thư mục ghi âm của bạn, nên chỉ tuổi của tệp mới quyết định. Chỉ những tệp do CallVault đặt tên mới bị đụng tới, còn tệp không xác định được ngày thì được giữ nguyên.\n\nThay đổi giờ kiểm tra cũng có hiệu lực ngay thay vì phải đợi một ngày.</string>
+    <string name="whatsnew_160_title">Bản tóm tắt cuộc gọi, tạo ngay trên điện thoại của bạn</string>
+    <string name="whatsnew_160_body">Cuộc gọi đã có bản ghi lời thoại giờ có thể được tóm tắt: nội dung là gì, đã quyết định điều gì, và ai hứa sẽ làm gì. Mọi thứ diễn ra trên điện thoại của bạn — không có gì được tải lên, và hoạt động hoàn toàn không cần mạng.\n\nKhi bản tóm tắt biết một mục thuộc về thời điểm nào, nó ghi kèm mốc thời gian, và chạm vào đó sẽ đưa trình phát tới đúng chỗ.\n\nTrước hết cần tải 3,5 GB qua Wi-Fi, và khoảng chừng ấy bộ nhớ khi chạy — nên ứng dụng sẽ hỏi trước khi bắt đầu, và cần một điện thoại đời mới.</string>
+    <string name="whatsnew_160_where">Cài đặt ▸ Tóm tắt cuộc gọi, rồi mở một cuộc gọi đã có bản ghi lời thoại</string>
     <string name="whatsnew_157_title">Tự động xóa giờ đã dọn sạch đúng như cam kết</string>
     <string name="whatsnew_157_where">Cài đặt ▸ Bộ nhớ ▸ Thời gian lưu giữ</string>
 </resources>
