@@ -355,50 +355,91 @@ private fun PlayerCard(
     val duration = if (isActive && playback.durationMs > 0) playback.durationMs else knownDurationMs
     val position = if (isActive) playback.positionMs else 0
 
-    CvCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp)) {
+    CvCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // The waveform IS the scrubber. A Material Slider on top of it would be a second control
-            // for one job — and its thumb is far heavier than the inline player's thin bar, which is
-            // what made this card look like a different app.
-            WaveformBar(
-                peaks = peaks,
-                progress = if (duration > 0) position / duration.toFloat() else 0f,
-                onSeekTo = { fraction -> onSeek((fraction * duration).toInt()) }
-            )
-
-            // Speed lives between the two times rather than in a row of its own. It used to own a
-            // full row under the transport buttons — about 64dp of card for one small control —
-            // which pushed the note card off the bottom of the screen and made it reachable only by
-            // scrolling. This row already existed with an empty middle, and speed is the thing that
-            // changes how the two numbers either side of it advance.
+            // Play, waveform and speed on one line, with the times tucked under the waveform they
+            // belong to. The previous arrangement stacked the waveform, a times row, a row of three
+            // transport buttons and a speed row — four full-width rows for a control strip, which
+            // pushed the note card off the bottom of the screen.
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = TranscriptTimestamp.format(position.toLong()),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
-                )
+                FilledIconButton(
+                    onClick = {
+                        when {
+                            !isActive -> onPlay()
+                            isPlaying -> onPause()
+                            else -> onResume()
+                        }
+                    },
+                    modifier = Modifier.size(52.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = accent)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            contentDescription = stringResource(
+                                if (isPlaying) R.string.general_pause else R.string.general_resume
+                            ),
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(14.dp))
+
+                // The times sit in this column rather than in a row of their own, so they start and
+                // end exactly where the waveform does — they label it, and a full-width row would
+                // put "0:00" under the play button instead.
+                Column(modifier = Modifier.weight(1f)) {
+                    // The waveform IS the scrubber. A Material Slider on top of it would be a second
+                    // control for one job — and its thumb is far heavier than the inline player's
+                    // thin bar, which is what made this card look like a different app.
+                    WaveformBar(
+                        peaks = peaks,
+                        progress = if (duration > 0) position / duration.toFloat() else 0f,
+                        onSeekTo = { fraction -> onSeek((fraction * duration).toInt()) }
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = TranscriptTimestamp.format(position.toLong()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = TranscriptTimestamp.format(duration.toLong()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(14.dp))
+
                 SpeedChip(speed = playback.speed, onClick = onCycleSpeed)
-                Text(
-                    text = TranscriptTimestamp.format(duration.toLong()),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.weight(1f)
-                )
             }
 
+            // Kept below, and kept large. Skipping back over a sentence you missed is the thing that
+            // makes a long call reviewable, and it is pressed while listening rather than looked at
+            // — so it stays a comfortable target instead of being folded into the row above.
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilledTonalIconButton(
@@ -420,34 +461,7 @@ private fun PlayerCard(
                     )
                 }
 
-                FilledIconButton(
-                    onClick = {
-                        when {
-                            !isActive -> onPlay()
-                            isPlaying -> onPause()
-                            else -> onResume()
-                        }
-                    },
-                    modifier = Modifier.size(68.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = accent)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(26.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Icon(
-                            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = stringResource(
-                                if (isPlaying) R.string.general_pause else R.string.general_resume
-                            ),
-                            modifier = Modifier.size(34.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                }
+                Spacer(Modifier.width(48.dp))
 
                 FilledTonalIconButton(
                     onClick = { onSkip(PlaybackControls.SKIP_MS) },
@@ -465,7 +479,6 @@ private fun PlayerCard(
                     )
                 }
             }
-
         }
     }
 }
