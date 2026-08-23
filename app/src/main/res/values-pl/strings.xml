@@ -239,8 +239,8 @@
     <string name="settings_section_retention">Przechowywanie</string>
     <string name="settings_section_security">Bezpieczeństwo</string>
     <string name="settings_section_storage">Pamięć</string>
-    <string name="settings_section_summaries">Podsumowania rozmów</string>
     <string name="settings_section_transcription">Transkrypcja</string>
+    <string name="settings_section_transcription_and_summaries">Transkrypcja i podsumowania</string>
     <string name="settings_section_updates">Aktualizacje</string>
     <string name="settings_section_visual">Ustawienia graficzne</string>
     <string name="settings_select_contacts">Wybierz kontakty (%1$d)</string>
@@ -307,8 +307,6 @@
     <string name="summary_discard_confirm_body">Wyrzuci to pobrane już %1$.1f GB. Kolejna próba pobrałaby wszystko od początku.</string>
     <string name="summary_discard_confirm_confirm">Odrzuć</string>
     <string name="summary_discard_confirm_title">Odrzucić pobrane dane?</string>
-    <string name="summary_language_auto">Jak w rozmowie</string>
-    <string name="summary_language_label">Język podsumowania</string>
     <string name="summary_model_cancel">Anuluj pobieranie</string>
     <string name="summary_model_delete">Usuń moduł podsumowań</string>
     <string name="summary_model_discard">Odrzuć pobrane dane</string>

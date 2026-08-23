@@ -55,9 +55,7 @@ import com.baba.callvault.ui.common.rememberModelDownloadState
  * actually measured.
  */
 @Composable
-internal fun SummarySection(
-    expanded: Boolean,
-    onToggle: () -> Unit,
+internal fun SummaryRows(
     updateTrigger: Int,
     onDownload: (SummaryModel) -> Unit,
     onCancel: (SummaryModel) -> Unit,
@@ -119,11 +117,7 @@ internal fun SummarySection(
         )
     }
 
-    SettingsSection(
-        title = stringResource(R.string.settings_section_summaries),
-        expanded = expanded,
-        onToggle = onToggle
-    ) {
+    Column {
         Note(
             stringResource(
                 R.string.summary_requirements_body,
@@ -212,33 +206,6 @@ internal fun SummarySection(
         // this says what to *write*, and someone transcribing with auto-detect still wants their
         // summaries in one predictable language. "Match the call" never means "let the model
         // decide" — SummaryLanguage always resolves it to a concrete language first.
-        val summaryLanguage = remember(updateTrigger) { preferences.getSummaryLanguage() }
-        val languageOptions = TranscriptionLabels
-            .sortLanguageOptions(
-                TranscriptionLabels.LANGUAGE_OPTIONS.map { code ->
-                    (code ?: TranscriptionLabels.AUTO_DETECT_KEY) to
-                        if (code == null) stringResource(R.string.summary_language_auto)
-                        else stringResource(TranscriptionLabels.languageOf(code))
-                }
-            )
-            .map { (key, label) -> OptionItem(key, label) }
-
-        DropdownRow {
-            M3DropdownField(
-                label = stringResource(R.string.summary_language_label),
-                selected = languageOptions.find {
-                    it.key == (summaryLanguage ?: TranscriptionLabels.AUTO_DETECT_KEY)
-                } ?: languageOptions.first(),
-                options = languageOptions,
-                onOptionSelected = { option ->
-                    preferences.setSummaryLanguage(
-                        option.key.takeIf { it != TranscriptionLabels.AUTO_DETECT_KEY }
-                    )
-                    onSettingChanged()
-                }
-            )
-        }
-
         // Its home is here so the dialog's "don't show this again" can be undone — a dialog that
         // can permanently remove itself with no way back would be a trap. Same reasoning as the
         // transcription confirmation switch above it.

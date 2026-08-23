@@ -239,8 +239,8 @@
     <string name="settings_section_retention">Thời gian lưu giữ</string>
     <string name="settings_section_security">Bảo mật</string>
     <string name="settings_section_storage">Bộ nhớ</string>
-    <string name="settings_section_summaries">Tóm tắt cuộc gọi</string>
     <string name="settings_section_transcription">Bản ghi lời</string>
+    <string name="settings_section_transcription_and_summaries">Bản ghi lời và tóm tắt</string>
     <string name="settings_section_updates">Cập nhật</string>
     <string name="settings_section_visual">Cài đặt trực quan</string>
     <string name="settings_select_contacts">Chọn danh bạ (%1$d)</string>
@@ -307,8 +307,6 @@
     <string name="summary_discard_confirm_body">Việc này bỏ đi %1$.1f GB đã tải. Bắt đầu lại sẽ tải toàn bộ từ đầu.</string>
     <string name="summary_discard_confirm_confirm">Bỏ</string>
     <string name="summary_discard_confirm_title">Bỏ phần đã tải?</string>
-    <string name="summary_language_auto">Theo cuộc gọi</string>
-    <string name="summary_language_label">Ngôn ngữ bản tóm tắt</string>
     <string name="summary_model_cancel">Hủy tải xuống</string>
     <string name="summary_model_delete">Xóa trình tóm tắt</string>
     <string name="summary_model_discard">Bỏ phần đã tải</string>

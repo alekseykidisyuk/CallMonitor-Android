@@ -327,23 +327,23 @@ fun SettingsContent(
                 )
             }
             item {
+                // Summaries live inside this section rather than beside it. A summary is read from
+                // a transcript and is useless without one, and — the reason this moved — they used
+                // to have a language setting each. Setting the wrong one produced a transcript in
+                // the wrong language with no hint as to why, which is exactly what happened.
                 TranscriptionSection(
                     preferences, updateTrigger, actions,
                     expanded = openSection == SECTION_TRANSCRIPTION,
-                    onToggle = { onToggleSection(SECTION_TRANSCRIPTION) }
-                )
-            }
-            item {
-                // Directly after Transcription, because a summary is read from a transcript and is
-                // useless without one — the order on screen is the order of the dependency.
-                SummarySection(
-                    expanded = openSection == SECTION_SUMMARIES,
-                    onToggle = { onToggleSection(SECTION_SUMMARIES) },
-                    updateTrigger = updateTrigger,
-                    onDownload = { actions.downloadSummaryModel(it) },
-                    onCancel = { actions.cancelSummaryModelDownload(it) },
-                    onDelete = { actions.deleteSummaryModel(it) },
-                    onSettingChanged = { actions.refreshSettings() }
+                    onToggle = { onToggleSection(SECTION_TRANSCRIPTION) },
+                    summaryRows = {
+                        SummaryRows(
+                            updateTrigger = updateTrigger,
+                            onDownload = { actions.downloadSummaryModel(it) },
+                            onCancel = { actions.cancelSummaryModelDownload(it) },
+                            onDelete = { actions.deleteSummaryModel(it) },
+                            onSettingChanged = { actions.refreshSettings() }
+                        )
+                    }
                 )
             }
             item {
@@ -436,7 +436,6 @@ private const val SECTION_STORAGE = "storage"
 private const val SECTION_RETENTION = "retention"
 private const val SECTION_AUDIO = "audio"
 private const val SECTION_TRANSCRIPTION = "transcription"
-private const val SECTION_SUMMARIES = "summaries"
 private const val SECTION_GENERAL = "general"
 
 // Sub-section keys. Scoped to their parent section, so the same value can never collide across two.
@@ -745,7 +744,9 @@ private fun TranscriptionSection(
     updateTrigger: Int,
     actions: SettingsActions,
     expanded: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    /** The summariser's rows, rendered last — see the call site for why they live in here. */
+    summaryRows: @Composable () -> Unit = {}
 ) {
     val context = LocalContext.current
     val mode = remember(updateTrigger) { preferences.getTranscriptionMode() }
@@ -761,7 +762,7 @@ private fun TranscriptionSection(
     val selectedModel = TranscriptionModel.fromId(modelId) ?: TranscriptionModel.DEFAULT
 
     SettingsSection(
-        title = stringResource(R.string.settings_section_transcription),
+        title = stringResource(R.string.settings_section_transcription_and_summaries),
         expanded = expanded,
         onToggle = onToggle
     ) {
@@ -896,7 +897,14 @@ private fun TranscriptionSection(
                 } ?: languageOptions.first(),
                 options = languageOptions,
                 onOptionSelected = {
-                    actions.setTranscriptionLanguage(it.key.takeIf { k -> k != TranscriptionLabels.AUTO_DETECT_KEY })
+                    // Clears the summary's own override as well as setting the transcription
+                    // language. The override used to be a second, separate setting; anyone who set
+                    // it before this merge would otherwise keep summarising in that old language
+                    // for ever, with nothing on screen to say so.
+                    preferences.setSummaryLanguage(null)
+                    actions.setTranscriptionLanguage(
+                        it.key.takeIf { k -> k != TranscriptionLabels.AUTO_DETECT_KEY }
+                    )
                 }
             )
         }
@@ -944,6 +952,10 @@ private fun TranscriptionSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
+
+        // Last, after everything transcription needs: a summary is read from a transcript, so the
+        // order on screen is the order of the dependency.
+        summaryRows()
     }
 }
 

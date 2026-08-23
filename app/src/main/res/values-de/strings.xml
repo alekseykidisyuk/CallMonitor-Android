@@ -239,8 +239,8 @@
     <string name="settings_section_retention">Aufbewahrung</string>
     <string name="settings_section_security">Sicherheit</string>
     <string name="settings_section_storage">Speicher</string>
-    <string name="settings_section_summaries">Gesprächszusammenfassungen</string>
     <string name="settings_section_transcription">Transkription</string>
+    <string name="settings_section_transcription_and_summaries">Transkription &amp; Zusammenfassungen</string>
     <string name="settings_section_updates">Updates</string>
     <string name="settings_section_visual">Visuelle Einstellungen</string>
     <string name="settings_select_contacts">Kontakte auswählen (%1$d)</string>
@@ -307,8 +307,6 @@
     <string name="summary_discard_confirm_body">Damit werden die bereits geladenen %1$.1f GB verworfen. Ein neuer Versuch lädt alles von vorn.</string>
     <string name="summary_discard_confirm_confirm">Verwerfen</string>
     <string name="summary_discard_confirm_title">Download verwerfen?</string>
-    <string name="summary_language_auto">Wie das Gespräch</string>
-    <string name="summary_language_label">Sprache der Zusammenfassung</string>
     <string name="summary_model_cancel">Download abbrechen</string>
     <string name="summary_model_delete">Zusammenfasser löschen</string>
     <string name="summary_model_discard">Heruntergeladenes verwerfen</string>

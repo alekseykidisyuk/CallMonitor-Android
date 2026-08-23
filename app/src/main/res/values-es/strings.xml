@@ -239,8 +239,8 @@
     <string name="settings_section_retention">Retención</string>
     <string name="settings_section_security">Seguridad</string>
     <string name="settings_section_storage">Almacenamiento</string>
-    <string name="settings_section_summaries">Resúmenes de llamadas</string>
     <string name="settings_section_transcription">Transcripción</string>
+    <string name="settings_section_transcription_and_summaries">Transcripción y resúmenes</string>
     <string name="settings_section_updates">Actualizaciones</string>
     <string name="settings_section_visual">Ajustes visuales</string>
     <string name="settings_select_contacts">Seleccionar contactos (%1$d)</string>
@@ -307,8 +307,6 @@
     <string name="summary_discard_confirm_body">Esto tira los %1$.1f GB ya descargados. Empezar de nuevo los bajaría todos desde el principio.</string>
     <string name="summary_discard_confirm_confirm">Descartar</string>
     <string name="summary_discard_confirm_title">¿Descartar la descarga?</string>
-    <string name="summary_language_auto">El de la llamada</string>
-    <string name="summary_language_label">Idioma del resumen</string>
     <string name="summary_model_cancel">Cancelar la descarga</string>
     <string name="summary_model_delete">Eliminar el resumidor</string>
     <string name="summary_model_discard">Descartar lo descargado</string>

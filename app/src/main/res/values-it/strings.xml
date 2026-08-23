@@ -239,8 +239,8 @@
     <string name="settings_section_retention">Conservazione</string>
     <string name="settings_section_security">Sicurezza</string>
     <string name="settings_section_storage">Archiviazione</string>
-    <string name="settings_section_summaries">Riepiloghi delle chiamate</string>
     <string name="settings_section_transcription">Trascrizione</string>
+    <string name="settings_section_transcription_and_summaries">Trascrizione e riassunti</string>
     <string name="settings_section_updates">Aggiornamenti</string>
     <string name="settings_section_visual">Impostazioni di visualizzazione</string>
     <string name="settings_select_contacts">Seleziona contatti (%1$d)</string>
@@ -307,8 +307,6 @@
     <string name="summary_discard_confirm_body">Così si buttano i %1$.1f GB già scaricati. Ricominciare li riprenderebbe da capo.</string>
     <string name="summary_discard_confirm_confirm">Elimina</string>
     <string name="summary_discard_confirm_title">Eliminare il download?</string>
-    <string name="summary_language_auto">Come la chiamata</string>
-    <string name="summary_language_label">Lingua del riepilogo</string>
     <string name="summary_model_cancel">Annulla il download</string>
     <string name="summary_model_delete">Elimina il riassuntore</string>
     <string name="summary_model_discard">Elimina quanto scaricato</string>

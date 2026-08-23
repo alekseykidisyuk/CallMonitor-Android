@@ -239,8 +239,8 @@
     <string name="settings_section_retention">Срок хранения</string>
     <string name="settings_section_security">Безопасность</string>
     <string name="settings_section_storage">Хранилище</string>
-    <string name="settings_section_summaries">Сводки звонков</string>
     <string name="settings_section_transcription">Расшифровка</string>
+    <string name="settings_section_transcription_and_summaries">Расшифровка и краткое содержание</string>
     <string name="settings_section_updates">Обновления</string>
     <string name="settings_section_visual">Визуальные настройки</string>
     <string name="settings_select_contacts">Выбрать контакты (%1$d)</string>
@@ -307,8 +307,6 @@
     <string name="summary_discard_confirm_body">Это выбросит уже скачанные %1$.1f ГБ. Новая попытка загрузит всё с самого начала.</string>
     <string name="summary_discard_confirm_confirm">Удалить</string>
     <string name="summary_discard_confirm_title">Удалить загруженное?</string>
-    <string name="summary_language_auto">Как в звонке</string>
-    <string name="summary_language_label">Язык сводки</string>
     <string name="summary_model_cancel">Отменить скачивание</string>
     <string name="summary_model_delete">Удалить модуль сводок</string>
     <string name="summary_model_discard">Удалить скачанное</string>

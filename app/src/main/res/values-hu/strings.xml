@@ -239,8 +239,8 @@
     <string name="settings_section_retention">Megőrzés</string>
     <string name="settings_section_security">Biztonság</string>
     <string name="settings_section_storage">Tárhely</string>
-    <string name="settings_section_summaries">Hívásösszefoglalók</string>
     <string name="settings_section_transcription">Átirat</string>
+    <string name="settings_section_transcription_and_summaries">Átirat és összefoglalók</string>
     <string name="settings_section_updates">Frissítések</string>
     <string name="settings_section_visual">Megjelenítési beállítások</string>
     <string name="settings_select_contacts">Névjegyek kiválasztása (%1$d)</string>
@@ -307,8 +307,6 @@
     <string name="summary_discard_confirm_body">Ezzel eldobja a már letöltött %1$.1f GB-ot. Az újrakezdés az egészet elölről töltené le.</string>
     <string name="summary_discard_confirm_confirm">Eldobás</string>
     <string name="summary_discard_confirm_title">Eldobja a letöltést?</string>
-    <string name="summary_language_auto">Ahogy a hívásban</string>
-    <string name="summary_language_label">Az összefoglaló nyelve</string>
     <string name="summary_model_cancel">Letöltés megszakítása</string>
     <string name="summary_model_delete">Összefoglaló törlése</string>
     <string name="summary_model_discard">Letöltött adatok eldobása</string>
