@@ -157,7 +157,7 @@ internal class DirectAudioRecorderSession(
         val channelMap = if (downmix) ChannelMapDetector(SAMPLE_RATE) else null
         // The measurement that does not depend on hearing ringback — which the OP12 never delivers to
         // this capture, and which an incoming call cannot produce at all.
-        val correlator = if (downmix) DownlinkCorrelator(SAMPLE_RATE) else null
+        val correlator = if (downmix && PROBE_ENABLED) DownlinkCorrelator(SAMPLE_RATE) else null
         if (correlator != null) {
             downlinkProbe = openDownlinkProbe()?.also { startProbeDrain(it, correlator) }
         }
@@ -411,6 +411,21 @@ internal class DirectAudioRecorderSession(
          * call, and short enough that a second voice input is not held for the whole conversation.
          */
         private const val PROBE_WINDOWS = 400
+
+        /**
+         * OFF. The probe is suspected of costing the recording its near side.
+         *
+         * Measured on the OP12, 2026-08-23: the first call recorded with the probe running captured
+         * the far party and **nothing of the user** — one burst of speech where there had been two.
+         * The likely mechanism is that opening a second voice capture makes the HAL re-route the
+         * combined VOICE_CALL stream to downlink only, so the diagnostic silently took half the
+         * conversation away.
+         *
+         * Unproven, but it does not need to be proven to be switched off. Half a recording is a lost
+         * call, and this exists only to put a name on a label. It stays off until a run with it off
+         * shows whole recordings and a run with it on reproduces the loss.
+         */
+        private const val PROBE_ENABLED = false
         private const val MAX_INPUT_SIZE = 16_384
         private const val BUFFER_FACTOR = 4
         private const val DEQUEUE_TIMEOUT_US = 10_000L
