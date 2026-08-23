@@ -58,8 +58,32 @@ session without anything being deleted.
 
 ### 🔵 Known gaps, agreed but not done
 
-- **Per-recording summaries** — spike plan at `docs/dev-notes/2026-08-21-summarisation-spike-plan.md`.
-  Tasks 1–3 done; the measurement that decides the whole feature is not.
+- **Per-recording summaries** — SHIPPED in 2.0.0. Plan at
+  `docs/dev-notes/2026-08-21-summarisation-ui-plan.md`.
+
+- **A Hebrew whisper fine-tune (`ivrit`) — RESEARCHED, PARKED 2026-08-23 at the maintainer's
+  request.** Likely the largest remaining transcription-quality lever, and the research is done, so
+  picking it up again is a decision rather than an investigation.
+
+  The sibling project at `~/Desktop/Projects/AIDashboard` (`src/lib/calls/transcribe.ts`) documents
+  that generic whisper on auto-detect **returns Arabic on Hebrew audio**, and that `ivrit` +
+  `--language he` produced 6564 characters of clean Hebrew from a call the other paths mangled.
+
+  | Candidate | Size | Licence |
+  |---|---|---|
+  | `ivrit-ai/whisper-large-v3-turbo-ggml` (official, fp16) | 1.62 GB | Apache-2.0 |
+  | `Ibrerhim/ivrit-whisper-v3-turbo-q5_0-ggml` | 574 MB | **none stated** |
+
+  **APK cost is zero** — models are downloaded, never bundled. The q5_0 build is byte-identical in
+  size to the generic turbo we already ship and has a different SHA-256 (`6c1da92e…` against
+  `39422170…`), so it is a real fine-tune rather than a re-upload. The open question is which to
+  depend on: an unlicensed third-party re-quantisation, or three times the download.
+
+  **Two constraints on "make it seamless".** The model has to be chosen at *download* time, not at
+  transcribe time, so auto-detect cannot select it — the language is not known until after the
+  transcription. And `ivrit`'s own language detection is degraded by the fine-tuning, which is why
+  the sibling pins the language explicitly. Realistically: pinning Hebrew in Settings gets `ivrit`,
+  auto-detect keeps generic.
 - **Estimates are still one number times a length.** A short recording pays a fixed cost — loading a
   model, decoding the audio — that a real-time factor cannot express, so short calls are quoted
   optimistically. A two-part estimate (fixed overhead plus a per-second factor) would fit reality
