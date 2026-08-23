@@ -12,6 +12,9 @@ import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.media.MediaMuxer
+import com.baba.callvault.data.transcripts.CapturedSpeakerTurns
+import com.baba.callvault.server.speakers.SpeakerTurnCodec
+import com.baba.callvault.server.speakers.SpeakerTurnDetector
 import com.baba.callvault.utils.AppLogger
 import com.baba.callvault.utils.PcmDownmix
 import java.io.FileDescriptor
@@ -64,12 +67,24 @@ class HandoffEncoder(
         var totalFrames = 0L
         val pcm = ByteArray(READ_CHUNK_BYTES)
         val mono = ByteArray(READ_CHUNK_BYTES / 2) // downmix target (stereo → half the bytes)
+        // Who was speaking when, taken from the same frames and at the same moment as the direct
+        // path takes it: after the capture, before the downmix destroys the separation. Only a
+        // stereo capture carries it — a mono one has nothing to compare.
+        val speakers = if (downmix) SpeakerTurnDetector(sampleRate) else null
+        CapturedSpeakerTurns.clear()
 
         try {
             while (true) {
                 val read = readFull(pcm, captureChannels * 2) // whole frames only (avoids split-frame downmix)
                 if (read < 0) break // native closed the pipe → end of capture
                 if (read == 0) continue
+
+                // Guarded: a recording that works is worth more than a label, so a fault in
+                // detection must cost the turns and nothing else.
+                if (speakers != null) {
+                    runCatching { speakers.accept(pcm, read) }
+                        .onFailure { AppLogger.w(TAG, "Speaker detection failed; continuing without turns: ${it.message}") }
+                }
 
                 // Downmix interleaved stereo (average L+R), or pass the captured PCM through unchanged.
                 val (buf, len) = if (downmix) mono to PcmDownmix.stereoToMono(pcm, read, mono) else pcm to read
@@ -88,6 +103,13 @@ class HandoffEncoder(
                 enc.queueInputBuffer(inIdx, 0, len, ptsUs, 0)
                 totalFrames += len / outFrameBytes // output frames (across all encoded channels)
                 muxerStarted = drainEncoder(enc, mux, info, muxerStarted)
+            }
+
+            // Published before the tail is flushed, so the turns are waiting by the time the
+            // recording is catalogued and the app comes looking for them.
+            if (speakers != null) {
+                runCatching { CapturedSpeakerTurns.publish(SpeakerTurnCodec.encode(speakers.finish())) }
+                    .onFailure { AppLogger.w(TAG, "Could not encode speaker turns: ${it.message}") }
             }
 
             // Flush the encoder tail, then drain to EOS so the container trailer is complete.

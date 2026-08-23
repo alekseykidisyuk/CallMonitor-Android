@@ -42,20 +42,29 @@ object SpeakerTurnsRepository {
      *   does not know this; the app does.
      */
     suspend fun collectAfterCall(context: Context, displayName: String, outgoing: Boolean) {
-        val service = RecorderConnection.service ?: run {
+        // The app's own capture is asked FIRST, and taken whether or not a daemon is reachable.
+        // With resilient recording on, the stereo frames pass through the app's HandoffEncoder and
+        // the daemon holds no session to ask — so a daemon-only lookup found nothing on every call
+        // this phone ever made. Consumed here, so it can never be attached to a later recording.
+        val fromHandoff = CapturedSpeakerTurns.takeIfPresent()
+
+        val service = RecorderConnection.service
+        if (service == null && fromHandoff.isBlank()) {
             AppLogger.i(TAG, "No daemon to ask for speaker turns; the recording is unaffected")
             return
         }
 
         // Separately guarded: a warm daemon from an older build has neither method, and the two were
         // added together but may not stay that way.
-        val turns = runCatching { service.speakerTurns().orEmpty() }.getOrElse { "" }
+        val fromDaemon = service?.let { runCatching { it.speakerTurns().orEmpty() }.getOrElse { "" } }.orEmpty()
+        val turns = fromHandoff.ifBlank { fromDaemon }
         if (turns.isBlank()) {
             AppLogger.i(TAG, "No speaker turns for this recording (mono capture, or an older daemon)")
             return
         }
+        AppLogger.i(TAG, "Speaker turns came from the ${if (fromHandoff.isNotBlank()) "handoff" else "daemon"} capture")
 
-        val observed = runCatching { service.observedChannelMap().orEmpty() }.getOrElse { "" }
+        val observed = service?.let { runCatching { it.observedChannelMap().orEmpty() }.getOrElse { "" } }.orEmpty()
         // An incoming call cannot have heard ringback for us, so whatever it reports is discarded
         // rather than trusted — this is the one thing the daemon could not decide for itself.
         val usable = if (outgoing) ChannelMap.fromKey(observed) else ChannelMap.UNKNOWN
