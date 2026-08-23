@@ -35,6 +35,31 @@ import kotlinx.coroutines.withContext
  * download's two halves are — read apart, they contradict each other at exactly the moment they
  * matter, which is when a run finishes.
  */
+/**
+ * Which of a recording's jobs the card should reflect.
+ *
+ * **A live job always wins.** Every run for one recording carries the same tag, so after the first
+ * rewrite there are several — and taking the last of them picked an arbitrary one. On a rewrite that
+ * meant the finished job was chosen while the new one was actually running, so the card went on
+ * showing the old summary and "Write it again" looked like it had done nothing. It had not: the
+ * phone was at 641% CPU writing the replacement.
+ *
+ * With nothing live, the most recent finished job is the one that describes the state.
+ */
+private fun pickInteresting(mine: List<WorkInfo>): WorkInfo? =
+    indexOfInteresting(mine.map { it.state })?.let(mine::get)
+
+/**
+ * The index of the job that describes the current state, or null when there are none.
+ *
+ * Split out from [pickInteresting] so the rule itself is under test: `WorkInfo` cannot be
+ * constructed outside WorkManager, and this rule is the part that was wrong.
+ */
+internal fun indexOfInteresting(states: List<WorkInfo.State>): Int? {
+    if (states.isEmpty()) return null
+    return states.indexOfFirst { !it.isFinished }.takeIf { it >= 0 } ?: states.lastIndex
+}
+
 @Composable
 fun rememberSummaryState(displayName: String): State<SummaryCardState> {
     val context = LocalContext.current
@@ -58,7 +83,7 @@ fun rememberSummaryState(displayName: String): State<SummaryCardState> {
             // matching on it meant a job stopped being recognised exactly when its result mattered:
             // the card reverted to offering a summary it had just spent two minutes writing.
             val tag = SummaryScheduler.tagFor(displayName)
-            val mine = infos.lastOrNull { tag in it.tags }
+            val mine = pickInteresting(infos.filter { tag in it.tags })
             stored to mine
         }.collect { (stored, info) ->
             val running = info?.state == WorkInfo.State.RUNNING ||
