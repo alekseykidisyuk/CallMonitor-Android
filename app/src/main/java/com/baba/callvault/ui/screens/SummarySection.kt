@@ -58,7 +58,8 @@ internal fun SummarySection(
     val context = LocalContext.current
     val model = SummaryModel.DEFAULT
     val isInstalled = remember(updateTrigger) { ModelRepository.isInstalled(context, model) }
-    val state by rememberModelDownloadState(model, isInstalled)
+    val partialBytes = remember(updateTrigger) { ModelRepository.partialBytes(context, model) }
+    val state by rememberModelDownloadState(model, isInstalled, partialBytes)
 
     SettingsSection(
         title = stringResource(R.string.settings_section_summaries),
@@ -90,6 +91,32 @@ internal fun SummarySection(
                 ),
                 onClick = { onDownload(model) }
             )
+
+            // Stopped part-way. Saying so is the point: those bytes are banked, the server resumes
+            // from exactly that offset, and a row reading "Download, 3.5 GB" would hide a gigabyte
+            // the user has already paid for. The discard row exists because otherwise that
+            // gigabyte can only be reclaimed by clearing the app's data.
+            is ModelDownloadState.Paused -> {
+                NavigationRow(
+                    icon = Icons.Filled.Download,
+                    label = stringResource(R.string.summary_model_resume),
+                    value = stringResource(
+                        R.string.summary_model_resume_subtitle,
+                        current.downloadedBytes.toGigabytes(),
+                        model.sizeBytes.toGigabytes()
+                    ),
+                    onClick = { onDownload(model) }
+                )
+                NavigationRow(
+                    icon = Icons.Filled.Delete,
+                    label = stringResource(R.string.summary_model_discard),
+                    value = stringResource(
+                        R.string.summary_model_discard_subtitle,
+                        current.downloadedBytes.toGigabytes()
+                    ),
+                    onClick = { onDelete(model) }
+                )
+            }
 
             // Queued and 0% look identical on a bar and mean different things, so waiting says so
             // in words and shows an indeterminate bar rather than an empty one.
@@ -133,6 +160,16 @@ internal fun SummarySection(
 /** A download in flight, with the one action that makes sense while it runs. */
 @Composable
 private fun DownloadingRow(label: String, percent: Int?, onCancel: () -> Unit) {
+    // Both colours are stated. Left to the theme, M3 resolves the track to CoralDeep and the bar
+    // renders teal-on-pink, which reads as an error rather than as progress — the same trap that
+    // has already produced a maroon tonal button, a maroon selected card and a red progress ring
+    // in this codebase. Observed here too, on the emulator, before it was pinned down.
+    val accent = MaterialTheme.colorScheme.primary
+    val track = accent.copy(alpha = TRACK_ALPHA)
+    val barModifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp)
+
     Column(Modifier.fillMaxWidth()) {
         NavigationRow(
             icon = Icons.Filled.Close,
@@ -144,15 +181,15 @@ private fun DownloadingRow(label: String, percent: Int?, onCancel: () -> Unit) {
         if (percent != null) {
             LinearProgressIndicator(
                 progress = { percent / PERCENT },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                modifier = barModifier,
+                color = accent,
+                trackColor = track
             )
         } else {
             LinearProgressIndicator(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                modifier = barModifier,
+                color = accent,
+                trackColor = track
             )
         }
         Spacer(Modifier.height(8.dp))
@@ -170,6 +207,9 @@ private fun ColumnScope.Note(text: String) {
 }
 
 private const val PERCENT = 100f
+
+/** How much of the accent shows through as the bar's unfilled track. */
+private const val TRACK_ALPHA = 0.20f
 
 /** Bytes as gigabytes, for copy that talks in the units a person would. */
 private fun Long.toGigabytes(): Float = this / 1_000_000_000f

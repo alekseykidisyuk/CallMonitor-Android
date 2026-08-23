@@ -103,4 +103,67 @@ class ModelDownloadStateTest {
             ModelDownloadState.from(isInstalled = false, workState = WorkInfo.State.SUCCEEDED, percent = 100, error = null)
         )
     }
+
+    @Test
+    fun `a cancelled download with bytes on disk is paused, not absent`() {
+        // Measured on the emulator: cancelling at 976 MB keeps the file, and restarting resumes
+        // from exactly that offset. Showing "Download, 3.5 GB" would hide a gigabyte the user has
+        // already paid for and make it look as though they must start again.
+        assertEquals(
+            ModelDownloadState.Paused(976_902_511L),
+            ModelDownloadState.from(
+                isInstalled = false,
+                workState = WorkInfo.State.CANCELLED,
+                percent = 28,
+                error = null,
+                partialBytes = 976_902_511L
+            )
+        )
+    }
+
+    @Test
+    fun `a partial download survives the app being restarted`() {
+        // No work info at all: a new process, days later. The bytes are still on disk and still
+        // resumable, so the row must still offer to continue rather than to begin.
+        assertEquals(
+            ModelDownloadState.Paused(168_932_169L),
+            ModelDownloadState.from(
+                isInstalled = false,
+                workState = null,
+                percent = null,
+                error = null,
+                partialBytes = 168_932_169L
+            )
+        )
+    }
+
+    @Test
+    fun `bytes on disk do not turn a running download into a paused one`() {
+        // The partial file exists throughout a download, so this ordering matters: a live download
+        // must keep reporting its percentage rather than flipping to "resume".
+        assertEquals(
+            ModelDownloadState.Downloading(28),
+            ModelDownloadState.from(
+                isInstalled = false,
+                workState = WorkInfo.State.RUNNING,
+                percent = 28,
+                error = null,
+                partialBytes = 976_902_511L
+            )
+        )
+    }
+
+    @Test
+    fun `an installed model is never paused, whatever is left on disk`() {
+        assertEquals(
+            ModelDownloadState.Installed,
+            ModelDownloadState.from(
+                isInstalled = true,
+                workState = null,
+                percent = null,
+                error = null,
+                partialBytes = 976_902_511L
+            )
+        )
+    }
 }

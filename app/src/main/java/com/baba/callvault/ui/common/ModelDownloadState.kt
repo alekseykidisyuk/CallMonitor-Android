@@ -32,8 +32,18 @@ sealed interface ModelDownloadState {
     /** On the device and complete. */
     data object Installed : ModelDownloadState
 
-    /** Nothing is happening and the model is absent. */
+    /** Nothing is happening and there is nothing on disk. */
     data object Absent : ModelDownloadState
+
+    /**
+     * Stopped part-way, with [downloadedBytes] already fetched and kept.
+     *
+     * Distinct from [Absent] because it is the opposite of it. The partial file survives a cancel
+     * deliberately — the next attempt resumes with a Range request, verified against HuggingFace,
+     * so those bytes are banked rather than wasted. Left rendering as "Download, 3.5 GB" that fact
+     * is invisible, and a user who stopped a download reasonably assumes they have to start again.
+     */
+    data class Paused(val downloadedBytes: Long) : ModelDownloadState
 
     /**
      * Queued but not yet started — usually waiting for an unmetered network.
@@ -61,18 +71,25 @@ sealed interface ModelDownloadState {
          * Kept separate from the observation below so it can be reasoned about, and tested, without
          * a WorkManager instance.
          */
-        fun from(isInstalled: Boolean, workState: WorkInfo.State?, percent: Int?, error: String?): ModelDownloadState =
+        fun from(
+            isInstalled: Boolean,
+            workState: WorkInfo.State?,
+            percent: Int?,
+            error: String?,
+            partialBytes: Long = 0L
+        ): ModelDownloadState =
             when {
                 isInstalled -> Installed
-                workState == null -> Absent
                 workState == WorkInfo.State.RUNNING ->
                     percent?.let { Downloading(it) } ?: Waiting
                 // ENQUEUED covers both the first moment after a tap and a retry waiting on its
                 // backoff, which is also the shape an interrupted download comes back in.
                 workState == WorkInfo.State.ENQUEUED || workState == WorkInfo.State.BLOCKED -> Waiting
                 workState == WorkInfo.State.FAILED -> Failed(error)
-                // SUCCEEDED without the file means it was verified, then removed. CANCELLED means
-                // the user stopped it. Both leave the model simply absent.
+                // Nothing running. SUCCEEDED without the file means it was verified then removed;
+                // CANCELLED means the user stopped it; null means no attempt this process. What
+                // separates them is only whether bytes are banked on disk.
+                partialBytes > 0L -> Paused(partialBytes)
                 else -> Absent
             }
     }
@@ -88,15 +105,16 @@ sealed interface ModelDownloadState {
 @Composable
 fun rememberModelDownloadState(
     model: DownloadableModel,
-    isInstalled: Boolean
+    isInstalled: Boolean,
+    partialBytes: Long
 ): State<ModelDownloadState> {
     val context = LocalContext.current
     val workManager = remember(context) { WorkManager.getInstance(context) }
     val workName = remember(model.id) { ModelDownloadWorker.workNameFor(model) }
 
     return produceState<ModelDownloadState>(
-        initialValue = ModelDownloadState.from(isInstalled, null, null, null),
-        workManager, workName, isInstalled
+        initialValue = ModelDownloadState.from(isInstalled, null, null, null, partialBytes),
+        workManager, workName, isInstalled, partialBytes
     ) {
         workManager.getWorkInfosForUniqueWorkFlow(workName).collect { infos ->
             // Unique work, so there is at most one that matters; a retry replaces rather than joins.
@@ -105,7 +123,8 @@ fun rememberModelDownloadState(
                 isInstalled = isInstalled,
                 workState = info?.state,
                 percent = info?.let { ModelDownloadWorker.percentOf(it.progress) },
-                error = info?.outputData?.getString(ModelDownloadWorker.KEY_ERROR)
+                error = info?.outputData?.getString(ModelDownloadWorker.KEY_ERROR),
+                partialBytes = partialBytes
             )
         }
     }

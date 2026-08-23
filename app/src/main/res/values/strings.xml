@@ -507,6 +507,10 @@
     <string name="summary_model_downloading">Downloading… %1$d%%</string>
     <string name="summary_model_waiting">Waiting for Wi-Fi</string>
     <string name="summary_model_cancel">Cancel the download</string>
+    <string name="summary_model_resume">Resume the download</string>
+    <string name="summary_model_resume_subtitle">%1$.1f GB of %2$.1f GB already downloaded</string>
+    <string name="summary_model_discard">Discard what was downloaded</string>
+    <string name="summary_model_discard_subtitle">Frees %1$.1f GB</string>
     <string name="summary_model_failed_space">Not enough free space. Free some up and try again.</string>
     <string name="summary_model_failed_verify">The download was damaged and has been discarded. Try again.</string>
     <string name="summary_model_failed">The download did not finish. Try again.</string>

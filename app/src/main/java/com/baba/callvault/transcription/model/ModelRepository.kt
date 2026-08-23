@@ -114,6 +114,19 @@ object ModelRepository {
         File(dir, model.fileName + PART_SUFFIX)
 
     /**
+     * How much of [model] is already on disk from an interrupted download, or 0.
+     *
+     * Exists so the UI can say so. A cancelled 3.46 GB download keeps its partial file on purpose —
+     * the next attempt resumes with a Range request and the user pays for each byte once — but a
+     * row that still reads "Download, 3.5 GB" hides that entirely, and looks exactly like starting
+     * again from nothing.
+     */
+    fun partialBytes(context: Context, model: DownloadableModel): Long {
+        val part = partFileFor(modelsDir(context), model)
+        return if (part.isFile) part.length() else 0L
+    }
+
+    /**
      * Promotes a finished download to the real file, but only if it hashes correctly.
      *
      * This is the gate the whole download path exists to reach: a model is renamed into place only
