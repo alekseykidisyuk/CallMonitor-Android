@@ -22,8 +22,8 @@ These are not preferences. Each one closes off a design that would otherwise loo
 
 | Measured | What it rules out |
 |---|---|
-| ~90 s for a 3½-minute call | Any "summarise" button that leaves the user watching a spinner |
-| ~1.9 GB resident | Running it while a call is being recorded, or on a phone that cannot spare it |
+| ~97 s for a real call, ~130 s with timestamps | Any "summarise" button that leaves the user watching a spinner |
+| **3.0–3.5 GB peak PSS** | Running it while a call is being recorded, or on a phone that cannot spare it |
 | 3.46 GB download | Shipping the model; it must be fetched, resumable, and deletable |
 | Invents nothing on clean text, **reads noise as names on dirty text** | Presenting a summary as fact without the transcript one tap away |
 | Quality is capped by the transcript | Offering summaries for recordings that have no transcript yet |
@@ -78,7 +78,8 @@ can be wrong — and it is the affordance that sends someone to the transcript w
 
 - **No summary in the recordings list.** The list is already tight; the name barely fits. A summary
   belongs where someone has decided to deal with the call.
-- **No automatic summarisation of the back catalogue.** It is ~90 s and ~1.9 GB per call. Sweeping a
+- **No automatic summarisation of the back catalogue.** It is a minute and a half or more, and about
+  3.5 GB of memory, per call. Sweeping a
   library is hours of CPU for pages nobody asked for — the same mistake the waveform pass made.
 - **No `participants` field, until diarisation exists.** Measured: it read the ringtone marker
   `*ביב*` as a person and named them. Confident wrong names are worse than no names.
@@ -166,11 +167,25 @@ applies it, and that bridge is exactly where the silent failure lived. Fold it i
       tested.
 - [ ] Commit.
 
-## Task 4: The model, in Settings
+## Task 4: The model, in Settings — **in progress**
 
-**Files:** `TranscriptionModel.kt` (or a sibling catalogue), `SettingsScreen.kt`
+**Files:** `summary/SummaryModel.kt`, `transcription/model/DownloadableModel.kt`, `SettingsScreen.kt`
 
-- [ ] Add Gemma 4 E2B to the model catalogue: URL, exact size, checksum.
+**Do this before Task 3.** The worker needs a model *path*, and paths come from the catalogue — the
+plan's original numbering was written before that dependency was visible.
+
+- [x] Add Gemma 4 E2B to the model catalogue: URL, exact size, checksum (`0da4ac1`). A sibling enum
+      rather than a case in `TranscriptionModel`, which is described by a real-time factor against
+      audio and has no meaning here. `ModelRepository` was widened to `DownloadableModel` first, as
+      its own revertable commit (`60b6b8c`).
+- [ ] Generalise `ModelDownloadWorker` the same way. **The open risk:** that path was built for
+      190–574 MB and this is 3.46 GB. Resume, progress reporting and a download long enough to
+      cross a network change all behave differently at six times the size.
+- [ ] A **Summaries** section in Settings, next to Transcription: download/delete, size on disk, and
+      the state of the download.
+- [ ] Name the licence where the user can see it before downloading: Gemma is under Google's Terms
+      of Use, not an OSI-free licence. The app stays clean because it never ships the weights, but
+      the person accepting them deserves to be told.
 - [ ] A **Summaries** section in Settings, next to Transcription: download/delete, size on disk, and
       the state of the download.
 - [ ] Commit.
@@ -181,8 +196,15 @@ applies it, and that bridge is exactly where the silent failure lived. Fold it i
 
 Shown once before the first download. The numbers are measured, so quote them.
 
-- [ ] Copy naming: **3.5 GB to download**, about **2 GB of memory while it runs**, roughly **a minute
-      and a half per five minutes of call**, and that it needs a recent phone.
+- [ ] Copy naming: **3.5 GB to download**, about **3.5 GB of memory while it runs**, roughly **a
+      minute and a half for a short call**, and that it needs a recent phone.
+
+      **These numbers were wrong in an earlier draft and matter more than the wording around them.**
+      Memory is 3.0–3.5 GB peak PSS measured while the model was loaded, not the ~2 GB first written
+      here — that reading was taken after the model had been freed. 3.5 GB resident genuinely does
+      rule out smaller phones, which is the whole reason this dialog exists. Timing for a long call
+      is still an **extrapolation** (2–4 minutes for ten minutes of audio), so the copy must not
+      quote a per-minute rate as though it had been measured. See `SummaryModel.peakMemoryBytes`.
 - [ ] "Don't ask again", reflected as a Settings switch — the pattern the transcription warning
       already uses.
 - [ ] Translations. Commit.
