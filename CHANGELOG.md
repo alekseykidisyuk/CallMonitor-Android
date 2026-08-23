@@ -31,6 +31,19 @@ Transcripts learn who was speaking.
 - Copying or sharing a transcript now carries the same speaker names the screen shows, and stays
   neutral for exactly as long as the screen does.
 
+### Fixed
+
+- **App calls record again on phones that route them through the system.** Some phones — Samsung's
+  One UI among them — tell every app that a WhatsApp, Telegram or Signal call is "a call in
+  progress", exactly as they would for a phone call. CallVault believed them, decided your carrier
+  had a call up, and stood aside from the app call you had just started. It now asks which calls
+  actually belong to the carrier, so app calls record and a real phone call still takes precedence.
+
+- **A phone call can no longer be mistaken for an app call and left unrecorded.** With app-call
+  recording switched on, a call carried over Wi-Fi calling or VoLTE could look enough like an app
+  call that neither half of CallVault picked it up. Losing a call is worse than any duplicate
+  notification, so that decision now asks the same question.
+
 ## [2.0.0]
 
 A major version, because two whole features arrive at once — transcription and summaries. Both run
