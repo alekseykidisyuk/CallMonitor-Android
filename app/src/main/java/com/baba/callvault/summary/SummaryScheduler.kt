@@ -1,0 +1,80 @@
+/*
+ * CallVault: FOSS call recording, self-contained over embedded ADB
+ *  Copyright (C) 2026-present The CallVault Authors
+ *  This software is licensed under the GNU General Public License v3 or later, with additional terms as permitted under Section 7.
+ *  The full license text is available in the LICENSE file at the root of this project.
+ *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+package com.baba.callvault.summary
+
+import android.content.Context
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.baba.callvault.utils.AppLogger
+
+/**
+ * Asks for a summary, and stops one.
+ *
+ * **There is no schedule here**, unlike [com.baba.callvault.transcription.TranscriptionScheduler].
+ * Transcription has modes because it is something the user wants to happen to every call; a summary
+ * is asked for one call at a time, when someone has decided to deal with that call. At about ninety
+ * seconds of full CPU and gigabytes of memory each, a nightly sweep would be hours of heat for pages
+ * nobody requested.
+ */
+object SummaryScheduler {
+
+    private const val TAG = "CV:SummaryScheduler"
+
+    /** Unique work for the summary queue. One name, so two taps queue rather than collide. */
+    const val WORK_NAME = "cv_summary_now"
+
+    /**
+     * Queues a summary of [displayName].
+     *
+     * No network constraint — everything happens on the device — and no charging constraint either:
+     * this is something the user asked for and is waiting on, so making it wait for a charger would
+     * be answering a request with a condition they never agreed to.
+     *
+     * `APPEND_OR_REPLACE` so two recordings tapped in a row are both summarised, while still never
+     * running two at once. Running two would be pointless anyway: [SummaryEngine] serialises on a
+     * mutex, and two models will not fit in memory together.
+     */
+    fun runNow(context: Context, displayName: String, model: SummaryModel = SummaryModel.DEFAULT) {
+        val request = OneTimeWorkRequestBuilder<SummaryWorker>()
+            .setInputData(
+                workDataOf(
+                    SummaryWorker.KEY_DISPLAY_NAME to displayName,
+                    SummaryWorker.KEY_MODEL_ID to model.id
+                )
+            )
+            .build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+        AppLogger.i(TAG, "Summary requested with ${model.id}")
+    }
+
+    /**
+     * Stops whatever is being summarised.
+     *
+     * The abort comes first, because it is the only thing that actually stops the work: cancelling
+     * the worker does not interrupt a generate, which sits inside one long native call. Same lesson
+     * as whisper — a cancelled worker left the phone at full CPU until the call finished on its own.
+     */
+    fun stopNow(context: Context) {
+        SummaryEngine.requestAbort()
+        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+        AppLogger.i(TAG, "Summary stopped")
+    }
+
+    /** The recording a running summary is for, or null. */
+    fun displayNameOf(progress: Data): String? = progress.getString(SummaryWorker.KEY_DISPLAY_NAME)
+
+    /** How far through, 0-100, or null when nothing has been reported yet. */
+    fun percentOf(progress: Data): Int? =
+        progress.getInt(SummaryWorker.KEY_PERCENT, -1).takeIf { it >= 0 }
+}

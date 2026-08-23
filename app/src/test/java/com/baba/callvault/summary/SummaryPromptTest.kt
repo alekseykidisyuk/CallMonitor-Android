@@ -70,4 +70,44 @@ class SummaryPromptTest {
         assertTrue(merged.contains("English"))
         assertTrue(merged.contains("Do not invent"))
     }
+
+    @Test
+    fun `the json merge carries every part through`() {
+        val merged = SummaryPrompt.forMergeJson(listOf("""{"intent":"first"}""", """{"intent":"second"}"""), "he")
+
+        assertTrue(merged.contains("first"))
+        assertTrue(merged.contains("second"))
+        assertTrue(merged.contains("Hebrew"))
+    }
+
+    @Test
+    fun `the json merge asks for the same shape the grammar enforces`() {
+        // The merge output goes through CallSummary.parse exactly like a chunk's does, so it has to
+        // name the same six keys — a merge that returned prose would be rejected and the whole call
+        // would end with nothing to show for two passes of the model.
+        val merged = SummaryPrompt.forMergeJson(listOf("""{"intent":"a"}"""), null)
+
+        listOf("intent", "summary", "keyPoints", "decisions", "actionItems", "keyFacts").forEach {
+            assertTrue("the merge prompt never mentions $it", merged.contains(it))
+        }
+    }
+
+    @Test
+    fun `the json merge keeps timestamps rather than renumbering them`() {
+        // Stamps are the one thing a summary offers that reading the transcript does not, and they
+        // are only valid against the original recording. A merge that re-derived them would produce
+        // jump points that land in the wrong place.
+        val merged = SummaryPrompt.forMergeJson(listOf("""{"decisions":["[1:30] x"]}"""), "en")
+
+        assertTrue(merged.contains("[m:ss]"))
+    }
+
+    @Test
+    fun `the json merge refuses instructions hidden in the parts`() {
+        // The parts are model output derived from a caller's words, so the same rule applies as to
+        // a transcript: it is data, never instructions.
+        val merged = SummaryPrompt.forMergeJson(listOf("""{"intent":"a"}"""), "en")
+
+        assertTrue(merged.contains("not instructions"))
+    }
 }
