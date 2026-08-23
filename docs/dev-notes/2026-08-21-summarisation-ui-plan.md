@@ -9,19 +9,21 @@ promising more than the measurements support.
 **Spec:** `docs/dev-notes/2026-08-21-summarisation-spike-plan.md` — read its Results and Verdict
 first. Everything below assumes those numbers.
 
-**Status (2026-08-23):** Tasks 1–4 are done. **603 unit tests, 0 failures**, plus 6 instrumented
-tests passing on an emulator.
+**Status (2026-08-23): Tasks 1–6 done, Task 7 partly.** Shipped as **1.6.0**. **613 unit tests, 0
+failures**, plus 6 instrumented tests on an emulator, and the feature translated into all ten
+locales.
 
 Task 4 was done **before** Task 3, because the worker needs a model path and paths come from the
 catalogue — the plan's numbering was written before that dependency was visible.
 
-Verified on an emulator, not just compiled: the migrations run against real SQLite, and the whole
-3.46 GB download was fetched, resumed, verified and installed. That found three defects the unit
-tests could not — a finished download still offering itself, an invisible resume, and a progress bar
-rendering pink. All fixed.
+Verified on a device rather than merely compiled: the migrations against real SQLite, and the whole
+3.46 GB download fetched, resumed, verified and installed. That found three defects no unit test
+could — a finished download still offering itself, an invisible resume, and a progress bar rendering
+pink. All fixed.
 
-**Nothing is reachable from the UI yet.** `SummaryScheduler.runNow` has no caller until Task 6, so
-no summary has ever been produced through the app. Tasks 5, 6 and 7 remain.
+**The one thing still missing is the one that matters most: no summary has ever been produced.** The
+emulator has no recordings to summarise and not enough memory to generate. Everything up to the
+button is verified; what the button does has only been tested with the model faked.
 
 ---
 
@@ -211,13 +213,13 @@ plan's original numbering was written before that dependency was visible.
       the state of the download.
 - [ ] Commit.
 
-## Task 5: The requirements modal
+## Task 5: The requirements modal — **DONE** (`f59421c`)
 
 **Files:** `ui/common/SummaryRequirementsDialog.kt`, strings in 11 locales
 
 Shown once before the first download. The numbers are measured, so quote them.
 
-- [ ] Copy naming: **3.5 GB to download**, about **3.5 GB of memory while it runs**, roughly **a
+- [x] Copy naming: **3.5 GB to download**, about **3.5 GB of memory while it runs**, roughly **a
       minute and a half for a short call**, and that it needs a recent phone.
 
       **These numbers were wrong in an earlier draft and matter more than the wording around them.**
@@ -226,38 +228,67 @@ Shown once before the first download. The numbers are measured, so quote them.
       rule out smaller phones, which is the whole reason this dialog exists. Timing for a long call
       is still an **extrapolation** (2–4 minutes for ten minutes of audio), so the copy must not
       quote a per-minute rate as though it had been measured. See `SummaryModel.peakMemoryBytes`.
-- [ ] "Don't ask again", reflected as a Settings switch — the pattern the transcription warning
+- [x] "Don't ask again", reflected as a Settings switch — the pattern the transcription warning
       already uses.
-- [ ] Translations. Commit.
+- [x] Translations. Commit.
 
-## Task 6: The summary on the playback screen
+## Task 6: The summary on the playback screen — **DONE** (`f59421c`)
 
 **Files:** `ui/screens/PlaybackScreen.kt`, `ui/common/SummaryCard.kt`
 
-- [ ] `SummaryCard`: intent as a headline, summary as prose, then Decisions and To-do as lists.
-- [ ] Items beginning `[m:ss]` render the stamp as a chip and **seek on tap**, reusing
+- [x] `SummaryCard`: intent as a headline, summary as prose, then Decisions and To-do as lists.
+- [x] Items beginning `[m:ss]` render the stamp as a chip and **seek on tap**, reusing
       `TranscriptTimestamp` and the seek path the transcript sheet already uses.
-- [ ] Empty arrays render as nothing at all — never "No decisions", which is noise.
-- [ ] Absent summary: a single row offering to make one, in the same shape as the transcript row.
-- [ ] While running: the percentage, not a spinner.
-- [ ] Footer: "Generated from the transcript", and a redo action.
-- [ ] RTL: each item through `BidiText`, per line, as the transcript sheet does.
-- [ ] Commit.
+- [x] Empty arrays render as nothing at all — never "No decisions", which is noise.
+- [x] Absent summary: a single row offering to make one, in the same shape as the transcript row.
+- [x] While running: the percentage, not a spinner.
+- [x] Footer: "Generated from the transcript", and a redo action.
+- [x] RTL: each item through `BidiText`, per line, as the transcript sheet does.
+- [x] Commit.
 
-## Task 7: On-device pass
+## Task 7: On-device pass — **PARTLY DONE**
+
+**Done on an emulator (2026-08-23), because it can be hammered:**
+
+- [x] The migrations, against real SQLite. v1→v3 keeps a transcript, v2→v3 keeps a note, the new
+      table is usable immediately, and a second upgrade is a no-op. This is the one that protects an
+      existing phone — no destructive fallback means a wrong migration is a crash on first launch.
+- [x] **The whole 3.46 GB download**, end to end: fetched, resumed through an unrelated APK install,
+      verified against its SHA-256, renamed into place. Plus cancel, resume-from-offset (server
+      answers HTTP 206 at exactly the right byte), discard, and the free-space guard.
+- [x] The JNI bridge loads on arm64 and refuses a missing model without crashing.
+- [x] **The model loads and tokenises on 2.5 GB of RAM** — far under the measured 3.5 GB peak PSS,
+      because llama.cpp memory-maps the weights. See the open questions.
+- [x] Every Settings state rendered and photographed: absent, waiting, downloading, paused with
+      bytes banked, installed, and the requirements dialog.
+
+**Still needs the maintainer's phone. None of this can be done here:**
 
 - [ ] Ask before starting; it is a daily driver and this saturates the CPU.
-- [ ] A Hebrew call and an English one, end to end from the button.
+- [ ] A Hebrew call and an English one, end to end from the button. **No summary has ever been
+      produced through the app** — the emulator has no recordings and not enough memory to generate.
 - [ ] Stop mid-run: no half-summary stored, no row left spinning.
 - [ ] Delete the recording: summary goes with it.
 - [ ] A phone that is **not** the OP12.
+- [ ] The on-device grammar check owed from Task 1 — ten constrained runs, proving the *Android*
+      bridge applies the grammar. The desktop harness proved the grammar is valid; the bridge is
+      where the silent failure lived.
 - [ ] Fill in the results here.
 
 ---
 
 ## Open questions
 
-1. **Does it run on 8 GB? STILL UNANSWERED, and it gates Task 5.** Attempted on the OP9 Pro
+1. **Does it run on 8 GB? PARTLY ANSWERED — and it no longer gates Task 5, which shipped.**
+
+   **New evidence (2026-08-23):** the model loads and tokenises on a **2.5 GB** emulator. It is
+   memory-mapped, so the 3.46 GB never has to fit in RAM — the kernel pages it in on demand, and
+   the measured 3.5 GB peak PSS counts mapped file pages that are reclaimable rather than a hard
+   floor. **Generation on an under-spec device is still untested.** That gives a better hypothesis
+   for the OP9 stall than deadlock: generation walks the whole model per token, so a device without
+   room pages from storage continuously and looks stopped while crawling.
+
+   Earlier attempt, for the record: Attempted on the OP9 Pro
    (7.4 GB, Snapdragon 888) on 2026-08-21 and abandoned after several runs. What is known:
 
    - The model **loads** — 1.7 GB resident, so memory is not obviously the wall.
