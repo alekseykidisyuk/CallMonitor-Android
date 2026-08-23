@@ -317,6 +317,16 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+/**
+ * Puts the exported schemas where an instrumented test can read them.
+ *
+ * `MigrationTestHelper` creates a database at an older version by replaying the schema Room itself
+ * exported, which means it has to find those files on the device — it reads them from the test
+ * APK's assets, not from the project. Without this the helper throws at construction and the
+ * migration test cannot run at all.
+ */
+android.sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+
 androidComponents {
     onVariants { variant ->
         variant.sources.assets?.addGeneratedSourceDirectory(
@@ -424,4 +434,10 @@ dependencies {
     // test cannot load. Deliberately minimal: runner + JUnit extensions, no UI-testing stack.
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
+    // Opens a database at an older schema and runs the real migrations against it, on a real
+    // SQLite. The transcripts database has no destructive fallback by design, so a migration that
+    // is subtly wrong is a crash on first launch for every user who has ever transcribed a call —
+    // and the unit-level drift guard compares SQL, which cannot catch a statement that fails to
+    // execute or silently drops rows. Needs the exported schemas, wired into assets below.
+    androidTestImplementation(libs.androidx.room.testing)
 }

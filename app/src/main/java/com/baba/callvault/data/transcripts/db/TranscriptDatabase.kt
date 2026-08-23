@@ -105,6 +105,15 @@ abstract class TranscriptDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) = MIGRATION_2_3_SQL.forEach(db::execSQL)
         }
 
+        /**
+         * Every migration, in one place, used by both [get] and the migration test.
+         *
+         * One list rather than two so a migration that is written but never registered cannot
+         * happen — that mistake would look exactly like a correct build until an upgrading user
+         * opened the app, and this database has no destructive fallback to catch them.
+         */
+        internal val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+
         @Volatile
         private var INSTANCE: TranscriptDatabase? = null
 
@@ -114,7 +123,7 @@ abstract class TranscriptDatabase : RoomDatabase() {
                     context.applicationContext,
                     TranscriptDatabase::class.java,
                     DB_NAME
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                ).addMigrations(*MIGRATIONS)
                     .build().also { INSTANCE = it } // no destructive fallback — see the class KDoc
             }
 
