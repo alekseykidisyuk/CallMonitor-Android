@@ -56,6 +56,10 @@ import android.widget.Toast
 import com.baba.callvault.services.recording.DaemonKeepAliveService
 import com.baba.callvault.services.recording.VoipCaptureController
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import com.baba.callvault.R
 import com.baba.callvault.system.PersistentFolderPickerContract
@@ -908,6 +912,29 @@ private fun TranscriptionSection(
                 }
             )
         }
+
+        // Under Language, because both are things whisper is told before it listens: one what
+        // language to expect, the other which words.
+        //
+        // Written on every keystroke rather than on a Done action. There is no Save button anywhere
+        // in these settings, so a field that only committed on submit would silently discard what
+        // someone typed and then navigated away from.
+        val glossary = remember(updateTrigger) { preferences.getTranscriptionGlossary() }
+        var glossaryDraft by remember(updateTrigger) { mutableStateOf(glossary) }
+        OutlinedTextField(
+            value = glossaryDraft,
+            onValueChange = {
+                glossaryDraft = it
+                preferences.setTranscriptionGlossary(it)
+            },
+            label = { Text(stringResource(R.string.transcription_glossary_label)) },
+            placeholder = { Text(stringResource(R.string.transcription_glossary_hint)) },
+            supportingText = { Text(stringResource(R.string.transcription_glossary_note)) },
+            singleLine = false,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+        )
 
         // Its home is here so the "don't ask again" checkbox in the dialog can be undone — a dialog
         // that can permanently remove itself with no way back would be a trap.

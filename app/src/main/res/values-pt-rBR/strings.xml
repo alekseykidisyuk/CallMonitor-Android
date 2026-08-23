@@ -386,6 +386,9 @@
     <string name="transcription_charging_title">Somente carregando</string>
     <string name="transcription_confirm_subtitle">Mostra quanto tempo vai levar e permite cancelar.</string>
     <string name="transcription_confirm_title">Perguntar antes de transcrever</string>
+    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
+    <string name="transcription_glossary_label">Palavras esperadas</string>
+    <string name="transcription_glossary_note">Nomes, lugares e termos presentes nas suas chamadas, separados por vírgulas. Ajuda a escrevê-los certo em vez de foneticamente. Mantenha curta: uma lista longa piora as transcrições.</string>
     <string name="transcription_hour_label">Hora</string>
     <string name="transcription_language_arabic">Árabe</string>
     <string name="transcription_language_auto">Detectar automaticamente</string>

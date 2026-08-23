@@ -70,7 +70,7 @@ class TranscriptionRunnerTest {
         // One undecodable file must not stall a whole night's backlog.
         catalogued("bad.ogg")
         catalogued("good.ogg")
-        val runner = TranscriptionRunner(context) { _, uri, _, _ ->
+        val runner = TranscriptionRunner(context) { _, uri, _, _, _ ->
             if (uri.toString().contains("bad")) error("cannot decode")
             listOf(TranscriptSegment(0, 1, "fine"))
         }
@@ -90,7 +90,7 @@ class TranscriptionRunnerTest {
         // the ones it already paid for.
         catalogued("already.ogg")
         var calls = 0
-        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+        val runner = TranscriptionRunner(context) { _, _, _, _, _ ->
             calls++
             listOf(TranscriptSegment(0, 1, "first pass"))
         }
@@ -110,7 +110,7 @@ class TranscriptionRunnerTest {
         catalogued("one.ogg")
         catalogued("two.ogg")
         var calls = 0
-        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+        val runner = TranscriptionRunner(context) { _, _, _, _, _ ->
             calls++
             listOf(TranscriptSegment(0, 1, "x"))
         }
@@ -145,7 +145,7 @@ class TranscriptionRunnerTest {
     fun skips_a_recording_that_has_vanished_from_the_catalog() = runBlocking {
         // Deleted between being queued and being reached. Nothing to decode, and nothing to record.
         var calls = 0
-        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+        val runner = TranscriptionRunner(context) { _, _, _, _, _ ->
             calls++
             emptyList()
         }
@@ -166,7 +166,7 @@ class TranscriptionRunnerTest {
         // Removing the row is the honest state: the row offers "Transcribe" again, and a recording
         // with no transcript row is exactly what the queue considers pending.
         catalogued("stopped.ogg")
-        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+        val runner = TranscriptionRunner(context) { _, _, _, _, _ ->
             throw kotlinx.coroutines.CancellationException("stopped")
         }
 
@@ -197,7 +197,7 @@ class TranscriptionRunnerTest {
         // only reliable signal.
         catalogued("interrupted.ogg")
         var stopping = false
-        val runner = TranscriptionRunner(context) { _, _, _, _ ->
+        val runner = TranscriptionRunner(context) { _, _, _, _, _ ->
             stopping = true                       // the worker has been told to stop…
             error("interrupted")                  // …and the native call dies with an ordinary error
         }
@@ -225,7 +225,7 @@ class TranscriptionRunnerTest {
         catalogued("aborted.ogg")
         val runner = TranscriptionRunner(
             context,
-            transcriber = { _, _, _, _ -> listOf(TranscriptSegment(0, 1000, "only the first bit")) },
+            transcriber = { _, _, _, _, _ -> listOf(TranscriptSegment(0, 1000, "only the first bit")) },
             wasAborted = { true }
         )
 
@@ -248,7 +248,7 @@ class TranscriptionRunnerTest {
         catalogued("raced.ogg")
         val runner = TranscriptionRunner(
             context,
-            transcriber = { _, _, _, _ -> error("decode stopped") },
+            transcriber = { _, _, _, _, _ -> error("decode stopped") },
             wasAborted = { true }
         )
 
@@ -303,7 +303,7 @@ class TranscriptionRunnerTest {
     }
 
     private fun runnerReturning(segments: List<TranscriptSegment>) =
-        TranscriptionRunner(context) { _, _, _, _ -> segments }
+        TranscriptionRunner(context) { _, _, _, _, _ -> segments }
 
     private suspend fun catalogued(name: String) {
         RecordingCatalog.recordLocal(context, name, "content://local/$name".toUri(), 10L, 100L)

@@ -13,6 +13,7 @@ import android.net.Uri
 import androidx.core.net.toUri
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.recordings.RecordingCatalog
+import com.baba.callvault.data.recordings.RecordingsRepository
 import com.baba.callvault.data.transcripts.SpeakerTurnsRepository
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
 import com.baba.callvault.data.transcripts.db.TranscriptEntry
@@ -32,7 +33,8 @@ fun interface Transcriber {
         context: Context,
         uri: Uri,
         modelPath: String,
-        language: String?
+        language: String?,
+        prompt: String?
     ): List<TranscriptSegment>
 }
 
@@ -121,7 +123,10 @@ class TranscriptionRunner(
 
         val audioMs = AudioDecoder.durationMs(context, uri)
         val startedAt = System.currentTimeMillis()
-        val attempt = runCatching { transcriber.transcribe(context, uri, modelPath, language) }
+        // Named before the words are decoded, so a brand or a contact is spelled rather than
+        // guessed at. Best-effort: no glossary and no resolvable name simply means no prompt.
+        val prompt = runCatching { promptFor(displayName) }.getOrNull()
+        val attempt = runCatching { transcriber.transcribe(context, uri, modelPath, language, prompt) }
 
         // A stop is not a result, and neither the exception nor `shouldStop` can be trusted to say so:
         //  - an aborted `whisper_full` returns NORMALLY with a partial result, so a stop can arrive
@@ -176,6 +181,19 @@ class TranscriptionRunner(
         )
         prefs.setTranscriptionRtf(modelId, blended)
         AppLogger.i(TAG, "Measured %.2fx real time for %s; stored %.2fx".format(measured, modelId, blended))
+    }
+
+    /**
+     * The words to expect for [displayName]: who the call is with, plus the user's own terms.
+     *
+     * The contact is looked up the same way the list does it, so the prompt names the person by the
+     * name shown on screen rather than by a number.
+     */
+    private suspend fun promptFor(displayName: String): String? {
+        val contact = RecordingsRepository.listRecordings(context)
+            .firstOrNull { it.displayName == displayName }
+            ?.contactName
+        return TranscriptionPrompt.build(contact, AppPreferences(context).getTranscriptionGlossary())
     }
 
     private suspend fun localUriFor(displayName: String): Uri? =

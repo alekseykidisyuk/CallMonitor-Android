@@ -145,6 +145,8 @@ object TranscriptionEngine {
         uri: Uri,
         modelPath: String,
         language: String?,
+        /** Words to expect — see [TranscriptionPrompt]. Null for none. */
+        prompt: String? = null
     ): List<TranscriptSegment> = withContext(dispatcher) {
         abortRequested.set(false)
         // Set before the decode, not after: decoding the audio is itself minutes of CPU on a long
@@ -166,7 +168,7 @@ object TranscriptionEngine {
             // still holds whatever the previous run left behind.
             whisperActive = true
             try {
-                WhisperNative.transcribe(ptr, audio, threads, language)
+                WhisperNative.transcribe(ptr, audio, threads, language, prompt)
             } finally {
                 whisperActive = false
             }

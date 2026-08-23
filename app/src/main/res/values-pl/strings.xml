@@ -383,6 +383,9 @@
     <string name="transcription_charging_title">Tylko podczas ładowania</string>
     <string name="transcription_confirm_subtitle">Pokazuje, ile to potrwa, i pozwala anulować.</string>
     <string name="transcription_confirm_title">Pytaj przed transkrypcją</string>
+    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
+    <string name="transcription_glossary_label">Spodziewane słowa</string>
+    <string name="transcription_glossary_note">Nazwy, miejsca i terminy występujące w rozmowach, oddzielone przecinkami. Dzięki temu zostaną zapisane poprawnie, a nie ze słuchu. Lista ma być krótka — długa pogarsza transkrypcje.</string>
     <string name="transcription_hour_label">Godzina</string>
     <string name="transcription_language_arabic">Arabski</string>
     <string name="transcription_language_auto">Wykryj automatycznie</string>

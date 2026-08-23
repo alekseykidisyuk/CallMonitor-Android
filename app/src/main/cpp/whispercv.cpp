@@ -115,7 +115,8 @@ Java_com_baba_callvault_transcription_WhisperNative_requestAbort(JNIEnv *, jobje
 
 JNIEXPORT void JNICALL
 Java_com_baba_callvault_transcription_WhisperNative_transcribe(
-        JNIEnv *env, jobject, jlong ptr, jfloatArray audio, jint threads, jstring language) {
+        JNIEnv *env, jobject, jlong ptr, jfloatArray audio, jint threads, jstring language,
+        jstring prompt) {
     whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     params.print_realtime   = false;  // upstream sets this true; it floods logcat on a long call
     params.print_progress   = false;
@@ -141,6 +142,15 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
     const char *lang = (language != nullptr) ? env->GetStringUTFChars(language, nullptr) : nullptr;
     params.language        = (lang != nullptr) ? lang : "auto";
     params.detect_language = false;
+
+    // Words to expect: names, places, jargon. whisper decodes with them in mind, which is how a
+    // brand said aloud comes out as a name rather than as the arithmetic it sounds like — "one plus
+    // nine" was transcribed as "1 + 9" on a real call.
+    //
+    // A bias and not a rule. It makes the spelling likelier, never certain, and a long or unrelated
+    // prompt makes whisper hallucinate it back at you — so the caller keeps it short and relevant.
+    const char *hint = (prompt != nullptr) ? env->GetStringUTFChars(prompt, nullptr) : nullptr;
+    params.initial_prompt = (hint != nullptr && hint[0] != '\0') ? hint : nullptr;
 
     // Cleared here rather than by the caller, so an abort left over from a previous run can never
     // kill the next one before it starts.
@@ -173,6 +183,7 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
     env->ReleaseFloatArrayElements(audio, samples, JNI_ABORT);
 
     if (lang != nullptr) env->ReleaseStringUTFChars(language, lang);
+    if (hint != nullptr) env->ReleaseStringUTFChars(prompt, hint);
 }
 
 JNIEXPORT jint JNICALL

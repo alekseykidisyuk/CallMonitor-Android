@@ -383,6 +383,9 @@
     <string name="transcription_charging_title">Только при зарядке</string>
     <string name="transcription_confirm_subtitle">Показывает, сколько это займёт, и позволяет отменить.</string>
     <string name="transcription_confirm_title">Спрашивать перед расшифровкой</string>
+    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
+    <string name="transcription_glossary_label">Ожидаемые слова</string>
+    <string name="transcription_glossary_note">Имена, места и термины из ваших звонков, через запятую. Помогает записать их правильно, а не на слух. Держите список коротким — длинный ухудшает расшифровку.</string>
     <string name="transcription_hour_label">Час</string>
     <string name="transcription_language_arabic">Арабский</string>
     <string name="transcription_language_auto">Определять автоматически</string>

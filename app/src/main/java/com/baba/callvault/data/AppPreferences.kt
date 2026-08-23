@@ -210,6 +210,7 @@ class AppPreferences(context: Context) {
         SUMMARY_LANGUAGE("summary_language"),
         TRANSCRIPTION_MODEL_ID("transcription_model_id"),
         TRANSCRIPTION_LANGUAGE("transcription_language"),
+        TRANSCRIPTION_GLOSSARY("transcription_glossary"),
         SPEAKER_MAP_OVERRIDE("speaker_map_override"),
         SPEAKER_MAP_CONFIRMED("speaker_map_confirmed"),
 
@@ -665,6 +666,16 @@ class AppPreferences(context: Context) {
 
     /** Sets the language passed to whisper, or null to auto-detect. */
     fun setTranscriptionLanguage(language: String?) = setString(Key.TRANSCRIPTION_LANGUAGE, language)
+
+    /**
+     * Words to expect in a call — names, places, jargon — comma-separated.
+     *
+     * Handed to whisper before it decodes, so an unusual word is spelled rather than sounded out.
+     * See [com.baba.callvault.transcription.TranscriptionPrompt] for why it must stay short.
+     */
+    fun getTranscriptionGlossary(): String = getString(Key.TRANSCRIPTION_GLOSSARY, "").orEmpty()
+
+    fun setTranscriptionGlossary(terms: String) = setString(Key.TRANSCRIPTION_GLOSSARY, terms)
 
     // -------- Who is who on a transcript --------
 

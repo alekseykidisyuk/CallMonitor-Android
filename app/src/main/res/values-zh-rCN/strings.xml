@@ -383,6 +383,9 @@
     <string name="transcription_charging_title">仅在充电时</string>
     <string name="transcription_confirm_subtitle">显示需要多久，并允许取消。</string>
     <string name="transcription_confirm_title">转写前询问</string>
+    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
+    <string name="transcription_glossary_label">预期词汇</string>
+    <string name="transcription_glossary_note">通话中会出现的人名、地名和术语，用逗号分隔。可让它们被正确拼写，而不是按读音猜写。请保持简短——列表过长会让转写变差。</string>
     <string name="transcription_hour_label">小时</string>
     <string name="transcription_language_arabic">阿拉伯语</string>
     <string name="transcription_language_auto">自动检测</string>

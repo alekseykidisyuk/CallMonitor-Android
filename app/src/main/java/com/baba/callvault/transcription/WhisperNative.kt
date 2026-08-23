@@ -38,8 +38,16 @@ object WhisperNative {
      *
      * @param language ISO code such as "he", or null to auto-detect. Passing the wrong language is
      *   not a soft failure: decoding Hebrew as English yields confident nonsense.
+     * @param prompt   words to expect — names, places, jargon — biasing how they are spelled.
+     *   Null or empty for none. A bias, never a rule, and a long one makes whisper repeat it back.
      */
-    external fun transcribe(ptr: Long, audio: FloatArray, threads: Int, language: String?)
+    external fun transcribe(
+        ptr: Long,
+        audio: FloatArray,
+        threads: Int,
+        language: String?,
+        prompt: String?
+    )
 
     /**
      * Asks a run in progress to stop, from any thread.
