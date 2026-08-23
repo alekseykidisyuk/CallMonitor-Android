@@ -150,7 +150,10 @@ class SummaryRunner(
                             checked.removed.toSet().joinToString(" ")
                     )
                 }
-                checked.summary
+                // Last, and after the citations, so an item stripped down to bare text is still
+                // compared against its neighbours. Observed on the first real Hebrew summary: four
+                // decisions, three of them the same sentence.
+                SummaryDedupe.apply(checked.summary)
             }
         }
 

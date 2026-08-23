@@ -193,6 +193,10 @@ object SummaryPrompt {
             // points is already more than anyone reads off a card.
             appendLine("At most 5 items in each list, the most important ones. Keep each item to " +
                 "one short line.")
+            // The JSON prompt never said this; only the prose one did, and the prose one is not the
+            // one in use. Measured on a real call: four decisions, three of them the same sentence.
+            appendLine("Never say the same thing twice. Each item must make a point no other item " +
+                "makes, in any list. A shorter list is better than a repetitive one.")
             if (withTimestamps) {
                 appendLine("TIMESTAMPS: lines begin with a [m:ss] marker. When a keyPoint, decision, " +
                     "actionItem or keyFact maps to a specific moment, PREFIX that item with the " +
@@ -261,6 +265,7 @@ object SummaryPrompt {
             appendLine("""  "keyFacts": string[]     // concrete dates, numbers, names worth keeping""")
             appendLine("}")
             appendLine("Merge duplicates rather than listing them twice. Use [] for anything absent.")
+            appendLine("At most 5 items in each list. Never say the same thing twice, in any list.")
             appendLine("TIMESTAMPS: where a part's item already begins with a [m:ss] marker, keep " +
                 "that marker exactly as it is. Never invent, adjust or renumber one.")
             appendLine(NO_INVENTION)
