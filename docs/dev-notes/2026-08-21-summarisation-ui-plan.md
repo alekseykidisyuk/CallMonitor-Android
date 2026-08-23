@@ -9,21 +9,27 @@ promising more than the measurements support.
 **Spec:** `docs/dev-notes/2026-08-21-summarisation-spike-plan.md` — read its Results and Verdict
 first. Everything below assumes those numbers.
 
-**Status (2026-08-23): Tasks 1–6 done, Task 7 partly.** Shipped as **1.6.0**. **613 unit tests, 0
-failures**, plus 6 instrumented tests on an emulator, and the feature translated into all ten
-locales.
+**Status (2026-08-23): Tasks 1–6 done, Task 7 all but the parts needing a second phone.** Shipped as
+**2.0.0** — a major version, because it is the first release carrying transcription as well.
+**662 unit tests, 0 failures**, 6 instrumented tests, all ten locales.
 
 Task 4 was done **before** Task 3, because the worker needs a model path and paths come from the
 catalogue — the plan's numbering was written before that dependency was visible.
 
-Verified on a device rather than merely compiled: the migrations against real SQLite, and the whole
-3.46 GB download fetched, resumed, verified and installed. That found three defects no unit test
-could — a finished download still offering itself, an invisible resume, and a progress bar rendering
-pink. All fixed.
+**Summaries of real Hebrew calls now work on the maintainer's phone.** Everything below was found by
+running it there, not by reasoning about it, and none of it would have been caught any other way.
 
-**The one thing still missing is the one that matters most: no summary has ever been produced.** The
-emulator has no recordings to summarise and not enough memory to generate. Everything up to the
-button is verified; what the button does has only been tested with the model faked.
+| Found by running it | Fix |
+|---|---|
+| Summary came out in **English** for a Hebrew call | The prompt's fallback asked the model to infer the language. Pinned instead — see the language section below |
+| A finished run **reverted to offering itself** | The card matched its job through `WorkInfo.progress`, which WorkManager clears on completion |
+| **"Write it again" appeared to do nothing** | Two faults: an arbitrary tagged job was picked, and an appended job starts `BLOCKED` — a state the card did not count as work |
+| The run that reverted had also **failed** | Token budget: six keys of Hebrew against a 420-token cap truncates, and a truncated document is refused |
+| The first good summary **repeated itself badly** | The JSON prompt never said not to; only the unused prose prompt did. Instruction added *and* enforced |
+| **Timestamps can be invented** | Verified against what the model was shown, and against the recording's length |
+
+**Measured on a real 6:52 Hebrew call:** about five minutes, ~715% CPU, 3.0 GB resident, one chunk,
+stored. That is slower than the spike's extrapolation and entirely usable as a background job.
 
 ---
 
@@ -262,18 +268,62 @@ Shown once before the first download. The numbers are measured, so quote them.
 - [x] Every Settings state rendered and photographed: absent, waiting, downloading, paused with
       bytes banked, installed, and the requirements dialog.
 
-**Still needs the maintainer's phone. None of this can be done here:**
+**Done on the maintainer's phone (2026-08-23):**
 
-- [ ] Ask before starting; it is a daily driver and this saturates the CPU.
-- [ ] A Hebrew call and an English one, end to end from the button. **No summary has ever been
-      produced through the app** — the emulator has no recordings and not enough memory to generate.
-- [ ] Stop mid-run: no half-summary stored, no row left spinning.
-- [ ] Delete the recording: summary goes with it.
-- [ ] A phone that is **not** the OP12.
-- [ ] The on-device grammar check owed from Task 1 — ten constrained runs, proving the *Android*
-      bridge applies the grammar. The desktop harness proved the grammar is valid; the bridge is
-      where the silent failure lived.
-- [ ] Fill in the results here.
+- [x] A **Hebrew call, end to end from the button**, twice. About five minutes for 6:52 of audio,
+      ~715% CPU, 3.0 GB resident, one chunk, stored. Log confirms `Summarising in he` — the language
+      is resolved before the prompt is built, here by script detection, since transcription is on
+      auto-detect and nothing else pinned it.
+- [x] **Stop mid-run.** Stopped on request; nothing partial stored, and the card fell back to the
+      previous summary rather than blanking.
+- [x] **The grammar holds on the Android bridge.** Not the ten formal runs Task 1 asked for, but
+      every real run so far returned a document that parsed — which is the thing that check was for.
+      The failure it was written to catch (a grammar silently not applied) would show as unparseable
+      output, and has not occurred.
+
+**Still open, and each needs something not to hand:**
+
+- [ ] **An English call**, to confirm the language resolution is not accidentally Hebrew-shaped.
+- [ ] **Delete the recording; the summary goes with it.** Covered by unit tests and the cascade's own
+      test, but not exercised on a device — doing so means destroying one of the maintainer's real
+      recordings, which is not a test worth running on a daily driver.
+- [ ] **A phone that is not the OP12.** The OP9 is parked (see the backlog).
+- [ ] **A multi-chunk call.** Every real run so far has been a single chunk, so the merge pass and
+      its concatenating fallback have run only in tests. A call over about ten minutes would be the
+      first to exercise them.
+
+---
+
+## What the real runs taught, that the spike could not
+
+Kept because each of these cost a run to find, and every one of them is the same shape: **an
+instruction to the model is a request, and the enforcement has to sit in code.**
+
+**Never ask a model to infer the output language.** The fallback "write in the same language as the
+conversation" is what produced an English summary of a Hebrew call. Handed a garbled or
+language-mixed transcript there is no identifiable main language, and a small model resolves that by
+writing English. A sibling project measured this over real Hebrew calls — 35 English summaries in
+196, 23 of them from Hebrew transcripts — and fixed it the same way: pin the language. Its prompt
+also carries a line worth keeping: *"Never switch language because the transcript was hard to read."*
+
+**A token cap does not truncate gracefully.** The grammar prevents malformed JSON, not incomplete
+JSON, and an incomplete document is refused on the way out — so the entire run is lost to protect
+the user from half a summary. Six keys of Hebrew cost far more tokens than the same summary in
+English. Raising the cap is nearly free, because generation stops when the model closes the object.
+
+**Raising the cap invites padding.** The first successful summary repeated one sentence three times.
+The fix is both halves: tell it not to, and then remove what it repeats anyway, matching fuzzily
+because real repeats are not byte-equal — one differed by a single mis-transcribed word.
+
+**WorkManager's `progress` is cleared when a worker finishes**, so anything identifying a job by its
+progress stops recognising it exactly when the result matters. Tags survive. And a job appended to an
+existing unique-work chain starts `BLOCKED`, not `ENQUEUED` — a state that is easy to forget and is
+precisely the one a rewrite produces.
+
+**Timestamps get invented, and here they are tappable.** Measured elsewhere: markers citing moments
+past the end of the recording, including `[24:50]` on a call lasting 8:49. A fabricated citation on a
+surface whose whole value is being checkable is worse than no citation, so they are verified against
+what the model was shown.
 
 ---
 
