@@ -493,6 +493,26 @@
     <string name="transcription_model_download_subtitle">%1$d MB, over Wi-Fi only</string>
     <string name="transcription_model_delete">Delete model</string>
     <string name="transcription_model_installed">Downloaded and ready</string>
+
+    <!--
+      Call summaries. The numbers here are measured on the OP12, not estimated, and the copy is
+      deliberately plain about the cost: 3.5 GB to fetch and 3.5 GB of memory to run rules the
+      feature out on smaller phones, and someone deserves to know that before starting, not after.
+    -->
+    <string name="settings_section_summaries">Call summaries</string>
+    <string name="summary_model_download">Download the summariser</string>
+    <string name="summary_model_download_subtitle">%1$.1f GB, over Wi-Fi only</string>
+    <string name="summary_model_delete">Delete the summariser</string>
+    <string name="summary_model_installed">Downloaded and ready</string>
+    <string name="summary_model_downloading">Downloading… %1$d%%</string>
+    <string name="summary_model_waiting">Waiting for Wi-Fi</string>
+    <string name="summary_model_cancel">Cancel the download</string>
+    <string name="summary_model_failed_space">Not enough free space. Free some up and try again.</string>
+    <string name="summary_model_failed_verify">The download was damaged and has been discarded. Try again.</string>
+    <string name="summary_model_failed">The download did not finish. Try again.</string>
+    <string name="summary_requirements_title">What this needs</string>
+    <string name="summary_requirements_body">Summaries are written on your phone — nothing is sent anywhere. That costs a %1$.1f GB download and about %2$.1f GB of memory while it runs, so it needs a recent phone with room to spare. A short call takes a minute or two.</string>
+    <string name="summary_model_licence">The summariser is Google\'s Gemma, used under the Gemma Terms of Use. It is downloaded from Google\'s distribution rather than included in CallVault.</string>
     <string name="transcription_language_label">Language</string>
     <string name="transcription_language_hebrew">Hebrew</string>
     <string name="transcription_language_english">English</string>

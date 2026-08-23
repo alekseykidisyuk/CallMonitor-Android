@@ -81,6 +81,7 @@ import com.baba.callvault.integrations.scrcpy.AUDIO_BIT_RATE_OPTIONS
 import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.data.TranscriptionMode
 import com.baba.callvault.transcription.TranscriptionQueue
+import com.baba.callvault.summary.SummaryModel
 import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.ui.common.SyncScheduleLabels
@@ -333,6 +334,18 @@ fun SettingsContent(
                 )
             }
             item {
+                // Directly after Transcription, because a summary is read from a transcript and is
+                // useless without one — the order on screen is the order of the dependency.
+                SummarySection(
+                    expanded = openSection == SECTION_SUMMARIES,
+                    onToggle = { onToggleSection(SECTION_SUMMARIES) },
+                    updateTrigger = updateTrigger,
+                    onDownload = { actions.downloadSummaryModel(it) },
+                    onCancel = { actions.cancelSummaryModelDownload(it) },
+                    onDelete = { actions.deleteSummaryModel(it) }
+                )
+            }
+            item {
                 GeneralSection(
                     preferences = preferences,
                     updateTrigger = updateTrigger,
@@ -422,6 +435,7 @@ private const val SECTION_STORAGE = "storage"
 private const val SECTION_RETENTION = "retention"
 private const val SECTION_AUDIO = "audio"
 private const val SECTION_TRANSCRIPTION = "transcription"
+private const val SECTION_SUMMARIES = "summaries"
 private const val SECTION_GENERAL = "general"
 
 // Sub-section keys. Scoped to their parent section, so the same value can never collide across two.
@@ -2003,7 +2017,7 @@ private fun UpdatesSubSection(
 }
 
 @Composable
-private fun SettingsSection(
+internal fun SettingsSection(
     title: String,
     expanded: Boolean,
     onToggle: () -> Unit,
@@ -2172,7 +2186,7 @@ private fun RowIcon(icon: ImageVector) {
  * trailing chevron. Used for folder pickers, the filename template, and the About rows.
  */
 @Composable
-private fun NavigationRow(
+internal fun NavigationRow(
     icon: ImageVector,
     label: String,
     value: String,
@@ -2380,6 +2394,9 @@ private fun SettingsScreenPreview() {
             override fun setTranscriptionLanguage(language: String?) {}
             override fun downloadTranscriptionModel(model: TranscriptionModel) {}
             override fun deleteTranscriptionModel(model: TranscriptionModel) {}
+            override fun downloadSummaryModel(model: SummaryModel) {}
+            override fun cancelSummaryModelDownload(model: SummaryModel) {}
+            override fun deleteSummaryModel(model: SummaryModel) {}
             override fun setSyncTimeHour(hour: Int) {}
             override fun setSyncTimeMinute(minute: Int) {}
             override fun setSyncDayOfWeek(day: Int) {}

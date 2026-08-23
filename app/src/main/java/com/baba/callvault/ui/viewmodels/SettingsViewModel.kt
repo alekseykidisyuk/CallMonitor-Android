@@ -21,6 +21,7 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.data.TranscriptionMode
 import com.baba.callvault.transcription.TranscriptionScheduler
+import com.baba.callvault.summary.SummaryModel
 import com.baba.callvault.transcription.model.ModelDownloadWorker
 import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
@@ -88,6 +89,13 @@ interface SettingsActions {
     fun setTranscriptionLanguage(language: String?)
     fun downloadTranscriptionModel(model: TranscriptionModel)
     fun deleteTranscriptionModel(model: TranscriptionModel)
+
+    /** The summarisation model, which uses the same download machinery at six times the size. */
+    fun downloadSummaryModel(model: SummaryModel)
+
+    /** Stops a download in progress. The partial file is kept, so resuming does not re-fetch it. */
+    fun cancelSummaryModelDownload(model: SummaryModel)
+    fun deleteSummaryModel(model: SummaryModel)
     fun setSyncDayOfWeek(day: Int)
     fun setUpdateCheckEnabled(enabled: Boolean)
 }
@@ -438,6 +446,30 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Queues a model download (unmetered network only). */
     override fun downloadTranscriptionModel(model: TranscriptionModel) {
         ModelDownloadWorker.enqueue(appContext, model)
+        refresh()
+    }
+
+    /** Queues the summariser for download (unmetered network only). */
+    override fun downloadSummaryModel(model: SummaryModel) {
+        ModelDownloadWorker.enqueue(appContext, model)
+        refresh()
+    }
+
+    /**
+     * Stops a download without discarding it.
+     *
+     * The partial file is deliberately kept: at 3.46 GB, throwing away what has already arrived
+     * because someone needed the Wi-Fi for ten minutes would be its own small cruelty.
+     */
+    override fun cancelSummaryModelDownload(model: SummaryModel) {
+        ModelDownloadWorker.cancel(appContext, model)
+        refresh()
+    }
+
+    /** Removes the summariser and any partial download of it, reclaiming about 3.5 GB. */
+    override fun deleteSummaryModel(model: SummaryModel) {
+        ModelDownloadWorker.cancel(appContext, model)
+        ModelRepository.delete(appContext, model)
         refresh()
     }
 
