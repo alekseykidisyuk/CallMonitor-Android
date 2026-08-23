@@ -187,6 +187,12 @@ object SummaryPrompt {
             appendLine("}")
             appendLine("Use [] for anything not present. Do not invent facts that are not in the " +
                 "transcript.")
+            // Bounds the output at the source rather than only at the token cap. An answer cut off
+            // by the cap does not parse and the whole run is lost, so it is better for the model to
+            // finish a shorter object than to be stopped mid-way through a longer one — and five
+            // points is already more than anyone reads off a card.
+            appendLine("At most 5 items in each list, the most important ones. Keep each item to " +
+                "one short line.")
             if (withTimestamps) {
                 appendLine("TIMESTAMPS: lines begin with a [m:ss] marker. When a keyPoint, decision, " +
                     "actionItem or keyFact maps to a specific moment, PREFIX that item with the " +

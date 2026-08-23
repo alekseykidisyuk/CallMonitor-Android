@@ -51,12 +51,14 @@ fun rememberSummaryState(displayName: String): State<SummaryCardState> {
             db.summaryDao().observe(displayName),
             workManager.getWorkInfosForUniqueWorkFlow(SummaryScheduler.WORK_NAME)
         ) { stored, infos ->
-            // Only the job for *this* recording counts. The queue is shared, so a summary running
+            // Only the job for *this* recording counts — the queue is shared, so a summary running
             // for a different call must not make this one look busy.
-            val mine = infos.lastOrNull { info ->
-                SummaryScheduler.displayNameOf(info.progress) == displayName ||
-                    (info.state == WorkInfo.State.ENQUEUED && infos.size == 1)
-            }
+            //
+            // Matched by tag, not by progress. Progress is cleared the moment a worker finishes, so
+            // matching on it meant a job stopped being recognised exactly when its result mattered:
+            // the card reverted to offering a summary it had just spent two minutes writing.
+            val tag = SummaryScheduler.tagFor(displayName)
+            val mine = infos.lastOrNull { tag in it.tags }
             stored to mine
         }.collect { (stored, info) ->
             val running = info?.state == WorkInfo.State.RUNNING ||

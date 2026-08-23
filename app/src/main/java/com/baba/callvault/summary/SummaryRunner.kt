@@ -104,19 +104,34 @@ class SummaryRunner(
 
             if (shouldStop() || wasAborted()) return@run null
 
+            val parsedParts = parts.mapNotNull(CallSummary::parse)
+            if (parsedParts.size < parts.size) {
+                // Named precisely, because the two ways to get nothing look identical from outside
+                // and need different fixes. A part that will not parse almost always means the
+                // generation hit its token budget and stopped mid-document.
+                AppLogger.w(TAG, "${parts.size - parsedParts.size} of ${parts.size} part(s) did not parse")
+            }
+
             // One chunk is already the answer. Merging it with itself would compress a summary that
             // has already been compressed once, and measurably loses detail.
-            val document = if (parts.size == 1) {
-                parts.single()
+            val merged = if (parsedParts.size <= 1) {
+                parsedParts.firstOrNull()
             } else {
-                session.generate(
+                val document = session.generate(
                     SummaryPrompt.forMergeJson(parts, language),
                     MERGE_TOKEN_BUDGET,
                     SummaryGrammar.JSON
                 )
+                // The merge is a second generation and so a second chance to fail. Losing every
+                // part to it would mean minutes of work the user watched, ending in nothing —
+                // so a merge that will not parse falls back to the parts that did.
+                CallSummary.parse(document) ?: run {
+                    AppLogger.w(TAG, "The merge did not parse; falling back to the parts")
+                    CallSummary.concatenate(parsedParts)
+                }
             }
 
-            CallSummary.parse(document)?.let { parsed ->
+            merged?.let { parsed ->
                 // The prompt asks for timestamps "copied verbatim" and tells the model never to
                 // invent one. It invents them anyway — and here they are tappable seek targets, so
                 // a fabricated marker is a false citation on the one surface whose value is being
@@ -171,13 +186,17 @@ class SummaryRunner(
         /**
          * Tokens allowed for one chunk's JSON.
          *
-         * Measured: 220 cut a real summary off mid-word, and half a sentence reads as a crash
-         * rather than as a summary. The grammar makes truncation produce invalid JSON rather than
-         * a plausible fragment, so a budget that is too small fails loudly — but it still fails.
+         * Raised from 420 after a real 6:52 Hebrew call produced nothing at all: the grammar keeps
+         * a truncated document from looking plausible, but it still truncates, and a document cut
+         * short is refused on the way out — so the whole run is lost. Six keys of Hebrew cost far
+         * more tokens than the same summary in English, and 420 sat right on the edge.
+         *
+         * Raising it is close to free. Generation stops when the model closes the object, so the
+         * cap only binds on a verbose answer — where the alternative was losing everything.
          */
-        const val CHUNK_TOKEN_BUDGET = 420
+        const val CHUNK_TOKEN_BUDGET = 900
 
         /** The merge carries every part's points forward, so it needs more room than one chunk. */
-        const val MERGE_TOKEN_BUDGET = 640
+        const val MERGE_TOKEN_BUDGET = 1_100
     }
 }

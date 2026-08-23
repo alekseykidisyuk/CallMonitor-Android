@@ -51,6 +51,9 @@ object SummaryScheduler {
                     SummaryWorker.KEY_MODEL_ID to model.id
                 )
             )
+            // Tagged, because a tag is the only thing that says which recording a job belongs to
+            // once it has finished. See [tagFor].
+            .addTag(tagFor(displayName))
             .build()
 
         WorkManager.getInstance(context)
@@ -71,7 +74,19 @@ object SummaryScheduler {
         AppLogger.i(TAG, "Summary stopped")
     }
 
-    /** The recording a running summary is for, or null. */
+    /**
+     * The tag identifying the job for [displayName].
+     *
+     * **Tags outlive the run; progress does not.** The card used to work out which recording a job
+     * belonged to by reading the name out of `WorkInfo.progress` — and WorkManager clears progress
+     * the moment a worker finishes. So the instant a run ended, success or failure, the job stopped
+     * being recognised and the card fell back to offering the summary again as though nothing had
+     * happened. It also made the failed state unreachable: the worker reported the failure and
+     * nothing could see it.
+     */
+    fun tagFor(displayName: String): String = "cv_summary:$displayName"
+
+    /** The recording a *running* summary is for, or null. Only meaningful mid-run. */
     fun displayNameOf(progress: Data): String? = progress.getString(SummaryWorker.KEY_DISPLAY_NAME)
 
     /** How far through, 0-100, or null when nothing has been reported yet. */

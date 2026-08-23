@@ -63,6 +63,32 @@ data class CallSummary(
         private val REQUIRED = listOf(KEY_INTENT, KEY_SUMMARY, KEY_POINTS, KEY_DECISIONS, KEY_ACTIONS, KEY_FACTS)
 
         /**
+         * Combines already-parsed parts into one summary, without asking the model again.
+         *
+         * The floor under the merge pass. That pass is a second generation and so a second chance to
+         * fail — it can truncate against its token budget, and the result is then *no summary at
+         * all* after minutes of work the user sat and watched. Concatenating what already parsed is
+         * worse than a written merge and enormously better than nothing.
+         *
+         * The first part names the call: the opening is where someone says why they rang, so the
+         * earliest non-empty intent is the call's. Identical lines across parts are dropped, because
+         * a summary that says the same thing twice reads as padding.
+         */
+        fun concatenate(parts: List<CallSummary>): CallSummary? {
+            if (parts.isEmpty()) return null
+            parts.singleOrNull()?.let { return it }
+
+            return CallSummary(
+                intent = parts.firstOrNull { it.intent.isNotBlank() }?.intent.orEmpty(),
+                summary = parts.map { it.summary }.filter { it.isNotBlank() }.distinct().joinToString(" "),
+                keyPoints = parts.flatMap { it.keyPoints }.distinct(),
+                decisions = parts.flatMap { it.decisions }.distinct(),
+                actionItems = parts.flatMap { it.actionItems }.distinct(),
+                keyFacts = parts.flatMap { it.keyFacts }.distinct()
+            )
+        }
+
+        /**
          * The summary in [raw], or `null` if there isn't a whole one.
          *
          * Returning `null` rather than a partially filled object is the whole point. Under a token
