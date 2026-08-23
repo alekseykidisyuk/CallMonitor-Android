@@ -44,17 +44,21 @@ object SummaryDedupe {
 
     /** The summary with repeated points removed, keeping the first wording of each. */
     fun apply(summary: CallSummary): CallSummary {
+        // One pass down the card, each list dropping what the ones above it already said.
+        //
+        // The order is by how specific a claim is, and it runs one way only: a decision is never
+        // dropped for restating a key point. Observed on a real call — "Worth keeping" repeated
+        // four of the six "Key points" word for word, which reads as the app padding the card.
         val decisions = withoutRepeats(summary.decisions)
-        val actionItems = withoutRepeats(summary.actionItems)
-        // Decisions and follow-ups are the specific claims; a key point that restates one adds
-        // nothing and makes the card look padded. The precedence runs one way only.
+        val actionItems = withoutRepeats(summary.actionItems, alreadySaid = decisions)
         val keyPoints = withoutRepeats(summary.keyPoints, alreadySaid = decisions + actionItems)
+        val keyFacts = withoutRepeats(summary.keyFacts, alreadySaid = decisions + actionItems + keyPoints)
 
         return summary.copy(
             keyPoints = keyPoints,
             decisions = decisions,
             actionItems = actionItems,
-            keyFacts = withoutRepeats(summary.keyFacts)
+            keyFacts = keyFacts
         )
     }
 

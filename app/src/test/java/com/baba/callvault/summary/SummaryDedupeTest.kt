@@ -117,6 +117,32 @@ class SummaryDedupeTest {
     }
 
     @Test
+    fun `a fact already said as a key point is dropped`() {
+        // Observed on a real call: "Worth keeping" repeated four of the six "Key points" word for
+        // word. Every list drops what the lists above it already said, in one pass down the card.
+        val deduped = SummaryDedupe.apply(
+            summaryWith(
+                keyPoints = listOf("The candidate needs product-manager experience"),
+                keyFacts = listOf("The candidate needs product-manager experience", "Invoice 4021")
+            )
+        )
+
+        assertEquals(listOf("Invoice 4021"), deduped.keyFacts)
+    }
+
+    @Test
+    fun `key points are never dropped for repeating a fact`() {
+        val deduped = SummaryDedupe.apply(
+            summaryWith(
+                keyPoints = listOf("The candidate needs product-manager experience"),
+                keyFacts = listOf("The candidate needs product-manager experience")
+            )
+        )
+
+        assertEquals(1, deduped.keyPoints.size)
+    }
+
+    @Test
     fun `short items are compared strictly`() {
         // Two- or three-word items share words easily. "Pay now" and "Pay later" are 50% identical
         // by words and mean opposite things.
