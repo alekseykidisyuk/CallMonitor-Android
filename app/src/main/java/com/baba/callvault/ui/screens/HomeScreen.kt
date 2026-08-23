@@ -337,6 +337,9 @@ fun HomeScreen(
                 item = openItem,
                 playback = playback,
                 transcriptStatus = transcriptStatuses[displayName] ?: TranscriptStatus.NONE,
+                // The same smoothed figure the list row shows, so opening a recording mid-run does
+                // not swap a percentage for a bare spinner.
+                transcriptPercent = transcribingShown.percentFor(displayName),
                 summaryState = summaryState,
                 peaks = peaks,
                 note = note,

@@ -97,6 +97,8 @@ fun PlaybackScreen(
     item: RecordingItem,
     playback: RecordingPlaybackController.PlaybackState,
     transcriptStatus: TranscriptStatus,
+    /** How far into this recording's transcription, 0-100. Zero means not known, and spins. */
+    transcriptPercent: Int,
     summaryState: SummaryCardState,
     peaks: FloatArray,
     note: String,
@@ -140,6 +142,7 @@ fun PlaybackScreen(
             CallHeaderCard(
                 item = item,
                 transcriptStatus = transcriptStatus,
+                transcriptPercent = transcriptPercent,
                 onOpenTranscript = onOpenTranscript,
                 onTranscribe = onTranscribe,
                 onDelete = onDelete
@@ -188,6 +191,7 @@ fun PlaybackScreen(
 private fun CallHeaderCard(
     item: RecordingItem,
     transcriptStatus: TranscriptStatus,
+    transcriptPercent: Int,
     onOpenTranscript: () -> Unit,
     onTranscribe: () -> Unit,
     onDelete: () -> Unit
@@ -277,7 +281,12 @@ private fun CallHeaderCard(
                 onTranscribe = onTranscribe,
                 onOpen = onOpenTranscript,
                 onRetry = onTranscribe,
-                modifier = Modifier.size(ACTION_TARGET)
+                modifier = Modifier.size(ACTION_TARGET),
+                // Was left at its default of 0, so this one spun without ever filling while the
+                // identical control in the list showed a figure. A ring that turns for minutes and
+                // never moves is indistinguishable from a hang — which is the whole reason the
+                // percentage was added to that control in the first place.
+                percent = transcriptPercent
             )
 
             // On the card rather than at the foot of the screen. It lived in a row below the note,
