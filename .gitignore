@@ -15,7 +15,10 @@ docs/superpowers/
 .gstack/
 
 # App signing keystore — the release identity; keep local, back up separately, NEVER commit.
-/signing/
+# No trailing slash: in a git worktree this path is a SYMLINK to the main checkout's signing
+# directory so release builds can sign, and "/signing/" matches only a real directory — leaving the
+# link itself committable by `git add -A`. Matching both shapes is the only version that holds.
+/signing
 
 # Native (CMake/NDK) build cache
 .cxx/
