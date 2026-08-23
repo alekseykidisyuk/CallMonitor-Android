@@ -10,7 +10,9 @@ package com.baba.callvault.ui.common
 
 import androidx.work.WorkInfo
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -66,6 +68,28 @@ class SummaryWorkSelectionTest {
         val states = listOf(WorkInfo.State.CANCELLED, WorkInfo.State.RUNNING)
 
         assertEquals(1, indexOfInteresting(states))
+    }
+
+    @Test
+    fun `a blocked job is outstanding work`() {
+        // The state a rewrite actually produces. Work appended to an existing unique-work chain
+        // waits on its predecessors as BLOCKED — testing only for RUNNING or ENQUEUED missed it,
+        // so a queued summary read as "nothing is happening" and the card never changed.
+        assertTrue(isPending(WorkInfo.State.BLOCKED))
+    }
+
+    @Test
+    fun `running and queued are outstanding work`() {
+        assertTrue(isPending(WorkInfo.State.RUNNING))
+        assertTrue(isPending(WorkInfo.State.ENQUEUED))
+    }
+
+    @Test
+    fun `finished states are not outstanding work`() {
+        listOf(WorkInfo.State.SUCCEEDED, WorkInfo.State.FAILED, WorkInfo.State.CANCELLED).forEach {
+            assertFalse("state $it", isPending(it))
+        }
+        assertFalse(isPending(null))
     }
 
     @Test

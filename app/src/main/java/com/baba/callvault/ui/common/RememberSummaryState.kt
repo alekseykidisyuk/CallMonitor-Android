@@ -50,6 +50,17 @@ private fun pickInteresting(mine: List<WorkInfo>): WorkInfo? =
     indexOfInteresting(mine.map { it.state })?.let(mine::get)
 
 /**
+ * Is there work outstanding for this recording?
+ *
+ * **Any state that is not finished counts.** This used to test for RUNNING or ENQUEUED, and missed
+ * the one that actually occurs on a rewrite: work appended to an existing unique-work chain starts
+ * **BLOCKED**, waiting on its predecessors. So a second summary was correctly queued, correctly
+ * tagged, correctly found — and then read as "nothing is happening", leaving the card showing the
+ * old summary while the phone worked.
+ */
+internal fun isPending(state: WorkInfo.State?): Boolean = state != null && !state.isFinished
+
+/**
  * The index of the job that describes the current state, or null when there are none.
  *
  * Split out from [pickInteresting] so the rule itself is under test: `WorkInfo` cannot be
@@ -86,8 +97,7 @@ fun rememberSummaryState(displayName: String): State<SummaryCardState> {
             val mine = pickInteresting(infos.filter { tag in it.tags })
             stored to mine
         }.collect { (stored, info) ->
-            val running = info?.state == WorkInfo.State.RUNNING ||
-                info?.state == WorkInfo.State.ENQUEUED
+            val running = isPending(info?.state)
 
             value = when {
                 running -> SummaryCardState.Running(
