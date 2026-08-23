@@ -40,9 +40,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         TranscriptSegmentEntry::class,
         TranscriptSegmentFts::class,
         RecordingNoteEntry::class,
-        RecordingWaveformEntry::class
+        RecordingWaveformEntry::class,
+        CallSummaryEntry::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(TranscriptStateConverter::class)
@@ -51,6 +52,8 @@ abstract class TranscriptDatabase : RoomDatabase() {
     abstract fun transcriptDao(): TranscriptDao
 
     abstract fun noteDao(): RecordingNoteDao
+
+    abstract fun summaryDao(): CallSummaryDao
 
     companion object {
 
@@ -63,23 +66,43 @@ abstract class TranscriptDatabase : RoomDatabase() {
          * words and cannot be regenerated from anything. `CREATE TABLE IF NOT EXISTS` with the exact
          * column types Room expects, so the schema it validates against on open matches.
          */
+        internal val MIGRATION_1_2_SQL = listOf(
+            "CREATE TABLE IF NOT EXISTS `recording_notes` (" +
+                "`displayName` TEXT NOT NULL, " +
+                "`text` TEXT NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`displayName`))",
+            "CREATE TABLE IF NOT EXISTS `recording_waveforms` (" +
+                "`displayName` TEXT NOT NULL, " +
+                "`peaks` TEXT NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`displayName`))"
+        )
+
         private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `recording_notes` (" +
-                        "`displayName` TEXT NOT NULL, " +
-                        "`text` TEXT NOT NULL, " +
-                        "`updatedAt` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`displayName`))"
-                )
-                db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS `recording_waveforms` (" +
-                        "`displayName` TEXT NOT NULL, " +
-                        "`peaks` TEXT NOT NULL, " +
-                        "`updatedAt` INTEGER NOT NULL, " +
-                        "PRIMARY KEY(`displayName`))"
-                )
-            }
+            override fun migrate(db: SupportSQLiteDatabase) = MIGRATION_1_2_SQL.forEach(db::execSQL)
+        }
+
+        /**
+         * v2 → v3: summaries.
+         *
+         * Hand-written for the same reason as [MIGRATION_1_2], and a stronger one. A summary costs
+         * roughly ninety seconds of the user's CPU on top of the transcription it was read from, so
+         * dropping the table on a schema bump would quietly spend their battery twice. The column
+         * types are exactly what Room expects for [CallSummaryEntry], so the schema it validates
+         * against on open matches what this creates.
+         */
+        internal val MIGRATION_2_3_SQL = listOf(
+            "CREATE TABLE IF NOT EXISTS `call_summaries` (" +
+                "`displayName` TEXT NOT NULL, " +
+                "`document` TEXT NOT NULL, " +
+                "`model` TEXT NOT NULL, " +
+                "`createdAt` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`displayName`))"
+        )
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) = MIGRATION_2_3_SQL.forEach(db::execSQL)
         }
 
         @Volatile
@@ -91,7 +114,7 @@ abstract class TranscriptDatabase : RoomDatabase() {
                     context.applicationContext,
                     TranscriptDatabase::class.java,
                     DB_NAME
-                ).addMigrations(MIGRATION_1_2)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build().also { INSTANCE = it } // no destructive fallback — see the class KDoc
             }
 

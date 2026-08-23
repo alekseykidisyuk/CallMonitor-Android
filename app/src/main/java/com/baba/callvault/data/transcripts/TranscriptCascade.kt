@@ -14,8 +14,8 @@ import com.baba.callvault.data.waveform.RecordingExtrasRepository
 import com.baba.callvault.utils.AppLogger
 
 /**
- * Deletes everything attached to a recording when the recording goes away — its transcript, and the
- * note the user wrote about it.
+ * Deletes everything attached to a recording when the recording goes away — its transcript, the note
+ * the user wrote about it, and the summary a model wrote from it.
  *
  * Transcripts live in their own database ([TranscriptDatabase]) because the recordings catalog is a
  * destructible cache, which means a cross-database `ON DELETE CASCADE` is not available. This object
@@ -31,11 +31,13 @@ object TranscriptCascade {
     private const val TAG = "CV:TranscriptCascade"
 
     /**
-     * Removes the transcripts (and their search rows), the notes and the cached shapes for
-     * [displayNames].
+     * Removes the transcripts (and their search rows), the notes, the cached shapes and the
+     * summaries for [displayNames].
      *
      * The note matters here as much as the transcript: it is the user's own account of a private
-     * call, so leaving it behind would keep a written record of a conversation they deleted.
+     * call, so leaving it behind would keep a written record of a conversation they deleted. The
+     * summary is the same defect wearing a machine's handwriting — it is a readable account of the
+     * call, and an orphaned one would outlive the audio and the transcript both.
      *
      * Never throws: a failure here must not turn a working delete into a failed one. It is also a
      * no-op before the first transcription, so deleting a recording on a device that has never used
@@ -57,6 +59,14 @@ object TranscriptCascade {
         }.onFailure {
             // Names are logged; note and transcript text never are.
             AppLogger.w(TAG, "Failed to delete notes for ${displayNames.size} recording(s): ${it.message}")
+        }
+
+        runCatching {
+            val dao = TranscriptDatabase.get(context).summaryDao()
+            displayNames.forEach { dao.deleteFor(it) }
+        }.onFailure {
+            // As above: the summary is an account of a private call and is never logged.
+            AppLogger.w(TAG, "Failed to delete summaries for ${displayNames.size} recording(s): ${it.message}")
         }
     }
 }
