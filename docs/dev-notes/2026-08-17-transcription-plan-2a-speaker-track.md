@@ -19,33 +19,59 @@ stops via a new additive AIDL method — the same shape as the existing `voipFar
 
 ---
 
-## STATUS — 2026-08-17
+## STATUS — 2026-08-23
 
 | task | state |
 |---|---|
 | 1 — detector as pure logic | ✅ done, `866dd2e` — 13 tests |
 | 2 — tap the capture loop | ✅ done, `918ccbd` |
-| 3 — hand the turns to the app | 🟡 **half done** (`918ccbd`): AIDL + daemon side built; **app-side persistence not started** |
-| 4 — learn the channel mapping from ringback | ⬜ not started |
-| 5 — VoIP path | ⬜ not started |
+| 3 — hand the turns to the app | ✅ done, `f9a2e29` + `9467dcd` |
+| 4 — learn the channel mapping from ringback | ✅ done, `77d2023` + `289e88d` |
+| 5 — VoIP path | ⬜ not started, and mostly unnecessary — see below |
 
-**379 unit tests, 0 failures.** `assembleDebug` green.
+**681 unit tests, 0 failures.** 6 migration tests pass against real SQLite on an emulator.
 
-**Nothing consumes the turns yet, and that is safe.** The daemon computes and exposes them; no caller
-reads them, so the feature is inert. The recorded audio is untouched — same source, same mono
-downmix, same encoder settings.
+**Still inert, and still safe.** The turns are gathered, stored and the mapping is learned — and
+nothing reads any of it. No transcript is labelled yet. The recorded audio is untouched: same
+source, same mono downmix, same encoder settings.
 
-**Where Task 3 stopped, and why.** The remaining half writes the turns into `transcripts.db` keyed by
-`displayName`, which means touching `AudioRecordingEngine.release()` / `finalizeStagingIfNeeded()` —
-the recording hot path, and the most delicate code in the app. Two things to settle before editing it:
+**What remains, and it is the visible half:**
 
-- `finalizeStagingIfNeeded` (`AudioRecordingEngine.kt:570`) knows `currentRecordingUri`, not the
-  `displayName` the transcripts table is keyed on. Derive it from the SAF document name rather than
-  re-deriving a name, so the two can never disagree.
-- `transcripts.db` is at **version 1 with a committed schema baseline**, so adding `speaker_turns`
-  needs a **real migration to v2** — no destructive fallback, that is the whole point of that
-  database. It has never existed on the phone, so the migration is unexercised in the wild either
-  way; write and test it properly regardless.
+- Label segments `A`/`B` at transcription time, from the stored turns. `TranscriptSegmentEntry`
+  already has a `speaker` column and the sheet already renders it when present.
+- Map `A`/`B` to "You" and the contact's name **at display time**, so a mapping learned later
+  improves transcripts that already exist, and a mapping lost never leaves a wrong name behind.
+- `SummaryPrompt.forChunk` already keeps line breaks when speakers are named, so the summary
+  improves for free once segments carry them.
+
+**Nothing here has run on a real call.** It needs an outgoing call to hear ringback at all, and two
+before it will commit. The log line to watch is `CV:SpeakerTurns: Channel mapping now stands at …`,
+which is Step 6's inspectability requirement met by the cheapest thing that could work.
+
+### Where Task 3's blocker went
+
+The August note said this needed to touch `AudioRecordingEngine.finalizeStagingIfNeeded()` — the
+recording hot path — and a migration to a database that had never carried one. Neither turned out to
+be true by the time it was picked up:
+
+- **The hot path is untouched.** `RecordingForegroundService.routeFinalRecording` already launches an
+  IO scope that catalogues the finished recording with the `displayName` in hand, detached from the
+  dying service. The turns are collected there, before transcription is queued.
+- **The migration is routine now.** That database has since gone to v2 and v3 for notes and
+  summaries, and `TranscriptMigrationInstrumentedTest` runs every migration against real SQLite on a
+  device. v3→v4 was written the same way and is covered by the same test.
+
+### Task 4 as built, versus as planned
+
+Built as designed, with one deliberate split: **the daemon reports, the app decides.** The daemon
+does not know whether a call was outgoing and cannot know what other calls observed, so it says only
+what this call's ringback suggested. The app discards the observation for incoming calls and applies
+the corroboration rule.
+
+The rule came out stricter than "two calls agree": a value wins only if two or more saw it **and**
+nothing else matched them, and it is recomputed from stored observations on every read rather than
+cached. That is what lets a mapping be **lost** as well as gained — and deleting the calls that
+taught it un-teaches it, which a cached preference would not.
 
 ---
 
