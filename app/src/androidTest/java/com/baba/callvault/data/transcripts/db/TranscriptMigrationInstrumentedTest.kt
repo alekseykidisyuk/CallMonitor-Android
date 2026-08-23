@@ -44,7 +44,7 @@ class TranscriptMigrationInstrumentedTest {
     )
 
     @Test
-    fun migrates_v1_to_v3_without_losing_a_transcript() {
+    fun migrates_v1_to_v4_without_losing_a_transcript() {
         // A user who transcribed a call two versions ago and has not opened the app since.
         helper.createDatabase(DB_NAME, 1).use { db ->
             db.execSQL(
@@ -57,7 +57,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 3, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
 
         // Room validated the schema on open, which is most of the point. The rest is the data.
         db.query("SELECT state, language FROM transcripts WHERE displayName = 'old-call.ogg'").use {
@@ -72,7 +72,7 @@ class TranscriptMigrationInstrumentedTest {
     }
 
     @Test
-    fun migrates_v2_to_v3_without_losing_a_note() {
+    fun migrates_v2_to_v4_without_losing_a_note() {
         // The upgrade an actual user takes: v2 is what is installed on the maintainer's phone.
         // A note is the user's own words about a private call and cannot be regenerated from
         // anything, so it is the row whose loss would be permanent.
@@ -87,7 +87,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 3, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query("SELECT text FROM recording_notes WHERE displayName = 'call.ogg'").use {
             assertTrue("the user's note did not survive the upgrade", it.moveToFirst())
@@ -106,7 +106,7 @@ class TranscriptMigrationInstrumentedTest {
         // time this table is ever touched.
         helper.createDatabase(DB_NAME, 2).close()
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 3, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
 
         db.execSQL(
             "INSERT INTO call_summaries (displayName, document, model, createdAt) " +
@@ -120,13 +120,54 @@ class TranscriptMigrationInstrumentedTest {
     }
 
     @Test
+    fun migrates_v3_to_v4_without_losing_a_summary() {
+        // The upgrade every current user takes. A summary costs about ninety seconds of their
+        // CPU, so losing one to a schema bump spends their battery twice.
+        helper.createDatabase(DB_NAME, 3).use { db ->
+            db.execSQL(
+                "INSERT INTO call_summaries (displayName, document, model, createdAt) " +
+                    "VALUES ('call.ogg', '{\"intent\":\"chasing an invoice\"}', 'gemma', 9)"
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
+
+        db.query("SELECT document FROM call_summaries WHERE displayName = 'call.ogg'").use {
+            assertTrue("the summary did not survive the upgrade", it.moveToFirst())
+            assertEquals("{\"intent\":\"chasing an invoice\"}", it.getString(0))
+        }
+    }
+
+    @Test
+    fun the_speaker_turns_table_is_usable_immediately_after_the_upgrade() {
+        // These turns cannot be recovered from the finished file — it is mono by then — so the
+        // table has to work the first time it is written to, which is the end of a real call.
+        helper.createDatabase(DB_NAME, 3).close()
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
+
+        db.execSQL(
+            "INSERT INTO speaker_turns (displayName, turns, outgoing, observedMap, updatedAt) " +
+                "VALUES ('call.ogg', '0:A;1500:B', 1, 'b_far', 7)"
+        )
+        db.query(
+            "SELECT turns, outgoing, observedMap FROM speaker_turns WHERE displayName = 'call.ogg'"
+        ).use {
+            assertTrue(it.moveToFirst())
+            assertEquals("0:A;1500:B", it.getString(0))
+            assertEquals(1, it.getInt(1))
+            assertEquals("b_far", it.getString(2))
+        }
+    }
+
+    @Test
     fun a_second_upgrade_is_harmless() {
         // Migrations use CREATE TABLE IF NOT EXISTS, and this is what says so. An upgrade that ran
         // half-way and was interrupted comes back through the same path.
         helper.createDatabase(DB_NAME, 2).close()
-        helper.runMigrationsAndValidate(DB_NAME, 3, true, *TranscriptDatabase.MIGRATIONS).close()
+        helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS).close()
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 3, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query("SELECT count(*) FROM call_summaries").use {
             assertTrue(it.moveToFirst())

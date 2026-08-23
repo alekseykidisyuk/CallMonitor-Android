@@ -62,6 +62,13 @@ object TranscriptCascade {
         }
 
         runCatching {
+            val dao = TranscriptDatabase.get(context).speakerTurnsDao()
+            displayNames.forEach { dao.deleteFor(it) }
+        }.onFailure {
+            AppLogger.w(TAG, "Failed to delete speaker turns for ${displayNames.size} recording(s): ${it.message}")
+        }
+
+        runCatching {
             val dao = TranscriptDatabase.get(context).summaryDao()
             displayNames.forEach { dao.deleteFor(it) }
         }.onFailure {

@@ -41,9 +41,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         TranscriptSegmentFts::class,
         RecordingNoteEntry::class,
         RecordingWaveformEntry::class,
-        CallSummaryEntry::class
+        CallSummaryEntry::class,
+        SpeakerTurnsEntry::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(TranscriptStateConverter::class)
@@ -54,6 +55,8 @@ abstract class TranscriptDatabase : RoomDatabase() {
     abstract fun noteDao(): RecordingNoteDao
 
     abstract fun summaryDao(): CallSummaryDao
+
+    abstract fun speakerTurnsDao(): SpeakerTurnsDao
 
     companion object {
 
@@ -106,13 +109,36 @@ abstract class TranscriptDatabase : RoomDatabase() {
         }
 
         /**
+         * v3 → v4: who was speaking when.
+         *
+         * Hand-written like the rest, and this table has the strongest claim of any of them to
+         * survive a schema change: speaker turns are read off the two capture channels during the
+         * call and **cannot be recovered afterwards at any price**. The recording is downmixed to
+         * mono before it is written, so the finished file no longer carries the directions. Lose
+         * this row and the only way back is to make the call again.
+         */
+        internal val MIGRATION_3_4_SQL = listOf(
+            "CREATE TABLE IF NOT EXISTS `speaker_turns` (" +
+                "`displayName` TEXT NOT NULL, " +
+                "`turns` TEXT NOT NULL, " +
+                "`outgoing` INTEGER NOT NULL, " +
+                "`observedMap` TEXT NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`displayName`))"
+        )
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) = MIGRATION_3_4_SQL.forEach(db::execSQL)
+        }
+
+        /**
          * Every migration, in one place, used by both [get] and the migration test.
          *
          * One list rather than two so a migration that is written but never registered cannot
          * happen — that mistake would look exactly like a correct build until an upgrading user
          * opened the app, and this database has no destructive fallback to catch them.
          */
-        internal val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+        internal val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 
         @Volatile
         private var INSTANCE: TranscriptDatabase? = null

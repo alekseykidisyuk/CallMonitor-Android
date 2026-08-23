@@ -58,11 +58,21 @@ class TranscriptSchemaMigrationTest {
     }
 
     @Test
+    fun `the speaker turns migration creates exactly the table Room expects at v4`() {
+        val expected = createSqlFor(version = 4, table = "speaker_turns")
+
+        assertEquals(expected, sqlIn(TranscriptDatabase.MIGRATION_3_4_SQL.single()))
+    }
+
+    @Test
     fun `every table added since v1 is created by a migration`() {
         // The check that survives someone adding an entity: if a table exists at the current version
         // but was not in v1 and no migration creates it, upgrading users never get it.
-        val migrated = (TranscriptDatabase.MIGRATION_1_2_SQL + TranscriptDatabase.MIGRATION_2_3_SQL)
-            .map(::sqlIn)
+        val migrated = (
+            TranscriptDatabase.MIGRATION_1_2_SQL +
+                TranscriptDatabase.MIGRATION_2_3_SQL +
+                TranscriptDatabase.MIGRATION_3_4_SQL
+            ).map(::sqlIn)
         val original = tablesAt(version = 1)
 
         tablesAt(version = LATEST_VERSION).forEach { table ->
@@ -101,7 +111,7 @@ class TranscriptSchemaMigrationTest {
     private fun sqlIn(sql: String): String = sql.replace(Regex("\\s+"), " ").trim()
 
     private companion object {
-        const val LATEST_VERSION = 3
+        const val LATEST_VERSION = 4
         const val SCHEMA_DIR = "schemas/com.baba.callvault.data.transcripts.db.TranscriptDatabase"
     }
 }
