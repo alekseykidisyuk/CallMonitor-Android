@@ -42,6 +42,18 @@ object SummaryEngine {
     private val mutex = Mutex()
 
     /**
+     * Whether a model is loaded and working right now.
+     *
+     * Mirrors [TranscriptionEngine.isRunning] and exists for a sharper reason. This object
+     * serialises on [mutex], so a second run does not fail — it waits, in silence, behind a button
+     * the user has already pressed and which appears to have done nothing. Asking here lets the
+     * caller refuse up front and say why, rather than queueing invisibly.
+     */
+    @Volatile
+    var isRunning: Boolean = false
+        private set
+
+    /**
      * Whether the last run was stopped rather than finishing.
      *
      * The authority on *how* a run ended. An aborted generate returns normally with a short answer,
@@ -62,9 +74,13 @@ object SummaryEngine {
             mutex.withLock {
                 val ptr = LlamaNative.initContext(modelPath)
                 if (ptr == 0L) error("Could not load the summarisation model")
+                isRunning = true
                 try {
                     block(Session(ptr))
                 } finally {
+                    // Cleared before the free rather than after, so a free that throws cannot leave
+                    // the app believing a run is still in progress for the rest of the process.
+                    isRunning = false
                     LlamaNative.freeContext(ptr)
                 }
             }
