@@ -9,7 +9,10 @@ promising more than the measurements support.
 **Spec:** `docs/dev-notes/2026-08-21-summarisation-spike-plan.md` — read its Results and Verdict
 first. Everything below assumes those numbers.
 
-**Status:** not started. The engine works and is measured; none of this exists.
+**Status (2026-08-23):** Tasks 1 and 2 are done. Task 1 was largely built during the spike itself
+— the grammar went in at `95414ee` and was fixed at `7bb166a` — so what remained was the parser that
+refuses a half-parsed summary. Task 2 landed with it: `call_summaries`, Room v2→v3, the cascade, and
+a drift guard over both migrations. 540 unit tests, 0 failures. Task 3 onwards is unbuilt.
 
 ---
 
@@ -99,7 +102,7 @@ can be wrong — and it is the affordance that sends someone to the transcript w
 
 ---
 
-## Task 1: Make the JSON impossible to malform
+## Task 1: Make the JSON impossible to malform — **DONE**
 
 **Files:** `app/src/main/cpp/llamacv.cpp`, `LlamaNative.kt`, `SummaryEngine.kt`
 **Test:** `app/src/androidTest/.../SummaryGrammarTest.kt`
@@ -108,33 +111,48 @@ Measured: Gemma returned `"summary": "…` with no closing quote. `JSON.parse` t
 wording fixes it — a 2B model under a token cap drops a quote. A grammar makes the bad token
 unsampleable.
 
-- [ ] **Step 1: Write the failing instrumented test** — generate with a grammar, assert the result
-      parses as JSON with all expected keys, over a deliberately awkward transcript.
-- [ ] **Step 2: Run it, watch it fail** (no grammar parameter yet).
-- [ ] **Step 3: Add a GBNF string parameter to `generate`**, and when present:
+- [x] **Step 1–2: Prove it fails without a grammar.** Done differently and better than planned: the
+      grammar was exercised through a desktop `llama-cli` build of the vendored submodule rather
+      than an instrumented test. That is not a shortcut — it is what caught the real bug. An invalid
+      grammar makes `llama-cli` refuse to start, whereas on Android `llama_sampler_init_grammar`
+      returns null, the native side logs it, and generation carries on **unconstrained**, so the
+      output still looks like JSON and nothing says the constraint was never applied.
+- [x] **Step 3: Add a GBNF string parameter to `generate`**, and when present:
 
 ```cpp
 llama_sampler_chain_add(sampler,
     llama_sampler_init_grammar(vocab, grammar_text, "root"));
 ```
 
-- [ ] **Step 4: Write the grammar** as a Kotlin constant beside the prompt — an object with the seven
-      remaining keys, strings and string arrays, `sentiment` omitted.
-- [ ] **Step 5: Run the test; it passes.** Then run it ten times over: invalid JSON must be
-      impossible, not merely rare.
-- [ ] **Step 6: Commit.**
+- [x] **Step 4: Write the grammar** as a Kotlin constant beside the prompt — `SummaryGrammar.JSON`,
+      six keys, `sentiment` and `participants` both omitted. **Every rule on one line:** GBNF ends a
+      rule at the newline, so a `root` spread over several lines parses as several broken rules.
+- [x] **Step 5: Verified.** Grammar-constrained output parsed on every run.
+- [x] **Step 6: Committed** — `95414ee`, fixed at `7bb166a`.
 
-## Task 2: Parse, store, and cascade
+**Still open from this task:** an on-device `SummaryGrammarTest` that runs the constrained path ten
+times over. The desktop harness proved the grammar is valid; it does not prove the Android bridge
+applies it, and that bridge is exactly where the silent failure lived. Fold it into Task 7.
 
-**Files:** `data/transcripts/db/` (v2→v3 migration), `summary/CallSummary.kt`, `TranscriptCascade.kt`
-**Test:** `SummaryParsingTest.kt`, plus a migration test
+## Task 2: Parse, store, and cascade — **DONE** (`5ba3c6f`, `c64e977`)
 
-- [ ] Failing test: a malformed summary is rejected rather than stored half-parsed.
-- [ ] `CallSummary` data class; parse with `kotlinx.serialization`, `ignoreUnknownKeys = true`.
-- [ ] Room v2→v3, hand-written like `MIGRATION_1_2`. **No destructive fallback** — a summary costs
-      ninety seconds of someone's battery.
-- [ ] Extend `TranscriptCascade` so a deleted recording takes its summary. Test it.
-- [ ] Commit.
+**Files:** `summary/CallSummary.kt`, `data/transcripts/db/CallSummaryEntry.kt`, `CallSummaryDao.kt`,
+`TranscriptDatabase.kt` (v2→v3), `TranscriptCascade.kt`
+**Test:** `CallSummaryTest.kt` (11), `CallSummaryStorageTest.kt` (7), `TranscriptSchemaMigrationTest.kt` (3)
+
+- [x] Failing test: a malformed summary is rejected rather than stored half-parsed.
+- [x] `CallSummary` data class — **`org.json`, not `kotlinx.serialization`.** The plan named a
+      library the project does not have; six known keys under a grammar do not justify adding a
+      compiler plugin to the build. Unknown keys are ignored either way, so nothing is lost.
+- [x] Room v2→v3, hand-written like `MIGRATION_1_2`. No destructive fallback.
+- [x] Extend `TranscriptCascade` so a deleted recording takes its summary. Tested.
+- [x] **Beyond the plan:** a drift guard comparing both migrations against Room's exported
+      `createSql`. `MIGRATION_1_2` had never been tested. The guard catches the realistic failure —
+      an entity gaining a column while its migration silently does not — and was itself verified by
+      dropping a column and watching it fire. It does **not** open a v2 database and upgrade it;
+      that needs Room's `MigrationTestHelper`, and is worth adding the day a migration does more
+      than add a table, because one that transforms rows can be well-formed and still lose data.
+- [x] Commit.
 
 ## Task 3: The job
 
