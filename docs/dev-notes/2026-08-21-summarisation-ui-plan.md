@@ -9,10 +9,19 @@ promising more than the measurements support.
 **Spec:** `docs/dev-notes/2026-08-21-summarisation-spike-plan.md` — read its Results and Verdict
 first. Everything below assumes those numbers.
 
-**Status (2026-08-23):** Tasks 1 and 2 are done. Task 1 was largely built during the spike itself
-— the grammar went in at `95414ee` and was fixed at `7bb166a` — so what remained was the parser that
-refuses a half-parsed summary. Task 2 landed with it: `call_summaries`, Room v2→v3, the cascade, and
-a drift guard over both migrations. 540 unit tests, 0 failures. Task 3 onwards is unbuilt.
+**Status (2026-08-23):** Tasks 1–4 are done. **603 unit tests, 0 failures**, plus 6 instrumented
+tests passing on an emulator.
+
+Task 4 was done **before** Task 3, because the worker needs a model path and paths come from the
+catalogue — the plan's numbering was written before that dependency was visible.
+
+Verified on an emulator, not just compiled: the migrations run against real SQLite, and the whole
+3.46 GB download was fetched, resumed, verified and installed. That found three defects the unit
+tests could not — a finished download still offering itself, an invisible resume, and a progress bar
+rendering pink. All fixed.
+
+**Nothing is reachable from the UI yet.** `SummaryScheduler.runNow` has no caller until Task 6, so
+no summary has ever been produced through the app. Tasks 5, 6 and 7 remain.
 
 ---
 
@@ -155,17 +164,29 @@ applies it, and that bridge is exactly where the silent failure lived. Fold it i
       than add a table, because one that transforms rows can be well-formed and still lose data.
 - [x] Commit.
 
-## Task 3: The job
+## Task 3: The job — **DONE** (`9f4dbb4`, `87b2cf5`)
 
-**Files:** `summary/SummaryWorker.kt`, `SummaryScheduler.kt`
-**Interfaces:** mirrors `TranscriptionWorker` — same progress keys, same abort watcher.
+**Files:** `summary/SummaryQueue.kt`, `SummaryRunner.kt`, `SummaryWorker.kt`, `SummaryScheduler.kt`,
+`SummaryProgress.kt`, plus `SummaryPrompt.forMergeJson`
+**Test:** `SummaryQueueTest` (10), `SummaryRunnerTest` (10), `SummaryProgressTest` (9)
 
-- [ ] Failing test for the queue: a summary is not attempted without a transcript, nor while
-      `TranscriptionEngine.isRunning`.
-- [ ] Worker with `setProgress`, honouring `isStopped`, calling `SummaryEngine.requestAbort`.
-- [ ] Reuse `TranscriptionProgress` for the figure shown — same problem, same fix, and it is already
-      tested.
-- [ ] Commit.
+- [x] The gate: no summary without a finished, non-empty transcript, none while
+      `TranscriptionEngine.isRunning`, none while another is running, none without the model. The
+      order the reasons are checked in is a UI decision — durable problems before transient ones.
+- [x] Worker with `setProgress`, honouring `isStopped`, calling `SummaryEngine.requestAbort`. It
+      re-checks `TranscriptionEngine.isRunning` on start as well as at the tap, because a queued job
+      can begin long after it was asked for.
+- [x] Reuse `TranscriptionProgress` for the figure shown. Chunks stop at **85%** so the merge — the
+      longest single generation of the run — does not happen behind a bar that already reads
+      finished. Same defect as the transcription that vanished at 70%.
+- [x] **Beyond the plan:** `forMergeJson`. The existing merge prompt returns prose, but the merge's
+      output goes through `CallSummary.parse` under the same grammar, so it has to name the same six
+      keys or two passes of the model produce nothing. Timestamps are copied verbatim, never
+      recomputed — a stamp is only valid against the original recording.
+- [x] Commit.
+
+**Not yet reachable from anywhere.** `SummaryScheduler.runNow` has no caller until Task 6 adds the
+card, so none of this has run on a device.
 
 ## Task 4: The model, in Settings — **in progress**
 
