@@ -87,6 +87,14 @@ fun TranscriptSheet(
     onShare: (String) -> Unit,
     onRetranscribe: () -> Unit,
     onDelete: () -> Unit,
+    /**
+     * How to name the two captured channels.
+     *
+     * Passed in rather than read here so the sheet stays a pure rendering of what it is given, and
+     * because the answer belongs to the phone rather than to this transcript: it is learned from
+     * ringback over several calls and applies to all of them at once.
+     */
+    speakerNames: SpeakerNames,
     /** The summary for this recording, so the sheet can show a stored one rather than rewrite it. */
     summaryState: SummaryCardState,
     onSummarise: () -> Unit,
@@ -147,6 +155,7 @@ fun TranscriptSheet(
                     itemsIndexed(segments, key = { _, s -> s.id }) { index, segment ->
                         TranscriptLine(
                             segment = segment,
+                            speaker = speakerNames.of(segment.speaker),
                             isActive = index == active,
                             onClick = { onSeekTo(segment.startMs) }
                         )
@@ -181,7 +190,7 @@ fun TranscriptSheet(
                 .padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            val plain = segments.asPlainText()
+            val plain = segments.asPlainText(speakerNames)
             TextButton(onClick = { onCopy(plain) }, enabled = segments.isNotEmpty()) {
                 Text(stringResource(R.string.transcript_copy))
             }
@@ -215,6 +224,7 @@ fun TranscriptSheet(
 @Composable
 private fun TranscriptLine(
     segment: TranscriptSegmentEntry,
+    speaker: String?,
     isActive: Boolean,
     onClick: () -> Unit
 ) {
@@ -249,9 +259,9 @@ private fun TranscriptLine(
             )
 
             Column(modifier = Modifier.weight(1f)) {
-                segment.speaker?.let { speaker ->
+                speaker?.let { name ->
                     Text(
-                        text = speaker,
+                        text = name,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -265,10 +275,16 @@ private fun TranscriptLine(
     }
 }
 
-/** The transcript as shareable plain text, one timestamped line per segment. */
-private fun List<TranscriptSegmentEntry>.asPlainText(): String = joinToString("\n") { segment ->
-    val speaker = segment.speaker?.let { "$it " }.orEmpty()
-    "[${TranscriptTimestamp.format(segment.startMs)}] $speaker${segment.text}"
-}
+/**
+ * The transcript as shareable plain text, one timestamped line per segment.
+ *
+ * Named with [names] rather than with the stored `A`/`B`, so what leaves the phone reads the way the
+ * screen does — and stays neutral for exactly as long as the screen does.
+ */
+private fun List<TranscriptSegmentEntry>.asPlainText(names: SpeakerNames): String =
+    joinToString("\n") { segment ->
+        val speaker = names.of(segment.speaker)?.let { "$it: " }.orEmpty()
+        "[${TranscriptTimestamp.format(segment.startMs)}] $speaker${segment.text}"
+    }
 
 private val TIMESTAMP_WIDTH = 56.dp

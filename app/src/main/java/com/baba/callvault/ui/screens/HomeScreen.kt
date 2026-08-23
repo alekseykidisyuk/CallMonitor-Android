@@ -24,6 +24,7 @@ import com.baba.callvault.system.openKofi
 import com.baba.callvault.ui.common.M3DropdownField
 import com.baba.callvault.ui.common.OptionItem
 import com.baba.callvault.ui.common.formatByteSize
+import com.baba.callvault.ui.common.SpeakerNames
 import com.baba.callvault.ui.common.SupportDialog
 import com.baba.callvault.system.shareRecordings
 import com.baba.callvault.system.shareRecording
@@ -94,6 +95,8 @@ import kotlinx.coroutines.withContext
 import androidx.compose.runtime.setValue
 import com.baba.callvault.ui.common.OfflineDialogMode
 import com.baba.callvault.ui.common.OfflineRecordingDialog
+import com.baba.callvault.data.ChannelMap
+import com.baba.callvault.data.transcripts.SpeakerTurnsRepository
 import com.baba.callvault.data.transcripts.TranscriptRepository
 import com.baba.callvault.data.waveform.RecordingExtrasRepository
 import com.baba.callvault.data.transcripts.TranscriptStatus
@@ -629,10 +632,18 @@ fun HomeScreen(
         val isThisTrack = row != null && playback.activeUri == row.uri
 
         val sheetSummary by rememberSummaryState(displayName)
+        val title = RecordingLabel.of(row) ?: BidiText.isolate(displayName)
+
+        // Re-read whenever a transcript is opened rather than held for the life of the screen: the
+        // mapping is learned in the background from calls that happen while the app is running, and
+        // it can be un-learned by deleting the calls that taught it.
+        val channelMap by produceState(ChannelMap.UNKNOWN, displayName) {
+            value = SpeakerTurnsRepository.trustedMap(context)
+        }
 
         TranscriptSheet(
             transcript = transcript,
-            title = RecordingLabel.of(row) ?: BidiText.isolate(displayName),
+            title = title,
             positionMs = if (isThisTrack) playback.positionMs.toLong() else -1L,
             durationMs = if (isThisTrack) playback.durationMs.toLong() else 0L,
             isPlaying = isThisTrack && playback.phase == RecordingPlaybackController.Phase.PLAYING,
@@ -660,6 +671,15 @@ fun HomeScreen(
                 transcriptFor = null
                 deleteTranscriptFor = displayName
             },
+            // The contact's name is the one already in the header, so a labelled line reads as
+            // part of the same conversation rather than introducing a second way to say who called.
+            speakerNames = SpeakerNames(
+                map = channelMap,
+                you = stringResource(R.string.transcript_speaker_you),
+                contact = title,
+                sideA = stringResource(R.string.transcript_speaker_a),
+                sideB = stringResource(R.string.transcript_speaker_b)
+            ),
             summaryState = sheetSummary,
             onSummarise = { SummaryScheduler.runNow(context, displayName) },
             onStopSummary = { SummaryScheduler.stopNow(context) }
