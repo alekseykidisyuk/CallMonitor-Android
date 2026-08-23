@@ -14,11 +14,15 @@ import java.io.File
 import java.security.MessageDigest
 
 /**
- * Where transcription models live on disk, and whether one can be trusted.
+ * Where downloaded models live on disk, and whether one can be trusted.
  *
- * Models are large (190 MB / 574 MB) and are deliberately kept in the app's private files directory,
- * never in the recordings folders: they must not be swept by retention, synced to Drive, or shown to
- * the user as if they were a recording.
+ * Serves any [DownloadableModel] — whisper models for transcription, and the language model for
+ * summaries. Only [installedModels] is still whisper-specific, because it enumerates a catalogue
+ * rather than acting on a model it was handed.
+ *
+ * Models are large — 190 MB and 574 MB for whisper, and about 3.5 GB for the summariser — and are
+ * deliberately kept in the app's private files directory, never in the recordings folders: they must
+ * not be swept by retention, synced to Drive, or shown to the user as if they were a recording.
  *
  * Two different checks, used for two different purposes:
  * - [verify] hashes the whole file. Correct but slow, so it runs **once**, straight after a download
@@ -50,24 +54,24 @@ object ModelRepository {
      */
     fun isInstalled(
         dir: File,
-        model: TranscriptionModel,
+        model: DownloadableModel,
         expectedSize: Long = model.sizeBytes
     ): Boolean {
         val file = File(dir, model.fileName)
         return file.isFile && file.length() == expectedSize
     }
 
-    fun isInstalled(context: Context, model: TranscriptionModel): Boolean =
+    fun isInstalled(context: Context, model: DownloadableModel): Boolean =
         isInstalled(modelsDir(context), model)
 
     /** The model's file, or null when it is absent or incomplete. */
     fun pathFor(
         dir: File,
-        model: TranscriptionModel,
+        model: DownloadableModel,
         expectedSize: Long = model.sizeBytes
     ): File? = File(dir, model.fileName).takeIf { isInstalled(dir, model, expectedSize) }
 
-    fun pathFor(context: Context, model: TranscriptionModel): File? =
+    fun pathFor(context: Context, model: DownloadableModel): File? =
         pathFor(modelsDir(context), model)
 
     /** Every model currently installed and complete. */
@@ -106,7 +110,7 @@ object ModelRepository {
     }
 
     /** The in-progress download file for [model]. */
-    fun partFileFor(dir: File, model: TranscriptionModel): File =
+    fun partFileFor(dir: File, model: DownloadableModel): File =
         File(dir, model.fileName + PART_SUFFIX)
 
     /**
@@ -123,7 +127,7 @@ object ModelRepository {
      */
     fun finalizeDownload(
         dir: File,
-        model: TranscriptionModel,
+        model: DownloadableModel,
         expectedSha256: String = model.sha256
     ): Boolean {
         val part = partFileFor(dir, model)
@@ -145,7 +149,7 @@ object ModelRepository {
     }
 
     /** Deletes [model] and any partial download of it. Safe to call when nothing is installed. */
-    fun delete(context: Context, model: TranscriptionModel) {
+    fun delete(context: Context, model: DownloadableModel) {
         val dir = modelsDir(context)
         listOf(File(dir, model.fileName), File(dir, model.fileName + PART_SUFFIX))
             .filter { it.exists() }

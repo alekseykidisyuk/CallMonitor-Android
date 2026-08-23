@@ -30,13 +30,13 @@ package com.baba.callvault.transcription.model
  *                      warn honestly about how long a long call will take.
  */
 enum class TranscriptionModel(
-    val id: String,
-    val fileName: String,
-    val url: String,
-    val sha256: String,
-    val sizeBytes: Long,
+    override val id: String,
+    override val fileName: String,
+    override val url: String,
+    override val sha256: String,
+    override val sizeBytes: Long,
     val realTimeFactor: Double
-) {
+) : DownloadableModel {
     /** Fast tier. Hebrew comes out as gist rather than clean prose, at roughly real time. */
     SMALL_Q5_1(
         id = "small-q5_1",
