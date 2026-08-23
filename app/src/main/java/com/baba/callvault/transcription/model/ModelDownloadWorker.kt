@@ -27,16 +27,22 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Downloads a transcription model, resumably, and installs it only once it hashes correctly.
+ * Downloads a model, resumably, and installs it only once it hashes correctly.
  *
- * Resumable rather than foreground: these are 190–574 MB files and WorkManager stops a worker after
- * roughly ten minutes, so on a slow connection the download *will* be interrupted. Rather than
- * holding a foreground service open for however long that takes, an interrupted download keeps its
- * partial file and the next attempt continues from where it stopped with a Range request. The user
- * pays for each byte once.
+ * Resumable rather than foreground: these run from 190 MB to 3.46 GB and WorkManager stops a worker
+ * after roughly ten minutes, so on any ordinary connection the download *will* be interrupted.
+ * Rather than holding a foreground service open for however long that takes, an interrupted
+ * download keeps its partial file and the next attempt continues from where it stopped with a Range
+ * request. The user pays for each byte once.
  *
- * Constrained to unmetered networks by [enqueue]: silently pulling half a gigabyte over a phone's
- * mobile data would be indefensible.
+ * Constrained to unmetered networks by [enqueue]: silently pulling gigabytes over a phone's mobile
+ * data would be indefensible.
+ *
+ * **The work request carries the model's details rather than its name.** Resolving an id would mean
+ * this worker knowing every catalogue there is — including the summarisation one, which already
+ * depends on this package for [DownloadableModel] — so the two would have to reference each other.
+ * Passing the five fields it actually needs keeps the worker ignorant of what kind of model it is
+ * fetching, which is the correct amount for it to know.
  */
 class ModelDownloadWorker(
     context: Context,
@@ -44,8 +50,8 @@ class ModelDownloadWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val model = TranscriptionModel.fromId(inputData.getString(KEY_MODEL_ID))
-            ?: return@withContext Result.failure() // unknown id: retrying cannot help
+        val model = requestedModel()
+            ?: return@withContext Result.failure() // nothing to fetch: retrying cannot help
 
         val dir = ModelRepository.modelsDir(applicationContext)
         if (ModelRepository.isInstalled(dir, model)) {
@@ -54,6 +60,15 @@ class ModelDownloadWorker(
         }
 
         val part = ModelRepository.partFileFor(dir, model)
+
+        // Checked before a byte is fetched. At 3.46 GB a download that runs the phone out of space
+        // does not merely fail — the system starts shedding processes on the way there. Failing up
+        // front with a reason is the kinder outcome, and retrying cannot conjure storage.
+        val remaining = model.sizeBytes - (if (part.isFile) part.length() else 0L)
+        if (!ModelDownloadPolicy.hasRoomFor(dir.usableSpace, remaining)) {
+            AppLogger.w(TAG, "Not enough free space for ${model.id}: needs $remaining bytes")
+            return@withContext Result.failure(workDataOf(KEY_ERROR to ERROR_NO_SPACE))
+        }
 
         runCatching { download(model, part) }
             .fold(
@@ -65,7 +80,7 @@ class ModelDownloadWorker(
                         // Digest mismatch: finalizeDownload has already discarded the file. Retrying
                         // would re-download from the same source, so surface it instead of looping.
                         else -> Result.failure(
-                            workDataOf(KEY_ERROR to "verification-failed")
+                            workDataOf(KEY_ERROR to ERROR_VERIFICATION_FAILED)
                         )
                     }
                 },
@@ -77,11 +92,41 @@ class ModelDownloadWorker(
     }
 
     /**
+     * The model this request is for, assembled from the work's own input.
+     *
+     * Falls back to the whisper catalogue when the details are absent, which happens for exactly one
+     * case: a download enqueued by an older version of the app that is still pending when the update
+     * lands. Without this it would fail on resume and the user would pay for those bytes twice.
+     */
+    private fun requestedModel(): DownloadableModel? {
+        val id = inputData.getString(KEY_MODEL_ID) ?: return null
+        val url = inputData.getString(KEY_URL)
+            ?: return TranscriptionModel.fromId(id)
+
+        return RequestedModel(
+            id = id,
+            fileName = inputData.getString(KEY_FILE_NAME) ?: return null,
+            url = url,
+            sha256 = inputData.getString(KEY_SHA256) ?: return null,
+            sizeBytes = inputData.getLong(KEY_SIZE_BYTES, 0L).takeIf { it > 0L } ?: return null
+        )
+    }
+
+    /** A model described entirely by the work request, so the worker needs no catalogue. */
+    private data class RequestedModel(
+        override val id: String,
+        override val fileName: String,
+        override val url: String,
+        override val sha256: String,
+        override val sizeBytes: Long
+    ) : DownloadableModel
+
+    /**
      * Streams [model] into [part], continuing from whatever is already there.
      *
      * @return true when the file is complete; false when the worker was stopped part-way.
      */
-    private suspend fun download(model: TranscriptionModel, part: File): Boolean {
+    private suspend fun download(model: DownloadableModel, part: File): Boolean {
         val alreadyHave = if (part.isFile) part.length() else 0L
         if (alreadyHave > model.sizeBytes) {
             // Longer than the published size means this is not the file we think it is.
@@ -108,6 +153,7 @@ class ModelDownloadWorker(
             if (!append && part.exists()) part.delete()
 
             var written = if (append) resumeFrom else 0L
+            var lastPublished = NOTHING_PUBLISHED
 
             connection.inputStream.use { input ->
                 java.io.FileOutputStream(part, append).use { output ->
@@ -121,8 +167,14 @@ class ModelDownloadWorker(
                         output.write(buffer, 0, read)
                         written += read
 
-                        val percent = (written * PERCENT * 1.0 / model.sizeBytes).toInt()
-                        setProgress(workDataOf(KEY_MODEL_ID to model.id, KEY_PERCENT to percent))
+                        // Only when the whole percent moves. Publishing on every buffer is a
+                        // WorkManager database write per 64 KB — about 8,700 of them for a 574 MB
+                        // model and 52,800 for a 3.46 GB one, to move a bar with a hundred stops.
+                        val percent = ModelDownloadPolicy.percentOf(written, model.sizeBytes)
+                        if (ModelDownloadPolicy.shouldPublish(lastPublished, percent)) {
+                            lastPublished = percent
+                            setProgress(workDataOf(KEY_MODEL_ID to model.id, KEY_PERCENT to percent))
+                        }
                     }
                 }
             }
@@ -140,18 +192,40 @@ class ModelDownloadWorker(
         const val KEY_PERCENT = "percent"
         const val KEY_ERROR = "error"
 
+        /** The model's details, so the worker needs no catalogue to resolve them. */
+        private const val KEY_FILE_NAME = "fileName"
+        private const val KEY_URL = "url"
+        private const val KEY_SHA256 = "sha256"
+        private const val KEY_SIZE_BYTES = "sizeBytes"
+
+        /** The downloaded file did not match its published digest and was discarded. */
+        const val ERROR_VERIFICATION_FAILED = "verification-failed"
+
+        /** There was not enough free space, so nothing was fetched. */
+        const val ERROR_NO_SPACE = "insufficient-storage"
+
         private const val CONNECT_TIMEOUT_MS = 30_000
         private const val READ_TIMEOUT_MS = 60_000
         private const val BUFFER_BYTES = 1 shl 16
-        private const val PERCENT = 100
+
+        /** No figure has reached the progress store yet, so even 0% is news. */
+        private const val NOTHING_PUBLISHED = -1
 
         /** Unique work name for [model], so tapping download twice does not fetch it twice. */
-        fun workNameFor(model: TranscriptionModel): String = "cv_model_download_${model.id}"
+        fun workNameFor(model: DownloadableModel): String = "cv_model_download_${model.id}"
 
         /** Queues [model] for download over an unmetered network. Idempotent. */
-        fun enqueue(context: Context, model: TranscriptionModel) {
+        fun enqueue(context: Context, model: DownloadableModel) {
             val request = OneTimeWorkRequestBuilder<ModelDownloadWorker>()
-                .setInputData(workDataOf(KEY_MODEL_ID to model.id))
+                .setInputData(
+                    workDataOf(
+                        KEY_MODEL_ID to model.id,
+                        KEY_FILE_NAME to model.fileName,
+                        KEY_URL to model.url,
+                        KEY_SHA256 to model.sha256,
+                        KEY_SIZE_BYTES to model.sizeBytes
+                    )
+                )
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.UNMETERED)
@@ -166,7 +240,7 @@ class ModelDownloadWorker(
         }
 
         /** Cancels an in-progress download. The partial file is kept so a later retry resumes. */
-        fun cancel(context: Context, model: TranscriptionModel) {
+        fun cancel(context: Context, model: DownloadableModel) {
             WorkManager.getInstance(context).cancelUniqueWork(workNameFor(model))
         }
 
