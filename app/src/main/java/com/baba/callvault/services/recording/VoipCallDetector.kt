@@ -132,7 +132,7 @@ class VoipCallDetector(private val context: Context) {
             // [VoipTelephonyGate]. Deliberately NOT marking callActive: we believe no app call is up,
             // so a later mode event is free to reconsider once the phone call is over.
             if (!VoipTelephonyGate.mayStartNow(context)) {
-                AppLogger.i(TAG, "mode=IN_COMMUNICATION but a carrier call is in progress — not an app call")
+                AppLogger.i(TAG, "mode=IN_COMMUNICATION but the carrier has a call up — not an app call")
                 return
             }
             handler.removeCallbacks(endCallRunnable)
