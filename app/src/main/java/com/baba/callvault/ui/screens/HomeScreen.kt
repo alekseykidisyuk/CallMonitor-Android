@@ -85,6 +85,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -637,8 +638,13 @@ fun HomeScreen(
         // Re-read whenever a transcript is opened rather than held for the life of the screen: the
         // mapping is learned in the background from calls that happen while the app is running, and
         // it can be un-learned by deleting the calls that taught it.
-        val channelMap by produceState(ChannelMap.UNKNOWN, displayName) {
+        // Bumped by a swap so the names redraw without waiting for the sheet to be reopened.
+        var speakerMapNonce by remember(displayName) { mutableIntStateOf(0) }
+        val channelMap by produceState(ChannelMap.UNKNOWN, displayName, speakerMapNonce) {
             value = SpeakerTurnsRepository.trustedMap(context)
+        }
+        val speakersConfirmed = remember(speakerMapNonce) {
+            AppPreferences(context).getSpeakerMapConfirmed()
         }
 
         TranscriptSheet(
@@ -678,8 +684,28 @@ fun HomeScreen(
                 you = stringResource(R.string.transcript_speaker_you),
                 contact = title,
                 sideA = stringResource(R.string.transcript_speaker_a),
-                sideB = stringResource(R.string.transcript_speaker_b)
+                sideB = stringResource(R.string.transcript_speaker_b),
+                // Only a guess worth questioning: neutral labels claim nothing, and a confirmed
+                // mapping has already been looked at.
+                isGuess = channelMap != ChannelMap.UNKNOWN && !speakersConfirmed
             ),
+            onSwapSpeakers = {
+                val prefs = AppPreferences(context)
+                prefs.setSpeakerMapOverride(
+                    when (channelMap) {
+                        ChannelMap.A_IS_FAR -> ChannelMap.B_IS_FAR.key
+                        else -> ChannelMap.A_IS_FAR.key
+                    }
+                )
+                prefs.setSpeakerMapConfirmed(true)
+                speakerMapNonce++
+            },
+            onConfirmSpeakers = {
+                // Confirming stores no mapping: agreeing with what was worked out leaves it free to
+                // improve as more calls are recorded, where pinning it would freeze today's guess.
+                AppPreferences(context).setSpeakerMapConfirmed(true)
+                speakerMapNonce++
+            },
             summaryState = sheetSummary,
             onSummarise = { SummaryScheduler.runNow(context, displayName) },
             onStopSummary = { SummaryScheduler.stopNow(context) }

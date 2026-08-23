@@ -374,6 +374,9 @@
     <string name="transcript_speaker_a">Rozmówca A</string>
     <string name="transcript_speaker_b">Rozmówca B</string>
     <string name="transcript_speaker_you">Ja</string>
+    <string name="transcript_speakers_correct">Poprawnie</string>
+    <string name="transcript_speakers_guessed">Imiona ustalone automatycznie</string>
+    <string name="transcript_speakers_swap">Zamień</string>
     <string name="transcription_batch_label">Połączenia na przebieg</string>
     <string name="transcription_batch_no_limit">Bez limitu</string>
     <string name="transcription_charging_subtitle">Transkrypcja mocno obciąża procesor i rozładuje baterię.</string>

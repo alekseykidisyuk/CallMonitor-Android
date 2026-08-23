@@ -210,6 +210,8 @@ class AppPreferences(context: Context) {
         SUMMARY_LANGUAGE("summary_language"),
         TRANSCRIPTION_MODEL_ID("transcription_model_id"),
         TRANSCRIPTION_LANGUAGE("transcription_language"),
+        SPEAKER_MAP_OVERRIDE("speaker_map_override"),
+        SPEAKER_MAP_CONFIRMED("speaker_map_confirmed"),
 
         // --- Retention ---
         RETENTION_LINKED("retention_linked"),
@@ -663,6 +665,28 @@ class AppPreferences(context: Context) {
 
     /** Sets the language passed to whisper, or null to auto-detect. */
     fun setTranscriptionLanguage(language: String?) = setString(Key.TRANSCRIPTION_LANGUAGE, language)
+
+    // -------- Who is who on a transcript --------
+
+    /**
+     * The user's own answer to which channel is the far party, as a `ChannelMap` key.
+     *
+     * Outranks everything the app works out for itself. Null means nothing has been said, and the
+     * guess stands.
+     */
+    fun getSpeakerMapOverride(): String? = getString(Key.SPEAKER_MAP_OVERRIDE, null)
+
+    fun setSpeakerMapOverride(key: String?) = setString(Key.SPEAKER_MAP_OVERRIDE, key)
+
+    /**
+     * Whether the user has ever answered the "is this right?" offer.
+     *
+     * Confirming and correcting both count: either way they have looked, and the transcript stops
+     * asking. Kept apart from the override so that agreeing with the guess is also an answer.
+     */
+    fun getSpeakerMapConfirmed(): Boolean = getBoolean(Key.SPEAKER_MAP_CONFIRMED, false)
+
+    fun setSpeakerMapConfirmed(confirmed: Boolean) = setBoolean(Key.SPEAKER_MAP_CONFIRMED, confirmed)
 
     // -------- Sync Schedule --------
 

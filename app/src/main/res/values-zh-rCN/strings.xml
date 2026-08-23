@@ -374,6 +374,9 @@
     <string name="transcript_speaker_a">说话人 A</string>
     <string name="transcript_speaker_b">说话人 B</string>
     <string name="transcript_speaker_you">我</string>
+    <string name="transcript_speakers_correct">正确</string>
+    <string name="transcript_speakers_guessed">姓名为自动判断</string>
+    <string name="transcript_speakers_swap">对调</string>
     <string name="transcription_batch_label">每次运行的通话数</string>
     <string name="transcription_batch_no_limit">不限</string>
     <string name="transcription_charging_subtitle">转写会大量占用处理器并消耗电量。</string>

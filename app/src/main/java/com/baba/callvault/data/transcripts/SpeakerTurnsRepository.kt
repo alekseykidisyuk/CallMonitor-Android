@@ -9,7 +9,9 @@
 package com.baba.callvault.data.transcripts
 
 import android.content.Context
+import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.ChannelMap
+import com.baba.callvault.data.FirstSpeakerHeuristic
 import com.baba.callvault.data.ChannelMapCorroboration
 import com.baba.callvault.data.transcripts.db.SpeakerTurnsEntry
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
@@ -65,9 +67,19 @@ object SpeakerTurnsRepository {
         AppLogger.i(TAG, "Speaker turns came from the ${if (fromHandoff.isNotBlank()) "handoff" else "daemon"} capture")
 
         val observed = service?.let { runCatching { it.observedChannelMap().orEmpty() }.getOrElse { "" } }.orEmpty()
-        // An incoming call cannot have heard ringback for us, so whatever it reports is discarded
-        // rather than trusted — this is the one thing the daemon could not decide for itself.
-        val usable = if (outgoing) ChannelMap.fromKey(observed) else ChannelMap.UNKNOWN
+        val measured = ChannelMap.fromKey(observed)
+        // What the capture could measure comes first — it is evidence rather than convention. On the
+        // reference device it is always UNKNOWN (no ringback reaches the capture, and the downlink
+        // probe costs the recording its near side), so in practice the convention below is what
+        // answers: on an outgoing call, whoever speaks first is the person who answered.
+        //
+        // Only outgoing calls are read. On an incoming one the same convention points the other way
+        // and holds less firmly, and two observations are enough to settle this without it.
+        val usable = when {
+            measured != ChannelMap.UNKNOWN -> measured
+            outgoing -> FirstSpeakerHeuristic.observe(turns)
+            else -> ChannelMap.UNKNOWN
+        }
 
         runCatching {
             val db = TranscriptDatabase.get(context)
@@ -108,6 +120,11 @@ object SpeakerTurnsRepository {
      * by calls that have since been deleted.
      */
     suspend fun trustedMap(context: Context): ChannelMap {
+        // Being told beats working it out. The user can see the transcript and knows which words are
+        // theirs; nothing the app derives should be able to argue with that.
+        val override = ChannelMap.fromKey(AppPreferences(context).getSpeakerMapOverride())
+        if (override != ChannelMap.UNKNOWN) return override
+
         if (!TranscriptDatabase.exists(context)) return ChannelMap.UNKNOWN
         return runCatching {
             val dao = TranscriptDatabase.get(context).speakerTurnsDao()

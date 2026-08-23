@@ -374,6 +374,9 @@
     <string name="transcript_speaker_a">A beszélő</string>
     <string name="transcript_speaker_b">B beszélő</string>
     <string name="transcript_speaker_you">Én</string>
+    <string name="transcript_speakers_correct">Helyes</string>
+    <string name="transcript_speakers_guessed">A neveket a program állapította meg</string>
+    <string name="transcript_speakers_swap">Csere</string>
     <string name="transcription_batch_label">Hívások futásonként</string>
     <string name="transcription_batch_no_limit">Nincs korlát</string>
     <string name="transcription_charging_subtitle">Az átírás erősen terheli a processzort, és meríti az akkumulátort.</string>

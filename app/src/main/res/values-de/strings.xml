@@ -374,6 +374,9 @@
     <string name="transcript_speaker_a">Sprecher A</string>
     <string name="transcript_speaker_b">Sprecher B</string>
     <string name="transcript_speaker_you">Ich</string>
+    <string name="transcript_speakers_correct">Stimmt</string>
+    <string name="transcript_speakers_guessed">Namen automatisch ermittelt</string>
+    <string name="transcript_speakers_swap">Tauschen</string>
     <string name="transcription_batch_label">Anrufe pro Durchlauf</string>
     <string name="transcription_batch_no_limit">Ohne Begrenzung</string>
     <string name="transcription_charging_subtitle">Die Transkription belastet den Prozessor stark und entlädt den Akku.</string>

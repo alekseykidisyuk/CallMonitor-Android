@@ -374,6 +374,9 @@
     <string name="transcript_speaker_a">Interlocuteur A</string>
     <string name="transcript_speaker_b">Interlocuteur B</string>
     <string name="transcript_speaker_you">Moi</string>
+    <string name="transcript_speakers_correct">Correct</string>
+    <string name="transcript_speakers_guessed">Noms déduits automatiquement</string>
+    <string name="transcript_speakers_swap">Inverser</string>
     <string name="transcription_batch_label">Appels par exécution</string>
     <string name="transcription_batch_no_limit">Sans limite</string>
     <string name="transcription_charging_subtitle">La transcription sollicite fortement le processeur et videra la batterie.</string>

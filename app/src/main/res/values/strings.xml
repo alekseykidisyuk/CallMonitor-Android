@@ -607,6 +607,9 @@
     <string name="transcript_action_retry">Transcription failed — try again</string>
     <string name="transcript_loading">Loading the transcript…</string>
     <string name="transcript_no_speech">No speech was recognised in this recording.</string>
+    <string name="transcript_speakers_guessed">Names worked out automatically</string>
+    <string name="transcript_speakers_swap">Swap</string>
+    <string name="transcript_speakers_correct">Correct</string>
     <string name="transcript_speaker_you">You</string>
     <string name="transcript_speaker_a">Speaker A</string>
     <string name="transcript_speaker_b">Speaker B</string>

@@ -374,6 +374,9 @@
     <string name="transcript_speaker_a">Người nói A</string>
     <string name="transcript_speaker_b">Người nói B</string>
     <string name="transcript_speaker_you">Tôi</string>
+    <string name="transcript_speakers_correct">Đúng</string>
+    <string name="transcript_speakers_guessed">Tên được xác định tự động</string>
+    <string name="transcript_speakers_swap">Đổi</string>
     <string name="transcription_batch_label">Số cuộc gọi mỗi lần chạy</string>
     <string name="transcription_batch_no_limit">Không giới hạn</string>
     <string name="transcription_charging_subtitle">Việc chuyển lời nói dùng nhiều CPU và sẽ hao pin.</string>

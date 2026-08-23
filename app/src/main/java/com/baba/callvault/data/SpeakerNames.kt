@@ -31,7 +31,14 @@ data class SpeakerNames(
     val you: String,
     val contact: String,
     val sideA: String,
-    val sideB: String
+    val sideB: String,
+    /**
+     * Whether these names were worked out rather than confirmed by the user.
+     *
+     * Drives the offer to correct them. False both when nothing is named yet (there is nothing to
+     * be wrong about) and once the user has answered the offer.
+     */
+    val isGuess: Boolean = false
 ) {
 
     /**

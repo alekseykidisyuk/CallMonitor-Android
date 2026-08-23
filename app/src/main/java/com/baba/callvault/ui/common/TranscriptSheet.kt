@@ -96,6 +96,10 @@ fun TranscriptSheet(
      * ringback over several calls and applies to all of them at once.
      */
     speakerNames: SpeakerNames,
+    /** Flips which side is which, for good. Offered only while [SpeakerNames.isGuess]. */
+    onSwapSpeakers: () -> Unit = {},
+    /** Accepts the guess, which stops the offer without changing anything. */
+    onConfirmSpeakers: () -> Unit = {},
     /** The summary for this recording, so the sheet can show a stored one rather than rewrite it. */
     summaryState: SummaryCardState,
     onSummarise: () -> Unit,
@@ -150,6 +154,10 @@ fun TranscriptSheet(
                 // from under someone who is reading it would be worse than not following at all.
                 LaunchedEffect(active) {
                     if (active >= 0) listState.animateScrollToItem(active)
+                }
+
+                if (speakerNames.isGuess) {
+                    SpeakerNamesHint(onSwap = onSwapSpeakers, onConfirm = onConfirmSpeakers)
                 }
 
                 LazyColumn(state = listState, modifier = Modifier.weight(1f, fill = false)) {
@@ -212,6 +220,41 @@ fun TranscriptSheet(
             ) {
                 Text(stringResource(R.string.transcript_delete))
             }
+        }
+    }
+}
+
+/**
+ * Offers to correct the names, while they are still a guess.
+ *
+ * Which channel is the far party is worked out from a convention — on an outgoing call the person
+ * who answers speaks first — corroborated over two calls. That is right nearly always and wrong
+ * sometimes, and being wrong means showing one person's words under the other's name.
+ *
+ * So it is said plainly, and the fix is one tap. It disappears for good once the user has answered
+ * either way: agreeing is as much an answer as correcting, and a bar that kept asking after being
+ * told would be worse than one that never asked.
+ */
+@Composable
+private fun SpeakerNamesHint(onSwap: () -> Unit, onConfirm: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(start = 24.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.transcript_speakers_guessed),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(onClick = onSwap) {
+            Text(stringResource(R.string.transcript_speakers_swap))
+        }
+        TextButton(onClick = onConfirm) {
+            Text(stringResource(R.string.transcript_speakers_correct))
         }
     }
 }
