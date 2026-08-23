@@ -150,13 +150,16 @@ class RecordingForegroundService : Service() {
      * itself uses (carrier calls are `MODE_IN_CALL`), and it covers the race where the telephony state
      * arrives before the VoIP recording has started — measured at ~230 ms on One UI.
      */
-    private fun isVoipCallInProgress(): Boolean {
-        if (!AppPreferences(this).isVoipRecordingEnabled()) return false
-        if (VoipRecordingCoordinator.isRecording) return true
-        return runCatching {
+    private fun isVoipCallInProgress(): Boolean = RecordingPolicy.standsDownForAppCall(
+        voipEnabled = AppPreferences(this).isVoipRecordingEnabled(),
+        voipRecording = VoipRecordingCoordinator.isRecording,
+        // Asked of Telecom rather than of the audio mode: an IMS or Wi-Fi call can sit in
+        // MODE_IN_COMMUNICATION too, and standing down for one loses the recording entirely.
+        carrierCallUp = VoipTelephonyGate.managedCallInProgress(this),
+        modeIsInCommunication = runCatching {
             getSystemService(AudioManager::class.java)?.mode == AudioManager.MODE_IN_COMMUNICATION
         }.getOrDefault(false)
-    }
+    )
 
     /** True only if the pipeline is actively reading and capturing audio. */
     private val isCurrentlyRecording: Boolean

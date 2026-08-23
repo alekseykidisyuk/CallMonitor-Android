@@ -214,7 +214,14 @@ class CallSessionManager private constructor(context: Context) {
         // before would otherwise keep running right through this phone call — the mode never changes,
         // so the detector's own listener never fires. Only sent when something is actually recording,
         // which also guarantees the service is already up and foreground. See [VoipTelephonyGate].
-        if (VoipTelephonyGate.mustStop(receivedCallState) && VoipRecordingCoordinator.isRecording) {
+        //
+        // The state alone is not enough to act on: this broadcast fires for app calls too, so an app
+        // call would arrive here as OFFHOOK and stop its own recording. Telecom is asked whether the
+        // call is actually the carrier's.
+        val carrierCallUp = VoipTelephonyGate.managedCallInProgress(appContext)
+        if (VoipTelephonyGate.mustStop(receivedCallState, carrierCallUp) &&
+            VoipRecordingCoordinator.isRecording
+        ) {
             AppLogger.i(TAG, "Carrier call answered while an app call was recording — stopping it.")
             runCatching {
                 appContext.startService(

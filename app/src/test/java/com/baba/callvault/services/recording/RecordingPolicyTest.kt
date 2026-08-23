@@ -127,4 +127,71 @@ class RecordingPolicyTest {
             )
         )
     }
+
+    // ── Standing aside for an app call ────────────────────────────────────────────────
+
+    @Test
+    fun `stands down when an app call is already being recorded`() {
+        assertTrue(
+            RecordingPolicy.standsDownForAppCall(
+                voipEnabled = true,
+                voipRecording = true,
+                carrierCallUp = false,
+                modeIsInCommunication = true
+            )
+        )
+    }
+
+    @Test
+    fun `stands down for an app call the VoIP path has not detected yet`() {
+        // The ~230 ms in which telephony fires before the app call is detected. Without this the
+        // carrier path creates a second, empty recording named from an unrelated call-log entry.
+        assertTrue(
+            RecordingPolicy.standsDownForAppCall(
+                voipEnabled = true,
+                voipRecording = false,
+                carrierCallUp = false,
+                modeIsInCommunication = true
+            )
+        )
+    }
+
+    @Test
+    fun `records a carrier call that happens to sit in the app-call audio mode`() {
+        // An IMS or Wi-Fi call can use MODE_IN_COMMUNICATION. Standing down for one would lose the
+        // recording entirely, which is far worse than the spurious notification this rule prevents.
+        assertFalse(
+            RecordingPolicy.standsDownForAppCall(
+                voipEnabled = true,
+                voipRecording = false,
+                carrierCallUp = true,
+                modeIsInCommunication = true
+            )
+        )
+    }
+
+    @Test
+    fun `never stands down while app-call recording is switched off`() {
+        // Inert unless the feature is on: the behaviour of every build before app calls existed.
+        assertFalse(
+            RecordingPolicy.standsDownForAppCall(
+                voipEnabled = false,
+                voipRecording = true,
+                carrierCallUp = false,
+                modeIsInCommunication = true
+            )
+        )
+    }
+
+    @Test
+    fun `records an ordinary carrier call`() {
+        assertFalse(
+            RecordingPolicy.standsDownForAppCall(
+                voipEnabled = true,
+                voipRecording = false,
+                carrierCallUp = true,
+                modeIsInCommunication = false
+            )
+        )
+    }
 }

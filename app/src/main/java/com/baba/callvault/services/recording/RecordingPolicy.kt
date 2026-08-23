@@ -84,4 +84,40 @@ internal object RecordingPolicy {
      */
     fun expectsCarrierRecording(carrierEnabled: Boolean, autoRecordForDirection: Boolean): Boolean =
         carrierEnabled && autoRecordForDirection
+
+    /**
+     * Whether the carrier path should stand aside because an app call owns this one.
+     *
+     * The carrier pipeline is started by the phone-state broadcast, which fires for app calls too —
+     * so on One UI a WhatsApp call had it create a second recording, named from the call log (an
+     * unrelated contact) and empty, because the daemon was already busy with the real one. Standing
+     * down fixed that.
+     *
+     * The danger is standing down for a call that is genuinely the carrier's, because then nobody
+     * records it and the user finds out afterwards, from the recording that does not exist. That is
+     * why [carrierCallUp] is consulted and why it wins over the audio mode: an IMS or Wi-Fi call can
+     * itself sit in `MODE_IN_COMMUNICATION`, which the mode check alone reads as an app call.
+     *
+     * @param voipEnabled           app-call recording switched on at all. Off means this whole rule
+     *                              is inert — the behaviour before app calls existed.
+     * @param voipRecording         the app-call path already has this call.
+     * @param carrierCallUp         Telecom reports a call from a *managed* ConnectionService, which
+     *                              an app call never is. See [VoipTelephonyGate].
+     * @param modeIsInCommunication the audio mode says an app call, covering the ~230 ms in which
+     *                              telephony fires before the app call has been detected.
+     */
+    fun standsDownForAppCall(
+        voipEnabled: Boolean,
+        voipRecording: Boolean,
+        carrierCallUp: Boolean,
+        modeIsInCommunication: Boolean
+    ): Boolean = when {
+        !voipEnabled -> false
+        // Checked before the carrier question, deliberately: when a phone call arrives during an app
+        // call the app-call capture is stopped by its own path, and this keeps today's handover
+        // rather than starting a second capture on top of one being torn down.
+        voipRecording -> true
+        carrierCallUp -> false
+        else -> modeIsInCommunication
+    }
 }
