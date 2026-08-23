@@ -76,9 +76,12 @@
     <string name="whatsnew_156_title">决定录制什么，并整理录音</string>
     <string name="whatsnew_156_where">设置 ▸ 录制 ▸ 电话通话</string>
     <string name="whatsnew_157_body">如果您设置了自动删除，有些录音会被悄悄永久保留——检查只看得到 CallVault 仍有记录的录音，其余的无论多旧都不会被删除。在一台设置为保留一周的手机上，有 131 个文件早已超期。\n\n每日检查现在也会读取您的录音文件夹，因此只由文件的时间决定去留。只有 CallVault 自己命名的文件才会被处理，无法确定日期的文件一律保留。\n\n修改检查时间也会立即生效，不再需要等到第二天。</string>
-    <string name="whatsnew_200_title">你的通话，转成文字，也生成摘要</string>
-    <string name="whatsnew_200_body">两项重要新功能，都完全在你的手机上运行。不会上传任何内容，两者在完全离线时也能用。\n\n转写把录音变成可读、可搜索的文字，支持十四种语言。点一下某一行就能跳到通话中的那个时刻。\n\n摘要更进一步：这通电话聊了什么、做了什么决定、谁答应做什么——能确定时刻的条目旁边会标出时间，点一下就直接跳过去。\n\n两者都需要先通过 Wi-Fi 下载模型；开始之前应用会告诉你各自的代价。</string>
-    <string name="whatsnew_200_where">设置 ▸ 转写 和 设置 ▸ 通话摘要</string>
     <string name="whatsnew_157_title">自动删除现在会清理掉所有该清理的录音</string>
     <string name="whatsnew_157_where">设置 ▸ 存储 ▸ 保留</string>
+    <string name="whatsnew_200_body">两项重要新功能，都完全在你的手机上运行。不会上传任何内容，两者在完全离线时也能用。\n\n转写把录音变成可读、可搜索的文字，支持十四种语言。点一下某一行就能跳到通话中的那个时刻。\n\n摘要更进一步：这通电话聊了什么、做了什么决定、谁答应做什么——能确定时刻的条目旁边会标出时间，点一下就直接跳过去。\n\n两者都需要先通过 Wi-Fi 下载模型；开始之前应用会告诉你各自的代价。</string>
+    <string name="whatsnew_200_title">你的通话，转成文字，也生成摘要</string>
+    <string name="whatsnew_200_where">设置 ▸ 转写 和 设置 ▸ 通话摘要</string>
+    <string name="whatsnew_210_body">从现在起录下的通话，转写时每一行旁边都会标出说话人。\n\n这是录音过程中从通话本身读取的——手机在把两边混合之前会分开保存——因此不额外花时间、不需下载、也不靠猜测。已经存在手机里的通话无法这样处理，因为这项信息只在录音时存在。\n\n两边一开始显示为说话人 A 和说话人 B。等两通拨出的电话对哪边是哪边达成一致，它们就会变成你和通话的对方——出现在转写、你复制或分享的内容以及摘要里。</string>
+    <string name="whatsnew_210_title">转写会标出是谁在说话</string>
+    <string name="whatsnew_210_where">从现在起录下的任何通话，在它的转写里</string>
 </resources>

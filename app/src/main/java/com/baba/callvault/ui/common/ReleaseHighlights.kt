@@ -36,6 +36,14 @@ object ReleaseHighlights {
 
     private val ALL = listOf(
         ReleaseHighlight(
+            version = "2.1.0",
+            title = R.string.whatsnew_210_title,
+            body = R.string.whatsnew_210_body,
+            // Not a setting to switch on, so this says when it applies rather than where it lives:
+            // the labels appear on calls recorded from this version onwards and on no others.
+            whereToFind = R.string.whatsnew_210_where,
+        ),
+        ReleaseHighlight(
             version = "2.0.0",
             title = R.string.whatsnew_200_title,
             body = R.string.whatsnew_200_body,

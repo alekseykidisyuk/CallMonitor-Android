@@ -3,6 +3,34 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [2.1.0]
+
+Transcripts learn who was speaking.
+
+### Added
+
+- **Who said what.** Each line of a new transcript is attributed to the side that spoke it. The
+  attribution is read off the two capture channels *during the call* — the phone records the two
+  directions separately before mixing them down — so it costs nothing, needs no extra model, and is
+  exact rather than inferred. It applies to calls recorded from this version onwards; a call already
+  on the phone cannot be labelled this way, because the information only exists while it is being
+  recorded.
+
+- **Names, once the phone is sure.** Which captured channel carries the other person is a detail
+  Android never specifies and every manufacturer decides for itself, so CallVault works it out on
+  its own: on an outgoing call, only the far side carries the network's ringback tone. Until two
+  calls agree, lines are labelled "Speaker A" and "Speaker B" — neutral on purpose. Showing your own
+  words as the other person's, on a record of a real conversation, is worse than showing no name at
+  all.
+
+- **Summaries know it too.** With the sides known, a summary can say what *you* agreed to and what
+  the other person did, instead of describing the call from nowhere.
+
+### Changed
+
+- Copying or sharing a transcript now carries the same speaker names the screen shows, and stays
+  neutral for exactly as long as the screen does.
+
 ## [2.0.0]
 
 A major version, because two whole features arrive at once — transcription and summaries. Both run

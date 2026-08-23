@@ -89,6 +89,9 @@
     <string name="home_health_failed_one_sided">Only your side was recorded on your last app call.</string>
     <string name="home_date_today">Today</string>
     <string name="home_date_yesterday">Yesterday</string>
+    <string name="whatsnew_210_title">Transcripts show who was speaking</string>
+    <string name="whatsnew_210_body">Calls recorded from now on are transcribed with the speaker beside each line.\n\nIt is read from the call while it is being recorded — your phone keeps the two sides apart before mixing them together — so it costs no extra time, no extra download and no guesswork. It cannot be done for calls already on the phone, because that information only exists while a call is being recorded.\n\nThe two sides start out as Speaker A and Speaker B. Once two outgoing calls agree on which side is which, they become you and the person you were talking to — in the transcript, in what you copy or share, and in the summary.</string>
+    <string name="whatsnew_210_where">Any call recorded from now on, in its transcript</string>
     <string name="whatsnew_200_title">Your calls, written out — and summarised</string>
     <string name="whatsnew_200_body">Two big additions, both running entirely on your phone. Nothing is uploaded and both work with no network at all.\n\nTranscription turns a recording into text you can read and search, in fourteen languages. Tap a line to jump to that moment in the call.\n\nSummaries go a step further: what the call was about, what was decided, and what anyone said they would do — with times beside the points that have one, so tapping jumps you straight there.\n\nEach needs a model downloaded over Wi-Fi first; the app tells you what each costs before you start.</string>
     <string name="whatsnew_200_where">Settings ▸ Transcription and Settings ▸ Call summaries</string>
