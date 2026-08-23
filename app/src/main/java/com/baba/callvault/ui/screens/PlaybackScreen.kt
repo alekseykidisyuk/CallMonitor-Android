@@ -62,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
@@ -369,19 +370,29 @@ private fun PlayerCard(
                 onSeekTo = { fraction -> onSeek((fraction * duration).toInt()) }
             )
 
+            // Speed lives between the two times rather than in a row of its own. It used to own a
+            // full row under the transport buttons — about 64dp of card for one small control —
+            // which pushed the note card off the bottom of the screen and made it reachable only by
+            // scrolling. This row already existed with an empty middle, and speed is the thing that
+            // changes how the two numbers either side of it advance.
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = TranscriptTimestamp.format(position.toLong()),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
                 )
+                SpeedChip(speed = playback.speed, onClick = onCycleSpeed)
                 Text(
                     text = TranscriptTimestamp.format(duration.toLong()),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.weight(1f)
                 )
             }
 
@@ -455,18 +466,46 @@ private fun PlayerCard(
                 }
             }
 
-            // A cycling button rather than a menu: it sits in a row of transport controls, and one tap
-            // per step is fewer taps than opening a list to change by one notch.
-            TextButton(onClick = onCycleSpeed) {
-                Text(
-                    text = stringResource(R.string.playback_speed, formatSpeed(playback.speed)),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
         }
     }
 }
+
+/**
+ * The playback speed, as a chip between the elapsed and total times.
+ *
+ * A cycling control rather than a menu: one tap per step is fewer taps than opening a list to change
+ * by one notch, and it is pressed repeatedly while listening.
+ *
+ * Sized deliberately rather than left to wrap. As a bare `TextButton` in its own row it had a large
+ * target for free; sitting on a text row it needs stating, or it becomes a 16dp-tall thing to hit
+ * while holding the phone one-handed.
+ */
+@Composable
+private fun SpeedChip(speed: Float, onClick: () -> Unit) {
+    val accent = MaterialTheme.colorScheme.primary
+
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        // Stated, not defaulted: this theme resolves M3's tonal container to CoralDeep, which comes
+        // out maroon and reads as an error rather than as a control.
+        color = accent.copy(alpha = SPEED_CHIP_ALPHA),
+        contentColor = accent,
+        modifier = Modifier.heightIn(min = SPEED_CHIP_HEIGHT)
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp)) {
+            Text(
+                text = stringResource(R.string.playback_speed, formatSpeed(speed)),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+/** Tall enough to hit one-handed without re-inflating the row the speed control was moved out of. */
+private val SPEED_CHIP_HEIGHT = 36.dp
+private const val SPEED_CHIP_ALPHA = 0.14f
 
 /**
  * The call's time, worded as the list words it — "Today 16:26", not "2026-08-20 16:26".

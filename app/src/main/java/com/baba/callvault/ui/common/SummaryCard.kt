@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -31,10 +33,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
@@ -105,6 +112,83 @@ fun SummaryCard(
                     onClick = onCreate
                 )
             }
+        }
+    }
+}
+
+/**
+ * The same summary, folded into the transcript sheet.
+ *
+ * The sheet is for reading the transcript, so this stays one row until asked. **A stored summary is
+ * shown, never rewritten** — it cost about ninety seconds of the phone's CPU, and the sheet is a
+ * place to read it rather than a second button that spends that again.
+ *
+ * Expanding reuses the card's own rendering, so the two cannot drift, and taps on a `[m:ss]` seek
+ * through the sheet's existing `onSeekTo` — the same path a tapped transcript line already takes.
+ */
+@Composable
+fun SummarySheetStrip(
+    state: SummaryCardState,
+    onCreate: () -> Unit,
+    onStop: () -> Unit,
+    onSeek: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
+        when (state) {
+            is SummaryCardState.Ready -> {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { expanded = !expanded }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        // Collapsed, the intent is the summary in one line — more use than the word
+                        // "Summary", which says nothing the icon has not already said.
+                        text = state.summary.intent.ifEmpty { stringResource(R.string.summary_card_title) },
+                        style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = if (expanded) Int.MAX_VALUE else 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = stringResource(R.string.summary_card_title),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                if (expanded) {
+                    ReadySummary(state.summary, onRedo = onCreate, onSeek = onSeek)
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+
+            SummaryCardState.Offered, SummaryCardState.Failed -> ActionRow(
+                label = stringResource(R.string.summary_card_create),
+                supporting = stringResource(R.string.summary_card_create_subtitle),
+                onClick = onCreate
+            )
+
+            is SummaryCardState.Running -> RunningRow(state.percent, onStop)
+
+            // Silent rather than explaining itself here. Reading a transcript is the one moment the
+            // user is *not* asking about summaries, and "transcribe this call first" is nonsense on
+            // a screen that is showing the transcript.
+            is SummaryCardState.Blocked -> Unit
         }
     }
 }

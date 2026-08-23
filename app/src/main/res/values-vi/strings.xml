@@ -467,4 +467,10 @@
     <string name="summary_requirements_cancel">Để sau</string>
     <string name="summary_requirements_dont_ask">Không hiện lại</string>
     <string name="summary_requirements_toggle_description">Hiện yêu cầu của trình tóm tắt trước khi tải</string>
+    <string name="summary_delete_confirm_title">Xóa trình tóm tắt?</string>
+    <string name="summary_delete_confirm_body">Việc này giải phóng %1$.1f GB. Các bản tóm tắt đã tạo vẫn được giữ, nhưng bạn sẽ phải tải lại để tạo thêm.</string>
+    <string name="summary_delete_confirm_confirm">Xóa</string>
+    <string name="summary_discard_confirm_title">Bỏ phần đã tải?</string>
+    <string name="summary_discard_confirm_body">Việc này bỏ đi %1$.1f GB đã tải. Bắt đầu lại sẽ tải toàn bộ từ đầu.</string>
+    <string name="summary_discard_confirm_confirm">Bỏ</string>
 </resources>

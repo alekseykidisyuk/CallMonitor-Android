@@ -89,9 +89,9 @@
     <string name="home_health_failed_one_sided">Only your side was recorded on your last app call.</string>
     <string name="home_date_today">Today</string>
     <string name="home_date_yesterday">Yesterday</string>
-    <string name="whatsnew_160_title">Summaries of your calls, written on your phone</string>
-    <string name="whatsnew_160_body">A call that has been transcribed can now be summarised: what it was about, what was decided, and what anyone said they would do. It happens entirely on your phone — nothing is uploaded, and it works with no network at all.\n\nWhere the summary can tell which moment something belongs to, it puts the time beside it, and tapping that time jumps the player straight there.\n\nIt needs a 3.5 GB download first, over Wi-Fi, and about the same again in memory while it runs — so it asks before starting, and it needs a recent phone.</string>
-    <string name="whatsnew_160_where">Settings ▸ Call summaries, then open any transcribed call</string>
+    <string name="whatsnew_200_title">Your calls, written out — and summarised</string>
+    <string name="whatsnew_200_body">Two big additions, both running entirely on your phone. Nothing is uploaded and both work with no network at all.\n\nTranscription turns a recording into text you can read and search, in fourteen languages. Tap a line to jump to that moment in the call.\n\nSummaries go a step further: what the call was about, what was decided, and what anyone said they would do — with times beside the points that have one, so tapping jumps you straight there.\n\nEach needs a model downloaded over Wi-Fi first; the app tells you what each costs before you start.</string>
+    <string name="whatsnew_200_where">Settings ▸ Transcription and Settings ▸ Call summaries</string>
     <string name="whatsnew_157_title">Auto-delete now removes everything it should</string>
     <string name="whatsnew_157_body">If you set recordings to auto-delete, some were quietly kept for ever — the check only looked at recordings CallVault still had a record of, and any it had lost track of were never removed however old they got. On one phone set to keep a week, 131 files had outlived that.\n\nThe daily check now reads your recording folders as well, so age alone decides. Only files CallVault named are ever touched, and anything it cannot date is left alone.\n\nChanging the time the check runs also takes effect straight away instead of waiting a day.</string>
     <string name="whatsnew_157_where">Settings ▸ Storage ▸ Retention</string>

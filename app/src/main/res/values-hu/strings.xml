@@ -467,4 +467,10 @@
     <string name="summary_requirements_cancel">Most nem</string>
     <string name="summary_requirements_dont_ask">Ne jelenjen meg többé</string>
     <string name="summary_requirements_toggle_description">Mutassa a letöltés előtt, mit igényel az összefoglaló</string>
+    <string name="summary_delete_confirm_title">Törli az összefoglalót?</string>
+    <string name="summary_delete_confirm_body">Ez %1$.1f GB-ot szabadít fel. A már elkészült összefoglalók megmaradnak, de újak írásához ismét le kell tölteni.</string>
+    <string name="summary_delete_confirm_confirm">Törlés</string>
+    <string name="summary_discard_confirm_title">Eldobja a letöltést?</string>
+    <string name="summary_discard_confirm_body">Ezzel eldobja a már letöltött %1$.1f GB-ot. Az újrakezdés az egészet elölről töltené le.</string>
+    <string name="summary_discard_confirm_confirm">Eldobás</string>
 </resources>

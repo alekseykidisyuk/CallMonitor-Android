@@ -467,4 +467,10 @@
     <string name="summary_requirements_cancel">Nie teraz</string>
     <string name="summary_requirements_dont_ask">Nie pokazuj ponownie</string>
     <string name="summary_requirements_toggle_description">Pokaż, czego wymaga moduł podsumowań, przed pobraniem</string>
+    <string name="summary_delete_confirm_title">Usunąć moduł podsumowań?</string>
+    <string name="summary_delete_confirm_body">Zwolni to %1$.1f GB. Już napisane podsumowania zostaną zachowane, ale aby tworzyć kolejne, trzeba będzie pobrać go ponownie.</string>
+    <string name="summary_delete_confirm_confirm">Usuń</string>
+    <string name="summary_discard_confirm_title">Odrzucić pobrane dane?</string>
+    <string name="summary_discard_confirm_body">Wyrzuci to pobrane już %1$.1f GB. Kolejna próba pobrałaby wszystko od początku.</string>
+    <string name="summary_discard_confirm_confirm">Odrzuć</string>
 </resources>

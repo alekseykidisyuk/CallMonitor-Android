@@ -3,7 +3,10 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
-## [Unreleased]
+## [2.0.0]
+
+A major version, because two whole features arrive at once — transcription and summaries. Both run
+entirely on the phone, and neither existed in any shipped release before this one.
 
 The release that gives a recording somewhere to live: transcripts, a playback screen, notes, and
 search across everything that was ever said — and now a summary of what was said.

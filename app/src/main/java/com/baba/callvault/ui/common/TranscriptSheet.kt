@@ -86,7 +86,11 @@ fun TranscriptSheet(
     onCopy: (String) -> Unit,
     onShare: (String) -> Unit,
     onRetranscribe: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    /** The summary for this recording, so the sheet can show a stored one rather than rewrite it. */
+    summaryState: SummaryCardState,
+    onSummarise: () -> Unit,
+    onStopSummary: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -95,6 +99,17 @@ fun TranscriptSheet(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+
+        // Directly under the title, above the words. Someone who opened the transcript to find out
+        // what a call was about is answered here without reading it — and a summary that already
+        // exists is simply shown, because writing another costs ninety seconds of CPU for a page
+        // that is already on the phone.
+        SummarySheetStrip(
+            state = summaryState,
+            onCreate = onSummarise,
+            onStop = onStopSummary,
+            onSeek = onSeekTo
         )
 
         val segments = transcript?.segments.orEmpty()

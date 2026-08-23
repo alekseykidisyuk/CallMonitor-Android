@@ -558,6 +558,12 @@
     <string name="summary_requirements_cancel">Not now</string>
     <string name="summary_requirements_dont_ask">Don\'t show this again</string>
     <string name="summary_requirements_toggle_description">Show what the summariser costs before downloading it</string>
+    <string name="summary_delete_confirm_title">Delete the summariser?</string>
+    <string name="summary_delete_confirm_body">This frees %1$.1f GB. Summaries you have already written are kept, but you will need to download it again to write any more.</string>
+    <string name="summary_delete_confirm_confirm">Delete</string>
+    <string name="summary_discard_confirm_title">Discard the download?</string>
+    <string name="summary_discard_confirm_body">This throws away the %1$.1f GB already downloaded. Starting again would fetch all of it from the beginning.</string>
+    <string name="summary_discard_confirm_confirm">Discard</string>
     <string name="transcription_language_label">Language</string>
     <string name="transcription_language_hebrew">Hebrew</string>
     <string name="transcription_language_english">English</string>

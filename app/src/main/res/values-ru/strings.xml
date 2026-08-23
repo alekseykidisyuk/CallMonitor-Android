@@ -467,4 +467,10 @@
     <string name="summary_requirements_cancel">Не сейчас</string>
     <string name="summary_requirements_dont_ask">Больше не показывать</string>
     <string name="summary_requirements_toggle_description">Показывать, чего требует модуль сводок, перед скачиванием</string>
+    <string name="summary_delete_confirm_title">Удалить модуль сводок?</string>
+    <string name="summary_delete_confirm_body">Это освободит %1$.1f ГБ. Уже созданные сводки сохранятся, но чтобы создавать новые, его придётся скачать заново.</string>
+    <string name="summary_delete_confirm_confirm">Удалить</string>
+    <string name="summary_discard_confirm_title">Удалить загруженное?</string>
+    <string name="summary_discard_confirm_body">Это выбросит уже скачанные %1$.1f ГБ. Новая попытка загрузит всё с самого начала.</string>
+    <string name="summary_discard_confirm_confirm">Удалить</string>
 </resources>

@@ -625,6 +625,8 @@ fun HomeScreen(
         // a null row?.uri would call an idle player "this recording".
         val isThisTrack = row != null && playback.activeUri == row.uri
 
+        val sheetSummary by rememberSummaryState(displayName)
+
         TranscriptSheet(
             transcript = transcript,
             title = RecordingLabel.of(row) ?: BidiText.isolate(displayName),
@@ -654,7 +656,10 @@ fun HomeScreen(
             onDelete = {
                 transcriptFor = null
                 deleteTranscriptFor = displayName
-            }
+            },
+            summaryState = sheetSummary,
+            onSummarise = { SummaryScheduler.runNow(context, displayName) },
+            onStopSummary = { SummaryScheduler.stopNow(context) }
         )
     }
 

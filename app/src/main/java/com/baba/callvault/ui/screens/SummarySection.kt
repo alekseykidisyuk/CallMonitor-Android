@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.ui.common.ConfirmDialog
 import com.baba.callvault.ui.common.SummaryRequirementsDialog
 import com.baba.callvault.summary.SummaryModel
 import com.baba.callvault.transcription.model.ModelDownloadWorker
@@ -90,6 +91,31 @@ internal fun SummarySection(
         )
     }
 
+    // Asked for, because it was not and that cost a real 3.5 GB. The installed row said "Delete the
+    // summariser" and did so on a single tap, with nothing between the tap and a download that takes
+    // twenty minutes to replace. A destructive action this expensive gets a question first.
+    var pendingDiscard by remember { mutableStateOf<Long?>(null) }
+    pendingDiscard?.let { bytes ->
+        val partial = bytes < model.sizeBytes
+        ConfirmDialog(
+            title = stringResource(
+                if (partial) R.string.summary_discard_confirm_title else R.string.summary_delete_confirm_title
+            ),
+            body = stringResource(
+                if (partial) R.string.summary_discard_confirm_body else R.string.summary_delete_confirm_body,
+                bytes.toGigabytes()
+            ),
+            confirmLabel = stringResource(
+                if (partial) R.string.summary_discard_confirm_confirm else R.string.summary_delete_confirm_confirm
+            ),
+            onDismiss = { pendingDiscard = null },
+            onConfirm = {
+                pendingDiscard = null
+                onDelete(model)
+            }
+        )
+    }
+
     SettingsSection(
         title = stringResource(R.string.settings_section_summaries),
         expanded = expanded,
@@ -108,7 +134,7 @@ internal fun SummarySection(
                 icon = Icons.Filled.Delete,
                 label = stringResource(R.string.summary_model_delete),
                 value = stringResource(R.string.summary_model_installed),
-                onClick = { onDelete(model) }
+                onClick = { pendingDiscard = model.sizeBytes }
             )
 
             ModelDownloadState.Absent -> NavigationRow(
@@ -143,7 +169,7 @@ internal fun SummarySection(
                         R.string.summary_model_discard_subtitle,
                         current.downloadedBytes.toGigabytes()
                     ),
-                    onClick = { onDelete(model) }
+                    onClick = { pendingDiscard = current.downloadedBytes }
                 )
             }
 

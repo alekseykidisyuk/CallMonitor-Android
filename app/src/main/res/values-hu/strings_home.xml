@@ -76,9 +76,9 @@
     <string name="whatsnew_156_title">Eldöntheted, mi kerüljön rögzítésre – és rendet tehetsz</string>
     <string name="whatsnew_156_where">Beállítások ▸ Rögzítés ▸ Telefonhívások</string>
     <string name="whatsnew_157_body">Ha bekapcsolta az automatikus törlést, néhány felvétel csendben örökre megmaradt: az ellenőrzés csak azokat a felvételeket látta, amelyekről a CallVault még tudott, a többit soha nem törölte, bármilyen régi is volt. Egy egyhetes megőrzésre állított telefonon 131 fájl élte túl ezt az időszakot.\n\nA napi ellenőrzés mostantól a felvételi mappákat is beolvassa, így egyedül a kor számít. Csak a CallVault által elnevezett fájlokat érinti, és amit nem tud datálni, azt békén hagyja.\n\nAz ellenőrzés időpontjának módosítása is azonnal érvénybe lép, nem csak másnap.</string>
-    <string name="whatsnew_160_title">Hívásösszefoglalók, a telefonján készítve</string>
-    <string name="whatsnew_160_body">Egy már átírt hívás mostantól összefoglalható: miről szólt, mit döntöttek el, és ki mit vállalt. Minden a telefonján történik – semmi nem kerül feltöltésre, és hálózat nélkül is működik.\n\nAhol az összefoglaló tudja, melyik pillanathoz tartozik egy pont, odaírja az időt, és arra koppintva a lejátszó pontosan oda ugrik.\n\nElőbb egy 3,5 GB-os letöltés kell Wi-Fin, és futás közben nagyjából ugyanennyi memória – ezért rákérdez az indítás előtt, és újabb telefon szükséges.</string>
-    <string name="whatsnew_160_where">Beállítások ▸ Hívásösszefoglalók, majd nyisson meg egy átírt hívást</string>
+    <string name="whatsnew_200_title">Hívásai leírva – és összefoglalva</string>
+    <string name="whatsnew_200_body">Két nagy újdonság, mindkettő teljes egészében a telefonján fut. Semmi nem kerül feltöltésre, és mindkettő működik hálózat nélkül is.\n\nAz átírás olvasható és kereshető szöveggé alakítja a felvételt, tizennégy nyelven. Koppintson egy sorra, hogy a hívás adott pillanatára ugorjon.\n\nAz összefoglalók tovább mennek: miről szólt a hívás, mit döntöttek el, és ki mit vállalt – az időponttal azoknál a pontoknál, amelyeknek van, így egy koppintás pontosan oda visz.\n\nMindkettőhöz előbb le kell tölteni egy modellt Wi-Fin; az alkalmazás előre megmondja, mibe kerül.</string>
+    <string name="whatsnew_200_where">Beállítások ▸ Átírás és Beállítások ▸ Hívásösszefoglalók</string>
     <string name="whatsnew_157_title">Az automatikus törlés már mindent eltávolít, amit kell</string>
     <string name="whatsnew_157_where">Beállítások ▸ Tárhely ▸ Megőrzés</string>
 </resources>

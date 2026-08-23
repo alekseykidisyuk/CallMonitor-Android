@@ -467,4 +467,10 @@
     <string name="summary_requirements_cancel">Pas maintenant</string>
     <string name="summary_requirements_dont_ask">Ne plus afficher</string>
     <string name="summary_requirements_toggle_description">Afficher ce que coûte le résumeur avant de le télécharger</string>
+    <string name="summary_delete_confirm_title">Supprimer le résumeur ?</string>
+    <string name="summary_delete_confirm_body">Cela libère %1$.1f Go. Les résumés déjà écrits sont conservés, mais il faudra le retélécharger pour en écrire d\'autres.</string>
+    <string name="summary_delete_confirm_confirm">Supprimer</string>
+    <string name="summary_discard_confirm_title">Abandonner le téléchargement ?</string>
+    <string name="summary_discard_confirm_body">Cela jette les %1$.1f Go déjà téléchargés. Recommencer les reprendrait depuis le début.</string>
+    <string name="summary_discard_confirm_confirm">Abandonner</string>
 </resources>

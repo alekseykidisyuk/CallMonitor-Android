@@ -470,4 +470,10 @@
     <string name="summary_requirements_cancel">Agora não</string>
     <string name="summary_requirements_dont_ask">Não mostrar de novo</string>
     <string name="summary_requirements_toggle_description">Mostrar o que o resumidor custa antes de baixá-lo</string>
+    <string name="summary_delete_confirm_title">Excluir o resumidor?</string>
+    <string name="summary_delete_confirm_body">Isso libera %1$.1f GB. Os resumos que você já escreveu são mantidos, mas será preciso baixá-lo de novo para escrever mais.</string>
+    <string name="summary_delete_confirm_confirm">Excluir</string>
+    <string name="summary_discard_confirm_title">Descartar o download?</string>
+    <string name="summary_discard_confirm_body">Isso joga fora os %1$.1f GB já baixados. Recomeçar buscaria tudo desde o início.</string>
+    <string name="summary_discard_confirm_confirm">Descartar</string>
 </resources>

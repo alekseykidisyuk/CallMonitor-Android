@@ -467,4 +467,10 @@
     <string name="summary_requirements_cancel">Non ora</string>
     <string name="summary_requirements_dont_ask">Non mostrare più</string>
     <string name="summary_requirements_toggle_description">Mostra quanto costa il riassuntore prima di scaricarlo</string>
+    <string name="summary_delete_confirm_title">Eliminare il riassuntore?</string>
+    <string name="summary_delete_confirm_body">Questo libera %1$.1f GB. I riepiloghi già scritti restano, ma per scriverne altri dovrai scaricarlo di nuovo.</string>
+    <string name="summary_delete_confirm_confirm">Elimina</string>
+    <string name="summary_discard_confirm_title">Eliminare il download?</string>
+    <string name="summary_discard_confirm_body">Così si buttano i %1$.1f GB già scaricati. Ricominciare li riprenderebbe da capo.</string>
+    <string name="summary_discard_confirm_confirm">Elimina</string>
 </resources>

@@ -467,4 +467,10 @@
     <string name="summary_requirements_cancel">Jetzt nicht</string>
     <string name="summary_requirements_dont_ask">Nicht mehr anzeigen</string>
     <string name="summary_requirements_toggle_description">Vor dem Herunterladen zeigen, was der Zusammenfasser kostet</string>
+    <string name="summary_delete_confirm_title">Zusammenfasser löschen?</string>
+    <string name="summary_delete_confirm_body">Das gibt %1$.1f GB frei. Bereits erstellte Zusammenfassungen bleiben erhalten, aber für neue müssen Sie ihn erneut herunterladen.</string>
+    <string name="summary_delete_confirm_confirm">Löschen</string>
+    <string name="summary_discard_confirm_title">Download verwerfen?</string>
+    <string name="summary_discard_confirm_body">Damit werden die bereits geladenen %1$.1f GB verworfen. Ein neuer Versuch lädt alles von vorn.</string>
+    <string name="summary_discard_confirm_confirm">Verwerfen</string>
 </resources>
