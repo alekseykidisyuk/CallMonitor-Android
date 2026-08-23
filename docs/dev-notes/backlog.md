@@ -41,6 +41,21 @@ merged or pushed.
 - **The B1–B9 device pass is still largely unrun** — deletion cascade, survival across restarts,
   speaker mapping, and section C.
 
+### 🔵 "A call was not recorded" may be a false positive
+
+On 2026-08-21 the status card warned **"A call was not recorded — 13:06"**, and
+`20260821_130658.098+0300_in_גבריאל 2b.ogg` (689 KB) was sitting in the recordings folder the whole
+time. Either the warning fires on a recording that succeeded, or the recording finished without the
+app registering it.
+
+Worth chasing because this warning is the one the user is meant to trust: it is how a genuinely
+missed call gets noticed at all, and a warning that cries wolf is worse than no warning. Observed
+once, not reproduced, cause unknown.
+
+Two other list oddities seen the same day, possibly the same root: a recording present on disk did
+not appear in the list at all (today's 08:54), and the saved count moved 61 → 60 → 59 across a
+session without anything being deleted.
+
 ### 🔵 Known gaps, agreed but not done
 
 - **Per-recording summaries** — spike plan at `docs/dev-notes/2026-08-21-summarisation-spike-plan.md`.
