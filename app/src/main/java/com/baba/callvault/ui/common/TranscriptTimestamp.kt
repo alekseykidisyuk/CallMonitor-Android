@@ -39,4 +39,53 @@ object TranscriptTimestamp {
             String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
         }
     }
+
+    /** A stamp read off the front of a line, and the line without it. */
+    data class Leading(val millis: Long, val text: String)
+
+    /**
+     * Reads a `[m:ss]` or `[h:mm:ss]` prefix, or returns null.
+     *
+     * Exists for summaries: the model is asked to prefix an item with the moment it refers to,
+     * copied verbatim out of the transcript, and a stamp beside a decision is a jump into the call —
+     * the one thing a summary offers that reading the transcript does not.
+     *
+     * **The input is model output and is not trusted.** Anything that is not exactly a stamp comes
+     * back as no stamp rather than as a guess: a wrong seek lands somewhere the user was never
+     * promised, in a recording they cannot easily check it against. `1:75` is refused rather than
+     * normalised to `2:15`, because normalising would turn something the model made up into a
+     * plausible-looking jump point. A stamp in the middle of a sentence is prose, not a prefix, and
+     * is left as prose.
+     */
+    fun parseLeading(line: String): Leading? {
+        val match = LEADING_STAMP.find(line) ?: return null
+        val (hours, minutes, seconds) = when (match.groupValues[2].isEmpty()) {
+            // Two parts: m:ss.
+            true -> Triple(0L, match.groupValues[1].toLong(), match.groupValues[3].toLong())
+            // Three parts: h:mm:ss.
+            false -> Triple(
+                match.groupValues[1].toLong(),
+                match.groupValues[2].trimEnd(':').toLong(),
+                match.groupValues[3].toLong()
+            )
+        }
+        if (seconds >= SECONDS_PER_MINUTE) return null
+        if (hours > 0 && minutes >= MINUTES_PER_HOUR) return null
+
+        val text = line.substring(match.range.last + 1).trim()
+        if (text.isEmpty()) return null
+
+        return Leading(
+            millis = ((hours * MINUTES_PER_HOUR + minutes) * SECONDS_PER_MINUTE + seconds) * MILLIS_PER_SECOND,
+            text = text
+        )
+    }
+
+    /**
+     * `[1:30]` or `[1:05:09]` at the very start, allowing leading whitespace.
+     *
+     * Anchored deliberately. The prompt asks for the stamp as a prefix, so one found anywhere else
+     * was not offered as a jump point and must not be treated as one.
+     */
+    private val LEADING_STAMP = Regex("""^\s*\[(\d{1,2}):(\d{1,2}:)?(\d{1,2})]""")
 }

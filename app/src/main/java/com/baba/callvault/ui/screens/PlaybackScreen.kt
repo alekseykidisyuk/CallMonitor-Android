@@ -71,6 +71,8 @@ import com.baba.callvault.data.transcripts.TranscriptStatus
 import com.baba.callvault.ui.common.CvCard
 import com.baba.callvault.ui.common.CvScaffold
 import com.baba.callvault.ui.common.RecordingLabel
+import com.baba.callvault.ui.common.SummaryCard
+import com.baba.callvault.ui.common.SummaryCardState
 import com.baba.callvault.ui.common.TranscriptActionButton
 import com.baba.callvault.ui.common.WaveformBar
 import com.baba.callvault.ui.common.TranscriptTimestamp
@@ -94,9 +96,12 @@ fun PlaybackScreen(
     item: RecordingItem,
     playback: RecordingPlaybackController.PlaybackState,
     transcriptStatus: TranscriptStatus,
+    summaryState: SummaryCardState,
     peaks: FloatArray,
     note: String,
     onNoteChange: (String) -> Unit,
+    onSummarise: () -> Unit,
+    onStopSummary: () -> Unit,
     onBack: () -> Unit,
     onPlay: () -> Unit,
     onPause: () -> Unit,
@@ -151,6 +156,20 @@ fun PlaybackScreen(
                 onSeek = onSeek,
                 onSkip = onSkip,
                 onCycleSpeed = onCycleSpeed
+            )
+            // Above the transcript row and the note, because it answers the question the transcript
+            // answers more slowly — and because a stamp in it is a jump into the player above.
+            SummaryCard(
+                state = summaryState,
+                onCreate = onSummarise,
+                onRedo = onSummarise,
+                onStop = onStopSummary,
+                // Seek, then play. A jump point that silently moved the cursor without starting
+                // would look like nothing happened.
+                onSeek = { millis ->
+                    onSeek(millis.toInt())
+                    if (!isPlaying) onPlay()
+                }
             )
             NoteCard(note = note, onNoteChange = onNoteChange)
         }

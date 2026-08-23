@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,7 +27,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import com.baba.callvault.R
+import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.ui.common.SummaryRequirementsDialog
 import com.baba.callvault.summary.SummaryModel
 import com.baba.callvault.transcription.model.ModelDownloadWorker
 import com.baba.callvault.ui.common.ModelDownloadState
@@ -50,13 +57,38 @@ internal fun SummarySection(
     updateTrigger: Int,
     onDownload: (SummaryModel) -> Unit,
     onCancel: (SummaryModel) -> Unit,
-    onDelete: (SummaryModel) -> Unit
+    onDelete: (SummaryModel) -> Unit,
+    /** Re-reads preference-derived state, so a toggle here redraws the row it changed. */
+    onSettingChanged: () -> Unit
 ) {
+    val context = LocalContext.current
     val model = SummaryModel.DEFAULT
     // What is on disk is read inside the observer, on every work emission, rather than remembered
     // here — a download that finishes on its own bumps no trigger, and the row was left inviting
     // the user to fetch 3.46 GB they already had.
     val state by rememberModelDownloadState(model, refreshKey = updateTrigger)
+
+    val preferences = remember(context) { AppPreferences(context) }
+    val askFirst = remember(updateTrigger) { preferences.getSummaryConfirmRequirements() }
+    var showRequirements by remember { mutableStateOf(false) }
+
+    // The costs are stated before the download starts, not after. Skipped once the user has said
+    // they do not want asking again — a choice they can undo from the switch below.
+    val startDownload = {
+        if (askFirst) showRequirements = true else onDownload(model)
+    }
+
+    if (showRequirements) {
+        SummaryRequirementsDialog(
+            model = model,
+            onDismiss = { showRequirements = false },
+            onContinue = { dontAskAgain ->
+                showRequirements = false
+                if (dontAskAgain) preferences.setSummaryConfirmRequirements(false)
+                onDownload(model)
+            }
+        )
+    }
 
     SettingsSection(
         title = stringResource(R.string.settings_section_summaries),
@@ -86,7 +118,7 @@ internal fun SummarySection(
                     R.string.summary_model_download_subtitle,
                     model.sizeBytes.toGigabytes()
                 ),
-                onClick = { onDownload(model) }
+                onClick = startDownload
             )
 
             // Stopped part-way. Saying so is the point: those bytes are banked, the server resumes
@@ -102,7 +134,7 @@ internal fun SummarySection(
                         current.downloadedBytes.toGigabytes(),
                         model.sizeBytes.toGigabytes()
                     ),
-                    onClick = { onDownload(model) }
+                    onClick = startDownload
                 )
                 NavigationRow(
                     icon = Icons.Filled.Delete,
@@ -142,10 +174,24 @@ internal fun SummarySection(
                             else -> R.string.summary_model_failed
                         }
                     ),
-                    onClick = { onDownload(model) }
+                    onClick = startDownload
                 )
             }
         }
+
+        // Its home is here so the dialog's "don't show this again" can be undone — a dialog that
+        // can permanently remove itself with no way back would be a trap. Same reasoning as the
+        // transcription confirmation switch above it.
+        SettingsToggleRow(
+            icon = Icons.Filled.Info,
+            label = stringResource(R.string.summary_requirements_heading),
+            description = stringResource(R.string.summary_requirements_toggle_description),
+            checked = askFirst,
+            onCheckedChange = {
+                preferences.setSummaryConfirmRequirements(it)
+                onSettingChanged()
+            }
+        )
 
         // Named where it can be read before the download starts. CallVault never ships the weights,
         // so its own licensing is unaffected — but the person accepting Google's terms is entitled

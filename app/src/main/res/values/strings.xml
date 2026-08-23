@@ -517,6 +517,47 @@
     <string name="summary_requirements_title">What this needs</string>
     <string name="summary_requirements_body">Summaries are written on your phone — nothing is sent anywhere. That costs a %1$.1f GB download and about %2$.1f GB of memory while it runs, so it needs a recent phone with room to spare. A short call takes a minute or two.</string>
     <string name="summary_model_licence">The summariser is Google\'s Gemma, used under the Gemma Terms of Use. It is downloaded from Google\'s distribution rather than included in CallVault.</string>
+
+    <!--
+      The summary card on the playback screen. "Generated from the transcript" is not decoration:
+      it is the honest label for a machine's reading of a machine's transcription, it explains
+      without apologising why a summary can be wrong, and it is what sends someone to the
+      transcript when it looks off.
+    -->
+    <string name="summary_card_title">Summary</string>
+    <string name="summary_card_decisions">Decisions</string>
+    <string name="summary_card_actions">To do</string>
+    <string name="summary_card_key_points">Key points</string>
+    <string name="summary_card_facts">Worth keeping</string>
+    <string name="summary_card_provenance">Generated from the transcript</string>
+    <string name="summary_card_redo">Write it again</string>
+    <string name="summary_card_create">Summarise this call</string>
+    <string name="summary_card_create_subtitle">Written on your phone, about a minute or two</string>
+    <string name="summary_card_running">Summarising… %1$d%%</string>
+    <string name="summary_card_stop">Stop</string>
+    <string name="summary_card_blocked_no_transcript">Transcribe this call first — the summary is written from the transcript.</string>
+    <string name="summary_card_blocked_unfinished">Waiting for the transcript to finish.</string>
+    <string name="summary_card_blocked_empty">This transcript has no words in it, so there is nothing to summarise.</string>
+    <string name="summary_card_blocked_model">Download the summariser in Settings first.</string>
+    <string name="summary_card_blocked_transcribing">Waiting for the transcription to finish — they cannot share the phone.</string>
+    <string name="summary_card_blocked_summarising">Another call is being summarised.</string>
+    <string name="summary_card_failed">That did not produce a usable summary. You can try again.</string>
+
+    <!--
+      Shown once before the first download. Every number here was measured on the OP12; none is
+      estimated. The timing for a long call is an extrapolation and is deliberately not quoted as a
+      per-minute rate.
+    -->
+    <string name="summary_requirements_heading">Before you download</string>
+    <string name="summary_requirements_download">%1$.1f GB to download, over Wi-Fi only</string>
+    <string name="summary_requirements_memory">About %1$.1f GB of memory while it runs</string>
+    <string name="summary_requirements_time">Roughly a minute or two for a short call, longer for a long one</string>
+    <string name="summary_requirements_private">Everything happens on your phone. Nothing is sent anywhere.</string>
+    <string name="summary_requirements_phone">It needs a recent phone with room to spare. On an older one it may be slow or fail.</string>
+    <string name="summary_requirements_continue">Download</string>
+    <string name="summary_requirements_cancel">Not now</string>
+    <string name="summary_requirements_dont_ask">Don\'t show this again</string>
+    <string name="summary_requirements_toggle_description">Show what the summariser costs before downloading it</string>
     <string name="transcription_language_label">Language</string>
     <string name="transcription_language_hebrew">Hebrew</string>
     <string name="transcription_language_english">English</string>

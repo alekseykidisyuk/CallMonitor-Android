@@ -103,6 +103,9 @@ class AppPreferences(context: Context) {
         // is most of a night.
         const val TRANSCRIPTION_BATCH_LIMIT = 25
         const val TRANSCRIPTION_CONFIRM_BEFORE_RUN = true
+        // Whether the summariser's requirements are shown before the download. On by default: it is
+        // 3.5 GB and about the same again in memory, and someone should be told before they start.
+        const val SUMMARY_CONFIRM_REQUIREMENTS = true
         val TRANSCRIPTION_MODEL_ID = TranscriptionModel.DEFAULT.id
         // Null means auto-detect. Our JNI sets whisper's detect_language whenever no language is
         // given, so null is genuine detection rather than a silent fall back to English — that
@@ -203,6 +206,7 @@ class AppPreferences(context: Context) {
         TRANSCRIPTION_REQUIRES_CHARGING("transcription_requires_charging"),
         TRANSCRIPTION_BATCH_LIMIT("transcription_batch_limit"),
         TRANSCRIPTION_CONFIRM_BEFORE_RUN("transcription_confirm_before_run"),
+        SUMMARY_CONFIRM_REQUIREMENTS("summary_confirm_requirements"),
         TRANSCRIPTION_MODEL_ID("transcription_model_id"),
         TRANSCRIPTION_LANGUAGE("transcription_language"),
 
@@ -577,6 +581,19 @@ class AppPreferences(context: Context) {
     /** Sets whether tapping Transcribe asks first. Reachable from Settings, so it can be undone. */
     fun setTranscriptionConfirmBeforeRun(confirm: Boolean) =
         setBoolean(Key.TRANSCRIPTION_CONFIRM_BEFORE_RUN, confirm)
+
+    /**
+     * Whether the summariser's requirements are shown before the download starts. On by default.
+     *
+     * The dialog can turn itself off, so this has to be reachable from Settings as well — a dialog
+     * that can permanently remove itself with no way back is a trap, which is the same reason
+     * [getTranscriptionConfirmBeforeRun] lives beside its switch.
+     */
+    fun getSummaryConfirmRequirements() =
+        getBoolean(Key.SUMMARY_CONFIRM_REQUIREMENTS, DefaultsValue.SUMMARY_CONFIRM_REQUIREMENTS)
+
+    fun setSummaryConfirmRequirements(confirm: Boolean) =
+        setBoolean(Key.SUMMARY_CONFIRM_REQUIREMENTS, confirm)
 
     /**
      * This phone's measured real-time factor for [modelId], or null before it has ever run.

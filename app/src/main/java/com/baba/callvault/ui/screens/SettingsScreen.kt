@@ -342,7 +342,8 @@ fun SettingsContent(
                     updateTrigger = updateTrigger,
                     onDownload = { actions.downloadSummaryModel(it) },
                     onCancel = { actions.cancelSummaryModelDownload(it) },
-                    onDelete = { actions.deleteSummaryModel(it) }
+                    onDelete = { actions.deleteSummaryModel(it) },
+                    onSettingChanged = { actions.refreshSettings() }
                 )
             }
             item {

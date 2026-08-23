@@ -105,6 +105,8 @@ import com.baba.callvault.transcription.TranscriptionEstimate
 import com.baba.callvault.ui.common.BidiText
 import com.baba.callvault.ui.common.RecordingLabel
 import com.baba.callvault.ui.common.TranscribeConfirmDialog
+import com.baba.callvault.summary.SummaryScheduler
+import com.baba.callvault.ui.common.rememberSummaryState
 import com.baba.callvault.ui.common.TranscribingPill
 import com.baba.callvault.ui.common.formatEstimate
 import com.baba.callvault.ui.common.TranscribingSheet
@@ -329,10 +331,13 @@ fun HomeScreen(
                 RecordingExtrasRepository.note(context, displayName)
             }.collectAsState(initial = "")
 
+            val summaryState by rememberSummaryState(displayName)
+
             PlaybackScreen(
                 item = openItem,
                 playback = playback,
                 transcriptStatus = transcriptStatuses[displayName] ?: TranscriptStatus.NONE,
+                summaryState = summaryState,
                 peaks = peaks,
                 note = note,
                 onNoteChange = { text ->
@@ -340,6 +345,8 @@ fun HomeScreen(
                         RecordingExtrasRepository.saveNote(context, displayName, text)
                     }
                 },
+                onSummarise = { SummaryScheduler.runNow(context, displayName) },
+                onStopSummary = { SummaryScheduler.stopNow(context) },
                 onBack = closePlayback,
                 onPlay = { viewModel.play(openItem.uri) },
                 onPause = { viewModel.pausePlayback() },
