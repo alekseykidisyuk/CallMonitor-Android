@@ -6,9 +6,7 @@
  *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-package com.baba.callvault.ui.common
-
-import com.baba.callvault.data.ChannelMap
+package com.baba.callvault.data
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

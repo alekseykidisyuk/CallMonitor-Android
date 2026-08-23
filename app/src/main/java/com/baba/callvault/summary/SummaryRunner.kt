@@ -9,9 +9,14 @@
 package com.baba.callvault.summary
 
 import android.content.Context
+import com.baba.callvault.data.ChannelMap
+import com.baba.callvault.data.SpeakerNames
+import com.baba.callvault.data.recordings.RecordingsRepository
+import com.baba.callvault.data.transcripts.SpeakerTurnsRepository
 import com.baba.callvault.data.transcripts.db.CallSummaryEntry
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
 import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
+import com.baba.callvault.server.speakers.SpeakerChannel
 import com.baba.callvault.utils.AppLogger
 import kotlinx.coroutines.flow.first
 
@@ -79,7 +84,9 @@ class SummaryRunner(
         shouldStop: () -> Boolean = { false },
         onProgress: (completed: Int, total: Int) -> Unit = { _, _ -> }
     ): CallSummary? {
-        val segments = segmentsFor(displayName)
+        val stored = segmentsFor(displayName)
+        val segments = stored.named(displayName)
+        val speakersAreNamed = segments !== stored
         if (segments.isEmpty()) {
             // Guarded by SummaryQueue too, but a summary of nothing costs the same as a real one.
             AppLogger.i(TAG, "Nothing to summarise for a recording with no transcribed words")
@@ -95,7 +102,9 @@ class SummaryRunner(
             chunks.forEachIndexed { index, chunk ->
                 if (shouldStop()) return@run null
                 parts += session.generate(
-                    SummaryPrompt.forChunkJson(chunk, language, withTimestamps = true),
+                    SummaryPrompt.forChunkJson(
+                        chunk, language, withTimestamps = true, speakersAreNamed = speakersAreNamed
+                    ),
                     CHUNK_TOKEN_BUDGET,
                     SummaryGrammar.JSON
                 )
@@ -176,6 +185,52 @@ class SummaryRunner(
         AppLogger.i(TAG, "Stored a summary of ${chunks.size} chunk(s)")
         return summary
     }
+
+    /**
+     * Replaces the stored `A`/`B` labels with real names, for the model's eyes only.
+     *
+     * Nothing is written back: the database keeps the neutral labels, because which channel is whose
+     * is learned over time and can be un-learned. This is the same resolution the transcript screen
+     * does, at the same moment — on read.
+     *
+     * Returns the list unchanged, identically, when there is nothing to name. The caller compares
+     * identity to decide what to tell the model, so the two can never disagree.
+     */
+    private suspend fun List<TranscriptSegmentEntry>.named(
+        displayName: String
+    ): List<TranscriptSegmentEntry> {
+        if (none { it.speaker != null }) return this
+
+        // Neutral labels are left exactly as they are. Even unnamed they earn their place: they tell
+        // the model where the turns are, which is why the transcript keeps its line breaks at all.
+        val channelMap = SpeakerTurnsRepository.trustedMap(context)
+        if (channelMap == ChannelMap.UNKNOWN) return this
+
+        val names = SpeakerNames(
+            map = channelMap,
+            // English, like every other word of this prompt. The summary's own language is pinned
+            // separately and far more firmly than one label could push it.
+            you = "You",
+            contact = contactNameFor(displayName),
+            sideA = SpeakerChannel.A.key,
+            sideB = SpeakerChannel.B.key
+        )
+        return map { segment -> segment.copy(speaker = names.of(segment.speaker) ?: segment.speaker) }
+    }
+
+    /**
+     * Who the call was with, in words.
+     *
+     * Best-effort and never fatal: without the contacts permission, or for a number nobody has
+     * saved, the model is told "the other person" — which is true, and better than quoting a phone
+     * number back as though it were a fact worth keeping.
+     */
+    private suspend fun contactNameFor(displayName: String): String =
+        runCatching {
+            RecordingsRepository.listRecordings(context)
+                .firstOrNull { it.displayName == displayName }
+                ?.contactName
+        }.getOrNull().orEmpty().ifBlank { "the other person" }
 
     /** The transcribed words, in order. Empty when there is no transcript. */
     private suspend fun segmentsFor(displayName: String): List<TranscriptSegmentEntry> {

@@ -50,6 +50,43 @@ class SummaryPromptTest {
     }
 
     @Test
+    fun `explains named speaker labels so the model writes about the user directly`() {
+        val prompt = SummaryPrompt.forChunkJson(
+            listOf(segment("hi", speaker = "You")),
+            language = "en",
+            withTimestamps = false,
+            speakersAreNamed = true
+        )
+
+        assertTrue(prompt.contains("second person"))
+    }
+
+    @Test
+    fun `forbids guessing a name when the labels are still the neutral sides`() {
+        // The stored labels are A and B until the app has learned which channel is whose. Left
+        // unexplained, a model reports them — or worse, decides which one is the user.
+        val prompt = SummaryPrompt.forChunkJson(
+            listOf(segment("hi", speaker = "A")),
+            language = "en",
+            withTimestamps = false,
+            speakersAreNamed = false
+        )
+
+        assertTrue(prompt.contains("never put a name to either"))
+    }
+
+    @Test
+    fun `says nothing about speakers when the transcript has none`() {
+        val prompt = SummaryPrompt.forChunkJson(
+            listOf(segment("hi")),
+            language = "en",
+            withTimestamps = false
+        )
+
+        assertFalse(prompt.contains("Each line begins with"))
+    }
+
+    @Test
     fun `carries the speaker when the transcript has one`() {
         val prompt = SummaryPrompt.forChunk(listOf(segment("hi there", speaker = "Caller")), "en")
         assertTrue(prompt.contains("Caller: hi there"))

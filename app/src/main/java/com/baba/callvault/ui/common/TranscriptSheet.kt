@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
+import com.baba.callvault.data.SpeakerNames
 import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
 import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
 

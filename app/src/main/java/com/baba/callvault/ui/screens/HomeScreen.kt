@@ -24,7 +24,6 @@ import com.baba.callvault.system.openKofi
 import com.baba.callvault.ui.common.M3DropdownField
 import com.baba.callvault.ui.common.OptionItem
 import com.baba.callvault.ui.common.formatByteSize
-import com.baba.callvault.ui.common.SpeakerNames
 import com.baba.callvault.ui.common.SupportDialog
 import com.baba.callvault.system.shareRecordings
 import com.baba.callvault.system.shareRecording
@@ -96,6 +95,7 @@ import androidx.compose.runtime.setValue
 import com.baba.callvault.ui.common.OfflineDialogMode
 import com.baba.callvault.ui.common.OfflineRecordingDialog
 import com.baba.callvault.data.ChannelMap
+import com.baba.callvault.data.SpeakerNames
 import com.baba.callvault.data.transcripts.SpeakerTurnsRepository
 import com.baba.callvault.data.transcripts.TranscriptRepository
 import com.baba.callvault.data.waveform.RecordingExtrasRepository
