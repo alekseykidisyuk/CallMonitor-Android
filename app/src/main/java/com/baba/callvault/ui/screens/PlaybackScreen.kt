@@ -376,7 +376,7 @@ private fun PlayerCard(
                             else -> onResume()
                         }
                     },
-                    modifier = Modifier.size(52.dp),
+                    modifier = Modifier.size(PLAYER_CONTROL_SIZE),
                     colors = IconButtonDefaults.filledIconButtonColors(containerColor = accent)
                 ) {
                     if (isLoading) {
@@ -391,7 +391,7 @@ private fun PlayerCard(
                             contentDescription = stringResource(
                                 if (isPlaying) R.string.general_pause else R.string.general_resume
                             ),
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(26.dp),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
@@ -504,7 +504,7 @@ private fun SpeedChip(speed: Float, onClick: () -> Unit) {
         // out maroon and reads as an error rather than as a control.
         color = accent.copy(alpha = SPEED_CHIP_ALPHA),
         contentColor = accent,
-        modifier = Modifier.heightIn(min = SPEED_CHIP_HEIGHT)
+        modifier = Modifier.heightIn(min = PLAYER_CONTROL_SIZE)
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp)) {
             Text(
@@ -516,8 +516,18 @@ private fun SpeedChip(speed: Float, onClick: () -> Unit) {
     }
 }
 
-/** Tall enough to hit one-handed without re-inflating the row the speed control was moved out of. */
-private val SPEED_CHIP_HEIGHT = 36.dp
+/**
+ * One height for both ends of the control strip.
+ *
+ * Play and speed sit either side of the waveform, so a difference between them reads as a mistake
+ * rather than as emphasis — the play button at 52dp beside a 36dp chip looked lopsided. Shared as a
+ * constant because they are declared in two different composables and would otherwise drift apart
+ * again the next time either is touched.
+ *
+ * The speed control stays a pill rather than a circle: its label is two characters wide and squeezing
+ * "1.5×" into a circle would either clip it or force the circle wider than the play button.
+ */
+private val PLAYER_CONTROL_SIZE = 48.dp
 private const val SPEED_CHIP_ALPHA = 0.14f
 
 /**
