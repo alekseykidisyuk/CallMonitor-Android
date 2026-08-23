@@ -231,6 +231,10 @@ internal class DirectAudioRecorderSession(
                 TAG,
                 "Channel map observed: $channelMapObserved (downlink=${fromProbe.key} ringback=${fromRingback.key})"
             )
+            // Levels and correlations, because "unknown" has several causes that need different
+            // answers: a silent probe means the device does not really implement the source, while
+            // two equal correlations mean it does and the channels are not distinguishable this way.
+            correlator?.let { AppLogger.i(TAG, "Downlink comparison: ${it.diagnostics()}") }
         }
 
         // Signal end-of-stream so the encoder flushes its tail, then drain what's left.
@@ -345,6 +349,7 @@ internal class DirectAudioRecorderSession(
             runCatching { rec.release() }
             return null
         }
+        AppLogger.i(TAG, "Downlink probe open on VOICE_DOWNLINK (mono ${SAMPLE_RATE}Hz)")
         return rec
     }
 
@@ -365,6 +370,7 @@ internal class DirectAudioRecorderSession(
                     correlator.acceptDownlink(buf, read)
                     windows += read / (SAMPLE_RATE * DownlinkCorrelator.WINDOW_MS / 1000 * 2)
                 }
+                AppLogger.i(TAG, "Downlink probe drained $windows window(s)")
             }.onFailure { AppLogger.w(TAG, "Downlink probe read failed: ${it.message}") }
             // Released as soon as it has what it needs, so nothing holds a voice input needlessly.
             runCatching { probe.stop() }

@@ -79,6 +79,32 @@ class DownlinkCorrelator(private val sampleRate: Int) {
         }
     }
 
+    /**
+     * What the comparison saw, for the log.
+     *
+     * Refusing is the common case and has several causes that look identical from outside — a source
+     * the device accepts and then feeds silence, a call nobody spoke on, two channels that track the
+     * downlink equally. Each needs a different fix, so each is reported rather than collapsed into
+     * "unknown".
+     */
+    fun diagnostics(): String {
+        val corrA = if (callA.size >= MIN_WINDOWS && downlink.size >= MIN_WINDOWS) {
+            bestCorrelation(downlink, callA)
+        } else Double.NaN
+        val corrB = if (callB.size >= MIN_WINDOWS && downlink.size >= MIN_WINDOWS) {
+            bestCorrelation(downlink, callB)
+        } else Double.NaN
+        return "windows=%d/%d levels: probe=%.0f A=%.0f B=%.0f corr: A=%.2f B=%.2f".format(
+            callA.size,
+            downlink.size,
+            if (downlink.isEmpty()) 0.0 else downlink.average(),
+            if (callA.isEmpty()) 0.0 else callA.average(),
+            if (callB.isEmpty()) 0.0 else callB.average(),
+            corrA,
+            corrB
+        )
+    }
+
     /** The far-party channel, or [ChannelMap.UNKNOWN] when the evidence does not settle it. */
     fun result(): ChannelMap {
         if (callA.size < MIN_WINDOWS || downlink.size < MIN_WINDOWS) return ChannelMap.UNKNOWN
