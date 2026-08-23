@@ -17,6 +17,9 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.baba.callvault.transcription.model.DownloadableModel
 import com.baba.callvault.transcription.model.ModelDownloadWorker
+import com.baba.callvault.transcription.model.ModelRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * What a model download is doing, as far as anyone looking at the screen is concerned.
@@ -98,33 +101,49 @@ sealed interface ModelDownloadState {
 /**
  * Observes the download of [model].
  *
- * `isInstalled` is passed in rather than read here because it is a filesystem check the caller
- * already makes to decide what row to draw, and doing it twice would have the two disagree for a
- * frame after a download lands.
+ * **What is on disk is re-read on every emission, not remembered.** An earlier version took
+ * `isInstalled` from the caller, where it was held in a `remember(updateTrigger)` — and nothing
+ * bumps that trigger when a download *finishes on its own*. Observed on the emulator: after the
+ * full 3.46 GB landed and was verified, the row went back to reading "Download the summariser,
+ * 3.5 GB", inviting the user to fetch it all again. The work state and the file have to be read at
+ * the same moment or they contradict each other.
+ *
+ * @param refreshKey re-runs the producer when it changes. Needed because deleting a model touches
+ *   the filesystem without touching WorkManager, so nothing would otherwise emit.
  */
 @Composable
 fun rememberModelDownloadState(
     model: DownloadableModel,
-    isInstalled: Boolean,
-    partialBytes: Long
+    refreshKey: Int = 0
 ): State<ModelDownloadState> {
     val context = LocalContext.current
+    val appContext = remember(context) { context.applicationContext }
     val workManager = remember(context) { WorkManager.getInstance(context) }
     val workName = remember(model.id) { ModelDownloadWorker.workNameFor(model) }
 
     return produceState<ModelDownloadState>(
-        initialValue = ModelDownloadState.from(isInstalled, null, null, null, partialBytes),
-        workManager, workName, isInstalled, partialBytes
+        initialValue = ModelDownloadState.from(
+            isInstalled = ModelRepository.isInstalled(appContext, model),
+            workState = null,
+            percent = null,
+            error = null,
+            partialBytes = ModelRepository.partialBytes(appContext, model)
+        ),
+        workManager, workName, model.id, refreshKey
     ) {
         workManager.getWorkInfosForUniqueWorkFlow(workName).collect { infos ->
             // Unique work, so there is at most one that matters; a retry replaces rather than joins.
             val info = infos.lastOrNull()
+            val onDisk = withContext(Dispatchers.IO) {
+                ModelRepository.isInstalled(appContext, model) to
+                    ModelRepository.partialBytes(appContext, model)
+            }
             value = ModelDownloadState.from(
-                isInstalled = isInstalled,
+                isInstalled = onDisk.first,
                 workState = info?.state,
                 percent = info?.let { ModelDownloadWorker.percentOf(it.progress) },
                 error = info?.outputData?.getString(ModelDownloadWorker.KEY_ERROR),
-                partialBytes = partialBytes
+                partialBytes = onDisk.second
             )
         }
     }

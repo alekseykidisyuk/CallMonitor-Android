@@ -23,15 +23,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
 import com.baba.callvault.summary.SummaryModel
 import com.baba.callvault.transcription.model.ModelDownloadWorker
-import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.ui.common.ModelDownloadState
 import com.baba.callvault.ui.common.rememberModelDownloadState
 
@@ -55,11 +52,11 @@ internal fun SummarySection(
     onCancel: (SummaryModel) -> Unit,
     onDelete: (SummaryModel) -> Unit
 ) {
-    val context = LocalContext.current
     val model = SummaryModel.DEFAULT
-    val isInstalled = remember(updateTrigger) { ModelRepository.isInstalled(context, model) }
-    val partialBytes = remember(updateTrigger) { ModelRepository.partialBytes(context, model) }
-    val state by rememberModelDownloadState(model, isInstalled, partialBytes)
+    // What is on disk is read inside the observer, on every work emission, rather than remembered
+    // here — a download that finishes on its own bumps no trigger, and the row was left inviting
+    // the user to fetch 3.46 GB they already had.
+    val state by rememberModelDownloadState(model, refreshKey = updateTrigger)
 
     SettingsSection(
         title = stringResource(R.string.settings_section_summaries),
