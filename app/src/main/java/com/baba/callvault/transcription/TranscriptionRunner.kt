@@ -13,6 +13,7 @@ import android.net.Uri
 import androidx.core.net.toUri
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.recordings.RecordingCatalog
+import com.baba.callvault.data.transcripts.SpeakerTurnsRepository
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
 import com.baba.callvault.data.transcripts.db.TranscriptEntry
 import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
@@ -143,7 +144,7 @@ class TranscriptionRunner(
 
         return attempt.fold(
             onSuccess = { segments ->
-                dao.replaceSegments(displayName, segments.map { it.toEntry(displayName) })
+                dao.replaceSegments(displayName, segments.labelled(displayName))
                 mark(displayName, TranscriptState.DONE, modelId, language)
                 // What it really cost on this phone, so the next estimate is measured rather than
                 // inherited from whatever hardware the published figure came from.
@@ -202,13 +203,35 @@ class TranscriptionRunner(
         )
     }
 
-    private fun TranscriptSegment.toEntry(displayName: String) = TranscriptSegmentEntry(
-        displayName = displayName,
-        startMs = startMs,
-        endMs = endMs,
-        text = text,
-        speaker = null
-    )
+    /**
+     * Turns whisper's segments into rows, attributing each to the side that spoke it where the
+     * capture recorded who was talking.
+     *
+     * The turns are read once per recording rather than per segment, and their absence is the
+     * ordinary case rather than an error: a mono capture, a daemon too old to report them, or any
+     * call recorded before speaker tracking existed simply yields unlabelled rows — which is what
+     * every transcript looked like until now.
+     *
+     * Labels are the neutral `A`/`B`, never a name. Which side is the user is resolved when the
+     * transcript is displayed, so a mapping learned tomorrow improves the transcripts stored today
+     * and a mapping lost never leaves a wrong name behind.
+     */
+    private suspend fun List<TranscriptSegment>.labelled(
+        displayName: String
+    ): List<TranscriptSegmentEntry> {
+        val turns = SpeakerLabeller.decode(SpeakerTurnsRepository.turnsFor(context, displayName))
+        val speakers = SpeakerLabeller.labelAll(turns, map { it.startMs to it.endMs })
+
+        return mapIndexed { index, segment ->
+            TranscriptSegmentEntry(
+                displayName = displayName,
+                startMs = segment.startMs,
+                endMs = segment.endMs,
+                text = segment.text,
+                speaker = speakers.getOrNull(index)
+            )
+        }
+    }
 
     private companion object {
         const val TAG = "CV:TranscriptionRunner"

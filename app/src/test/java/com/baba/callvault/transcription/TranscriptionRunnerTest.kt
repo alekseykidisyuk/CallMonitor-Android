@@ -11,7 +11,9 @@ package com.baba.callvault.transcription
 import android.content.Context
 import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
+import com.baba.callvault.data.ChannelMap
 import com.baba.callvault.data.recordings.RecordingCatalog
+import com.baba.callvault.data.transcripts.db.SpeakerTurnsEntry
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
 import com.baba.callvault.data.transcripts.db.TranscriptState
 import kotlinx.coroutines.flow.first
@@ -258,6 +260,46 @@ class TranscriptionRunnerTest {
 
         // Assert
         assertNull("a stop must not be recorded as a failure", transcript("raced.ogg"))
+    }
+
+    @Test
+    fun labels_segments_with_the_side_that_spoke_them() = runBlocking {
+        // Arrange: the capture recorded who was talking, as it does on any stereo carrier call.
+        catalogued("labelled.ogg")
+        storeTurns("labelled.ogg", "0:A;2000:B")
+        val runner = runnerReturning(
+            listOf(TranscriptSegment(0, 1500, "שלום"), TranscriptSegment(2000, 3500, "היי"))
+        )
+
+        // Act
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("labelled.ogg"))
+
+        // Assert: the neutral channel, never a name — who is who is decided at display time.
+        assertEquals(listOf("A", "B"), transcript("labelled.ogg")!!.segments.map { it.speaker })
+    }
+
+    @Test
+    fun stores_unlabelled_segments_when_the_capture_recorded_no_turns() = runBlocking {
+        // A mono capture, a daemon too old to report turns, or any call recorded before speaker
+        // tracking existed. Unlabelled is the ordinary case, not a failure.
+        catalogued("plain.ogg")
+        val runner = runnerReturning(listOf(TranscriptSegment(0, 1500, "שלום")))
+
+        runner.runBatch(MODEL_ID, MODEL_PATH, LANGUAGE, listOf("plain.ogg"))
+
+        assertEquals(listOf(null), transcript("plain.ogg")!!.segments.map { it.speaker })
+    }
+
+    private suspend fun storeTurns(name: String, encoded: String) {
+        TranscriptDatabase.get(context).speakerTurnsDao().upsert(
+            SpeakerTurnsEntry(
+                displayName = name,
+                turns = encoded,
+                outgoing = true,
+                observedMap = ChannelMap.UNKNOWN.key,
+                updatedAt = 1L
+            )
+        )
     }
 
     private fun runnerReturning(segments: List<TranscriptSegment>) =
