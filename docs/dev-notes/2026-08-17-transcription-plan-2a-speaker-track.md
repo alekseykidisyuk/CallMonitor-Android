@@ -93,6 +93,49 @@ taught it un-teaches it, which a cached preference would not.
 
 ---
 
+## HARD CONSTRAINT — no second voice capture during a carrier recording (2026-08-23)
+
+**Opening a second voice `AudioRecord` while `VOICE_CALL` is recording costs the recording its near
+side.** Measured on the OP12 by A/B on real calls:
+
+| probe | result |
+|---|---|
+| `VOICE_DOWNLINK` open alongside the recording | far party only — the user's own turn is **digital silence** |
+| probe off | both sides, as always |
+
+Confirmed by ear and by an energy profile of the file: on a call where both people spoke, one burst
+of speech and silence through the user's turn. The likely mechanism is that the HAL cannot serve two
+voice captures and re-routes the combined stream to downlink only — silently, with no error at open,
+at start, or on any read.
+
+**This is why the probe is `PROBE_ENABLED = false`.** Every guard it had covered a *failure*: a
+refused open, a refused start, a silent source. The damage came from the call **succeeding**.
+
+It also rules out the obvious next idea — capturing `VOICE_UPLINK` + `VOICE_DOWNLINK` as two records
+and interleaving them the way `VoipCaptureSession` does — because that is still two concurrent voice
+captures. VoIP gets away with it because its far side is an AudioPolicy loopback and its near side is
+plain `MIC`; neither is a *voice* input.
+
+**Rule: nothing may open a second voice capture during a carrier recording. Verify any change here
+by recording a two-sided call and listening for BOTH voices — a half-recording looks completely
+normal in the logs, in the file size, and in the waveform.**
+
+### What ringback measured, before that
+
+The original detector could never have worked here either. On a real outgoing call the capture is
+**silent throughout the ringing phase** — rms 0 across twenty seconds, no energy in the 300-600 Hz
+band. The ringback the caller hears is generated locally and never enters `VOICE_CALL`. An incoming
+call has no ringing phase to offer at all.
+
+### So how does the mapping get learned?
+
+Both automatic routes are closed on this hardware: ringback is not in the audio, and the downlink
+comparison cannot run without damaging the recording. What remains is to **ask, once**: on the first
+transcript that has both sides labelled, show a line from each and let the user say which is theirs.
+One tap, ever, and every transcript on the phone gains names — past and future — because names are
+resolved at display time. This reverses the 2026-08-17 decision (*detect it, do not ask*), which was
+right while detection looked possible.
+
 ## Why this runs early, ahead of the UI
 
 Speaker labels obtained this way are **exact and free**, but only for calls recorded *after* this
