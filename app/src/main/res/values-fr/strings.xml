@@ -473,4 +473,6 @@
     <string name="summary_discard_confirm_title">Abandonner le téléchargement ?</string>
     <string name="summary_discard_confirm_body">Cela jette les %1$.1f Go déjà téléchargés. Recommencer les reprendrait depuis le début.</string>
     <string name="summary_discard_confirm_confirm">Abandonner</string>
+    <string name="summary_language_label">Langue du résumé</string>
+    <string name="summary_language_auto">Celle de l\'appel</string>
 </resources>

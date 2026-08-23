@@ -473,4 +473,6 @@
     <string name="summary_discard_confirm_title">Odrzucić pobrane dane?</string>
     <string name="summary_discard_confirm_body">Wyrzuci to pobrane już %1$.1f GB. Kolejna próba pobrałaby wszystko od początku.</string>
     <string name="summary_discard_confirm_confirm">Odrzuć</string>
+    <string name="summary_language_label">Język podsumowania</string>
+    <string name="summary_language_auto">Jak w rozmowie</string>
 </resources>

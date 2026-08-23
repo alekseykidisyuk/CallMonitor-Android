@@ -34,6 +34,9 @@ import androidx.compose.ui.platform.LocalContext
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.ui.common.ConfirmDialog
+import com.baba.callvault.ui.common.M3DropdownField
+import com.baba.callvault.ui.common.OptionItem
+import com.baba.callvault.ui.common.TranscriptionLabels
 import com.baba.callvault.ui.common.SummaryRequirementsDialog
 import com.baba.callvault.summary.SummaryModel
 import com.baba.callvault.transcription.model.ModelDownloadWorker
@@ -203,6 +206,37 @@ internal fun SummarySection(
                     onClick = startDownload
                 )
             }
+        }
+
+        // Its own setting, not whisper's. The transcription language says what to *listen* for;
+        // this says what to *write*, and someone transcribing with auto-detect still wants their
+        // summaries in one predictable language. "Match the call" never means "let the model
+        // decide" — SummaryLanguage always resolves it to a concrete language first.
+        val summaryLanguage = remember(updateTrigger) { preferences.getSummaryLanguage() }
+        val languageOptions = TranscriptionLabels
+            .sortLanguageOptions(
+                TranscriptionLabels.LANGUAGE_OPTIONS.map { code ->
+                    (code ?: TranscriptionLabels.AUTO_DETECT_KEY) to
+                        if (code == null) stringResource(R.string.summary_language_auto)
+                        else stringResource(TranscriptionLabels.languageOf(code))
+                }
+            )
+            .map { (key, label) -> OptionItem(key, label) }
+
+        DropdownRow {
+            M3DropdownField(
+                label = stringResource(R.string.summary_language_label),
+                selected = languageOptions.find {
+                    it.key == (summaryLanguage ?: TranscriptionLabels.AUTO_DETECT_KEY)
+                } ?: languageOptions.first(),
+                options = languageOptions,
+                onOptionSelected = { option ->
+                    preferences.setSummaryLanguage(
+                        option.key.takeIf { it != TranscriptionLabels.AUTO_DETECT_KEY }
+                    )
+                    onSettingChanged()
+                }
+            )
         }
 
         // Its home is here so the dialog's "don't show this again" can be undone — a dialog that

@@ -473,4 +473,6 @@
     <string name="summary_discard_confirm_title">Eldobja a letöltést?</string>
     <string name="summary_discard_confirm_body">Ezzel eldobja a már letöltött %1$.1f GB-ot. Az újrakezdés az egészet elölről töltené le.</string>
     <string name="summary_discard_confirm_confirm">Eldobás</string>
+    <string name="summary_language_label">Az összefoglaló nyelve</string>
+    <string name="summary_language_auto">Ahogy a hívásban</string>
 </resources>

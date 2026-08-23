@@ -207,6 +207,7 @@ class AppPreferences(context: Context) {
         TRANSCRIPTION_BATCH_LIMIT("transcription_batch_limit"),
         TRANSCRIPTION_CONFIRM_BEFORE_RUN("transcription_confirm_before_run"),
         SUMMARY_CONFIRM_REQUIREMENTS("summary_confirm_requirements"),
+        SUMMARY_LANGUAGE("summary_language"),
         TRANSCRIPTION_MODEL_ID("transcription_model_id"),
         TRANSCRIPTION_LANGUAGE("transcription_language"),
 
@@ -594,6 +595,19 @@ class AppPreferences(context: Context) {
 
     fun setSummaryConfirmRequirements(confirm: Boolean) =
         setBoolean(Key.SUMMARY_CONFIRM_REQUIREMENTS, confirm)
+
+    /**
+     * The language summaries are written in, or null to work it out per recording.
+     *
+     * Separate from the transcription language on purpose. Whisper's setting says what language to
+     * *listen* for; this says what language to *write*, and a user who transcribes with auto-detect
+     * still wants their summaries in one predictable language. Null does not mean "let the model
+     * decide" — see [com.baba.callvault.summary.SummaryLanguage], which always resolves it to a
+     * concrete language before the prompt is built.
+     */
+    fun getSummaryLanguage(): String? = getString(Key.SUMMARY_LANGUAGE, null)
+
+    fun setSummaryLanguage(language: String?) = setString(Key.SUMMARY_LANGUAGE, language)
 
     /**
      * This phone's measured real-time factor for [modelId], or null before it has ever run.

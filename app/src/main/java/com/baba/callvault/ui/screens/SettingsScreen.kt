@@ -2135,7 +2135,7 @@ private fun SettingsDivider() {
 
 /** Wraps a [M3DropdownField] (and optional hint) so it slots cleanly inside a [CvCard]. */
 @Composable
-private fun DropdownRow(content: @Composable ColumnScope.() -> Unit) {
+internal fun DropdownRow(content: @Composable ColumnScope.() -> Unit) {
     Column(content = content)
 }
 

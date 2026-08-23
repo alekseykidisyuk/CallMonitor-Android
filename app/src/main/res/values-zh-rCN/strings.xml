@@ -473,4 +473,6 @@
     <string name="summary_discard_confirm_title">丢弃已下载的部分？</string>
     <string name="summary_discard_confirm_body">这会丢掉已下载的 %1$.1f GB。重新开始会从头再下一遍。</string>
     <string name="summary_discard_confirm_confirm">丢弃</string>
+    <string name="summary_language_label">摘要语言</string>
+    <string name="summary_language_auto">与通话一致</string>
 </resources>

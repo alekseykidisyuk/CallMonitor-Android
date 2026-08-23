@@ -13,6 +13,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.transcripts.db.TranscriptDatabase
 import com.baba.callvault.transcription.TranscriptionEngine
 import com.baba.callvault.transcription.TranscriptionProgress
 import com.baba.callvault.transcription.model.ModelRepository
@@ -21,7 +22,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 /**
  * Summarises one call in the background.
@@ -59,7 +62,23 @@ class SummaryWorker(
         }
 
         val prefs = AppPreferences(applicationContext)
-        val language = prefs.getTranscriptionLanguage()
+
+        // Resolved to a concrete language before the prompt is built, never left for the model to
+        // infer. "Write in the same language as the conversation" is what produced a Hebrew call
+        // summarised into English — on a garbled transcript there is no identifiable main language
+        // and a small model resolves that by writing English. See SummaryLanguage.
+        val transcript = TranscriptDatabase.get(applicationContext)
+            .transcriptDao()
+            .observe(displayName)
+            .first()
+        val language = SummaryLanguage.resolve(
+            chosen = prefs.getSummaryLanguage(),
+            transcriptionSetting = prefs.getTranscriptionLanguage(),
+            transcriptLanguage = transcript?.transcript?.language,
+            transcriptText = transcript?.segments.orEmpty().joinToString(" ") { it.text },
+            deviceLanguage = Locale.getDefault().language
+        )
+        AppLogger.i(TAG, "Summarising in $language")
 
         AppLogger.i(TAG, "Summarising one recording with ${model.id}")
 

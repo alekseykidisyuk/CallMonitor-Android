@@ -476,4 +476,6 @@
     <string name="summary_discard_confirm_title">Descartar o download?</string>
     <string name="summary_discard_confirm_body">Isso joga fora os %1$.1f GB já baixados. Recomeçar buscaria tudo desde o início.</string>
     <string name="summary_discard_confirm_confirm">Descartar</string>
+    <string name="summary_language_label">Idioma do resumo</string>
+    <string name="summary_language_auto">O da chamada</string>
 </resources>

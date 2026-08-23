@@ -116,7 +116,27 @@ class SummaryRunner(
                 )
             }
 
-            CallSummary.parse(document)
+            CallSummary.parse(document)?.let { parsed ->
+                // The prompt asks for timestamps "copied verbatim" and tells the model never to
+                // invent one. It invents them anyway — and here they are tappable seek targets, so
+                // a fabricated marker is a false citation on the one surface whose value is being
+                // checkable against the recording. An instruction is a request; this is not.
+                val checked = SummaryCitations.strip(
+                    summary = parsed,
+                    offeredMs = segments.map { it.startMs }.toSet(),
+                    durationMs = segments.maxOfOrNull { it.endMs } ?: 0L
+                )
+                if (checked.removed.isNotEmpty()) {
+                    // Loud on purpose. A stripped summary looks perfectly clean, so without this
+                    // nothing would ever say the model had started inventing citations.
+                    AppLogger.w(
+                        TAG,
+                        "Dropped ${checked.removed.size} uncited timestamp(s): " +
+                            checked.removed.toSet().joinToString(" ")
+                    )
+                }
+                checked.summary
+            }
         }
 
         if (summary == null) {
