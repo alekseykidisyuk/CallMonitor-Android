@@ -32,6 +32,7 @@ import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.data.waveform.RecordingExtrasRepository
 import com.baba.callvault.transcription.TranscriptionScheduler
 import com.baba.callvault.data.recordings.RecordingDirection
+import com.baba.callvault.data.transcripts.SpeakerTurnsRepository
 import com.baba.callvault.data.recordings.RecordingMetadata
 import com.baba.callvault.system.storage.SafHelper
 import com.baba.callvault.system.storage.StorageRouter
@@ -447,12 +448,16 @@ class RecordingForegroundService : Service() {
                 }
 
                 // Route exactly once, after any rename has been applied.
-                routeFinalRecording(finalUri, mimeType, activeSession.lastCapturedByteCount)
+                routeFinalRecording(
+                    finalUri, mimeType, activeSession.lastCapturedByteCount, originalMetadata.direction
+                )
             }
         } else if (uriToRename != null) {
             // Phone number was already known at recording start — no rename needed.
             // Route the file with its current name immediately (once).
-            routeFinalRecording(uriToRename, mimeType, activeSession.lastCapturedByteCount)
+            routeFinalRecording(
+                uriToRename, mimeType, activeSession.lastCapturedByteCount, originalMetadata?.direction
+            )
         }
         currentState = RecordingServiceState.Standby(null)
         AppLogger.i(TAG, "The recording session has been stopped and resources have been released. Stopping foreground service. Goodbye >3")
@@ -503,7 +508,12 @@ class RecordingForegroundService : Service() {
      * @param uri      The URI of the finalized recording file.
      * @param mimeType The MIME type of the recording (e.g. "audio/opus" or "audio/mp4a-latm").
      */
-    private fun routeFinalRecording(uri: Uri, mimeType: String, knownByteCount: Long? = null) {
+    private fun routeFinalRecording(
+        uri: Uri,
+        mimeType: String,
+        knownByteCount: Long? = null,
+        direction: RecordingDirection? = null
+    ) {
         val doc = DocumentFile.fromSingleUri(applicationContext, uri) ?: return
         val name = doc.name ?: return
         // Prefer the exact captured count when we have it (staged recordings): a cloud destination like
@@ -533,6 +543,15 @@ class RecordingForegroundService : Service() {
         // CallLog fallback above). Written for every storage target, regardless of where the file lands.
         CoroutineScope(Dispatchers.IO).launch {
             RecordingCatalog.recordLocal(applicationContext, name, uri, sizeBytes, lastModified)
+            // Before transcription is queued, never after: a transcript labels its segments from
+            // these turns, so they have to be on disk by the time whisper starts writing.
+            //
+            // The daemon gathered them during the call, from the two capture channels before the
+            // mono downmix averaged them away. They cannot be recovered from the finished file —
+            // it is mono — so this is the only moment they can be collected at all.
+            SpeakerTurnsRepository.collectAfterCall(
+                applicationContext, name, outgoing = direction == RecordingDirection.OUTGOING
+            )
             // After the catalog entry exists, never before: the transcription runner resolves the
             // audio through the catalog, so queueing first would race it to "no longer in the catalog".
             TranscriptionScheduler.transcribeAfterCallIfEnabled(applicationContext, name)
