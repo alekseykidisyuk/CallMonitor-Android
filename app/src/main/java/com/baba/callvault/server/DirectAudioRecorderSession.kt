@@ -20,6 +20,8 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioSource
 import com.baba.callvault.integrations.scrcpy.androidAudioSource
 import com.baba.callvault.utils.AppLogger
+import com.baba.callvault.data.ChannelMap
+import com.baba.callvault.server.speakers.ChannelMapDetector
 import com.baba.callvault.server.speakers.SpeakerTurnCodec
 import com.baba.callvault.server.speakers.SpeakerTurnDetector
 import com.baba.callvault.utils.PcmDownmix
@@ -62,7 +64,12 @@ internal class DirectAudioRecorderSession(
      */
     @Volatile private var speakerTurnsEncoded: String = ""
 
+    /** What this call's ringback suggested, as a [ChannelMap] key. One observation, not the answer. */
+    @Volatile private var channelMapObserved: String = ChannelMap.UNKNOWN.key
+
     override fun speakerTurns(): String = speakerTurnsEncoded
+
+    override fun observedChannelMap(): String = channelMapObserved
 
     override fun start() {
         try {
@@ -138,6 +145,10 @@ internal class DirectAudioRecorderSession(
         // separate channels here, and that information is destroyed by the downmix below. Only a
         // stereo capture carries it — a mono route has nothing to compare.
         val speakers = if (downmix) SpeakerTurnDetector(SAMPLE_RATE) else null
+        // Which channel is the far party is an OEM detail Android never specifies, so it is learned
+        // from the ringback at the start of an outgoing call — present on the far channel, absent
+        // from the near one. Reads the same stereo buffer, and caps itself after a few seconds.
+        val channelMap = if (downmix) ChannelMapDetector(SAMPLE_RATE) else null
         val info = MediaCodec.BufferInfo()
         var muxerStarted = false
         var totalFrames = 0L
@@ -152,6 +163,10 @@ internal class DirectAudioRecorderSession(
             if (speakers != null) {
                 runCatching { speakers.accept(pcm, read) }
                     .onFailure { AppLogger.w(TAG, "Speaker detection failed; continuing without turns: ${it.message}") }
+            }
+            if (channelMap != null) {
+                runCatching { channelMap.accept(pcm, read) }
+                    .onFailure { AppLogger.w(TAG, "Channel-map detection failed; continuing unmapped: ${it.message}") }
             }
 
             // Feed MONO to the encoder: downmix a stereo capture (average L+R), or pass a mono capture through.
@@ -172,6 +187,13 @@ internal class DirectAudioRecorderSession(
         if (speakers != null) {
             runCatching { speakerTurnsEncoded = SpeakerTurnCodec.encode(speakers.finish()) }
                 .onFailure { AppLogger.w(TAG, "Could not encode speaker turns: ${it.message}") }
+        }
+        if (channelMap != null) {
+            // What this ONE call's ringback suggested. The app decides whether to believe it: it
+            // knows the call's direction, and it will not trust any mapping until two calls agree.
+            runCatching { channelMapObserved = channelMap.result().key }
+                .onFailure { AppLogger.w(TAG, "Could not read the channel map: ${it.message}") }
+            AppLogger.i(TAG, "Ringback suggested channel map: $channelMapObserved")
         }
 
         // Signal end-of-stream so the encoder flushes its tail, then drain what's left.

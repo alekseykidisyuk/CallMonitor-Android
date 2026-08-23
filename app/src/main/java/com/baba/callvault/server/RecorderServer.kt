@@ -66,6 +66,9 @@ object RecorderServer {
      */
     @Volatile private var lastSpeakerTurns: String = ""
 
+    /** What the last recording's ringback suggested, cached beside the turns for the same reason. */
+    @Volatile private var lastObservedChannelMap: String = ""
+
     /** Last VoIP session, kept only so the app can ask afterwards whether the far party was audible. */
     @Volatile private var lastVoipSession: VoipCaptureSession? = null
 
@@ -221,6 +224,8 @@ object RecorderServer {
                     .onFailure { AppLogger.w(TAG, "stopRecording teardown error: ${it.message}") }
                 // Collect the speaker turns before dropping the session — the app queries them after
                 // this call returns, by which point there is nothing left to ask.
+                lastObservedChannelMap = runCatching { session?.observedChannelMap().orEmpty() }
+                    .getOrElse { "" }
                 lastSpeakerTurns = runCatching { session?.speakerTurns().orEmpty() }.getOrElse {
                     AppLogger.w(TAG, "Could not read speaker turns: ${it.message}")
                     ""
@@ -298,6 +303,8 @@ object RecorderServer {
          * value is kept rather than asked of a session that no longer exists.
          */
         override fun speakerTurns(): String = lastSpeakerTurns
+
+        override fun observedChannelMap(): String = lastObservedChannelMap
 
         override fun disarmVoipCapture() {
             AppLogger.i(TAG, "disarmVoipCapture requested")

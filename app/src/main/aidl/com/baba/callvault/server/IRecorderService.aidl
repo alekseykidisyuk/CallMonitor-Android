@@ -152,4 +152,21 @@ interface IRecorderService {
      * transcript is displayed.
      */
     String speakerTurns();
+
+    /**
+     * What the ringback on the recording that just stopped suggested about which channel is the far
+     * party — a {@link com.baba.callvault.data.ChannelMap} key, or "" / "unknown" when nothing was
+     * learned.
+     *
+     * Queried after stopRecording(), like {@link #speakerTurns}.
+     *
+     * ONE call's observation, not a conclusion. Only an outgoing call has a ringback phase at all,
+     * and the daemon does not know the call's direction — the app does, and the app also refuses to
+     * trust any mapping until two calls agree. A single noisy call must never be able to permanently
+     * mislabel every transcript thereafter.
+     *
+     * Callers must tolerate this method being absent: a warm daemon from an older build predates it,
+     * and that must degrade to "no mapping" rather than fail the recording that just completed.
+     */
+    String observedChannelMap();
 }

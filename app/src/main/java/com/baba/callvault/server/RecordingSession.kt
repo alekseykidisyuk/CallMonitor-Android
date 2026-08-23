@@ -34,4 +34,14 @@ internal interface RecordingSession {
      * session that cannot produce turns needs no code to say so.
      */
     fun speakerTurns(): String = ""
+
+    /**
+     * What this call's ringback suggested about which channel is the far party, as a
+     * [com.baba.callvault.data.ChannelMap] key. `"unknown"` unless a stereo capture heard ringback.
+     *
+     * One call's observation, deliberately — the app corroborates across calls before believing it.
+     * A capture path that cannot see the raw channels answers `"unknown"`, which is correct rather
+     * than a failure.
+     */
+    fun observedChannelMap(): String = "unknown"
 }
