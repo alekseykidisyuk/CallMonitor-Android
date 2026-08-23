@@ -28,25 +28,43 @@ stops via a new additive AIDL method — the same shape as the existing `voipFar
 | 3 — hand the turns to the app | ✅ done, `f9a2e29` + `9467dcd` |
 | 4 — learn the channel mapping from ringback | ✅ done, `77d2023` + `289e88d` |
 | 5 — VoIP path | ⬜ not started, and mostly unnecessary — see below |
+| the display half — see below | ✅ done, `9641c5b` … `e9f5404` |
 
-**681 unit tests, 0 failures.** 6 migration tests pass against real SQLite on an emulator.
+**702 unit tests, 0 failures.** 6 migration tests pass against real SQLite on an emulator.
 
-**Still inert, and still safe.** The turns are gathered, stored and the mapping is learned — and
-nothing reads any of it. No transcript is labelled yet. The recorded audio is untouched: same
-source, same mono downmix, same encoder settings.
+**No longer inert.** A transcript made from now on carries a speaker per segment, the transcript
+sheet names the two sides once the mapping is trusted, and the summariser is told who said what. The
+recorded audio is still untouched: same source, same mono downmix, same encoder settings.
 
-**What remains, and it is the visible half:**
+### The display half, as built
 
-- Label segments `A`/`B` at transcription time, from the stored turns. `TranscriptSegmentEntry`
-  already has a `speaker` column and the sheet already renders it when present.
-- Map `A`/`B` to "You" and the contact's name **at display time**, so a mapping learned later
-  improves transcripts that already exist, and a mapping lost never leaves a wrong name behind.
-- `SummaryPrompt.forChunk` already keeps line breaks when speakers are named, so the summary
-  improves for free once segments carry them.
+- **`SpeakerLabeller`** attributes each transcribed segment to the side that held **two thirds** of
+  its voiced time. Whisper cuts on pauses, not on turn boundaries, so a segment routinely straddles
+  a handover; anything short of two thirds is left unlabelled rather than guessed. Silence counts
+  for nobody — it is most of a call, and counting it would push every segment containing a pause
+  below the threshold.
+- **`TranscriptionRunner`** reads the turns once per recording as it stores the segments. No turns —
+  a mono capture, an older daemon, any call recorded before this existed — simply means unlabelled
+  rows, which is what every transcript looked like until now.
+- **`SpeakerNames`** turns `A`/`B` into "You" and the contact's name **on every read**, in the sheet
+  and in the copy/share text alike. Nothing is written back. This is the whole reason the stored
+  labels are neutral: a mapping learned tomorrow improves every transcript already on the phone, and
+  a mapping *lost* falls back to "Speaker A"/"Speaker B" rather than leaving behind a name that is
+  now a guess.
+- **The summariser** resolves the same way, for the model's eyes only, and the prompt now explains
+  what the prefixes mean — otherwise a model reports them, and "A asked about the invoice" is a
+  worse summary than the unlabelled version was. While the mapping is unknown the prompt says so and
+  forbids guessing a name. The label injected for the user is the English word "You", which is safe
+  here because the entire prompt is English and the output language is pinned separately.
+- Three new strings, in all ten locales.
 
 **Nothing here has run on a real call.** It needs an outgoing call to hear ringback at all, and two
 before it will commit. The log line to watch is `CV:SpeakerTurns: Channel mapping now stands at …`,
 which is Step 6's inspectability requirement met by the cheapest thing that could work.
+
+Until those two calls happen, the *expected* result on the device is neutral "Speaker A"/"Speaker B"
+labels on newly transcribed calls — that is the feature working, not failing. Names appear only
+after the mapping is corroborated.
 
 ### Where Task 3's blocker went
 
