@@ -91,10 +91,26 @@ Their reasoning, which this project reached independently from the other side:
 `VoipCapturePlan` now chooses per mode: standalone keeps our loopback policy (proven two-sided), Shizuku
 records the system output mix. **VoIP is therefore no longer greyed out under Shizuku.**
 
-⚠️ **Unverified two-sided.** They advertise both sides; our own VoIP work needed *two* sources to get
-both, so whether the system mix alone carries the near party is a question for a real call rather than
-for reasoning. It is still the difference between recording an app call under Shizuku and not recording
-it at all.
+🔴 **Tested on the OP9, and it captured SILENCE.** A real WhatsApp call in Shizuku mode ran the plan
+exactly as designed — `audio_source=output`, scrcpy started, muxer initialised, clean EOF, 27,958 bytes
+over 17.6 s — and the audio measures **`mean_volume: -73.2 dB`**, which is digital silence. Not one-sided:
+nothing at all.
+
+So the container and the pipeline are right and the *capture* is empty on this ROM. What has not been
+ruled out, and is the cheapest next experiment:
+
+- **Speakerphone.** `REMOTE_SUBMIX` may only receive the call when audio is routed to the speaker; on the
+  earpiece the mix can be empty. Ever-Call-Recorder's own docs do not say either way.
+- **ColorOS excluding voice-communication from the submix**, which would make this device simply unable
+  to do it — in which case the honest move is to grey VoIP out under Shizuku again.
+
+Until one of those is settled, VoIP in Shizuku mode **must not be described as working**.
+
+**A bug this test exposed, now fixed.** The post-recording check warned *"captured only your side — the
+other app blocks capture"*. That check reads `voipFarPartyHeard()`, which reports on a
+`VoipCaptureSession` — and the system-mix plan never creates one, so it always answered "far party not
+heard". On this call the message was doubly wrong: nothing at all was captured, and no app had blocked
+anything. The check now runs only for the loopback-policy plan.
 
 **A side benefit worth noting:** the system-mix plan needs **no arming before the call**. The arming
 constraint is what makes a missed VoIP call unrecoverable in standalone mode.

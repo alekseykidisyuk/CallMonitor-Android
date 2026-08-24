@@ -227,8 +227,17 @@ object VoipRecordingCoordinator {
         // A recording where the far party was never audible is one-sided. Say so now rather than let it
         // be discovered weeks later — the app may have opted out of capture, or this OEM build may not
         // attach calls to our mix; from here the two are indistinguishable.
-        val farHeard = runCatching { RecorderConnection.service?.voipFarPartyHeard() ?: true }
-            .getOrDefault(true)   // no service, or an error: assume fine; never cry wolf
+        //
+        // Only meaningful for the loopback-policy plan. voipFarPartyHeard() reports on a
+        // VoipCaptureSession, and the system-mix plan never creates one — so under Shizuku it always
+        // answered "far party not heard" and warned that the OTHER app had blocked capture. On a real
+        // WhatsApp call that message was doubly wrong: nothing at all had been captured (measured at
+        // -73 dB), and no app had blocked anything.
+        val stopPlan = VoipCapturePlan.forMode(AppPreferences(context).getPrivilegedMode())
+        val farHeard = if (stopPlan != VoipCapturePlan.POLICY_LOOPBACK) true else {
+            runCatching { RecorderConnection.service?.voipFarPartyHeard() ?: true }
+                .getOrDefault(true)   // no service, or an error: assume fine; never cry wolf
+        }
         if (!farHeard) {
             AppLogger.w(TAG, "VoIP recording captured only your side — the other app blocks capture")
             runCatching {
