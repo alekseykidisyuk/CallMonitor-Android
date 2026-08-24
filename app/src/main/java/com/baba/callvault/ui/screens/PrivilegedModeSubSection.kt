@@ -15,6 +15,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import com.baba.callvault.ui.common.ModeSwitchDialog
+import com.baba.callvault.server.ModeSwitchResult
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -43,6 +50,12 @@ fun PrivilegedModeSubSection() {
     // Bumped to re-read after anything that could change the answer.
     var refresh by remember { mutableIntStateOf(0) }
 
+    // The switch the modal is performing, and its outcome once known. A non-null target means the
+    // dialog is up; a null result inside that means the work is still in flight.
+    var switching by remember { mutableStateOf<PrivilegedMode?>(null) }
+    var switchResult by remember { mutableStateOf<ModeSwitchResult?>(null) }
+    val scope = rememberCoroutineScope()
+
     val mode = remember(refresh) { prefs.getPrivilegedMode() }
     val status = remember(refresh) { RecorderBackend.shizukuStatus(context) }
 
@@ -63,15 +76,34 @@ fun PrivilegedModeSubSection() {
         checked = mode == PrivilegedMode.SHIZUKU,
         enabled = status != ShizukuStatus.NOT_INSTALLED || mode == PrivilegedMode.SHIZUKU,
         onCheckedChange = { wantShizuku ->
-            // switchTo stops the old backend before starting the new one; two shell-uid recorders
-            // would otherwise compete for the same audio input.
-            RecorderBackend.switchTo(
-                context,
-                if (wantShizuku) PrivilegedMode.SHIZUKU else PrivilegedMode.STANDALONE
-            )
-            refresh++
+            val target = if (wantShizuku) PrivilegedMode.SHIZUKU else PrivilegedMode.STANDALONE
+            switching = target
+            switchResult = null
+            scope.launch {
+                // Off the main thread: switchTo stops a backend and ensureRunning waits for a binder,
+                // both of which block. The dialog stays up, uninterruptible, until this answers.
+                val outcome = withContext(Dispatchers.IO) {
+                    RecorderBackend.switchTo(context, target)
+                    val connected = RecorderBackend.ensureRunning(context)
+                    ModeSwitchResult.of(target, connected, RecorderBackend.shizukuStatus(context))
+                }
+                switchResult = outcome
+                refresh++
+            }
         }
     )
+
+    switching?.let { target ->
+        ModeSwitchDialog(
+            target = target,
+            result = switchResult,
+            onDismiss = {
+                switching = null
+                switchResult = null
+                refresh++
+            },
+        )
+    }
 
     // Only when it is the one thing standing in the way, and only in the mode that needs it.
     if (mode == PrivilegedMode.SHIZUKU && status == ShizukuStatus.NO_PERMISSION) {

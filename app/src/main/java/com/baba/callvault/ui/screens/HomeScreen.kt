@@ -1144,6 +1144,22 @@ private fun HeroStatusCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+            // Which backend is serving the recorder, at the end of the status line itself. Two modes
+            // that look identical from the home screen is how a phone ends up recording through a
+            // backend nobody chose — while both were silently running, nothing here would have said so.
+            //
+            // Info, not Neutral: Neutral resolves to the coral onSurfaceVariant in this scheme, and a red
+            // badge beside a healthy status reads as something being wrong.
+            CvStatusPill(
+                text = stringResource(
+                    if (AppPreferences(LocalContext.current).getPrivilegedMode().needsShizuku) {
+                        R.string.home_mode_badge_shizuku
+                    } else {
+                        R.string.home_mode_badge_standalone
+                    }
+                ),
+                tone = CvTone.Info,
+            )
         }
         Spacer(Modifier.height(14.dp))
         Text(

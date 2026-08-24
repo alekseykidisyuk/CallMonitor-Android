@@ -154,12 +154,28 @@ object ShizukuBackend {
      * before the ADB path starts a second recorder that would fight this one for the audio input.
      */
     fun stop(remove: Boolean = true): Unit = synchronized(bindLock) {
-        val conn = connection ?: return
+        // NOT `connection ?: return`. A daemon(true) user service outlives the app process, so after any
+        // restart this process has no connection to a service that is still very much running — and
+        // returning early there left it alive while the ADB daemon started alongside it. Measured on the
+        // OP9: two com.baba.callvault:recorder processes AND our own daemon, after a single round trip.
+        //
+        // Shizuku matches user services by their args, not by the connection object, so a throwaway
+        // connection is enough to remove one this process never bound.
+        val conn = connection ?: NO_OP_CONNECTION
         runCatching { Shizuku.unbindUserService(userServiceArgs, conn, remove) }
             .onFailure { AppLogger.w(TAG, "unbindUserService failed: ${it.message}") }
         connection = null
         RecorderConnection.onBinderDied()
     }
+}
+
+/**
+ * Stands in for a connection this process never made, so a service left running by a previous process
+ * can still be removed. Its callbacks are never expected to fire.
+ */
+private val NO_OP_CONNECTION = object : ServiceConnection {
+    override fun onServiceConnected(name: ComponentName?, service: IBinder?) = Unit
+    override fun onServiceDisconnected(name: ComponentName?) = Unit
 }
 
 /** Indirection so the args above do not drag a BuildConfig import through every file that reads them. */

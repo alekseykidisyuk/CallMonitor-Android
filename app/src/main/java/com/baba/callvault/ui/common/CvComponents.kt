@@ -243,7 +243,21 @@ fun CvSecondaryButton(
     }
 }
 
-enum class CvTone { Success, Warning, Error, Neutral, Accent }
+enum class CvTone {
+    Success,
+    Warning,
+    Error,
+    Neutral,
+    Accent,
+
+    /**
+     * Informational, not a state — for a label that says *what* something is rather than whether it is
+     * healthy. Uses the brand's own `info` colour deliberately: `Neutral` resolves to
+     * `onSurfaceVariant`, which in this app's scheme is the coral tone, and a coral badge reads as an
+     * error to anyone glancing at it.
+     */
+    Info,
+}
 
 /** A compact status pill with a leading dot — used for state ("Ready", "Required", etc.). */
 @Composable
@@ -255,6 +269,7 @@ fun CvStatusPill(text: String, tone: CvTone, modifier: Modifier = Modifier) {
         CvTone.Error -> MaterialTheme.colorScheme.error
         CvTone.Accent -> MaterialTheme.colorScheme.primary
         CvTone.Neutral -> MaterialTheme.colorScheme.onSurfaceVariant
+        CvTone.Info -> brand.info
     }
     Row(
         modifier = modifier
