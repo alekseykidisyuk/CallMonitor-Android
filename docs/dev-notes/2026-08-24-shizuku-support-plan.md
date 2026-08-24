@@ -268,14 +268,55 @@ system installer.
 The designated Shizuku test phone. Shizuku 13.6.0 installed and its server started from adb; it runs as
 shell, exactly as on the emulator.
 
-### 🔴 ColorOS makes the phase-3 grants impossible, and Shizuku cannot fix it
+### ✅ SOLVED: it was a Developer-options toggle, not a ColorOS wall
+
+**"Disable permission monitoring"** (Developer options, near the bottom, off by default) is ColorOS's
+name for what Shizuku's docs call **"USB debugging (Security settings)"**. Found by reading Shizuku's
+own source rather than guessing, then confirmed against `RikkaApps/Shizuku` issue #228, which resolves
+with exactly this confusion.
+
+With it **on**, on the OP9:
+
+| | before | after |
+|---|---|---|
+| `appops set … allow` | `SecurityException: … MANAGE_APP_OPS_MODES` | **works** — `RECORD_AUDIO: allow` |
+| Shizuku's permission prompt | only "the permission of adb is limited", then closes | **"Allow all the time" appears** |
+| CallVault's Shizuku status | "has not allowed CallVault to use it yet" | **"Shizuku is running and ready"** |
+| `pm grant` | `SecurityException: … GRANT_RUNTIME_PERMISSIONS` | still refused |
+
+So `PrivilegedGrants.grantAppOp` **does** work on ColorOS once that toggle is on, and Shizuku mode is
+usable on the OP9. The Shizuku server must be **restarted after flipping it** — a server started earlier
+keeps the old permission set, which is why the first retry still failed.
+
+**Why the prompt was blocked, exactly** (`RequestPermissionActivity.checkSelfPermission`):
+
+```kotlin
+val permission = Shizuku.checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS") == GRANTED
+if (permission) return true
+// else: show "the permission of adb is limited" and finish()
+```
+
+A pre-flight on `GRANT_RUNTIME_PERMISSIONS` — which v11+ does not even need, since
+`AuthorizationManager.grant()` stores the grant in Shizuku's **own** flags via
+`Shizuku.updateFlagsForUid`. On a device where adb is limited the dialog therefore refuses to appear at
+all, and there is no way through it from the app side.
+
+### 🟡 Still open on real hardware: the Shizuku user service did not start
+
+With permission granted, `RecorderShizukuRoundTripTest` on the OP9 gets past every gate and then fails
+with *"Shizuku never handed back a recorder binder"* — no `CV:RecorderUserService` line at all, so the
+process never reached our code. ColorOS is visibly freezing the Shizuku app process throughout
+(`OplusHansManager: freeze uid: … moe.shizuku.privileged.api`), which is a candidate. Unfinished.
+
+### 🔴 Superseded: ColorOS makes the phase-3 grants impossible, and Shizuku cannot fix it
 
 ```
 $ appops set --user 0 <pkg> RECORD_AUDIO allow
 java.lang.SecurityException: uid 2000 does not have android.permission.MANAGE_APP_OPS_MODES
 ```
 
-**ColorOS strips from the shell user a permission AOSP grants it.** So `PrivilegedGrants.grantAppOp`
+**Kept for the record; the conclusion above supersedes it.** ColorOS strips these from shell *while
+"Disable permission monitoring" is off*. Read as written below, this said `PrivilegedGrants.grantAppOp`
 cannot work on this device — not because of our code, and not because of Shizuku. **Shizuku does not
 help here: Shizuku *is* shell.** Only a Shizuku started as root (Sui) would clear it, which is why
 `hostUid()` exists. `cmd role add-role-holder` is refused too.
