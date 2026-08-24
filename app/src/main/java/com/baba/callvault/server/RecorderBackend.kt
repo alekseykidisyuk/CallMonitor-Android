@@ -44,7 +44,15 @@ object RecorderBackend {
     fun ensureRunning(context: Context, timeoutMs: Long = 24_000): Boolean {
         val mode = AppPreferences(context).getPrivilegedMode()
         return when (BackendChoice.of(mode)) {
-            BackendChoice.ADB -> RecorderServerLauncher.ensureServerRunning(context, timeoutMs)
+            BackendChoice.ADB -> RecorderServerLauncher.ensureServerRunning(context, timeoutMs).also { up ->
+                // Symmetric with the Shizuku branch: our daemon clears any Shizuku-hosted recorder left
+                // over from a previous mode. Shizuku's own removal cannot reach a service started by an
+                // older app version (its args no longer match), so this is the only thing that can.
+                if (up) {
+                    runCatching { RecorderConnection.service?.killStaleRecorders() }
+                        .onFailure { AppLogger.w(TAG, "Could not clear stale Shizuku recorders: ${it.message}") }
+                }
+            }
             BackendChoice.SHIZUKU -> ensureShizukuRunning(context)
         }
     }

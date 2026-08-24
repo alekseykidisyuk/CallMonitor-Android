@@ -320,11 +320,23 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
     override fun hostUid(): Int = android.os.Process.myUid()
 
     override fun killStaleRecorders() {
-        // Only the ADB daemon's main class. A Shizuku-hosted service runs under a process named
-        // <package>:recorder and never has this on its command line, so this cannot kill itself —
-        // which matters, because it runs INSIDE one of the two candidates.
-        val victim = "com.baba.callvault.server.RecorderServer"
-        AppLogger.i(TAG, "Killing any leftover ADB recorder daemon ($victim)")
+        // Kills the OTHER host, whichever this process happens to be — decided from our own command
+        // line rather than passed in, so it can never be told to kill itself.
+        //
+        // Both directions are needed. Removing a Shizuku user service through Shizuku only works while
+        // its ARGS still match: a service started by an older app version carries an older version
+        // number, so unbindUserService cannot reach it and it runs for ever. Measured on the OP9 - two
+        // com.baba.callvault:recorder processes survived an app update, a mode switch and a restart.
+        val myCommandLine = runCatching {
+            java.io.File("/proc/self/cmdline").readText().replace(0.toChar(), ' ').trim()
+        }.getOrDefault("")
+        val iAmTheAdbDaemon = myCommandLine.contains(ADB_DAEMON_CLASS)
+
+        // A Shizuku-hosted service is named <package>:recorder; the ADB daemon carries its main class.
+        // Neither pattern matches the process doing the killing.
+        val victim = if (iAmTheAdbDaemon) ":recorder" else ADB_DAEMON_CLASS
+        val who = if (iAmTheAdbDaemon) "the ADB daemon" else "a Shizuku user service"
+        AppLogger.i(TAG, "Killing the other recorder host (pattern '$victim'); I am $who")
         runCatching {
             val process = ProcessBuilder("pkill", "-f", victim).redirectErrorStream(true).start()
             process.waitFor(5, TimeUnit.SECONDS)
@@ -392,5 +404,8 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
          * demo `IUserService.aidl` (`void destroy() = 16777114;`) on 2026-08-24.
          */
         const val SHIZUKU_DESTROY_TRANSACTION = 16777114
+
+        /** The class only our own detached ADB daemon runs under. */
+        private const val ADB_DAEMON_CLASS = "com.baba.callvault.server.RecorderServer"
     }
 }

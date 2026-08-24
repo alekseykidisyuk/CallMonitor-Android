@@ -11,6 +11,7 @@ package com.baba.callvault
 import android.app.Application
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.server.RecorderBackend
+import com.baba.callvault.server.ShizukuBackend
 import com.baba.callvault.services.debug.DebugNotificationHelper
 import com.baba.callvault.system.storage.RetentionScheduler
 import com.baba.callvault.system.storage.SyncScheduler
@@ -112,6 +113,19 @@ class CallVaultApplication : Application() {
                 AppLogger.i(TAG, "Turned off on start (unsupported in this mode): ${turnedOff.joinToString()}")
             }
         }.onFailure { AppLogger.w(TAG, "Capability reconcile failed: ${it.message}") }
+
+        // In standalone mode, make sure no Shizuku user service is left running. One bound with
+        // daemon(true) outlives the app and even survives an app update, so a phone that used Shizuku
+        // once can otherwise carry a second shell-uid recorder for ever — and either of them may hold
+        // the binder the app talks to. Observed on the OP9: two com.baba.callvault:recorder processes
+        // still alive while the app was recording through its own ADB daemon.
+        //
+        // Safe to run unconditionally: stop() is a no-op when there is nothing to remove.
+        runCatching {
+            if (!AppPreferences(applicationContext).getPrivilegedMode().needsShizuku) {
+                ShizukuBackend.stop(remove = true)
+            }
+        }.onFailure { AppLogger.d(TAG, "No leftover Shizuku service to clear: ${it.message}") }
 
         // isPrivilegedTransportSetUp, not isAdbPaired: a Shizuku user never pairs, and gating on
         // pairing meant the app never bound Shizuku at startup — so the first call after a cold
