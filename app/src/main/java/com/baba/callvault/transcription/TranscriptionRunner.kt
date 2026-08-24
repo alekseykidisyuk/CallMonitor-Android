@@ -125,7 +125,7 @@ class TranscriptionRunner(
         val startedAt = System.currentTimeMillis()
         // Named before the words are decoded, so a brand or a contact is spelled rather than
         // guessed at. Best-effort: no glossary and no resolvable name simply means no prompt.
-        val prompt = runCatching { promptFor(displayName, language) }.getOrNull()
+        val prompt = runCatching { promptFor(displayName) }.getOrNull()
         val attempt = runCatching { transcriber.transcribe(context, uri, modelPath, language, prompt) }
 
         // A stop is not a result, and neither the exception nor `shouldStop` can be trusted to say so:
@@ -184,16 +184,16 @@ class TranscriptionRunner(
     }
 
     /**
-     * The words to expect for [displayName]: who the call is with, plus the user's own terms.
+     * The words to expect for [displayName]: who the call is with.
      *
      * The contact is looked up the same way the list does it, so the prompt names the person by the
      * name shown on screen rather than by a number.
      */
-    private suspend fun promptFor(displayName: String, language: String?): String? {
+    private suspend fun promptFor(displayName: String): String? {
         val contact = RecordingsRepository.listRecordings(context)
             .firstOrNull { it.displayName == displayName }
             ?.contactName
-        return TranscriptionPrompt.build(contact, language)
+        return TranscriptionPrompt.build(contact)
     }
 
     private suspend fun localUriFor(displayName: String): Uri? =

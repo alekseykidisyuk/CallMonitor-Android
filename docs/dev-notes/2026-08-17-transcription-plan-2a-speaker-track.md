@@ -136,37 +136,63 @@ already on the phone, and deleting the calls that taught a mapping un-teaches it
 `Names worked out automatically — Swap | Correct`. Swap stores an override that beats everything
 derived; Correct stores nothing and only stops the asking, leaving the answer free to improve.
 
-### Still unverified
+### The whisper prompt costs segments, and segments are the labels (2026-08-24)
 
-### The whisper prompt: only the words that are in it (2026-08-24)
+**Conclusion: the prompt carries the contact's name and nothing else.** Getting there took one wrong
+answer that shipped and had to be pulled, so the whole path is written down.
 
-A/B'd against the failing call itself, on the desktop `whisper-cli` built from the vendored
-submodule with the same model the phone runs (`large-v3-turbo-q5_0`, `-l he`):
+The problem was real: on a Hebrew call the phone model "OnePlus 9" was transcribed `1 + 9`,
+arithmetic rather than a name. A/B'd against that very call on the desktop `whisper-cli` built from
+the vendored submodule, same model the phone runs (`large-v3-turbo-q5_0`, `-l he`):
 
 | prompt | "OnePlus 9" came out as |
 |---|---|
 | none | `1 plus 10` |
-| the shipped style hint — a Hebrew sentence containing `Android` and `Google` | `1 plus 10`, **identical to sending nothing** |
+| a Hebrew sentence containing `Android` and `Google` (the first shipped hint) | `1 plus 10` — **identical to sending nothing** |
 | the same sentence with `OnePlus` among the names | **`OnePlus 9`** |
-| brand names *without* `OnePlus` | `1 + תשע` — straight back to arithmetic |
+| the same list *without* `OnePlus` | `1 + תשע` — straight back to arithmetic |
 
-So the theory the hint was built on — that whisper imitates a demonstrated *style* — is wrong, or at
-least far too weak to matter. The prompt biases towards the words that are literally in it. The hint
-now carries a short built-in list of names (`OnePlus, Samsung, iPhone, Android, Google, WhatsApp`)
-with the in-language sentence around them only to keep whisper writing in the right script.
+So whisper does not imitate a demonstrated *style*; it biases towards the words literally in the
+prompt. A built-in name list was shipped on that basis, and verified on the phone.
 
-**The honest limit: this helps a word only if that word is on the list.** It is not a general fix for
-foreign words, and it must not be described as one. It stays built-in because a box for the user to
-fill in was rejected, correctly — the words that need help are the ones you never think to list.
+**Then the maintainer noticed the speaker labels had disappeared from a call that had had them.**
+The name list was the cause. Those runs had used `-nt`, which prints text without timestamps and so
+hid segmentation completely — the finding was true and the view it was read from could not show what
+it cost. With timestamps, on the same real call, three identical runs of each:
 
-Two checks worth keeping: the prompt was **not** recited into a transcript of 8 seconds of pure
-silence (whisper hallucinated its usual `תודה רבה` instead), and re-running the same file twice gave
-`OnePlus 10` once and `OnePlus 9` another time — decoding is not bit-reproducible here, so a single
-run is never evidence on its own.
+| audio | segments, no prompt | with the contact's name | with the name list |
+|---|---|---|---|
+| 10s clip | 2 | — | **1** |
+| 30s | 9 | 12 | **3** |
+| 45s | 19 | 21 | **4** |
+| 60s | 25 | — | 31 |
+| 3m53s | 131 | — | 147 |
 
-The harness is worth rebuilding rather than re-inventing: `cmake -S third_party/whisper.cpp` with the
-Android SDK's cmake on `PATH`, then `whisper-cli -m <model> -f <wav> -l he -nt --prompt "…"`. Seconds
-per variant, against a real call, instead of one device build per idea.
+A long prompt reads to whisper as text the call is continuing from, and it answers with a few
+enormous segments instead of many small ones. It also ran past the end of the audio (13.7s of
+segments for a 10s file) and, once, leaked a fragment of itself into the transcript (`עברית:`).
+**Segments are what speaker labels are made of** — a line both people share belongs to neither — so
+the name list bought correct brand spelling by taking `You` and the contact's name off the screen.
+
+The contact's name alone does not do this (12 vs 9, 21 vs 19 — slightly *more* segments), which is
+why it is what survives. Correct brand names are not worth the labels; if that trade is ever
+revisited, it needs a mechanism that does not lengthen the prompt.
+
+**Two corrections to things previously written here**, both worth more than the finding itself:
+
+- *"Decoding is not bit-reproducible."* **Wrong.** Repeated runs of an identical configuration give
+  identical segment counts, every time. The variation that suggested otherwise came from prompts that
+  differed between runs — a changed variable mistaken for noise.
+- The prompt was **not** recited into 8 seconds of pure silence (whisper hallucinated its usual
+  `תודה רבה`), but it *was* leaked into a short real recording. Silence is not the test for that.
+
+**The rule this leaves: anything added to the prompt must be measured against segment counts on a
+real call, not read to see whether the words came out right.** The damage is invisible in the text.
+
+The harness is worth rebuilding rather than re-deriving: `cmake -S third_party/whisper.cpp` with the
+Android SDK's cmake on `PATH`, then `whisper-cli -m <model> -f <wav> -l he --prompt "…"` — **without**
+`-nt`, so segments stay visible. Seconds per variant against a real call, instead of a device build
+per idea.
 
 ### Ask, do not only guess
 
