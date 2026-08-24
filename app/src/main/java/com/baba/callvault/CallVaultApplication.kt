@@ -100,6 +100,19 @@ class CallVaultApplication : Application() {
         // background: this (transiently) enables Wireless debugging if needed, launches the daemon,
         // waits for its binder, then turns WD back OFF — so the app is recording-ready over binder and
         // WD is off when idle, with no user action. Best-effort; the call path also ensures it on demand.
+        // Reconcile the opt-ins with what the CURRENT mode can do, not only when the mode changes.
+        // Someone already in Shizuku mode when this shipped never goes through a switch, so their
+        // VoIP and resilient-recording switches would stay on while being unable to work — measured
+        // on the OP9, where handoff was still enabled after a mode round trip. Only ever turns things
+        // off, and only what the mode cannot do, so it is safe to run on every start.
+        runCatching {
+            val prefs = AppPreferences(applicationContext)
+            val turnedOff = prefs.disableWhatModeCannotDo(prefs.getPrivilegedMode())
+            if (turnedOff.isNotEmpty()) {
+                AppLogger.i(TAG, "Turned off on start (unsupported in this mode): ${turnedOff.joinToString()}")
+            }
+        }.onFailure { AppLogger.w(TAG, "Capability reconcile failed: ${it.message}") }
+
         // isPrivilegedTransportSetUp, not isAdbPaired: a Shizuku user never pairs, and gating on
         // pairing meant the app never bound Shizuku at startup — so the first call after a cold
         // start raced an unbound recorder.

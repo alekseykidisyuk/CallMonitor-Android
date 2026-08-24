@@ -86,12 +86,32 @@ list was written for in the first place.
    reboot — before the user has started Shizuku — cannot record, and Shizuku must be started by hand on
    every boot. The status card names it; nothing pre-warms it.
 
-## Must be checked before this ships
+## The return path — verified 2026-08-24
 
-- [ ] **Switching back to standalone works fully.** *(the maintainer asked for this explicitly)* Turning
-      Shizuku off must stop the user service, relaunch our own daemon, and record a real call — and the
-      settings that were auto-disabled must be re-enableable. **Nothing about the return path has been
-      exercised yet**; only the outward journey has.
+Toggling Shizuku back off on the OP9 and placing a real call, read from the device log:
+
+```
+15:22:54  Leaving Shizuku mode; releasing the user service
+15:22:54  Privileged mode is now STANDALONE
+15:23:35  Binder delivery finished ok=true          <- our OWN daemon, our own provider authority
+15:23:35  Handoff: calling daemon startHandoff(voice-call, 48000, 2)
+15:23:35  Handoff: startHandoff returned true in 93ms
+15:23:35  armVoipCapture -> true                    <- VoIP arming restored
+15:23:50  Speaker turns came from the handoff capture
+15:23:50  Stored speaker turns; this call suggested a_far
+```
+
+Everything the mode had taken away came back: our own daemon, the handoff path, VoIP arming, and speaker
+attribution. It also confirms the prediction for the mode it left — the Shizuku call twenty minutes
+earlier logged `No speaker turns for this recording`.
+
+**And it found a gap.** Resilient recording was still *enabled* through all of this, because
+`disableWhatModeCannotDo` ran only on a mode **switch** — and a user already in Shizuku mode when this
+shipped never goes through one. Their VoIP and resilient-recording switches would have stayed on while
+being unable to work. The reconcile now also runs on **every app start**; it only ever turns things off,
+and only what the current mode cannot do, so it is safe to repeat.
+
+## Must be checked before this ships
 - [ ] A real VoIP call in **standalone** after a mode round-trip, since arming happens on a daemon binder.
 - [ ] Speaker attribution still works in standalone after a round-trip.
 - [ ] A reboot in Shizuku mode: start Shizuku, confirm the first call records.
