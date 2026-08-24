@@ -138,7 +138,35 @@ derived; Correct stores nothing and only stops the asking, leaving the answer fr
 
 ### Still unverified
 
-- The Hebrew style hint given to whisper (below) has not been tested against the measured case.
+### The whisper prompt: only the words that are in it (2026-08-24)
+
+A/B'd against the failing call itself, on the desktop `whisper-cli` built from the vendored
+submodule with the same model the phone runs (`large-v3-turbo-q5_0`, `-l he`):
+
+| prompt | "OnePlus 9" came out as |
+|---|---|
+| none | `1 plus 10` |
+| the shipped style hint — a Hebrew sentence containing `Android` and `Google` | `1 plus 10`, **identical to sending nothing** |
+| the same sentence with `OnePlus` among the names | **`OnePlus 9`** |
+| brand names *without* `OnePlus` | `1 + תשע` — straight back to arithmetic |
+
+So the theory the hint was built on — that whisper imitates a demonstrated *style* — is wrong, or at
+least far too weak to matter. The prompt biases towards the words that are literally in it. The hint
+now carries a short built-in list of names (`OnePlus, Samsung, iPhone, Android, Google, WhatsApp`)
+with the in-language sentence around them only to keep whisper writing in the right script.
+
+**The honest limit: this helps a word only if that word is on the list.** It is not a general fix for
+foreign words, and it must not be described as one. It stays built-in because a box for the user to
+fill in was rejected, correctly — the words that need help are the ones you never think to list.
+
+Two checks worth keeping: the prompt was **not** recited into a transcript of 8 seconds of pure
+silence (whisper hallucinated its usual `תודה רבה` instead), and re-running the same file twice gave
+`OnePlus 10` once and `OnePlus 9` another time — decoding is not bit-reproducible here, so a single
+run is never evidence on its own.
+
+The harness is worth rebuilding rather than re-inventing: `cmake -S third_party/whisper.cpp` with the
+Android SDK's cmake on `PATH`, then `whisper-cli -m <model> -f <wav> -l he -nt --prompt "…"`. Seconds
+per variant, against a real call, instead of one device build per idea.
 
 ### Ask, do not only guess
 

@@ -16,20 +16,32 @@ import org.junit.Test
  * What whisper is told before it decodes a call.
  *
  * Whisper knows nothing about the call, so anything unusual comes out as whatever it sounds like:
- * on a real Hebrew call the phone model "one plus nine" was transcribed as `1 + 9`. The prompt is
- * read as text that came just before, and its style is imitated — which is the whole reason a
- * generic hint can work at all, and why it must be built from what the app already knows rather
- * than from a list somebody is expected to type.
+ * on a real Hebrew call the phone model "OnePlus 9" was transcribed as `1 + 9`. The prompt biases
+ * decoding towards the words that are *in* it and nothing else — measured, against that very call:
+ * a prompt describing the problem changed nothing, and one naming `OnePlus` fixed it. So these
+ * tests are about the names being present, not about the sentence around them.
  */
 class TranscriptionPromptTest {
 
     @Test
-    fun `shows a non-Latin language that foreign words stay in their own alphabet`() {
+    fun `names the words a non-Latin language would otherwise sound out`() {
         val prompt = TranscriptionPrompt.build(contactName = null, language = "he")
 
-        // Hebrew text carrying Latin-script words: the pattern, demonstrated rather than described.
-        assertTrue(prompt!!.contains("Android"))
+        // The name that was measured failing, and the sentence in Hebrew that keeps whisper writing
+        // in Hebrew around it. Both matter: the name alone is what fixes the word, the Hebrew alone
+        // fixed nothing.
+        assertTrue(prompt!!.contains("OnePlus"))
         assertTrue(prompt.any { it in '\u0590'..'\u05FF' })
+    }
+
+    @Test
+    fun `offers the same names in every language it speaks to`() {
+        // One list, four framings. A name that helps a Hebrew call helps a Russian one.
+        for (language in listOf("he", "ar", "ru", "zh")) {
+            val prompt = TranscriptionPrompt.build(contactName = null, language = language)
+            assertTrue(language, prompt!!.contains("OnePlus"))
+            assertTrue(language, prompt.contains("WhatsApp"))
+        }
     }
 
     @Test
@@ -56,7 +68,7 @@ class TranscriptionPromptTest {
     fun `carries both the hint and the contact when there is a reason for each`() {
         val prompt = TranscriptionPrompt.build(contactName = "Feroza", language = "he")!!
 
-        assertTrue(prompt.contains("Android"))
+        assertTrue(prompt.contains("OnePlus"))
         assertTrue(prompt.contains("Feroza"))
     }
 

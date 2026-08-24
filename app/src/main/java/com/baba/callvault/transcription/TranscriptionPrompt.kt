@@ -12,13 +12,15 @@ package com.baba.callvault.transcription
  * The words to expect, handed to whisper before it decodes a call.
  *
  * Whisper is general-purpose and knows nothing about the call, so anything unusual comes out as
- * whatever it sounds like. Measured on a real Hebrew call: "one plus nine" — a phone model — was
+ * whatever it sounds like. Measured on a real Hebrew call: "OnePlus 9" — a phone model — was
  * transcribed as `1 + 9`, arithmetic rather than a name. Contact names go the same way, and a name
  * spelled differently in every transcript is also a name that search will never find.
  *
- * whisper's `initial_prompt` biases decoding towards words it has been shown. Two limits shape
+ * whisper's `initial_prompt` biases decoding towards words it has been shown. Three limits shape
  * everything here:
  *
+ *  - **Only the words that are in it.** Measured: a prompt describing the *shape* of the problem
+ *    changed nothing at all, while one naming `OnePlus` fixed it outright. See [styleHintFor].
  *  - **It is a bias, not a rule.** It makes the right spelling likelier and guarantees nothing.
  *  - **It must stay short.** The prompt is capped, and an over-long or unrelated one does not simply
  *    fail to help — whisper recites it back inside the transcript. So the contact goes first, terms
@@ -57,27 +59,52 @@ object TranscriptionPrompt {
     }
 
     /**
-     * A sentence showing what this language's speech looks like written down.
+     * The names a call is likely to contain, written the way they should appear.
      *
-     * whisper reads its prompt as text that came just before, and imitates its style. That is the
-     * whole mechanism, and it is why a hint can be generic: a Hebrew sentence carrying an English
-     * word in Latin letters demonstrates that foreign words stay foreign, rather than being sounded
-     * out into the local script or — as measured on a real call — turned into arithmetic, where the
-     * phone model "one plus nine" was written `1 + 9`.
+     * **whisper's prompt biases towards the words that are in it, and nothing else.** An earlier
+     * version of this tried to *demonstrate a style* — a Hebrew sentence carrying two English words,
+     * on the theory that whisper imitates what it is shown. Measured against the failing call on
+     * 2026-08-24, that produced output byte-identical to sending no prompt at all:
      *
-     * Offered only for languages written in a non-Latin script, because that is where the problem
-     * lives. A French or German transcript already writes English words in the same alphabet.
+     * | prompt | "OnePlus 9" came out as |
+     * |---|---|
+     * | none | `1 plus 10` |
+     * | a Hebrew sentence containing `Android` and `Google` | `1 plus 10` — identical |
+     * | the same sentence, with `OnePlus` among the names | **`OnePlus 9`** |
+     * | brand names *without* `OnePlus` | `1 + תשע` — back to arithmetic |
      *
-     * The words chosen are deliberately dull and universal. A prompt can be echoed into a transcript
-     * if the audio is near-silent, so whatever is in it should be unremarkable when it appears.
+     * So the payload is the names themselves, and the sentence around them only keeps whisper
+     * writing in the right language. The honest limit follows directly: **this helps a word only if
+     * that word is here.** It is a short, curated list of names common enough to earn their place,
+     * not a solution to foreign words in general.
+     *
+     * It stays built-in for the same reason it is short. Asking the user to type the words their
+     * calls contain was rejected, and rightly — the words that need help are exactly the ones you do
+     * not think to list, so a box nobody fills in helps nobody. The one name the app *does* know is
+     * the contact's, and [build] adds it.
+     *
+     * Offered only for languages written in a non-Latin script, because that is where the damage is:
+     * a French transcript already writes English words in the same alphabet, while Hebrew sounds
+     * them out or, as above, does arithmetic with them. Deliberately dull entries — whisper recites
+     * its prompt into the transcript when the audio is near-silent, so it should be unremarkable
+     * when it surfaces.
      */
     private fun styleHintFor(language: String?): String? = when (language) {
-        "he" -> "שיחה בעברית, ובתוכה מילים באנגלית כמו Android ו-Google."
-        "ar" -> "مكالمة بالعربية، وفيها كلمات إنجليزية مثل Android و Google."
-        "ru" -> "Разговор по-русски, в нём есть английские слова, например Android и Google."
-        "zh" -> "中文通话，其中夹杂英文词，例如 Android 和 Google。"
+        "he" -> "שיחה בעברית ובתוכה שמות באנגלית: $NAMES."
+        "ar" -> "مكالمة بالعربية وفيها أسماء إنجليزية: $NAMES."
+        "ru" -> "Разговор по-русски, в нём английские названия: $NAMES."
+        "zh" -> "中文通话，其中夹杂英文名称：$NAMES。"
         else -> null
     }
+
+    /**
+     * The names themselves, shared by every language above.
+     *
+     * Phone makers and the apps calls are actually about — the class of word that gets sounded out.
+     * Kept to a handful: every name costs prompt budget that the contact's own name needs, and a
+     * long prompt is the one that gets recited back.
+     */
+    private const val NAMES = "OnePlus, Samsung, iPhone, Android, Google, WhatsApp"
 
     /**
      * Whether [name] is a phone number wearing a name's place.
