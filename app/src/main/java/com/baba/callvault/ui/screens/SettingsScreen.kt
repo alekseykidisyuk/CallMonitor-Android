@@ -1956,12 +1956,18 @@ private fun OfflineRecordingToggle() {
     // Non-null while the enable/disable dialog is walking the user through the ADB work with live feedback.
     var dialogMode by remember { mutableStateOf<OfflineDialogMode?>(null) }
 
+    // Pure embedded-ADB machinery, and Shizuku mode has no embedded ADB connection at all. The switch
+    // was already turned off on entering that mode, but it stayed tappable — so it could be turned back
+    // on, look on, and do nothing. Greying it says why instead.
+    val supported = capabilityAvailable(ModeCapability.OFFLINE_RECORDING)
+
     SettingsToggleRow(
         icon = Icons.Filled.WifiOff,
         label = stringResource(R.string.settings_offline_recording_label),
-        description = stringResource(R.string.settings_offline_recording_desc),
-        checked = enabled,
-        enabled = dialogMode == null,
+        description = unavailableReason(ModeCapability.OFFLINE_RECORDING)
+            ?: stringResource(R.string.settings_offline_recording_desc),
+        checked = enabled && supported,
+        enabled = supported && dialogMode == null,
         onCheckedChange = { turnOn ->
             dialogMode = if (turnOn) OfflineDialogMode.ENABLE else OfflineDialogMode.DISABLE
         },
