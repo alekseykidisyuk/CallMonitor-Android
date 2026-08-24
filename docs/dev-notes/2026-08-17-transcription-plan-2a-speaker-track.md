@@ -138,8 +138,25 @@ derived; Correct stores nothing and only stops the asking, leaving the answer fr
 
 ### Still unverified
 
-- The labels have not been seen with **names** on the device yet, only as Speaker A/B.
 - The Hebrew style hint given to whisper (below) has not been tested against the measured case.
+
+### Ask, do not only guess
+
+Names were showing as `Speaker A` / `Speaker B` with no way to correct them, and that was the design
+working as written: the convention needs **two agreeing outgoing calls** before it says anything, and
+the correction bar only appeared once it had. So the first labelled transcript on any phone offered
+anonymous sides and no way to fix them, which reads as the feature being broken rather than careful.
+
+The bar is now shown whenever the user has not settled the question, in both directions:
+
+| state | what the bar says |
+|---|---|
+| nothing worked out yet | *Which one is you?* → `Speaker A` `Speaker B` |
+| worked out from the convention | *Names worked out automatically* → `Swap` `Correct` |
+
+Naming one side names the other, and the answer is stored as the override that outranks everything
+derived. It is only offered where the transcript actually has attributable segments — a mono capture
+or a single-block transcript is not asked a question about two sides it never shows.
 
 ---
 
@@ -158,8 +175,16 @@ of speech and silence through the user's turn. The likely mechanism is that the 
 voice captures and re-routes the combined stream to downlink only — silently, with no error at open,
 at start, or on any read.
 
-**This is why the probe is `PROBE_ENABLED = false`.** Every guard it had covered a *failure*: a
-refused open, a refused start, a silent source. The damage came from the call **succeeding**.
+**This is why the probe was deleted rather than left switched off.** Every guard it had covered a
+*failure*: a refused open, a refused start, a silent source. The damage came from the call
+**succeeding**, which is the one outcome nothing was watching for. A constant is not a safe place to
+keep something like that — it takes one person who does not know this page to flip it back.
+
+Removed 2026-08-24 along with `DownlinkCorrelator`, the ringback `ChannelMapDetector`, and the
+`observedChannelMap()` binder method that existed only to carry their answer. Both measurements are
+closed on this hardware, so what labels a transcript now is the convention below and, above all, the
+user's own answer. The code is in git history if a device ever turns up that can serve two voice
+captures.
 
 It also rules out the obvious next idea — capturing `VOICE_UPLINK` + `VOICE_DOWNLINK` as two records
 and interleaving them the way `VoipCaptureSession` does — because that is still two concurrent voice

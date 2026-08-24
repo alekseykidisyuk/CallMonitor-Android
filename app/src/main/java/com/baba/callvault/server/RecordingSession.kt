@@ -43,5 +43,4 @@ internal interface RecordingSession {
      * A capture path that cannot see the raw channels answers `"unknown"`, which is correct rather
      * than a failure.
      */
-    fun observedChannelMap(): String = "unknown"
 }

@@ -21,9 +21,6 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioSource
 import com.baba.callvault.integrations.scrcpy.androidAudioSource
 import com.baba.callvault.utils.AppLogger
-import com.baba.callvault.data.ChannelMap
-import com.baba.callvault.server.speakers.ChannelMapDetector
-import com.baba.callvault.server.speakers.DownlinkCorrelator
 import com.baba.callvault.server.speakers.SpeakerTurnCodec
 import com.baba.callvault.server.speakers.SpeakerTurnDetector
 import com.baba.callvault.utils.PcmDownmix
@@ -66,16 +63,7 @@ internal class DirectAudioRecorderSession(
      */
     @Volatile private var speakerTurnsEncoded: String = ""
 
-    /** What this call's ringback suggested, as a [ChannelMap] key. One observation, not the answer. */
-    @Volatile private var channelMapObserved: String = ChannelMap.UNKNOWN.key
-
-    /** The downlink-only probe, and the thread draining it. Both null when it could not be opened. */
-    @Volatile private var downlinkProbe: AudioRecord? = null
-    @Volatile private var probeThread: Thread? = null
-
     override fun speakerTurns(): String = speakerTurnsEncoded
-
-    override fun observedChannelMap(): String = channelMapObserved
 
     override fun start() {
         try {
@@ -151,16 +139,6 @@ internal class DirectAudioRecorderSession(
         // separate channels here, and that information is destroyed by the downmix below. Only a
         // stereo capture carries it — a mono route has nothing to compare.
         val speakers = if (downmix) SpeakerTurnDetector(SAMPLE_RATE) else null
-        // Which channel is the far party is an OEM detail Android never specifies, so it is learned
-        // from the ringback at the start of an outgoing call — present on the far channel, absent
-        // from the near one. Reads the same stereo buffer, and caps itself after a few seconds.
-        val channelMap = if (downmix) ChannelMapDetector(SAMPLE_RATE) else null
-        // The measurement that does not depend on hearing ringback — which the OP12 never delivers to
-        // this capture, and which an incoming call cannot produce at all.
-        val correlator = if (downmix && PROBE_ENABLED) DownlinkCorrelator(SAMPLE_RATE) else null
-        if (correlator != null) {
-            downlinkProbe = openDownlinkProbe()?.also { startProbeDrain(it, correlator) }
-        }
         val info = MediaCodec.BufferInfo()
         var muxerStarted = false
         var totalFrames = 0L
@@ -175,14 +153,6 @@ internal class DirectAudioRecorderSession(
             if (speakers != null) {
                 runCatching { speakers.accept(pcm, read) }
                     .onFailure { AppLogger.w(TAG, "Speaker detection failed; continuing without turns: ${it.message}") }
-            }
-            if (channelMap != null) {
-                runCatching { channelMap.accept(pcm, read) }
-                    .onFailure { AppLogger.w(TAG, "Channel-map detection failed; continuing unmapped: ${it.message}") }
-            }
-            if (correlator != null) {
-                runCatching { correlator.acceptCall(pcm, read) }
-                    .onFailure { AppLogger.w(TAG, "Downlink comparison failed; continuing unmapped: ${it.message}") }
             }
 
             // Feed MONO to the encoder: downmix a stereo capture (average L+R), or pass a mono capture through.
@@ -204,39 +174,6 @@ internal class DirectAudioRecorderSession(
             runCatching { speakerTurnsEncoded = SpeakerTurnCodec.encode(speakers.finish()) }
                 .onFailure { AppLogger.w(TAG, "Could not encode speaker turns: ${it.message}") }
         }
-        if (channelMap != null) {
-            // What this ONE call suggested. The app decides whether to believe it: it knows the
-            // call's direction, and it will not trust any mapping until two calls agree.
-            //
-            // The downlink comparison is asked FIRST and outranks the ringback. It is a measurement
-            // against a stream the platform defines as the far party, where ringback is an inference
-            // from a tone that many devices never put into this capture at all — the OP12 among
-            // them, measured 2026-08-23: silence throughout the ringing phase.
-            val fromProbe = correlator?.let {
-                runCatching { it.result() }
-                    .onFailure { e -> AppLogger.w(TAG, "Could not compare with the downlink: ${e.message}") }
-                    .getOrDefault(ChannelMap.UNKNOWN)
-            } ?: ChannelMap.UNKNOWN
-            val fromRingback = runCatching { channelMap.result() }
-                .onFailure { AppLogger.w(TAG, "Could not read the channel map: ${it.message}") }
-                .getOrDefault(ChannelMap.UNKNOWN)
-
-            // ONLY the probe is reported. The ringback detector cannot tell an incoming call from an
-            // outgoing one — it assumes outgoing — so on an incoming call its answer is a coin flip
-            // dressed as evidence, and the app has no way to tell the two sources apart in a single
-            // string. It stays for the log, where it costs nothing and may yet prove useful on a
-            // device that does deliver ringback into this capture.
-            channelMapObserved = fromProbe.key
-            AppLogger.i(
-                TAG,
-                "Channel map observed: $channelMapObserved (downlink=${fromProbe.key} ringback=${fromRingback.key})"
-            )
-            // Levels and correlations, because "unknown" has several causes that need different
-            // answers: a silent probe means the device does not really implement the source, while
-            // two equal correlations mean it does and the channels are not distinguishable this way.
-            correlator?.let { AppLogger.i(TAG, "Downlink comparison: ${it.diagnostics()}") }
-        }
-
         // Signal end-of-stream so the encoder flushes its tail, then drain what's left.
         val inIdx = enc.dequeueInputBuffer(END_OF_STREAM_TIMEOUT_US)
         if (inIdx >= 0) enc.queueInputBuffer(inIdx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
@@ -281,10 +218,6 @@ internal class DirectAudioRecorderSession(
         stopRequested.set(true)
         // Let the capture loop notice the stop flag, flush EOS, and finalise the muxer.
         runCatching { readThread?.join(READ_JOIN_MS) }
-        // The probe usually released itself long before this; this is for a call shorter than it.
-        runCatching { probeThread?.join(READ_JOIN_MS) }
-        runCatching { downlinkProbe?.stop() }
-        runCatching { downlinkProbe?.release() }
         runCatching { audioRecord?.stop() }
         runCatching { audioRecord?.release() }
         runCatching { encoder?.stop() }
@@ -302,81 +235,6 @@ internal class DirectAudioRecorderSession(
         runCatching { encoder?.release() }
         runCatching { muxer?.release() } // MediaMuxer.release() does NOT close the fd — outFd stays usable
         audioRecord = null; encoder = null; muxer = null
-    }
-
-    /**
-     * Opens a short `VOICE_DOWNLINK` capture beside the call, purely to identify the far channel.
-     *
-     * The combined `VOICE_CALL` capture carries both directions but never says which channel is
-     * which — Android documents the source as "uplink + downlink" and leaves the order to the OEM.
-     * `VOICE_DOWNLINK` is defined as the far party and nothing else, so a few seconds of it beside
-     * the call answers by measurement what no amount of inspecting one stream can.
-     *
-     * **It is a diagnostic, never part of the recording.** Nothing it captures is written anywhere;
-     * only the comparison survives. Every failure path — a device that refuses a second capture, a
-     * source it does not implement, a probe fed silence — ends in no observation and a log line, and
-     * the recording continues exactly as it would have. It also stops itself after
-     * [PROBE_WINDOWS] windows so it holds no audio input for longer than it needs.
-     *
-     * @return the probe, already recording, or null if it could not be had.
-     */
-    private fun openDownlinkProbe(): AudioRecord? {
-        val minBuf = AudioRecord.getMinBufferSize(
-            SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
-        )
-        if (minBuf <= 0) return null
-
-        val rec = runCatching {
-            @Suppress("MissingPermission") // shell uid holds CAPTURE_AUDIO_OUTPUT; the daemon is not an app.
-            AudioRecord(
-                MediaRecorder.AudioSource.VOICE_DOWNLINK, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT, minBuf * BUFFER_FACTOR
-            )
-        }.onFailure {
-            AppLogger.i(TAG, "Downlink probe unavailable on this device: ${it.message}")
-        }.getOrNull() ?: return null
-
-        if (rec.state != AudioRecord.STATE_INITIALIZED) {
-            AppLogger.i(TAG, "Downlink probe would not initialise; channel mapping stays unlearned")
-            runCatching { rec.release() }
-            return null
-        }
-        // A second capture can be refused at start() rather than at construction.
-        if (runCatching { rec.startRecording() }.isFailure ||
-            rec.recordingState != AudioRecord.RECORDSTATE_RECORDING
-        ) {
-            AppLogger.i(TAG, "Downlink probe refused to start; channel mapping stays unlearned")
-            runCatching { rec.release() }
-            return null
-        }
-        AppLogger.i(TAG, "Downlink probe open on VOICE_DOWNLINK (mono ${SAMPLE_RATE}Hz)")
-        return rec
-    }
-
-    /**
-     * Drains the probe into [correlator] on its own thread.
-     *
-     * Its own thread because the capture loop must never wait on it: that loop is the recording, and
-     * a probe read that blocks would starve the encoder of the audio the user actually asked for.
-     */
-    private fun startProbeDrain(probe: AudioRecord, correlator: DownlinkCorrelator) {
-        probeThread = Thread {
-            val buf = ByteArray(READ_CHUNK_BYTES)
-            var windows = 0
-            runCatching {
-                while (!stopRequested.get() && windows < PROBE_WINDOWS) {
-                    val read = probe.read(buf, 0, buf.size)
-                    if (read <= 0) continue
-                    correlator.acceptDownlink(buf, read)
-                    windows += read / (SAMPLE_RATE * DownlinkCorrelator.WINDOW_MS / 1000 * 2)
-                }
-                AppLogger.i(TAG, "Downlink probe drained $windows window(s)")
-            }.onFailure { AppLogger.w(TAG, "Downlink probe read failed: ${it.message}") }
-            // Released as soon as it has what it needs, so nothing holds a voice input needlessly.
-            runCatching { probe.stop() }
-            runCatching { probe.release() }
-            downlinkProbe = null
-        }.apply { isDaemon = true; start() }
     }
 
     private fun openAudioRecord(androidSource: Int): Pair<AudioRecord, Int> {
@@ -404,28 +262,6 @@ internal class DirectAudioRecorderSession(
         private const val ENCODE_CHANNELS = 1
         private const val READ_CHUNK_BYTES = 4096
 
-        /**
-         * How long the downlink probe listens, in [DownlinkCorrelator.WINDOW_MS] windows.
-         *
-         * 400 windows is twenty seconds — long enough for both sides to have spoken on almost any
-         * call, and short enough that a second voice input is not held for the whole conversation.
-         */
-        private const val PROBE_WINDOWS = 400
-
-        /**
-         * OFF. The probe is suspected of costing the recording its near side.
-         *
-         * Measured on the OP12, 2026-08-23: the first call recorded with the probe running captured
-         * the far party and **nothing of the user** — one burst of speech where there had been two.
-         * The likely mechanism is that opening a second voice capture makes the HAL re-route the
-         * combined VOICE_CALL stream to downlink only, so the diagnostic silently took half the
-         * conversation away.
-         *
-         * Unproven, but it does not need to be proven to be switched off. Half a recording is a lost
-         * call, and this exists only to put a name on a label. It stays off until a run with it off
-         * shows whole recordings and a run with it on reproduces the loss.
-         */
-        private const val PROBE_ENABLED = false
         private const val MAX_INPUT_SIZE = 16_384
         private const val BUFFER_FACTOR = 4
         private const val DEQUEUE_TIMEOUT_US = 10_000L

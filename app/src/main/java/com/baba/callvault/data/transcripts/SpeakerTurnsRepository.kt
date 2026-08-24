@@ -66,20 +66,14 @@ object SpeakerTurnsRepository {
         }
         AppLogger.i(TAG, "Speaker turns came from the ${if (fromHandoff.isNotBlank()) "handoff" else "daemon"} capture")
 
-        val observed = service?.let { runCatching { it.observedChannelMap().orEmpty() }.getOrElse { "" } }.orEmpty()
-        val measured = ChannelMap.fromKey(observed)
-        // What the capture could measure comes first — it is evidence rather than convention. On the
-        // reference device it is always UNKNOWN (no ringback reaches the capture, and the downlink
-        // probe costs the recording its near side), so in practice the convention below is what
-        // answers: on an outgoing call, whoever speaks first is the person who answered.
+        // A convention, because both measurements are closed on this hardware: no ringback reaches
+        // the capture, and a second VOICE_DOWNLINK capture beside the call costs the recording its
+        // near side. What is left is that on an outgoing call, whoever speaks first is the person
+        // who answered.
         //
         // Only outgoing calls are read. On an incoming one the same convention points the other way
         // and holds less firmly, and two observations are enough to settle this without it.
-        val usable = when {
-            measured != ChannelMap.UNKNOWN -> measured
-            outgoing -> FirstSpeakerHeuristic.observe(turns)
-            else -> ChannelMap.UNKNOWN
-        }
+        val usable = if (outgoing) FirstSpeakerHeuristic.observe(turns) else ChannelMap.UNKNOWN
 
         runCatching {
             val db = TranscriptDatabase.get(context)
@@ -128,11 +122,8 @@ object SpeakerTurnsRepository {
         if (!TranscriptDatabase.exists(context)) return ChannelMap.UNKNOWN
         return runCatching {
             val dao = TranscriptDatabase.get(context).speakerTurnsDao()
-            val observations = dao.recentOutgoing(OBSERVATION_WINDOW).map { row ->
-                // What the capture measured, where it could. On the reference device it never can,
-                // so in practice the convention below answers for every call.
-                val measured = ChannelMap.fromKey(row.observedMap)
-                if (measured != ChannelMap.UNKNOWN) measured else FirstSpeakerHeuristic.observe(row.turns)
+            val observations = dao.recentOutgoing(OBSERVATION_WINDOW).map {
+                FirstSpeakerHeuristic.observe(it.turns)
             }
             ChannelMapCorroboration.trusted(observations)
         }.getOrDefault(ChannelMap.UNKNOWN)
