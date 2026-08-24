@@ -34,7 +34,6 @@ class ModeCapabilityTest {
     fun shizuku_cannot_do_anything_that_needs_a_privileged_audiorecord() {
         // All three hand a daemon-created AudioRecord around; none can work where one cannot start.
         assertFalse(ModeCapability.RESILIENT_RECORDING.isAvailableIn(PrivilegedMode.SHIZUKU))
-        assertFalse(ModeCapability.VOIP_RECORDING.isAvailableIn(PrivilegedMode.SHIZUKU))
         assertFalse(ModeCapability.SPEAKER_ATTRIBUTION.isAvailableIn(PrivilegedMode.SHIZUKU))
     }
 
@@ -44,6 +43,13 @@ class ModeCapabilityTest {
         assertFalse(ModeCapability.WIRELESS_DEBUGGING_CONTROL.isAvailableIn(PrivilegedMode.SHIZUKU))
         assertFalse(ModeCapability.DAEMON_KEEP_ALIVE.isAvailableIn(PrivilegedMode.SHIZUKU))
         assertFalse(ModeCapability.SILENT_UPDATE_INSTALL.isAvailableIn(PrivilegedMode.SHIZUKU))
+    }
+
+    @Test
+    fun voip_works_in_both_modes_by_different_captures() {
+        // Not a privileged-AudioRecord feature after all: under Shizuku it records the system output
+        // mix through scrcpy, the way Ever-Call-Recorder does. See VoipCapturePlan.
+        assertTrue(ModeCapability.VOIP_RECORDING.isAvailableIn(PrivilegedMode.SHIZUKU))
     }
 
     @Test

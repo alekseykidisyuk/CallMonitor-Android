@@ -27,7 +27,7 @@ is the same conclusion reached independently.
 |---|---|---|---|---|
 | **Carrier call recording** | direct AudioRecord | **scrcpy** | measured (real call, 46 KB) | works; quality note below |
 | **Resilient recording (handoff)** | ✅ | ❌ | measured — produced a 0-byte file | `HandoffPolicy` rules it out; setting greyed + auto-off |
-| **VoIP (app call) recording** | ✅ | ❌ | read — `VoipCaptureSession` runs two `AudioRecord`s against a dynamic policy | greyed + auto-off |
+| **VoIP (app call) recording** | ✅ loopback policy | ✅ **system output mix** | read — `VoipCapturePlan`; matched from Ever-Call-Recorder | implemented, **not yet verified two-sided** |
 | **Speaker attribution** | ✅ | ❌ | read — `SpeakerTurnDetector` lives only in `DirectAudioRecorderSession`; the scrcpy path never sees raw channels | *not yet surfaced — see gaps* |
 | **Offline recording (loopback adb)** | ✅ | ❌ | read — pure embedded-ADB machinery | auto-off |
 | **Wireless-debugging control / USB default mode** | ✅ | n/a | read | auto-off; inert |
@@ -59,7 +59,6 @@ bookkeeping keys, disclaimer, wizard-completed.
 | Setting | Capability |
 |---|---|
 | Resilient recording | `RESILIENT_RECORDING` |
-| VoIP recording + VoIP auto-start | `VOIP_RECORDING` |
 | Offline recording | `OFFLINE_RECORDING` |
 | Keep daemon warm (persistent server) | `DAEMON_KEEP_ALIVE` |
 | Turn Wireless debugging off when idle | `WIRELESS_DEBUGGING_CONTROL` |
@@ -71,6 +70,34 @@ re-enables something the user had deliberately turned off.
 list was written for in the first place.
 
 ---
+
+## Matched from Ever-Call-Recorder: VoIP under Shizuku
+
+`hari161008/Ever-Call-Recorder` — another fork of the same upstream — records app calls under Shizuku,
+and reading it showed why ours could not: **it does not use an `AudioRecord` at all.** For a call from a
+messaging app it forces scrcpy's `output` (REMOTE_SUBMIX) source, which runs in scrcpy's own process.
+
+Their reasoning, which this project reached independently from the other side:
+
+- `playback` (AudioPlaybackCaptureConfiguration) **hard-excludes** `USAGE_VOICE_COMMUNICATION` at the
+  platform level — exactly how calling apps tag call audio — so it records silence however privileged the
+  caller is.
+- Any **mic-class** source competes with the calling app's own microphone session and Android silences
+  one for privacy. CallVault met the same wall from the other direction: a second voice `AudioRecord`
+  during a carrier recording silently drops the user's own side.
+- `output` is a privileged system-mix tap gated on `CAPTURE_AUDIO_OUTPUT`, not a microphone capture, and
+  predates that exclusion.
+
+`VoipCapturePlan` now chooses per mode: standalone keeps our loopback policy (proven two-sided), Shizuku
+records the system output mix. **VoIP is therefore no longer greyed out under Shizuku.**
+
+⚠️ **Unverified two-sided.** They advertise both sides; our own VoIP work needed *two* sources to get
+both, so whether the system mix alone carries the near party is a question for a real call rather than
+for reasoning. It is still the difference between recording an app call under Shizuku and not recording
+it at all.
+
+**A side benefit worth noting:** the system-mix plan needs **no arming before the call**. The arming
+constraint is what makes a missed VoIP call unrecoverable in standalone mode.
 
 ## Gaps still open
 

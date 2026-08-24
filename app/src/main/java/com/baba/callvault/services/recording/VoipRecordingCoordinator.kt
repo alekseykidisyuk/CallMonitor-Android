@@ -47,6 +47,10 @@ import java.util.Locale
 object VoipRecordingCoordinator {
     private const val TAG = "CV:VoipRec"
 
+    /** How long to wait for the daemon to confirm the system-mix capture actually started. */
+    private const val START_CONFIRM_MS = 3_000L
+    private const val START_POLL_MS = 100L
+
     /** Mirrors `VoipAppIdentity.UID_UNKNOWN`, which lives in the daemon-side package. */
     private const val UID_UNKNOWN = -1
 
@@ -103,9 +107,26 @@ object VoipRecordingCoordinator {
             return
         }
 
+        // Which capture an app call gets depends on the mode — see [VoipCapturePlan]. Standalone uses
+        // CallVault's own loopback policy; Shizuku cannot, and records the system output mix through
+        // scrcpy instead, the way Ever-Call-Recorder does.
+        val plan = VoipCapturePlan.forMode(AppPreferences(context).getPrivilegedMode())
         val started = runCatching {
-            service.startVoipRecording(codec.cliKey, bitRate, saf.descriptor)
-        }.onFailure { AppLogger.e(TAG, "startVoipRecording threw: ${it.message}", it) }.getOrDefault(false)
+            when (plan) {
+                VoipCapturePlan.POLICY_LOOPBACK ->
+                    service.startVoipRecording(codec.cliKey, bitRate, saf.descriptor)
+
+                VoipCapturePlan.SYSTEM_OUTPUT_MIX -> {
+                    AppLogger.i(TAG, "Recording this app call from the system output mix (${plan.scrcpySourceKey})")
+                    // The ordinary recording entry point, which under Shizuku lands on scrcpy. It
+                    // returns Unit rather than a boolean, so success is judged the same way the carrier
+                    // path judges it: by whether the daemon reports itself recording shortly after.
+                    service.startRecording(plan.scrcpySourceKey, codec.cliKey, bitRate, saf.descriptor)
+                    awaitRecording(service)
+                }
+            }
+        }.onFailure { AppLogger.e(TAG, "Starting the app-call recording threw: ${it.message}", it) }
+            .getOrDefault(false)
 
         if (!started) {
             // Most likely the policy was not armed before the call — nothing can be captured now, so
@@ -146,6 +167,21 @@ object VoipRecordingCoordinator {
      *   fault of ours, which is recorded as an unexplained gap instead — the two must never blur,
      *   since one excuses the miss and the other is precisely the failure worth chasing.
      */
+    /**
+     * Waits briefly for the daemon to report itself recording.
+     *
+     * `startRecording` posts its setup to a worker thread and returns immediately, so an instant check
+     * would always say "not recording". A short poll is the same judgement the carrier path makes.
+     */
+    private fun awaitRecording(service: IRecorderService): Boolean {
+        val deadline = System.currentTimeMillis() + START_CONFIRM_MS
+        while (System.currentTimeMillis() < deadline) {
+            if (runCatching { service.isRecording }.getOrDefault(false)) return true
+            Thread.sleep(START_POLL_MS)
+        }
+        return false
+    }
+
     private fun reportMissed(context: Context, messageRes: Int, prerequisite: Prerequisite?) {
         // Reading health can fail; a failure there must not decide to shout. False is the quiet
         // direction, and matches the carrier path's gate in `recordMissedForMissingPrerequisite`.
