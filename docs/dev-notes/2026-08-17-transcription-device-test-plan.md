@@ -128,6 +128,12 @@ The device check for it: transcribe a call, delete its **catalog** (clear the ap
 instead let a schema bump do it, or delete the row) so the file is untracked, set a short retention,
 let the sweep run, then search for a word from the call.
 
+**Do not run the sweep half of B5 on the daily driver.** The shortest retention preset is *Daily*, so
+turning it on to force a sweep deletes every real recording older than a day — a far worse outcome than
+the bug being tested. The sweep's catalogued half calls the same `RecordingsRepository.deleteFile` as
+the in-app delete, so the in-app delete below exercises that code path; the untracked half is covered by
+`UntrackedCascadeTest`. What is left for a device is the in-app delete and the search after it.
+
 ### B6. Survival — Plan 2, Task 1
 
 - [ ] Transcripts survive an app **update** (install a newer build over the top).
@@ -175,8 +181,16 @@ convention plus the user's own answer, so that is what to test.
 
 ### B8. Speaker track must not harm recording — Plan 2A
 
+**The one that matters, and the only one a person can run: record a two-sided call and LISTEN to it.**
+Can you hear *both* your own voice and the other person's? That is the whole test. The failure this
+guards against has happened once already — the downlink probe silently took the near side off the
+recording — and it was invisible in the logs, in the file size and in the waveform. Nothing but an ear
+catches it.
+
+- [ ] A two-sided call plays back with **both voices audible**.
 - [ ] A call recorded with the capture tap has the **same codec, channel count and bit rate** as one
-      recorded before it. If the audio changed at all, the tap is wrong.
+      recorded before it. If the audio changed at all, the tap is wrong. (Needs the two files side by
+      side on a computer; not something to eyeball on the phone.)
 - [ ] A fallback/mono capture produces no speaker data and **no error**.
 - [ ] A warm daemon from the previous version produces no speaker data and **no error** (the AIDL
       method it does not have must not break a recording).
