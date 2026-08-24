@@ -427,6 +427,9 @@
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">USB-megosztás</string>
     <string name="voicemail_contact_label">Hangposta</string>
+    <string name="voip_missed_not_ready">Egy alkalmazáshívás nem lett rögzítve — a CallVault nem állt készen időben. Ez egy telefonhívás vége után egy rövid ideig előfordulhat. A következő hívás már rendben rögzül.</string>
+    <string name="voip_missed_no_folder">Egy alkalmazáshívás nem lett rögzítve — a felvételek mappája hiányzik vagy nem írható. Válaszd ki újra a Beállításokban.</string>
+    <string name="voip_missed_label">Alkalmazáshívás</string>
     <string name="voip_one_sided_warning">Abból az alkalmazáshívásból csak a te oldalad rögzült — a másik alkalmazás nem engedi a hívás hangjának rögzítését.</string>
     <string name="voip_prompt_text">Koppintson a Rögzítés gombra a hívás rögzítéséhez.</string>
     <string name="voip_prompt_text_named">%1$s hívás. Koppintson a Rögzítés gombra a rögzítéséhez.</string>

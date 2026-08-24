@@ -28,9 +28,12 @@ until we install a build on the OP12 and work through it.
 - [x] **A4. Calls per run is configurable** — 5 / 10 / 25 / 50 / No limit, default 25. Shipped in
   `1a759af`.
 
-- [x] **A5. Detect the channel mapping automatically from ringback**, falling back to neutral
-  "Speaker A / B" when the carrier gives nothing to go on. No prompt, no scripted test call.
-  → Plan 2A, Task 4.
+- [x] ~~**A5. Detect the channel mapping automatically from ringback**~~ — **SUPERSEDED 2026-08-24.**
+  The ringback never reaches the capture on the reference phone (silence through the whole ringing
+  phase), and the alternative measurement — a second `VOICE_DOWNLINK` capture — costs the recording
+  its near side. Both detectors are deleted. What ships: a convention (on a call you placed, the
+  first voice is whoever answered), corroborated across two calls, and above all the user's own
+  answer, which the transcript asks for outright. → see B7 below.
 
   **VoIP needs no calibration at all**: `VoipCaptureSession.kt:40` interleaves the two streams
   itself — *"LEFT near, RIGHT far"* — so for app calls the mapping is known by construction. Only
@@ -114,21 +117,44 @@ only the unit tests.
 - [ ] Transcripts survive the recordings catalog being rebuilt. This is the whole reason they live in
       their own database.
 
-### B7. Speaker channel mapping — Plan 2A
+### B7. Speaker naming — Plan 2A
 
-Now **automatic** (decision A5): the app detects the far-party channel from the ringback tone on an
-outgoing call. So this is no longer a scripted test — it is a check that the automatic detection
-reached the *right* conclusion on your carrier, and stayed quiet when it could not.
+**Rewritten 2026-08-24.** This section used to test detection from the ringback tone. That detector
+is deleted: on the reference phone the capture is silent through the entire ringing phase, so it
+never worked there, and a second `VOICE_DOWNLINK` probe (the alternative measurement) costs the
+recording its near side — see the hard constraint in the Plan 2A notes. What ships instead is a
+convention plus the user's own answer, so that is what to test.
 
-- [ ] Make one ordinary **outgoing** carrier call. Afterwards, check the detected mapping and confirm
-      the transcript attributes your lines to you.
-- [ ] Confirm the conclusion is **stable** across two or three more outgoing calls, not flip-flopping.
-- [ ] **Incoming** calls: there is no ringback to learn from, so confirm they reuse the mapping
-      already learned rather than guessing.
-- [ ] If the carrier sends no in-band ringback, confirm the labels fall back to neutral
-      "Speaker A / B" — **a wrong attribution is far worse than none**.
-- [ ] VoIP (WhatsApp): mapping is known by construction, so confirm "You / Them" is right there
-      *without* any calibration having happened.
+- [ ] After a call with speech from both people, the transcript shows **two sides** with a bar asking
+      *Which one is you?* Tapping either label names both sides, on that transcript and every other.
+- [ ] The names are **right**: your own words are attributed to you. You know who said what; the app
+      does not.
+- [ ] After answering, the bar is gone and **"Swap names"** is in the action row. Tapping it flips
+      both sides and it stays flipped. *This is the escape hatch — a mis-tap on the bar must never be
+      permanent.*
+- [ ] Left unanswered across **two or three outgoing calls**, names appear on their own from the
+      convention (on a call you placed, whoever speaks first is the person who answered), and are
+      **stable** rather than flip-flopping between calls.
+- [ ] A call where only **one** side is ever heard produces neutral "Speaker A / B" and no names —
+      a wrong attribution is far worse than none, and a one-sided capture is what a broken recording
+      looks like.
+- [ ] **Incoming** calls reuse the mapping rather than guessing: the convention points the other way
+      on an incoming call and is deliberately not read there.
+- [ ] A transcript that came back as **one segment** shows no speaker names and **no bar**. Correct,
+      not a bug: a line both people share belongs to neither. Worth knowing so it is not re-reported.
+- [ ] **VoIP (WhatsApp): expect NO speaker names**, and confirm that is what happens rather than
+      something worse. Checked in the code on 2026-08-24: `VoipCaptureSession` is a **third capture
+      path** alongside the daemon's direct one and the app's handoff one, and it is the only one with
+      no `SpeakerTurnDetector` in it — so an app call produces no turns and its transcript cannot be
+      labelled.
+
+      Galling, because VoIP is the *easy* case: the two directions arrive as separate streams and are
+      interleaved LEFT near, RIGHT far, so the mapping is known by construction with nothing to infer.
+      Adding the detector there is a small change; the real question it raises is that the trusted
+      mapping is currently one global answer for the device, while VoIP's is fixed and the carrier's
+      is an OEM detail — so the two cannot share a single value on a phone where they disagree.
+
+      **Not a regression and not scheduled.** Logged here so it is not rediscovered as a bug.
 
 ### B8. Speaker track must not harm recording — Plan 2A
 

@@ -13,6 +13,7 @@ import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.health.CallOutcomes
+import com.baba.callvault.data.health.Prerequisite
 import com.baba.callvault.data.health.SetupFingerprint
 import com.baba.callvault.data.health.SetupHealthStore
 import com.baba.callvault.data.health.record
@@ -65,12 +66,17 @@ object VoipRecordingCoordinator {
 
         val service = RecorderConnection.service
         if (service == null) {
+            // Nothing can be done for THIS call, and that is not a shortcoming of the retry that is
+            // missing here — see [reportMissed]. All that is left is to say so.
+            reportMissed(context, R.string.voip_missed_not_ready, null)
             AppLogger.w(TAG, "VoIP call detected but the daemon is not connected — not recording")
             return
         }
 
         val folderUri = prefs.getRecordingFolderUri()
         if (!SafHelper.isFolderValid(context, folderUri)) {
+            // User-owned and permanent until they fix it: every call goes the same way until then.
+            reportMissed(context, R.string.voip_missed_no_folder, Prerequisite.RECORDING_FOLDER)
             AppLogger.e(TAG, "VoIP call detected but the recording folder is missing/unwritable")
             return
         }
@@ -92,6 +98,7 @@ object VoipRecordingCoordinator {
 
         val saf = SafHelper.createAudioFile(context, folderUri, fileName, codec.mimeType)
         if (saf == null) {
+            reportMissed(context, R.string.voip_missed_no_folder, Prerequisite.RECORDING_FOLDER)
             AppLogger.e(TAG, "Could not create the VoIP output file")
             return
         }
@@ -103,6 +110,7 @@ object VoipRecordingCoordinator {
         if (!started) {
             // Most likely the policy was not armed before the call — nothing can be captured now, so
             // remove the empty file rather than leaving a 0-byte recording in the user's folder.
+            reportMissed(context, R.string.voip_missed_not_ready, null)
             AppLogger.e(TAG, "VoIP recording refused by the daemon; discarding the empty file")
             runCatching { saf.descriptor.close() }
             runCatching { DocumentFile.fromSingleUri(context, saf.uri)?.delete() }
@@ -113,6 +121,61 @@ object VoipRecordingCoordinator {
         pending = saf
         codecMime = codec.mimeType
         AppLogger.i(TAG, "VoIP recording started -> $fileName")
+    }
+
+    /**
+     * Says out loud that a VoIP call went unrecorded.
+     *
+     * **Why there is no retry here.** The obvious fix — wait a moment for the daemon and start late —
+     * cannot work. Capture depends on a dynamic audio policy the daemon registers, and Android fixes
+     * a track's routing when the track is *created*: `startVoipRecording` refuses outright with
+     * "policy was not armed before the call" for exactly this reason. By the time we notice the call,
+     * its audio is already routed. Arming is re-done on every fresh daemon binder
+     * (`RecorderConnection.onDaemonReady`), which is what keeps the window small; a call that lands
+     * inside it is lost, and no amount of waiting recovers it.
+     *
+     * So the only honest thing left is to tell the user, because the alternative is what shipped
+     * until now: a call recorded by nobody and mentioned by nobody. That is the worst outcome a call
+     * recorder has — worse than a duplicate warning, worse than a bad recording — because the user
+     * finds out weeks later, if ever.
+     *
+     * Both a notification (seen now, while they remember the call) and a status-card entry (still
+     * there tomorrow). Reporting only, and wrapped: nothing here may throw into the call path.
+     *
+     * @param prerequisite the user-owned setting to blame, where there is one. Null for a transient
+     *   fault of ours, which is recorded as an unexplained gap instead — the two must never blur,
+     *   since one excuses the miss and the other is precisely the failure worth chasing.
+     */
+    private fun reportMissed(context: Context, messageRes: Int, prerequisite: Prerequisite?) {
+        // Reading health can fail; a failure there must not decide to shout. False is the quiet
+        // direction, and matches the carrier path's gate in `recordMissedForMissingPrerequisite`.
+        val everWorked = runCatching { SetupHealthStore(context).read().lastVerifiedAt > 0L }
+            .getOrDefault(false)
+
+        when (VoipMissPolicy.report(everWorked, prerequisite)) {
+            MissReport.SILENT -> {
+                AppLogger.i(TAG, "An app call went unrecorded, but no call has ever recorded here — staying quiet")
+                return
+            }
+
+            MissReport.EXCUSED, MissReport.UNEXPLAINED -> Unit
+        }
+
+        runCatching {
+            RecordingNotificationHelper(context).showErrorNotification(context.getString(messageRes))
+        }.onFailure { AppLogger.w(TAG, "Could not warn about the missed VoIP call: ${it.message}") }
+
+        // Separately guarded from the notification: one is seen now, the other is still there
+        // tomorrow, and a failure to write the second must not cost the first.
+        runCatching {
+            val now = System.currentTimeMillis()
+            val store = SetupHealthStore(context)
+            // Labelled "App call": there is no number and no contact to name it by, and the card
+            // saying which kind of call went missing is most of what makes it actionable.
+            val label = context.getString(R.string.voip_missed_label)
+            if (prerequisite != null) store.recordMissedWhileNotReady(now, label, prerequisite)
+            else store.recordGap(now, label)
+        }.onFailure { AppLogger.w(TAG, "Could not record the missed VoIP call: ${it.message}") }
     }
 
     /** Stops the in-flight VoIP recording, if any. Idempotent. */

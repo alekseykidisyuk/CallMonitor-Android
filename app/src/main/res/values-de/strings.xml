@@ -427,6 +427,9 @@
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">USB-Tethering</string>
     <string name="voicemail_contact_label">Mailbox</string>
+    <string name="voip_missed_not_ready">Ein App-Anruf wurde nicht aufgezeichnet — CallVault war nicht rechtzeitig bereit. Das kann kurz nach dem Ende eines Telefonats passieren. Der nächste Anruf sollte normal aufgezeichnet werden.</string>
+    <string name="voip_missed_no_folder">Ein App-Anruf wurde nicht aufgezeichnet — der Aufnahmeordner fehlt oder ist nicht beschreibbar. Wähle ihn in den Einstellungen erneut aus.</string>
+    <string name="voip_missed_label">App-Anruf</string>
     <string name="voip_one_sided_warning">Von diesem App-Anruf wurde nur deine Seite aufgenommen — die andere App erlaubt es nicht, ihr Gesprächsaudio aufzuzeichnen.</string>
     <string name="voip_prompt_text">Auf „Aufnehmen“ tippen, um diesen Anruf aufzunehmen.</string>
     <string name="voip_prompt_text_named">%1$s-Anruf. Auf „Aufnehmen“ tippen, um ihn aufzunehmen.</string>

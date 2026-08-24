@@ -430,6 +430,9 @@
     <string name="usb_mode_ptp">PTP</string>
     <string name="usb_mode_tethering">Roteador USB</string>
     <string name="voicemail_contact_label">Caixa postal</string>
+    <string name="voip_missed_not_ready">Uma chamada de aplicativo não foi gravada — o CallVault não estava pronto a tempo. Isso pode acontecer por um breve período após o fim de uma ligação. A próxima deve gravar normalmente.</string>
+    <string name="voip_missed_no_folder">Uma chamada de aplicativo não foi gravada — a pasta de gravações está ausente ou não pode ser gravada. Escolha-a novamente nas Configurações.</string>
+    <string name="voip_missed_label">Chamada de aplicativo</string>
     <string name="voip_one_sided_warning">Só o seu lado dessa chamada de app foi gravado — o outro app não permite que o áudio da chamada dele seja capturado.</string>
     <string name="voip_prompt_text">Toque em Gravar para gravar esta chamada.</string>
     <string name="voip_prompt_text_named">Chamada do %1$s. Toque em Gravar para gravá-la.</string>
