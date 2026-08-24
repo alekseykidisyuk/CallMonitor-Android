@@ -94,13 +94,24 @@ Each phase ends somewhere shippable, and nothing before phase 4 changes behaviou
 all its state; `RecorderServer` is only the `app_process` entrypoint. `onTransact` routes 16777114 to
 `destroy()`, so the AIDL keeps its positional IDs — guarded by `RecorderTransactionCodesTest`, which
 fails if anyone reorders a method. `PrivilegedMode` added, defaulting to `STANDALONE`, and not yet read
-by anything. 737 unit tests green, `lintVitalRelease` clean, release APK builds. **Still owed: a real
-two-sided call on the phone**, because no test on a laptop can tell whether audio still arrives.
+by anything. 737 unit tests green, `lintVitalRelease` clean, release APK builds.
+
+Verified **on the emulator** (Pixel 6, Android 16, arm64, google_apis) by
+`RecorderDaemonRoundTripTest`, which launches the daemon as shell and drives it over a real binder:
+daemon runs at **uid 2000**, `Binder delivery finished ok=true`, `isRecording`/`startRecording`/
+`stopRecording` all dispatch through the new `onTransact`, capture starts on the **direct AudioRecord**
+path, and the file comes back non-empty. That covers the whole of what the refactor touched except the
+audio itself.
+
+**Still owed: a real two-sided carrier call on a phone.** The emulator has no downlink, so it cannot
+say whether both sides of a call still arrive — the failure mode that is invisible in logs, file size
+and waveform.
 
 **Phase 2 — the Shizuku backend.** Add `dev.rikka.shizuku:api` + `:provider`, the manifest permission
 and `ShizukuProvider`, `RecorderUserService`, and a `ShizukuBackend` that binds and feeds
-`RecorderConnection`. Reachable only from a debug affordance. *Acceptance:* on the emulator, with
-Shizuku started over adb, a recording completes through the Shizuku path.
+`RecorderConnection`. Reachable only from a debug affordance. *Acceptance:* `RecorderDaemonRoundTripTest`
+passing again with its launch line swapped for `Shizuku.bindUserService` — the test was written so that
+is the only difference between the two backends.
 
 **Phase 3 — the grants.** `grantAppOp` / `grantRole` equivalents on the user service, so the
 permissions the standalone path grants over ADB have a Shizuku route (this is what upstream's service
@@ -133,5 +144,17 @@ reporting must not blame the user for a Shizuku that was not running.
   anyway, for the day that changes.
 
 ## Testing on the emulator
+
+**More is testable there than first assumed.** The initial write-up of this plan said the emulator could
+only cover binding and lifecycle. In practice it also covers binder delivery, transaction dispatch, the
+direct AudioRecord capture path and file output — see phase 1 above. Two failures worth remembering, both
+found by running it rather than reasoning about it:
+
+- `UiAutomation.executeShellCommand` is **not a shell**. Redirection, `&` and a trailing `sleep` are
+  silently dropped, so `RecorderServerLauncher`'s literal command reaches nothing — no daemon, no log
+  line, no error. `setsid env CLASSPATH=… app_process …` is a pure exec chain and works.
+- The returned pipe must be **held open** for the life of the daemon. Reading it to EOF blocks forever on
+  a process running a Looper, and closing it early kills the child before `app_process` finishes loading
+  — the same race `LAUNCH_KEEPALIVE_SEC` exists for on the ADB path.
 
 Shizuku runs on an emulator: install the APK, then `adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.sh`, which is the same route a real device uses over wireless debugging. That covers binding, permission, the user service lifecycle and `destroy`. What the emulator **cannot** tell us is whether the audio is right — there is no carrier call and no real downlink — so every phase that touches capture still ends on a real phone, with a two-sided call listened to by ear.
