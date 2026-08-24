@@ -349,6 +349,17 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
                 return direct
             }
         }
+        // Checked before the extractor opens it as a zip. A `daemon(true)` Shizuku service outlives the
+        // app, and an app update moves the APK to a new hashed directory — so a surviving service holds
+        // a path to a file that no longer exists. Left to ZipFile that surfaces as a NoSuchFileException
+        // stack trace with nothing in it that names the actual problem.
+        if (!java.io.File(apkPath).exists()) {
+            throw java.io.IOException(
+                "This recorder process is stale: its APK ($apkPath) no longer exists, so scrcpy cannot " +
+                    "be extracted. The app was updated while the service kept running; the service must " +
+                    "be restarted (Shizuku does that when the service version changes)."
+            )
+        }
         val freshJar = ScrcpyJarExtractor.ensureScrcpyJar(apkPath) // scrcpy needs its extracted jar
         val scrcpy = RecorderSession(source, codec, bitRate, outFd, freshJar)
         scrcpy.start()

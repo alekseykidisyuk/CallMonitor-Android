@@ -14,6 +14,7 @@ import android.content.Intent
 import com.baba.callvault.BuildConfig
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.integrations.adb.AdbShell
+import com.baba.callvault.server.ShizukuBackend
 import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.utils.AppLogger
@@ -66,6 +67,26 @@ class UpdatePackageReplacedReceiver : BroadcastReceiver() {
      * inline). Harmless no-op when no transport is up — Home's banner then guides the one-time WD toggle.
      */
     private fun recoverAfterReplace(context: Context) {
+        // Shizuku mode first, and unconditionally: a user service bound with daemon(true) SURVIVES the
+        // update, and an update moves the APK to a new hashed directory — so the surviving service holds
+        // a path to a file that no longer exists. It keeps answering, so nothing looks wrong, until a
+        // call needs the scrcpy jar and there is nothing to extract it from. Measured on the OP9: a real
+        // call recorded 0 bytes and reported success.
+        //
+        // Shizuku restarts a service whose version changes, and the version IS the app's versionCode —
+        // but that only covers real updates. A same-version reinstall (every development install, and a
+        // reinstall of the same release) leaves the stale service in place, so it is torn down here
+        // rather than trusted to the version check.
+        if (AppPreferences(context).getPrivilegedMode().needsShizuku) {
+            AppLogger.i(TAG, "App replaced in Shizuku mode; restarting the user service so it sees the new APK")
+            Thread {
+                runCatching { ShizukuBackend.stop(remove = true) }
+                    .onFailure { AppLogger.w(TAG, "Could not stop the stale Shizuku service: ${it.message}") }
+                runCatching { RecorderBackend.ensureRunning(context) }
+            }.apply { isDaemon = true; name = "cv-post-update-shizuku" }.start()
+            return
+        }
+
         if (AdbShell.hasWriteSecureSettings(context)) {
             AppLogger.d(TAG, "WRITE_SECURE_SETTINGS survived the update; no post-replace recovery needed")
             return

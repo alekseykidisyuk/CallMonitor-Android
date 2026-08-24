@@ -52,12 +52,18 @@ object ShizukuBackend {
     }
 
     /**
-     * Bumped whenever [RecorderUserService] or anything it serves changes in a way a running service
-     * would get wrong. Shizuku kills and restarts a user service whose version differs from the one
-     * already running, which is the only defence against a stale service from the previous app version
-     * answering with old code — the same hazard the ADB path handles by killing stale daemons.
+     * The app's own versionCode, which is what ShizuCallRecorder uses and what this must be.
+     *
+     * Shizuku kills and restarts a user service whose version differs from the running one, so tying
+     * this to the app version makes **every app update restart the service**. A hardcoded constant does
+     * not, and that is not a tidiness point — it cost a silent empty recording on a real call:
+     *
+     * A `daemon(true)` service outlives the app, including across an update. An update moves the APK to
+     * a new hashed directory, so the surviving service was still holding the OLD path; when direct
+     * capture failed and it reached for the scrcpy jar, `ZipFile` threw on a file that no longer existed,
+     * both capture paths were gone, and the call recorded nothing while every layer reported success.
      */
-    private const val SERVICE_VERSION = 1
+    private val SERVICE_VERSION = com.baba.callvault.BuildConfig.VERSION_CODE
 
     @Volatile private var connection: ServiceConnection? = null
 
