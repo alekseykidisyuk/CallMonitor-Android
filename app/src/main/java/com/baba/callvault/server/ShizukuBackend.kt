@@ -94,7 +94,18 @@ object ShizukuBackend {
      * binder does not arrive by the time this returns; it lands in [RecorderConnection] when Shizuku
      * answers, exactly as the daemon's own delivery does.
      */
-    fun start(): Boolean {
+    fun start(): Boolean = synchronized(bindLock) { startLocked() }
+
+    /**
+     * Guards [start]. Without it two callers — the app-start warmup and the first call, say — can both
+     * find `connection == null` and both call `bindUserService`, which leaves TWO user services running
+     * and the app bound to whichever answered last. Observed on the OP9: two
+     * `com.baba.callvault:recorder` processes and "Shizuku started the recorder service" logged twice
+     * within milliseconds.
+     */
+    private val bindLock = Any()
+
+    private fun startLocked(): Boolean {
         if (!isRunning()) {
             AppLogger.i(TAG, "Shizuku is not running; nothing to bind to")
             return false
@@ -142,7 +153,7 @@ object ShizukuBackend {
      * for the next bind — which is what switching back to standalone mode means, and what must happen
      * before the ADB path starts a second recorder that would fight this one for the audio input.
      */
-    fun stop(remove: Boolean = true) {
+    fun stop(remove: Boolean = true): Unit = synchronized(bindLock) {
         val conn = connection ?: return
         runCatching { Shizuku.unbindUserService(userServiceArgs, conn, remove) }
             .onFailure { AppLogger.w(TAG, "unbindUserService failed: ${it.message}") }

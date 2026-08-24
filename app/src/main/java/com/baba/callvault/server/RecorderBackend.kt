@@ -120,7 +120,14 @@ object RecorderBackend {
         // callback fills, exactly as the ADB path polls for its pushed binder.
         val deadline = SystemClock.elapsedRealtime() + SHIZUKU_BIND_TIMEOUT_MS
         while (SystemClock.elapsedRealtime() < deadline) {
-            if (RecorderConnection.isConnected) return true
+            if (RecorderConnection.isConnected) {
+                // Our own detached ADB daemon survives the app and is not stopped by anything here —
+                // so without this, both backends run and either may hold the binder the app talks to.
+                // Measured on the OP9: an app in Shizuku mode recorded through the leftover daemon.
+                runCatching { RecorderConnection.service?.killStaleRecorders() }
+                    .onFailure { AppLogger.w(TAG, "Could not clear stale ADB daemons: ${it.message}") }
+                return true
+            }
             Thread.sleep(POLL_MS)
         }
         AppLogger.w(TAG, "Shizuku did not hand back a recorder binder within ${SHIZUKU_BIND_TIMEOUT_MS}ms")

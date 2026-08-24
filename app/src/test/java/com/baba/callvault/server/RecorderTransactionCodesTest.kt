@@ -47,6 +47,7 @@ class RecorderTransactionCodesTest {
         assertEquals(first + 14, IRecorderService.Stub.TRANSACTION_grantAppOp)
         assertEquals(first + 15, IRecorderService.Stub.TRANSACTION_grantRole)
         assertEquals(first + 16, IRecorderService.Stub.TRANSACTION_hostUid)
+        assertEquals(first + 17, IRecorderService.Stub.TRANSACTION_killStaleRecorders)
     }
 
     @Test
@@ -61,7 +62,7 @@ class RecorderTransactionCodesTest {
     fun shizukus_destroy_code_cannot_collide_with_one_of_ours() {
         // The reason we can route it in onTransact instead of renumbering the AIDL: it sits far above
         // anything positional numbering will ever reach.
-        val ours = first + 16
+        val ours = first + 17
         assertTrue(
             "Shizuku's destroy code must stay clear of our AIDL range",
             RecorderServiceImpl.SHIZUKU_DESTROY_TRANSACTION > ours + 1000

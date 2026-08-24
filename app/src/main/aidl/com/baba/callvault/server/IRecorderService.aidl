@@ -184,4 +184,20 @@ interface IRecorderService {
      * "Shizuku is running" says nothing about which of the two it is.
      */
     int hostUid();
+
+    /**
+     * Kills any leftover CallVault ADB daemon (our detached app_process recorder), from inside this
+     * shell-uid process.
+     *
+     * Appended at the END, like everything else here: the transaction ids are positional.
+     *
+     * Needed because the two backends are started by completely different machinery. Our own daemon is
+     * setsid-detached and survives the app, so switching to Shizuku mode leaves it running — and then
+     * TWO shell-uid recorders exist, either of which may hold the binder the app talks to. Measured on
+     * the OP9: an app in Shizuku mode recorded a call through the leftover ADB daemon.
+     *
+     * Deliberately narrow: it matches only the daemon's own main class, which a Shizuku-hosted service
+     * never runs under (its process is named <package>:recorder), so this can never kill itself.
+     */
+    void killStaleRecorders();
 }

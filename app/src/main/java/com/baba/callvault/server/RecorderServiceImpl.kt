@@ -319,6 +319,18 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
 
     override fun hostUid(): Int = android.os.Process.myUid()
 
+    override fun killStaleRecorders() {
+        // Only the ADB daemon's main class. A Shizuku-hosted service runs under a process named
+        // <package>:recorder and never has this on its command line, so this cannot kill itself —
+        // which matters, because it runs INSIDE one of the two candidates.
+        val victim = "com.baba.callvault.server.RecorderServer"
+        AppLogger.i(TAG, "Killing any leftover ADB recorder daemon ($victim)")
+        runCatching {
+            val process = ProcessBuilder("pkill", "-f", victim).redirectErrorStream(true).start()
+            process.waitFor(5, TimeUnit.SECONDS)
+        }.onFailure { AppLogger.w(TAG, "Could not kill stale recorders: ${it.message}") }
+    }
+
     override fun stopHandoff() {
         AppLogger.i(TAG, "stopHandoff requested")
         runCatching { HandoffSource.releaseHeld() }
