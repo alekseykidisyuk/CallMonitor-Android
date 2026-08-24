@@ -11,6 +11,10 @@ androidxAppcompat = "1.7.1"
 kotlin = "2.3.21"
 composeBom = "2026.05.01"
 
+# Shizuku — the same versions this app shipped with before 0d7636b removed them.
+shizuku-api = "13.1.5"
+shizuku-provider = "13.1.5"
+
 # Persistence
 room = "2.8.4"
 ksp = "2.3.9"
@@ -20,6 +24,8 @@ aboutlibraries = "14.2.1"
 libphonenumber = "9.0.31"
 
 [libraries]
+shizukuApi = { module = "dev.rikka.shizuku:api", version.ref = "shizuku-api" }
+shizukuProvider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku-provider" }
 # AndroidX Core & Lifecycle
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }

@@ -28,8 +28,8 @@ import kotlin.system.exitProcess
  * **Deliberately separate from who started it.** Two things can host this class:
  *
  *  - [RecorderServer] — our own `app_process` daemon, launched over the embedded ADB shell.
- *  - a Shizuku user service, which instantiates the hosting class directly in a shell-uid process it
- *    owns (see `docs/dev-notes/2026-08-24-shizuku-support-plan.md`).
+ *  - [RecorderUserService] — the Shizuku path. Shizuku instantiates that subclass directly in a
+ *    shell-uid process it owns (see `docs/dev-notes/2026-08-24-shizuku-support-plan.md`).
  *
  * Both hosts run as **shell, uid 2000**, so everything below behaves identically under either. Keeping
  * one implementation is the whole point: two would drift, and audio capture drift is the kind that is
@@ -41,7 +41,7 @@ import kotlin.system.exitProcess
  *   load `libaudiohandoff.so` from inside the APK.
  */
 @Keep
-class RecorderServiceImpl(private val apkPath: String) : IRecorderService.Stub() {
+open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.Stub() {
 
     /** Guards single-session recording (binder threads + worker may race). */
     private val recordingActive = AtomicBoolean(false)

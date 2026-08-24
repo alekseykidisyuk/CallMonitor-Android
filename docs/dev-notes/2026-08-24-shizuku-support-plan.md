@@ -69,8 +69,9 @@ PrivilegedMode ──────►│                                         
 - `RecorderServiceImpl : IRecorderService.Stub()` — today's anonymous `createStub()` lifted into a
   named class. `RecorderServer.main()` keeps using it; the Shizuku service wraps it. **One
   implementation of the recorder, forever.** Two would drift, and the drift would be silent.
-- `RecorderUserService` — the class Shizuku instantiates. Needs a `()` constructor and, since API v13,
-  may take `(Context)`; both must be `@Keep`, and R8 must keep the class.
+- `RecorderUserService` — the class Shizuku instantiates, a subclass of the impl adding nothing but the
+  two constructors Shizuku will call. Both `@Keep`. The `(Context)` one is strongly preferred; see the
+  classpath warning under phase 2.
 - `PrivilegedMode { STANDALONE, SHIZUKU }` in `AppPreferences`, defaulting to `STANDALONE`.
 
 ### The transaction-code detail that will bite if it is missed
@@ -107,11 +108,37 @@ audio itself.
 say whether both sides of a call still arrive — the failure mode that is invisible in logs, file size
 and waveform.
 
-**Phase 2 — the Shizuku backend.** Add `dev.rikka.shizuku:api` + `:provider`, the manifest permission
-and `ShizukuProvider`, `RecorderUserService`, and a `ShizukuBackend` that binds and feeds
-`RecorderConnection`. Reachable only from a debug affordance. *Acceptance:* `RecorderDaemonRoundTripTest`
-passing again with its launch line swapped for `Shizuku.bindUserService` — the test was written so that
-is the only difference between the two backends.
+**Phase 2 — the Shizuku backend. DONE 2026-08-24, with one open question.** `dev.rikka.shizuku:api` +
+`:provider` (13.1.5, the versions this app shipped with before `0d7636b`), the `API_V23` permission, a
+`<queries>` entry for `moe.shizuku.privileged.api`, `rikka.shizuku.ShizukuProvider`,
+`RecorderUserService` and `ShizukuBackend`.
+
+Proven on the emulator by `RecorderShizukuRoundTripTest` against a real Shizuku 13.6.0 server: Shizuku
+instantiates our service (`Started by Shizuku (with Context) pid=… uid=2000`), the binder reaches
+`RecorderConnection`, `startRecording`/`stopRecording` dispatch, and a non-empty file comes out. **Two
+hosts, one recorder, same seam** — exactly the claim.
+
+🔴 **Open: the Shizuku-hosted process cannot open the direct AudioRecord, and falls back to scrcpy.**
+
+```
+AudioFlinger could not create record track, status: -1
+Direct capture unavailable, falling back to scrcpy: AudioRecord would not initialise for source 7
+```
+
+Our own daemon opens the same source on the same emulator moments earlier and gets
+`Recording via DIRECT AudioRecord`. This matters: direct capture is what removed the ~1–2 s front clip
+in v1.4.0, so a Shizuku user would silently get the older, worse path. **Ruled out so far:** the uid
+(both hosts log `uid=2000`), and Shizuku's Context (removing the Context constructor changed nothing).
+Still to try: what `opPackageName`/`AttributionSource` each process presents to AudioFlinger, and
+whether the emulator's audio HAL simply allows one record client at a time. Note that upstream
+ShizuCallRecorder only ever used scrcpy under Shizuku — consistent with this being real rather than
+local.
+
+⚠️ **A Context from Shizuku is not optional.** Without it the fallback reads `java.class.path`, and in a
+Shizuku-hosted process that names **Shizuku's own APK**, not ours. The scrcpy extractor then failed with
+"APK is missing scrcpy asset entry" against a package that indeed has no such asset — a failure that
+reads as ours and is not. `ShizukuClasspath.apkFrom` now requires the entry to belong to our package,
+and returns empty rather than something confidently wrong.
 
 **Phase 3 — the grants.** `grantAppOp` / `grantRole` equivalents on the user service, so the
 permissions the standalone path grants over ADB have a Shizuku route (this is what upstream's service

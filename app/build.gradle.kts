@@ -373,6 +373,11 @@ aboutLibraries {
 apply(from = rootProject.file("gradle/translation-coverage.gradle.kts"))
 
 dependencies {
+
+    // Shizuku: an optional second source of shell-uid privileges, for phones that already run it.
+    // The app works fully without it — see docs/dev-notes/2026-08-24-shizuku-support-plan.md.
+    implementation(libs.shizukuApi)
+    implementation(libs.shizukuProvider)
     // AndroidX Core & Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.documentfile)
@@ -434,6 +439,10 @@ dependencies {
     // test cannot load. Deliberately minimal: runner + JUnit extensions, no UI-testing stack.
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
+    // Test-only (never shipped): lets an instrumented test grant Shizuku permission the way a person
+    // does — by tapping Allow in Shizuku's own dialog. Shizuku 13 keeps its grants in its own server,
+    // so neither `pm grant` nor UiAutomation.grantRuntimePermission can reach them.
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     // Opens a database at an older schema and runs the real migrations against it, on a real
     // SQLite. The transcripts database has no destructive fallback by design, so a migration that
     // is subtly wrong is a crash on first launch for every user who has ever transcribed a call —
