@@ -35,11 +35,8 @@ enum class ModeCapability {
     RESILIENT_RECORDING,
 
     /**
-     * Recording app (VoIP) calls.
-     *
-     * Available in **both** modes, by different means — see `VoipCapturePlan`. Standalone uses our own
-     * loopback policy (two `AudioRecord`s, proven two-sided); Shizuku cannot run those and records the
-     * system output mix through scrcpy instead, which is how Ever-Call-Recorder does it.
+     * Recording app (VoIP) calls. `VoipCaptureSession` runs two `AudioRecord`s against a dynamic audio
+     * policy; neither can start in a Shizuku-hosted process.
      */
     VOIP_RECORDING,
 
@@ -73,9 +70,7 @@ enum class ModeCapability {
     /** Whether this capability works in [mode]. */
     fun isAvailableIn(mode: PrivilegedMode): Boolean = when (this) {
         // Needs a privileged AudioRecord inside the recorder process.
-        RESILIENT_RECORDING, SPEAKER_ATTRIBUTION -> !mode.needsShizuku
-        // Both modes, by different captures (VoipCapturePlan).
-        VOIP_RECORDING -> true
+        RESILIENT_RECORDING, VOIP_RECORDING, SPEAKER_ATTRIBUTION -> !mode.needsShizuku
         // Needs our own embedded ADB.
         OFFLINE_RECORDING, WIRELESS_DEBUGGING_CONTROL, DAEMON_KEEP_ALIVE, SILENT_UPDATE_INSTALL ->
             !mode.needsShizuku

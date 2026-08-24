@@ -27,7 +27,7 @@ is the same conclusion reached independently.
 |---|---|---|---|---|
 | **Carrier call recording** | direct AudioRecord | **scrcpy** | measured (real call, 46 KB) | works; quality note below |
 | **Resilient recording (handoff)** | ✅ | ❌ | measured — produced a 0-byte file | `HandoffPolicy` rules it out; setting greyed + auto-off |
-| **VoIP (app call) recording** | ✅ loopback policy | ✅ **system output mix** | read — `VoipCapturePlan`; matched from Ever-Call-Recorder | implemented, **not yet verified two-sided** |
+| **VoIP (app call) recording** | ✅ | ❌ | **measured** — the scrcpy `output` alternative captured silence (−73 dB) on the OP9 | greyed + auto-off |
 | **Speaker attribution** | ✅ | ❌ | read — `SpeakerTurnDetector` lives only in `DirectAudioRecorderSession`; the scrcpy path never sees raw channels | *not yet surfaced — see gaps* |
 | **Offline recording (loopback adb)** | ✅ | ❌ | read — pure embedded-ADB machinery | auto-off |
 | **Wireless-debugging control / USB default mode** | ✅ | n/a | read | auto-off; inert |
@@ -59,6 +59,7 @@ bookkeeping keys, disclaimer, wizard-completed.
 | Setting | Capability |
 |---|---|
 | Resilient recording | `RESILIENT_RECORDING` |
+| VoIP recording + VoIP auto-start | `VOIP_RECORDING` |
 | Offline recording | `OFFLINE_RECORDING` |
 | Keep daemon warm (persistent server) | `DAEMON_KEEP_ALIVE` |
 | Turn Wireless debugging off when idle | `WIRELESS_DEBUGGING_CONTROL` |
@@ -71,49 +72,41 @@ list was written for in the first place.
 
 ---
 
-## Matched from Ever-Call-Recorder: VoIP under Shizuku
+## VoIP under Shizuku: tried Ever-Call-Recorder's approach, measured silence, rolled back
 
-`hari161008/Ever-Call-Recorder` — another fork of the same upstream — records app calls under Shizuku,
-and reading it showed why ours could not: **it does not use an `AudioRecord` at all.** For a call from a
-messaging app it forces scrcpy's `output` (REMOTE_SUBMIX) source, which runs in scrcpy's own process.
+`hari161008/Ever-Call-Recorder` — another fork of the same upstream — advertises VoIP recording over
+Shizuku, and reading it showed why ours could not do it: **it uses no `AudioRecord` at all.** For a call
+from a messaging app it forces scrcpy's `output` (REMOTE_SUBMIX) source, which runs in scrcpy's own
+process, so the "cannot start an AudioRecord under Shizuku" wall never applies.
 
-Their reasoning, which this project reached independently from the other side:
+Their reasoning is sound and matches what this project learned from the other side:
 
 - `playback` (AudioPlaybackCaptureConfiguration) **hard-excludes** `USAGE_VOICE_COMMUNICATION` at the
   platform level — exactly how calling apps tag call audio — so it records silence however privileged the
   caller is.
 - Any **mic-class** source competes with the calling app's own microphone session and Android silences
-  one for privacy. CallVault met the same wall from the other direction: a second voice `AudioRecord`
-  during a carrier recording silently drops the user's own side.
-- `output` is a privileged system-mix tap gated on `CAPTURE_AUDIO_OUTPUT`, not a microphone capture, and
-  predates that exclusion.
+  one for privacy. CallVault met the same wall when a second voice `AudioRecord` during a carrier
+  recording silently dropped the user's own side.
+- `output` is a privileged system-mix tap gated on `CAPTURE_AUDIO_OUTPUT` rather than a microphone
+  capture, and predates that exclusion.
 
-`VoipCapturePlan` now chooses per mode: standalone keeps our loopback policy (proven two-sided), Shizuku
-records the system output mix. **VoIP is therefore no longer greyed out under Shizuku.**
+**It was implemented and tested on the OP9, and it captured nothing.** A real WhatsApp call ran the plan
+exactly as designed — `audio_source=output`, scrcpy up, muxer initialised, clean EOF, 27,958 bytes over
+17.6 s — and the audio measures **`mean_volume: -73.2 dB`**: digital silence. Not one-sided; empty.
 
-🔴 **Tested on the OP9, and it captured SILENCE.** A real WhatsApp call in Shizuku mode ran the plan
-exactly as designed — `audio_source=output`, scrcpy started, muxer initialised, clean EOF, 27,958 bytes
-over 17.6 s — and the audio measures **`mean_volume: -73.2 dB`**, which is digital silence. Not one-sided:
-nothing at all.
+The remaining untested hypothesis was **speakerphone** — `REMOTE_SUBMIX` may only receive the call when
+audio routes to the speaker. The maintainer ruled that out as a usable requirement: a call recorder that
+only works on speakerphone is not a call recorder. **So the whole path was rolled back** (`VoipCapturePlan`
+deleted, the coordinator restored, `VOIP_RECORDING` unavailable under Shizuku again) rather than left in
+as a switch that produces silent files.
 
-So the container and the pipeline are right and the *capture* is empty on this ROM. What has not been
-ruled out, and is the cheapest next experiment:
+**Conclusion: VoIP recording is a standalone-mode feature.** It is greyed out and auto-disabled under
+Shizuku, which is the honest state — CallVault's own loopback-policy capture is proven two-sided, and it
+needs a privileged `AudioRecord` that Shizuku cannot provide.
 
-- **Speakerphone.** `REMOTE_SUBMIX` may only receive the call when audio is routed to the speaker; on the
-  earpiece the mix can be empty. Ever-Call-Recorder's own docs do not say either way.
-- **ColorOS excluding voice-communication from the submix**, which would make this device simply unable
-  to do it — in which case the honest move is to grey VoIP out under Shizuku again.
-
-Until one of those is settled, VoIP in Shizuku mode **must not be described as working**.
-
-**A bug this test exposed, now fixed.** The post-recording check warned *"captured only your side — the
-other app blocks capture"*. That check reads `voipFarPartyHeard()`, which reports on a
-`VoipCaptureSession` — and the system-mix plan never creates one, so it always answered "far party not
-heard". On this call the message was doubly wrong: nothing at all was captured, and no app had blocked
-anything. The check now runs only for the loopback-policy plan.
-
-**A side benefit worth noting:** the system-mix plan needs **no arming before the call**. The arming
-constraint is what makes a missed VoIP call unrecoverable in standalone mode.
+One thing worth keeping from the attempt: the system-mix plan would have needed **no arming before the
+call**, which is the constraint that makes a missed VoIP call unrecoverable in standalone. If a device is
+ever found where the submix does carry call audio, that is the prize worth re-opening this for.
 
 ## Gaps still open
 
