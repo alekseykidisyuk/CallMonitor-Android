@@ -93,6 +93,56 @@ taught it un-teaches it, which a cached preference would not.
 
 ---
 
+## STATUS — 2026-08-23 evening: labels are on screen
+
+Speaker labels work end to end on a real call. Read off the device:
+
+```
+0:00  Speaker B   Chachetayim, chachetayim, bedika,
+0:12  Speaker A   zah one plus teisha.
+```
+
+B is the far party (the OP9 that answered), A is the near one (the OP12 that dialled) — confirmed by
+the maintainer, who knew who said what. **That is the ground truth for this device**, and the only
+answer either automatic detector ever produced.
+
+### What had to be fixed to get there
+
+- **The detector was in the wrong capture path.** It lived in `DirectAudioRecorderSession`, the
+  daemon's loop. With resilient recording on — which is how this phone runs — the daemon hands its
+  `AudioRecord` to the app and the frames pass through `HandoffEncoder`, so the daemon had no session
+  to ask and every call reported "No speaker turns". Now both paths detect, and the app-side result
+  travels through `CapturedSpeakerTurns` (single-call scoped: cleared at capture start, consumed on
+  read, so one call's turns can never label the next call's transcript).
+- **A transcript of one segment cannot show speakers.** A line both people share belongs to neither,
+  so the labeller correctly refuses it. Segments only multiplied once the language was pinned.
+- **The language was never pinned.** Two separate settings existed — Transcription ▸ Language and
+  Call summaries ▸ Summary language — and Hebrew had been set on the second. whisper ran `lang=auto`,
+  guessed a Latin-script language, and wrote Hebrew phonetically (`bedika` for בדיקה); an earlier run
+  came out in English. **The settings are now one section with one Language row.**
+
+### How the mapping is decided, after both measurements failed
+
+Ringback is not in the capture and the downlink probe costs the recording its near side, so what
+remains is a convention: on an **outgoing** call, whoever answers speaks first, so the first voice is
+the far party's. `FirstSpeakerHeuristic`, corroborated over two calls, refusing a call where only one
+side is heard (that is what a broken capture looks like), and never reading incoming calls.
+
+**Judged on read, not stored at record time.** `trustedMap` re-applies the rule to the turns already
+saved for the five most recent outgoing calls. A rule improved later therefore applies to recordings
+already on the phone, and deleting the calls that taught a mapping un-teaches it.
+
+**The user outranks all of it.** While the names are a guess the transcript shows
+`Names worked out automatically — Swap | Correct`. Swap stores an override that beats everything
+derived; Correct stores nothing and only stops the asking, leaving the answer free to improve.
+
+### Still unverified
+
+- The labels have not been seen with **names** on the device yet, only as Speaker A/B.
+- The Hebrew style hint given to whisper (below) has not been tested against the measured case.
+
+---
+
 ## HARD CONSTRAINT — no second voice capture during a carrier recording (2026-08-23)
 
 **Opening a second voice `AudioRecord` while `VOICE_CALL` is recording costs the recording its near
