@@ -73,12 +73,22 @@ class RecorderShizukuRoundTripTest {
         ShizukuBackend.requestPermission()
 
         val device = UiDevice.getInstance(instrumentation)
-        device.wait(Until.hasObject(By.textContains("CallVault")), DIALOG_TIMEOUT_MS)
-        // Shizuku's dialog uses the platform's own allow/deny wording, which differs by version.
-        val allow = listOf("Allow", "ALLOW", "Allow all the time")
-            .firstNotNullOfOrNull { device.findObject(By.text(it)) }
-        allow?.click()
-        device.wait(Until.gone(By.textContains("CallVault")), DIALOG_TIMEOUT_MS)
+
+        // Polled rather than waited-on-once. Shizuku's dialog can take several seconds to appear on a
+        // phone that is busy freezing and unfreezing app processes, and the button's wording differs
+        // between Android versions and OEM skins — an OP9 on ColorOS says "Allow all the time".
+        val deadline = System.currentTimeMillis() + DIALOG_TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            val allow = listOf("Allow all the time", "Allow", "ALLOW", "Always allow")
+                .firstNotNullOfOrNull { device.findObject(By.text(it)) }
+            if (allow != null) {
+                allow.click()
+                device.waitForIdle()
+                break
+            }
+            device.waitForIdle()
+            Thread.sleep(POLL_MS)
+        }
     }
 
     @After
@@ -149,7 +159,7 @@ class RecorderShizukuRoundTripTest {
     }
 
     private companion object {
-        const val DIALOG_TIMEOUT_MS = 5_000L
+        const val DIALOG_TIMEOUT_MS = 20_000L
         const val BINDER_TIMEOUT_MS = 20_000L
         const val RECORD_MS = 2_000L
         const val POLL_MS = 200L

@@ -301,12 +301,51 @@ A pre-flight on `GRANT_RUNTIME_PERMISSIONS` — which v11+ does not even need, s
 `Shizuku.updateFlagsForUid`. On a device where adb is limited the dialog therefore refuses to appear at
 all, and there is no way through it from the app side.
 
-### 🟡 Still open on real hardware: the Shizuku user service did not start
+### ✅ Shizuku mode works end to end on the OP9
 
-With permission granted, `RecorderShizukuRoundTripTest` on the OP9 gets past every gate and then fails
-with *"Shizuku never handed back a recorder binder"* — no `CV:RecorderUserService` line at all, so the
-process never reached our code. ColorOS is visibly freezing the Shizuku app process throughout
-(`OplusHansManager: freeze uid: … moe.shizuku.privileged.api`), which is a candidate. Unfinished.
+```
+ShizukuServiceStarter: starting service com.baba.callvault/…server.RecorderUserService...
+CV:RecorderUserService: Started by Shizuku (with Context) pid=26530 uid=2000
+CV:ShizukuBackend:     Shizuku started the recorder service
+CV:RecorderConn:       RecorderConnection received daemon binder
+```
+
+Real phone, real Shizuku server, our service hosted at **uid 2000**, binder delivered to the same holder
+the ADB daemon uses. Home reports **"Ready to record"** in Shizuku mode.
+
+**Two device-level obstacles had to be cleared first, and both are ColorOS, not us:**
+
+1. **"Disable permission monitoring"** — above. Without it Shizuku will not even show its prompt.
+2. **ColorOS freezes the Shizuku *app* process** (`OplusHansManager: freeze uid: … moe.shizuku.privileged.api`).
+   A user service starts, runs our constructor, then tries to hand its binder back to that app and gets:
+
+   ```
+   ShizukuServiceStarter: send binder to moe.shizuku.privileged.api in user 0
+   ShizukuServiceStarter: server binder not received
+   app_process: System.exit called, status: 1
+   ```
+
+   Fixed with `dumpsys deviceidle whitelist +moe.shizuku.privileged.api` (a user would exempt Shizuku
+   from battery optimisation). **Worth surfacing in the app later**: "Shizuku is running" is not
+   sufficient — a frozen Shizuku fails this way, and the failure names nothing the user could act on.
+
+### ⚠️ Instrumented Shizuku tests are awkward on a real phone, by construction
+
+`connectedAndroidTest` reinstalls the app under test on every run, which gives it a **new uid** — and
+Shizuku keys authorisations **by uid**, so the grant is lost every single run and the dialog has to be
+answered again. The test's `@Before` now polls for up to 20s and accepts ColorOS's "Allow all the time"
+wording, but this is inherently fragile on hardware. The emulator, where the app keeps its uid across
+runs, remains the place to run it.
+
+One self-inflicted failure worth remembering: driving `adb shell uiautomator dump` from the host **while**
+the test uses `UiDevice` crashes the run with `IllegalStateException: UiAutomationService … already
+registered!`. Two UiAutomation clients cannot coexist. Watch the test through logcat, never through a
+second automation channel.
+
+### 🟡 Still open: direct AudioRecord under Shizuku on real hardware
+
+Everything is now in place on the OP9 to answer it, but it needs a **real call** — the emulator's
+scrcpy fallback may or may not reproduce there.
 
 ### 🔴 Superseded: ColorOS makes the phase-3 grants impossible, and Shizuku cannot fix it
 
