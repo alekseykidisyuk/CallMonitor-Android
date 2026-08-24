@@ -37,33 +37,46 @@ object TranscriptionPrompt {
     /**
      * The prompt for one recording, or null when there is nothing worth saying.
      *
-     * @param contactName who the call is with. First in the list, because it is the term most
-     *   certain to be spoken. Ignored when it is really a phone number.
-     * @param glossary the user's own terms, comma-separated.
+     * Built from what the app already knows. An earlier version asked the user to type a list of
+     * words their calls contain; that was rejected as a feature nobody would ever fill in, and the
+     * judgement was right — the words that need help are exactly the ones you do not think to list.
+     *
+     * @param contactName who the call is with. The one term certain to be spoken, and the one whose
+     *   spelling should not drift between transcripts. Ignored when it is really a phone number.
+     * @param language the pinned transcription language, or null when auto-detecting.
      */
-    fun build(contactName: String?, glossary: String): String? {
-        val terms = LinkedHashSet<String>()
+    fun build(contactName: String?, language: String?): String? {
+        val name = contactName?.trim()?.takeIf { it.isNotEmpty() && !isPhoneNumber(it) }
+        val style = styleHintFor(language)
 
-        contactName?.trim()?.takeIf { it.isNotEmpty() && !isPhoneNumber(it) }?.let { terms += it }
-        glossary.split(',').forEach { term ->
-            term.trim().takeIf { it.isNotEmpty() }?.let { terms += it }
-        }
-        if (terms.isEmpty()) return null
+        val parts = listOfNotNull(style, name?.let { "$it." })
+        if (parts.isEmpty()) return null
 
-        val kept = mutableListOf<String>()
-        var length = 0
-        for (term in terms) {
-            // ", " between terms, and the closing full stop.
-            val added = term.length + if (kept.isEmpty()) 1 else 3
-            if (length + added > MAX_CHARS) break
-            kept += term
-            length += added
-        }
-        if (kept.isEmpty()) return null
+        val prompt = parts.joinToString(" ")
+        return if (prompt.length <= MAX_CHARS) prompt else prompt.take(MAX_CHARS)
+    }
 
-        // Written as a sentence rather than a bare list: whisper's prompt is read as preceding
-        // speech, and text shaped like speech steers the decoder better than a fragment.
-        return kept.joinToString(", ") + "."
+    /**
+     * A sentence showing what this language's speech looks like written down.
+     *
+     * whisper reads its prompt as text that came just before, and imitates its style. That is the
+     * whole mechanism, and it is why a hint can be generic: a Hebrew sentence carrying an English
+     * word in Latin letters demonstrates that foreign words stay foreign, rather than being sounded
+     * out into the local script or — as measured on a real call — turned into arithmetic, where the
+     * phone model "one plus nine" was written `1 + 9`.
+     *
+     * Offered only for languages written in a non-Latin script, because that is where the problem
+     * lives. A French or German transcript already writes English words in the same alphabet.
+     *
+     * The words chosen are deliberately dull and universal. A prompt can be echoed into a transcript
+     * if the audio is near-silent, so whatever is in it should be unremarkable when it appears.
+     */
+    private fun styleHintFor(language: String?): String? = when (language) {
+        "he" -> "שיחה בעברית, ובתוכה מילים באנגלית כמו Android ו-Google."
+        "ar" -> "مكالمة بالعربية، وفيها كلمات إنجليزية مثل Android و Google."
+        "ru" -> "Разговор по-русски, в нём есть английские слова, например Android и Google."
+        "zh" -> "中文通话，其中夹杂英文词，例如 Android 和 Google。"
+        else -> null
     }
 
     /**

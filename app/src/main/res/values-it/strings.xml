@@ -383,9 +383,6 @@
     <string name="transcription_charging_title">Solo durante la ricarica</string>
     <string name="transcription_confirm_subtitle">Mostra quanto tempo richiede e ti lascia annullare.</string>
     <string name="transcription_confirm_title">Chiedi prima di trascrivere</string>
-    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
-    <string name="transcription_glossary_label">Parole attese</string>
-    <string name="transcription_glossary_note">Nomi, luoghi e termini presenti nelle tue chiamate, separati da virgole. Aiuta a scriverli correttamente invece che a orecchio. Tienila breve: un elenco lungo peggiora le trascrizioni.</string>
     <string name="transcription_hour_label">Ora</string>
     <string name="transcription_language_arabic">Arabo</string>
     <string name="transcription_language_auto">Rileva automaticamente</string>

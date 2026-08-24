@@ -383,9 +383,6 @@
     <string name="transcription_charging_title">Solo mientras se carga</string>
     <string name="transcription_confirm_subtitle">Muestra cuánto tardará y te deja cancelar.</string>
     <string name="transcription_confirm_title">Preguntar antes de transcribir</string>
-    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
-    <string name="transcription_glossary_label">Palabras esperadas</string>
-    <string name="transcription_glossary_note">Nombres, lugares y términos que aparecen en sus llamadas, separados por comas. Ayuda a que se escriban bien en vez de por su sonido. Manténgala corta: una lista larga empeora las transcripciones.</string>
     <string name="transcription_hour_label">Hora</string>
     <string name="transcription_language_arabic">Árabe</string>
     <string name="transcription_language_auto">Detectar automáticamente</string>

@@ -383,9 +383,6 @@
     <string name="transcription_charging_title">Chỉ khi đang sạc</string>
     <string name="transcription_confirm_subtitle">Cho biết sẽ mất bao lâu và cho phép huỷ.</string>
     <string name="transcription_confirm_title">Hỏi trước khi chép lời</string>
-    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
-    <string name="transcription_glossary_label">Những từ cần lưu ý</string>
-    <string name="transcription_glossary_note">Tên, địa danh và thuật ngữ có trong cuộc gọi của bạn, phân tách bằng dấu phẩy. Giúp viết đúng thay vì phiên âm. Giữ ngắn gọn — danh sách dài làm bản ghi lời tệ hơn.</string>
     <string name="transcription_hour_label">Giờ</string>
     <string name="transcription_language_arabic">Tiếng Ả Rập</string>
     <string name="transcription_language_auto">Tự động nhận diện</string>

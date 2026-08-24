@@ -564,9 +564,6 @@
     <string name="summary_discard_confirm_title">Discard the download?</string>
     <string name="summary_discard_confirm_body">This throws away the %1$.1f GB already downloaded. Starting again would fetch all of it from the beginning.</string>
     <string name="summary_discard_confirm_confirm">Discard</string>
-    <string name="transcription_glossary_label">Words to expect</string>
-    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
-    <string name="transcription_glossary_note">Names, places and terms your calls contain, separated by commas. Helps them be spelled right instead of sounded out. Keep it short — a long list makes transcripts worse.</string>
     <string name="transcription_language_label">Language</string>
     <string name="transcription_language_hebrew">Hebrew</string>
     <string name="transcription_language_english">English</string>

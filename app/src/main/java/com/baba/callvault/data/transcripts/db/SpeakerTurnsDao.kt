@@ -37,4 +37,20 @@ interface SpeakerTurnsDao {
             "ORDER BY updatedAt DESC LIMIT :limit"
     )
     suspend fun recentObservations(limit: Int): List<SpeakerTurnsEntry>
+
+    /**
+     * The most recent outgoing calls that have turns, newest first — including those whose stored
+     * observation says nothing.
+     *
+     * The mapping is judged from the turns rather than from what was concluded when each call ended.
+     * That way a rule improved today applies to every recording already on the phone, instead of
+     * only to calls made after it shipped: the evidence was always there, only the reading of it
+     * changed. It is also what lets an answer be *lost* — deleting the calls that taught it
+     * un-teaches it, which a stored conclusion could not do.
+     */
+    @Query(
+        "SELECT * FROM speaker_turns WHERE outgoing = 1 AND turns != '' " +
+            "ORDER BY updatedAt DESC LIMIT :limit"
+    )
+    suspend fun recentOutgoing(limit: Int): List<SpeakerTurnsEntry>
 }

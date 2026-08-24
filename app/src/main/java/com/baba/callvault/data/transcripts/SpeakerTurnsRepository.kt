@@ -128,9 +128,13 @@ object SpeakerTurnsRepository {
         if (!TranscriptDatabase.exists(context)) return ChannelMap.UNKNOWN
         return runCatching {
             val dao = TranscriptDatabase.get(context).speakerTurnsDao()
-            ChannelMapCorroboration.trusted(
-                dao.recentObservations(OBSERVATION_WINDOW).map { ChannelMap.fromKey(it.observedMap) }
-            )
+            val observations = dao.recentOutgoing(OBSERVATION_WINDOW).map { row ->
+                // What the capture measured, where it could. On the reference device it never can,
+                // so in practice the convention below answers for every call.
+                val measured = ChannelMap.fromKey(row.observedMap)
+                if (measured != ChannelMap.UNKNOWN) measured else FirstSpeakerHeuristic.observe(row.turns)
+            }
+            ChannelMapCorroboration.trusted(observations)
         }.getOrDefault(ChannelMap.UNKNOWN)
     }
 

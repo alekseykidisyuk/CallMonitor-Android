@@ -383,9 +383,6 @@
     <string name="transcription_charging_title">Csak töltés közben</string>
     <string name="transcription_confirm_subtitle">Megmutatja, mennyi ideig tart, és megszakíthatja.</string>
     <string name="transcription_confirm_title">Kérdezzen átírás előtt</string>
-    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
-    <string name="transcription_glossary_label">Várható szavak</string>
-    <string name="transcription_glossary_note">A hívásaiban előforduló nevek, helyek és kifejezések, vesszővel elválasztva. Így helyesen írjuk őket, nem hangzás szerint. Legyen rövid — a hosszú lista rontja az átiratot.</string>
     <string name="transcription_hour_label">Óra</string>
     <string name="transcription_language_arabic">Arab</string>
     <string name="transcription_language_auto">Automatikus felismerés</string>

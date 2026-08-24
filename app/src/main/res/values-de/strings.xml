@@ -383,9 +383,6 @@
     <string name="transcription_charging_title">Nur beim Laden</string>
     <string name="transcription_confirm_subtitle">Zeigt die Dauer und lässt Sie abbrechen.</string>
     <string name="transcription_confirm_title">Vor dem Transkribieren fragen</string>
-    <string name="transcription_glossary_hint">OnePlus, Shizuku, Ramat Gan</string>
-    <string name="transcription_glossary_label">Zu erwartende Wörter</string>
-    <string name="transcription_glossary_note">Namen, Orte und Begriffe aus Ihren Anrufen, durch Kommas getrennt. So werden sie richtig geschrieben statt lautmalerisch. Halten Sie die Liste kurz — eine lange verschlechtert die Transkription.</string>
     <string name="transcription_hour_label">Stunde</string>
     <string name="transcription_language_arabic">Arabisch</string>
     <string name="transcription_language_auto">Automatisch erkennen</string>
