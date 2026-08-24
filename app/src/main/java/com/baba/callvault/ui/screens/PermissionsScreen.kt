@@ -66,6 +66,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.baba.callvault.R
 import com.baba.callvault.system.storage.SafHelper
 import com.baba.callvault.data.AppPreferences
+import androidx.compose.runtime.mutableIntStateOf
+import com.baba.callvault.data.PrivilegedMode
+import com.baba.callvault.server.RecorderBackend
+import com.baba.callvault.server.ShizukuBackend
+import com.baba.callvault.server.ShizukuStatus
 import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.DeveloperOptions
 import com.baba.callvault.onboarding.OnboardingStatus
@@ -208,6 +213,11 @@ fun PermissionsContent(
     // ON_RESUME so returning from the system Developer Options / Wireless debugging screen reflects
     // the new state immediately.
     var devOptionsEnabled by remember { mutableStateOf(isDeveloperOptionsEnabled(context)) }
+    // Re-read after any change to the backend choice; Shizuku's server can also stop on its own.
+    var backendRefresh by remember { mutableIntStateOf(0) }
+    val privilegedMode = remember(backendRefresh) { AppPreferences(context).getPrivilegedMode() }
+    val shizukuStatus = remember(backendRefresh) { RecorderBackend.shizukuStatus(context) }
+
     var wirelessDebuggingEnabled by remember {
         mutableStateOf(AdbShell.isWirelessDebuggingEnabled(context))
     }
@@ -270,14 +280,42 @@ fun PermissionsContent(
                     )
                 }
 
+                // Offered ONLY to someone who already runs Shizuku. For everyone else this card does
+                // not exist and setup is exactly what it always was — CallVault must never read as an
+                // instruction to install a second app.
+                if (shizukuStatus != ShizukuStatus.NOT_INSTALLED) {
+                    item {
+                        ShizukuOfferCard(
+                            status = shizukuStatus,
+                            mode = privilegedMode,
+                            onUseShizuku = {
+                                RecorderBackend.switchTo(context, PrivilegedMode.SHIZUKU)
+                                backendRefresh++
+                            },
+                            onUseCallVault = {
+                                RecorderBackend.switchTo(context, PrivilegedMode.STANDALONE)
+                                backendRefresh++
+                            },
+                            onGrant = {
+                                ShizukuBackend.requestPermission()
+                                backendRefresh++
+                            },
+                        )
+                    }
+                }
+
                 // ADB is the hero step: it gets its OWN full-width layout (title row + full-width
                 // description + hint + Developer Options status/shortcut) so the long content reads well.
-                item {
-                    AdbPermissionCard(
-                        adbConnected = status.adbConnected,
-                        devOptionsEnabled = devOptionsEnabled,
-                        wirelessDebuggingEnabled = wirelessDebuggingEnabled
-                    )
+                // Skipped entirely in Shizuku mode: there is nothing to pair, and a card demanding
+                // pairing would be asking for setup the user has just been told they can skip.
+                if (privilegedMode != PrivilegedMode.SHIZUKU) {
+                    item {
+                        AdbPermissionCard(
+                            adbConnected = status.adbConnected,
+                            devOptionsEnabled = devOptionsEnabled,
+                            wirelessDebuggingEnabled = wirelessDebuggingEnabled
+                        )
+                    }
                 }
 
                 // Remaining runtime permissions, in the original fixed order. Built inside an item so

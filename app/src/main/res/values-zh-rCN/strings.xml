@@ -231,6 +231,12 @@
     <string name="settings_section_audio">音源选项</string>
     <string name="settings_section_debug">调试选项</string>
     <string name="settings_section_experimental">实验性功能</string>
+    <string name="permissions_shizuku_offer_title">此手机上正在运行 Shizuku</string>
+    <string name="permissions_shizuku_offer_body">CallVault 可以改用它，完全跳过配对。或者单独设置 CallVault，无需依赖其他程序运行。</string>
+    <string name="permissions_shizuku_needs_permission">在 Shizuku 中允许 CallVault 即可完成。在此之前不会录制任何内容。</string>
+    <string name="permissions_shizuku_active">正在使用 Shizuku。无需配对——设置已完成。</string>
+    <string name="permissions_shizuku_use">使用 Shizuku</string>
+    <string name="permissions_shizuku_use_callvault">使用 CallVault</string>
     <string name="settings_subsection_privileges">CallVault 的权限来源</string>
     <string name="settings_shizuku_mode">改用 Shizuku</string>
     <string name="settings_shizuku_not_installed">未安装 Shizuku。CallVault 并不需要它——此选项只面向本来就在用它的人。</string>

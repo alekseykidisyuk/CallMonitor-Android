@@ -201,9 +201,37 @@ every grant here **reads the result back** from `appops get` / `cmd role get-rol
 trusting an exit code — and `GrantOutput` excludes the `Uid mode:` line, which appears *first* and
 usually still says `ignore`, so a naive parse reports the opposite of the truth.
 
-**Phase 4 — the UI.** Onboarding detect-and-offer; a status row on Home/Settings showing which mode is
-active and whether Shizuku is running; the mode switch, which must safely tear down one backend before
-starting the other. Strings + the ten locales.
+**Phase 4 — the UI. DONE 2026-08-24.**
+
+`RecorderBackend.ensureRunning()` is the single decision point. Six places started the recorder by
+calling `RecorderServerLauncher` directly — app start, boot, an incoming call, the offline path,
+post-pairing, post-update — and each would otherwise have needed its own Shizuku branch. It keeps the
+launcher's exact shape (blocking, returns whether a binder is now available) so none of the six had to
+be restructured.
+
+`switchTo()` stops the old backend **before** starting the new one, and `BackendChoice` holds the rule
+— including that an unchanged mode tears nothing down, since Settings can re-save the same value and
+killing a warm recorder for that would drop the next call.
+
+Settings ▸ General ▸ **How CallVault gets permission** reports the truth rather than a toggle's wish:
+not installed / not running / not permitted / ready, re-read on every recomposition because a Shizuku
+server can stop at any moment and never survives a reboot.
+
+Onboarding offers the fork **only when a Shizuku server is actually running**. Everyone else sees the
+setup they always saw; CallVault must never read as an instruction to install a second app.
+
+Verified on the emulator by driving the real UI, not by reading the code:
+
+```
+before:  "Shizuku is running on this phone"  [Use CallVault] [Use Shizuku]
+         "Wireless debugging (ADB)"  "Not connected"
+after:   "Allow CallVault in Shizuku to finish. Nothing records until you do."
+         [Use CallVault] [Allow CallVault in Shizuku]
+         (the Wireless debugging card is GONE)
+prefs:   <string name="privileged_mode">shizuku</string>
+```
+
+Strings in all ten locales.
 
 **Phase 5 — the honest edges.** Updater degradation message; what the keep-alive service and the
 wireless-debugging plumbing should do in Shizuku mode (mostly: nothing, and say so); the missed-call

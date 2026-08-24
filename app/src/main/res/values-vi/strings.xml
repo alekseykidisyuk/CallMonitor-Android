@@ -231,6 +231,12 @@
     <string name="settings_section_audio">Cấu hình âm thanh</string>
     <string name="settings_section_debug">Tùy chọn gỡ lỗi</string>
     <string name="settings_section_experimental">Thử nghiệm</string>
+    <string name="permissions_shizuku_offer_title">Shizuku đang chạy trên điện thoại này</string>
+    <string name="permissions_shizuku_offer_body">CallVault có thể dùng nó và bỏ qua hoàn toàn việc ghép nối. Hoặc thiết lập CallVault độc lập, để không cần thứ gì khác chạy kèm.</string>
+    <string name="permissions_shizuku_needs_permission">Cho phép CallVault trong Shizuku để hoàn tất. Chưa ghi âm gì cho đến lúc đó.</string>
+    <string name="permissions_shizuku_active">Đang dùng Shizuku. Không có gì để ghép nối — thiết lập đã xong.</string>
+    <string name="permissions_shizuku_use">Dùng Shizuku</string>
+    <string name="permissions_shizuku_use_callvault">Dùng CallVault</string>
     <string name="settings_subsection_privileges">CallVault lấy quyền từ đâu</string>
     <string name="settings_shizuku_mode">Dùng Shizuku thay thế</string>
     <string name="settings_shizuku_not_installed">Shizuku chưa được cài đặt. CallVault không cần nó — mục này chỉ dành cho người đã dùng sẵn.</string>

@@ -231,6 +231,12 @@
     <string name="settings_section_audio">Ustawienia dźwięku</string>
     <string name="settings_section_debug">Opcje debugowania</string>
     <string name="settings_section_experimental">Eksperymentalne</string>
+    <string name="permissions_shizuku_offer_title">Shizuku działa na tym telefonie</string>
+    <string name="permissions_shizuku_offer_body">CallVault może z niego skorzystać i całkowicie pominąć parowanie. Albo skonfiguruj CallVault samodzielnie, aby nie potrzebował niczego innego.</string>
+    <string name="permissions_shizuku_needs_permission">Zezwól CallVault w Shizuku, aby zakończyć. Do tego czasu nic nie jest nagrywane.</string>
+    <string name="permissions_shizuku_active">Używasz Shizuku. Nie ma czego parować — konfiguracja gotowa.</string>
+    <string name="permissions_shizuku_use">Użyj Shizuku</string>
+    <string name="permissions_shizuku_use_callvault">Użyj CallVault</string>
     <string name="settings_subsection_privileges">Skąd CallVault bierze uprawnienia</string>
     <string name="settings_shizuku_mode">Użyj zamiast tego Shizuku</string>
     <string name="settings_shizuku_not_installed">Shizuku nie jest zainstalowane. CallVault go nie potrzebuje — to tylko dla osób, które już go używają.</string>
