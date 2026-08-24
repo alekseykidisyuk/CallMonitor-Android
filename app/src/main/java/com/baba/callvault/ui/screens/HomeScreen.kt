@@ -1096,6 +1096,9 @@ private fun HeroStatusCard(
         HomeViewModel.HomeStatus.UPDATE_REGRANT_NEEDED -> CvTone.Warning
         // Error, not Warning: the recorder is down and the next call will be missed.
         HomeViewModel.HomeStatus.RECOVERY_STUCK -> CvTone.Error
+        // Error for the same reason: with Shizuku stopped nothing can record, and it stops on every
+        // reboot — this is the state a Shizuku user will meet most often and must not read as cosmetic.
+        HomeViewModel.HomeStatus.SHIZUKU_NOT_READY -> CvTone.Error
     }
     val pillText = when (status) {
         HomeViewModel.HomeStatus.READY -> stringResource(R.string.home_hero_pill_ready)
@@ -1104,6 +1107,7 @@ private fun HeroStatusCard(
         HomeViewModel.HomeStatus.DEV_OPTIONS_OFF -> stringResource(R.string.home_hero_pill_dev_options_off)
         HomeViewModel.HomeStatus.UPDATE_REGRANT_NEEDED -> stringResource(R.string.home_hero_pill_update_regrant)
         HomeViewModel.HomeStatus.RECOVERY_STUCK -> stringResource(R.string.home_hero_pill_recovery_stuck)
+        HomeViewModel.HomeStatus.SHIZUKU_NOT_READY -> stringResource(R.string.home_hero_pill_shizuku)
     }
 
     // Subtle accent-tinted surface so the banner reads as a confident state, not a stock card.
@@ -1186,6 +1190,8 @@ private fun healthMessage(health: SetupHealth): String {
                     R.string.home_health_missed_developer_options to R.string.home_health_missed_developer_options_unnamed
                 Prerequisite.SECURE_SETTINGS_GRANT ->
                     R.string.home_health_missed_secure_settings to R.string.home_health_missed_secure_settings_unnamed
+                Prerequisite.SHIZUKU ->
+                    R.string.home_health_missed_shizuku to R.string.home_health_missed_shizuku_unnamed
             }
             health.label?.let { stringResource(named, it) } ?: stringResource(unnamed)
         }

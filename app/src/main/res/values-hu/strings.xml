@@ -237,6 +237,11 @@
     <string name="permissions_shizuku_active">A Shizuku van használatban. Nincs mit párosítani — a beállítás kész.</string>
     <string name="permissions_shizuku_use">Shizuku használata</string>
     <string name="permissions_shizuku_use_callvault">CallVault használata</string>
+    <string name="home_hero_pill_shizuku">Shizuku leállt</string>
+    <string name="home_status_shizuku_title">A Shizuku nem áll készen</string>
+    <string name="home_status_shizuku_suggestion">Nyissa meg a Shizukut és indítsa el. A telefon minden újraindításakor leáll, és a CallVault addig nem tud rögzíteni.</string>
+    <string name="home_health_missed_shizuku">%1$s nem lett rögzítve — a Shizuku nem futott</string>
+    <string name="home_health_missed_shizuku_unnamed">Egy hívás nem lett rögzítve — a Shizuku nem futott</string>
     <string name="settings_subsection_privileges">Honnan kapja a CallVault a jogosultságokat</string>
     <string name="settings_shizuku_mode">Inkább a Shizuku használata</string>
     <string name="settings_shizuku_not_installed">A Shizuku nincs telepítve. A CallVaultnak nincs rá szüksége — ez csak azoknak szól, akik amúgy is használják.</string>

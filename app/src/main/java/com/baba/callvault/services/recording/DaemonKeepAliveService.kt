@@ -582,6 +582,15 @@ class DaemonKeepAliveService : Service() {
 
         /** Start (or no-op if already running) the persistent keep-alive anchor. Safe to call repeatedly. */
         fun start(context: Context) {
+            // Nothing to keep alive in Shizuku mode, and worse than nothing: this service relaunches
+            // OUR daemon and turns Wireless debugging on to do it — on a phone whose owner chose
+            // Shizuku precisely so none of that would happen. Shizuku restarts its own user service
+            // (bound with daemon(true)), so the job this exists for is already someone else's.
+            if (AppPreferences(context).getPrivilegedMode().needsShizuku) {
+                AppLogger.i(TAG, "Shizuku mode: not starting the keep-alive; Shizuku owns the recorder")
+                stop(context)
+                return
+            }
             runCatching {
                 ContextCompat.startForegroundService(context, Intent(context, DaemonKeepAliveService::class.java))
             }.onFailure { AppLogger.w(TAG, "Failed to start keep-alive service: ${it.message}") }

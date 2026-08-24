@@ -90,6 +90,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         NOT_PAIRED(R.string.home_status_not_paired_title, R.string.home_status_not_paired_suggestion),
         DEV_OPTIONS_OFF(R.string.home_status_dev_options_off_title, R.string.home_status_dev_options_off_suggestion),
         UPDATE_REGRANT_NEEDED(R.string.home_status_update_regrant_title, R.string.home_status_update_regrant_suggestion),
+        SHIZUKU_NOT_READY(R.string.home_status_shizuku_title, R.string.home_status_shizuku_suggestion),
         RECOVERY_STUCK(R.string.home_status_recovery_stuck_title, R.string.home_status_recovery_stuck_suggestion),
         READY(R.string.home_status_ready_title, R.string.home_status_ready_suggestion, isReady = true)
     }
@@ -550,6 +551,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         Prerequisite.ADB_PAIRING -> HomeStatus.NOT_PAIRED
         Prerequisite.DEVELOPER_OPTIONS -> HomeStatus.DEV_OPTIONS_OFF
         Prerequisite.SECURE_SETTINGS_GRANT -> HomeStatus.UPDATE_REGRANT_NEEDED
+        // Shizuku has to be started again after every reboot, so this is the one a Shizuku user
+        // will actually see — and it is fixable by them, in one tap, once they know.
+        Prerequisite.SHIZUKU -> HomeStatus.SHIZUKU_NOT_READY
         // Everything is configured, so the only remaining question is whether the recorder can actually
         // be brought up. Gated on the recovery streak rather than on the daemon simply being down —
         // an idle daemon is the normal, healthy state and must never turn the card red.

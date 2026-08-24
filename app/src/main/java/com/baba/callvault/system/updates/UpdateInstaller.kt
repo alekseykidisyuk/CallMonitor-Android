@@ -14,6 +14,7 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.os.Build
 import com.baba.callvault.integrations.adb.AdbShell
+import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.utils.AppLogger
 import java.io.File
 
@@ -59,6 +60,17 @@ object UpdateInstaller {
      * by the (shell-uid, separate) shell process, which survives this app being replaced.
      */
     fun installSilentlyViaShell(context: Context, apkFile: File): ShellResult {
+        // In Shizuku mode there is no embedded ADB shell to stream through, so do not spend a
+        // connection attempt (and a confusing failure in the log) discovering that.
+        //
+        // UNAVAILABLE, emphatically not FAILED: FAILED means "pm rejected this APK" and raises an
+        // update-failed notification, which would be a lie — nothing was rejected and nothing is
+        // wrong. UNAVAILABLE is the existing "the shell could not be brought up" answer, and the
+        // caller already answers it with the ordinary system installer: one tap instead of zero.
+        if (AppPreferences(context).getPrivilegedMode().needsShizuku) {
+            AppLogger.i(TAG, "Shizuku mode: no ADB shell for a silent install; using the system installer")
+            return ShellResult.UNAVAILABLE
+        }
         val size = apkFile.length()
         if (size <= 0L) return ShellResult.FAILED
         // Checked BEFORE taking heavyOperationLock: installing replaces the app, which kills the

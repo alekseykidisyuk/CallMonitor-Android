@@ -233,9 +233,33 @@ prefs:   <string name="privileged_mode">shizuku</string>
 
 Strings in all ten locales.
 
-**Phase 5 — the honest edges.** Updater degradation message; what the keep-alive service and the
-wireless-debugging plumbing should do in Shizuku mode (mostly: nothing, and say so); the missed-call
-reporting must not blame the user for a Shizuku that was not running.
+**Phase 5 — the honest edges. DONE 2026-08-24.**
+
+The largest item was not on the original list. **`SetupPrerequisites` asked ADB questions of everyone**
+— paired? developer options on? WRITE_SECURE_SETTINGS granted? — so a Shizuku user, who never does any
+of those, would have read as "not ready" for ever on a phone that records perfectly. Worse, that feeds
+the missed-call reporting: every miss would have been *excused* as the user's own doing, which is
+exactly the honesty this project spent a day building. `firstMissing()` now takes the mode and asks the
+right questions: the recording folder in both modes, then either the ADB chain or Shizuku's readiness.
+
+A new `Prerequisite.SHIZUKU` names the real, fixable cause — **Shizuku does not survive a reboot** — and
+surfaces as its own Home status ("Shizuku is not ready" / pill "Shizuku stopped", Error tone because
+nothing can record) and its own health line ("… was not recorded — Shizuku was not running") instead of
+an unexplained gap. A recorder that is already connected outranks a Shizuku that has since stopped: the
+user service outlives the app, so calling that "not ready" would excuse a genuine failure.
+
+**The keep-alive is inert in Shizuku mode.** Its job is relaunching *our* daemon and switching Wireless
+debugging on to do it — on a phone whose owner chose Shizuku precisely so that would not happen. Shizuku
+restarts its own user service, so the work already belongs to someone else. Gated in `start()`, which
+covers all four call sites at once.
+
+**The updater degrades to one tap.** `installSilentlyViaShell` returns `UNAVAILABLE` in Shizuku mode
+rather than attempting a connection that cannot succeed — and emphatically not `FAILED`, which means
+"pm rejected this APK" and raises an update-failed notification. That would have been a lie: nothing was
+rejected. `UNAVAILABLE` is the existing "no shell" answer the caller already handles with the ordinary
+system installer.
+
+765 unit tests green, `lintVitalRelease` clean, strings in all ten locales.
 
 ---
 

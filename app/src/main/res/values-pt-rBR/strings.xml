@@ -240,6 +240,11 @@
     <string name="permissions_shizuku_active">Usando o Shizuku. Não há nada para parear — a configuração está pronta.</string>
     <string name="permissions_shizuku_use">Usar o Shizuku</string>
     <string name="permissions_shizuku_use_callvault">Usar o CallVault</string>
+    <string name="home_hero_pill_shizuku">Shizuku parado</string>
+    <string name="home_status_shizuku_title">O Shizuku não está pronto</string>
+    <string name="home_status_shizuku_suggestion">Abra o Shizuku e inicie-o. Ele para sempre que o telefone reinicia, e o CallVault não consegue gravar até que esteja em execução.</string>
+    <string name="home_health_missed_shizuku">%1$s não foi gravada — o Shizuku não estava em execução</string>
+    <string name="home_health_missed_shizuku_unnamed">Uma chamada não foi gravada — o Shizuku não estava em execução</string>
     <string name="settings_subsection_privileges">De onde o CallVault obtém permissões</string>
     <string name="settings_shizuku_mode">Usar o Shizuku no lugar</string>
     <string name="settings_shizuku_not_installed">O Shizuku não está instalado. O CallVault não precisa dele — isto é só para quem já o usa.</string>

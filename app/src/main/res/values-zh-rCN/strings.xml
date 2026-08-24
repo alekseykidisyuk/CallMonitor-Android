@@ -237,6 +237,11 @@
     <string name="permissions_shizuku_active">正在使用 Shizuku。无需配对——设置已完成。</string>
     <string name="permissions_shizuku_use">使用 Shizuku</string>
     <string name="permissions_shizuku_use_callvault">使用 CallVault</string>
+    <string name="home_hero_pill_shizuku">Shizuku 已停止</string>
+    <string name="home_status_shizuku_title">Shizuku 尚未就绪</string>
+    <string name="home_status_shizuku_suggestion">请打开 Shizuku 并启动它。每次重启手机后它都会停止，在它运行之前 CallVault 无法录音。</string>
+    <string name="home_health_missed_shizuku">%1$s 未被录制——Shizuku 当时未运行</string>
+    <string name="home_health_missed_shizuku_unnamed">有一通来电未被录制——Shizuku 当时未运行</string>
     <string name="settings_subsection_privileges">CallVault 的权限来源</string>
     <string name="settings_shizuku_mode">改用 Shizuku</string>
     <string name="settings_shizuku_not_installed">未安装 Shizuku。CallVault 并不需要它——此选项只面向本来就在用它的人。</string>

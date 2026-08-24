@@ -10,12 +10,29 @@ package com.baba.callvault.data.health
 
 import android.content.Context
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.PrivilegedMode
+import com.baba.callvault.server.RecorderBackend
+import com.baba.callvault.server.ShizukuStatus
 import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.DeveloperOptions
 import com.baba.callvault.server.RecorderConnection
 
 /** A user-owned condition that must hold for a call to be recordable at all. */
-enum class Prerequisite { RECORDING_FOLDER, ADB_PAIRING, DEVELOPER_OPTIONS, SECURE_SETTINGS_GRANT }
+enum class Prerequisite {
+    RECORDING_FOLDER,
+    ADB_PAIRING,
+    DEVELOPER_OPTIONS,
+    SECURE_SETTINGS_GRANT,
+
+    /**
+     * Shizuku is not installed, not running, or has not allowed CallVault — in Shizuku mode.
+     *
+     * User-owned like the rest: Shizuku does not survive a reboot and has to be started again, which
+     * makes "Shizuku is not running" a real and fixable reason a call went unrecorded rather than a
+     * mystery to be blamed on the app.
+     */
+    SHIZUKU,
+}
 
 /**
  * The single definition of "is this setup capable of recording right now", shared by
@@ -41,16 +58,54 @@ object SetupPrerequisites {
      */
     fun missing(context: Context): Prerequisite? {
         val preferences = AppPreferences(context)
-        if (preferences.getRecordingFolderUri() == null) return Prerequisite.RECORDING_FOLDER
-        if (!preferences.isAdbPaired()) return Prerequisite.ADB_PAIRING
-        // isExplicitlyDisabled (not !isEnabled): an absent/unreadable global must not read as missing
-        // on a ROM that doesn't expose the setting — see DeveloperOptions' own doc comment.
-        if (DeveloperOptions.isExplicitlyDisabled(context)) return Prerequisite.DEVELOPER_OPTIONS
+        val mode = preferences.getPrivilegedMode()
+        return firstMissing(
+            mode = mode,
+            hasFolder = preferences.getRecordingFolderUri() != null,
+            isPaired = preferences.isAdbPaired(),
+            // isExplicitlyDisabled (not !isEnabled): an absent/unreadable global must not read as
+            // missing on a ROM that doesn't expose the setting — see DeveloperOptions' own doc comment.
+            devOptionsDisabled = DeveloperOptions.isExplicitlyDisabled(context),
+            hasSecureSettings = AdbShell.hasWriteSecureSettings(context),
+            daemonConnected = RecorderConnection.isConnected,
+            // Only consulted in Shizuku mode, and cheap: three local checks, no I/O.
+            shizuku = if (mode.needsShizuku) RecorderBackend.shizukuStatus(context) else ShizukuStatus.READY,
+        )
+    }
+
+    /**
+     * The decision itself, over facts rather than a Context, so it can be tested.
+     *
+     * **The two modes ask different questions.** A Shizuku user never pairs anything, never turns
+     * Wireless debugging on and never grants WRITE_SECURE_SETTINGS; asking those of them would report
+     * "not ready" for ever on a phone that records perfectly, and — worse — would *excuse* every missed
+     * call as their own doing, which is precisely the reporting this project worked to make honest.
+     */
+    fun firstMissing(
+        mode: PrivilegedMode,
+        hasFolder: Boolean,
+        isPaired: Boolean,
+        devOptionsDisabled: Boolean,
+        hasSecureSettings: Boolean,
+        daemonConnected: Boolean,
+        shizuku: ShizukuStatus,
+    ): Prerequisite? {
+        // Asked first in both modes: it is about where recordings go, not about privileges.
+        if (!hasFolder) return Prerequisite.RECORDING_FOLDER
+
+        if (mode.needsShizuku) {
+            // A recorder that is already connected outranks anything Shizuku says now: the user
+            // service outlives the app, so Shizuku stopping does not stop a live recording — and
+            // calling that "not ready" would excuse a genuine failure as the user's fault.
+            if (daemonConnected) return null
+            return if (shizuku == ShizukuStatus.READY) null else Prerequisite.SHIZUKU
+        }
+
+        if (!isPaired) return Prerequisite.ADB_PAIRING
+        if (devOptionsDisabled) return Prerequisite.DEVELOPER_OPTIONS
         // The grant is only needed to relaunch a DEAD daemon; while one is already connected, recording
         // works right now regardless of the grant, so this only counts as missing when BOTH are true.
-        if (!AdbShell.hasWriteSecureSettings(context) && !RecorderConnection.isConnected) {
-            return Prerequisite.SECURE_SETTINGS_GRANT
-        }
+        if (!hasSecureSettings && !daemonConnected) return Prerequisite.SECURE_SETTINGS_GRANT
         return null
     }
 }
