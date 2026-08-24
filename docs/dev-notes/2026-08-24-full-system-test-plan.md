@@ -271,15 +271,38 @@ convenient: a switch the user turned off stays off, a restored record is consume
 cannot resurrect it, a restore in a mode that still cannot do the thing is a no-op that keeps the record,
 and a second round trip remembers the newer answer.
 
-### One loose end, not chased
+### Bug 4 — wireless debugging can be left on indefinitely (found, not fixed)
 
-The run ended with `adb_wifi_enabled=1` while the phone was in Shizuku mode, having been `0` at every
-earlier sample. No CallVault log line enabled it in that mode, and Shizuku mode does not touch wireless
-debugging — so the likely story is that the *previous* standalone daemon launch turned it on and the
-switch to Shizuku happened before the matching "Wireless debugging disabled" took effect, leaving it on
-with nothing left to turn it off. Unproven: the earlier log had already rotated. It was set back to `0`
-by hand to leave the phone as it was found. Worth a look, because an open debugging port that outlives
-the thing that needed it is exactly the exposure the loopback work was parked over.
+Noticed as an odd end-state, then reproduced and diagnosed. **Not fixed**, deliberately — see below.
+
+Wireless debugging is enabled and disabled in two different files. `AdbShell` turns it **on** whenever
+it needs to (re)establish the embedded ADB connection (`AdbShell.kt:170`), and only
+`RecorderServerLauncher` turns it back **off**, on the path where that connection ended in a daemon
+launch (`RecorderServerLauncher.kt:233`). So any reconnect that does *not* end in a launch leaves it on,
+with nothing left to turn it off.
+
+Measured on the OP9 — the last cycle has no matching disable:
+
+```
+19:44:49.843  Wireless debugging disabled (DROP_USB_KEEPS_ADBD; commands flow over binder)
+19:45:19.605  Re-enabled Wireless debugging; waiting for adbd to advertise…
+19:45:23.402  dumpsys usb printed no screen_unlocked_functions line
+              (…nothing further…)
+```
+
+and `adb_wifi_enabled` was still `1` three minutes later, with no daemon launch in between. The trigger
+here looks like the USB-default-mode check: it runs `dumpsys usb` over the ADB shell, which reconnects,
+which enables wireless debugging — and since no launch follows, the disable never runs. That last step is
+inferred from the log ordering rather than traced through the code, so treat the *trigger* as probable
+and the *asymmetry* as established.
+
+Why it matters: wireless debugging is an open network port. Leaving it on after the thing that needed it
+is finished is exactly the exposure that got the off-Wi-Fi loopback work parked.
+
+Why it is not fixed here: this is the WD lifecycle, which is where the Samsung churn loop came from —
+disabling WD when it was the last transport killed the daemon and span. The fix is probably to pair the
+enable with its own disable in `AdbShell` rather than relying on the launcher, but it needs its own
+think and its own device test, and it is unrelated to the mode work this run was about.
 
 ### What only the maintainer can settle
 
