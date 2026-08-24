@@ -16,10 +16,15 @@ Transcripts learn who was speaking.
   on the phone cannot be labelled this way, because the information only exists while it is being
   recorded.
 
-- **Names, once the phone is sure.** Which captured channel carries the other person is a detail
-  Android never specifies and every manufacturer decides for itself, so CallVault works it out on
-  its own: on an outgoing call, only the far side carries the network's ringback tone. Until two
-  calls agree, lines are labelled "Speaker A" and "Speaker B" — neutral on purpose. Showing your own
+- **Names, and one tap to correct them.** Which captured channel carries the other person is a
+  detail Android never specifies and every manufacturer decides for itself, so CallVault has to work
+  it out — and it will not pretend to be certain. Until it knows, lines read "Speaker A" and
+  "Speaker B", and the transcript asks outright: *Which one is you?* One tap names both sides, on
+  that transcript and every other one.
+
+  Left alone, it guesses: on a call you placed, the first voice is the person who answered. It waits
+  for two calls to agree before saying so, and then still offers to swap. **Your answer always
+  wins** — and it can be changed later from "Swap names" on any transcript, because showing your own
   words as the other person's, on a record of a real conversation, is worse than showing no name at
   all.
 
