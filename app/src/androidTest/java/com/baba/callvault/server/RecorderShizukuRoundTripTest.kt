@@ -9,6 +9,8 @@
 package com.baba.callvault.server
 
 import android.os.ParcelFileDescriptor
+import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.PrivilegedMode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -138,6 +140,54 @@ class RecorderShizukuRoundTripTest {
         assertTrue("The Shizuku-hosted recorder wrote no audio at all", out.length() > 0)
     }
 
+    /**
+     * Leaving Shizuku mode must leave **nothing** of Shizuku's behind — neither the process nor the
+     * binder.
+     *
+     * This is a regression test for a measured bug, not a hypothetical. `ShizukuBackend.stop()` only
+     * asks *Shizuku* to destroy the service, and on the OP9 it did not: the process was alive 30s
+     * later, so its binder never died, the teardown wait ran out, and `ensureServerRunning` then
+     * "reused" that binder. The app sat in STANDALONE mode recording through a Shizuku-hosted
+     * recorder, while the switch dialog said "Ready — using CallVault". Nothing was visibly broken:
+     * handoff, VoIP arming and speaker attribution simply never happened again.
+     */
+    @Test
+    fun leaving_shizuku_mode_kills_the_user_service_and_releases_the_binder() {
+        assumeTrue("Shizuku is not installed on this device", ShizukuBackend.isInstalled(context))
+        assumeTrue("No Shizuku server is running", ShizukuBackend.isRunning())
+        assumeTrue("CallVault has not been granted Shizuku permission", ShizukuBackend.hasPermission())
+
+        shell("pkill -f com.baba.callvault.server.RecorderServer")
+        Thread.sleep(500)
+
+        val prefs = AppPreferences(context)
+        val original = prefs.getPrivilegedMode()
+        try {
+            prefs.setPrivilegedMode(PrivilegedMode.SHIZUKU)
+            assertTrue("Shizuku refused to start the recorder service", ShizukuBackend.start())
+            assertNotNull("Shizuku never handed back a recorder binder", awaitBinder())
+            assertTrue("The user service is not running, so this proves nothing", userServiceAlive())
+
+            RecorderBackend.switchTo(context, PrivilegedMode.STANDALONE)
+
+            assertTrue(
+                "The Shizuku binder is still attached after leaving the mode — the next " +
+                    "ensureRunning will reuse it and record through the wrong host",
+                !RecorderConnection.isConnected
+            )
+            assertTrue(
+                "The Shizuku-hosted recorder process outlived the mode switch",
+                waitUntil(TEARDOWN_TIMEOUT_MS) { !userServiceAlive() }
+            )
+        } finally {
+            prefs.setPrivilegedMode(original)
+        }
+    }
+
+    /** Whether a Shizuku-hosted recorder process (`…:recorder`) exists right now. */
+    private fun userServiceAlive(): Boolean =
+        shellOut("ps -A -o NAME").lineSequence().any { it.trim().endsWith(":recorder") }
+
     private fun awaitBinder(): IRecorderService? {
         waitUntil(BINDER_TIMEOUT_MS) { RecorderConnection.service != null }
         return RecorderConnection.service
@@ -153,15 +203,27 @@ class RecorderShizukuRoundTripTest {
     }
 
     private fun shell(command: String) {
-        instrumentation.uiAutomation.executeShellCommand(command).use { fd ->
-            ParcelFileDescriptor.AutoCloseInputStream(fd).use { it.readBytes() }
-        }
+        shellOut(command)
     }
+
+    /**
+     * Runs a command and returns its output.
+     *
+     * The returned pipe must be read to completion and only then closed — `executeShellCommand` is not
+     * a shell, so redirection, `&` and `sleep` are silently dropped, and closing early truncates.
+     */
+    private fun shellOut(command: String): String =
+        instrumentation.uiAutomation.executeShellCommand(command).use { fd ->
+            ParcelFileDescriptor.AutoCloseInputStream(fd).use { String(it.readBytes()) }
+        }
 
     private companion object {
         const val DIALOG_TIMEOUT_MS = 20_000L
         const val BINDER_TIMEOUT_MS = 20_000L
         const val RECORD_MS = 2_000L
         const val POLL_MS = 200L
+
+        /** Matches `RecorderBackend`'s own teardown budget; the process should be gone well inside it. */
+        const val TEARDOWN_TIMEOUT_MS = 5_000L
     }
 }

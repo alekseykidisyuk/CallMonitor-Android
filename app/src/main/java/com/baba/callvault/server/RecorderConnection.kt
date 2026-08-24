@@ -91,4 +91,21 @@ object RecorderConnection {
         this.service = null
         runCatching { onDeath?.invoke() }.onFailure { AppLogger.w(TAG, "onDeath hook failed: ${it.message}") }
     }
+
+    /**
+     * Drops the held binder even though it is still alive, for the one case where staying attached is
+     * worse than detaching: a mode switch whose old recorder refused to die.
+     *
+     * [onBinderDied] deliberately keeps a live binder, which is right when the death is the *old*
+     * host's. It is wrong when the live binder IS the old host: the switch then hands the new mode a
+     * recorder belonging to the mode we just left, and every call recorded afterwards silently takes
+     * the wrong capture path. Detaching costs at most one extra daemon start — and whichever recorder
+     * comes up next clears the other, because `killStaleRecorders` runs on every start.
+     */
+    fun forceClear(reason: String) {
+        if (service == null) return
+        AppLogger.w(TAG, "Dropping a live recorder binder on purpose: $reason")
+        this.service = null
+        runCatching { onDeath?.invoke() }.onFailure { AppLogger.w(TAG, "onDeath hook failed: ${it.message}") }
+    }
 }

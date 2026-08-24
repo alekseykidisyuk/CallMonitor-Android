@@ -82,6 +82,20 @@ object RecorderBackend {
             }
             BackendChoice.SHIZUKU -> {
                 AppLogger.i(TAG, "Leaving Shizuku mode; releasing the user service")
+                // Ask the service ITSELF to exit first, exactly as the ADB branch above does.
+                //
+                // `stop(remove = true)` only asks *Shizuku* to destroy the service, and measured on the
+                // OP9 it did not: the process was still alive 30s later, so its binder never died, the
+                // teardown wait below ran out its full 5s, and ensureServerRunning then "reused" that
+                // very binder — leaving the app in STANDALONE mode talking to a Shizuku-hosted recorder
+                // while the switch dialog said "Ready — using CallVault". Silently, that costs every
+                // standalone-only feature at once: handoff, VoIP arming and speaker attribution all
+                // quietly do nothing, because capture is really going through scrcpy.
+                //
+                // We hold that binder and destroy() exits the process, so this is the one teardown that
+                // does not depend on another app acting on our behalf.
+                runCatching { RecorderConnection.service?.destroy() }
+                    .onFailure { AppLogger.d(TAG, "The user service did not answer destroy(): ${it.message}") }
                 runCatching { ShizukuBackend.stop(remove = true) }
                     .onFailure { AppLogger.w(TAG, "Could not stop the Shizuku service: ${it.message}") }
             }
@@ -103,9 +117,13 @@ object RecorderBackend {
             Thread.sleep(POLL_MS)
         }
         if (RecorderConnection.isConnected) {
-            // Rare, and worth saying out loud: the next check will now see a binder that belongs to the
-            // mode we just left, so the switch may report the wrong thing.
+            // Do NOT carry this binder into the new mode. It belongs to the host we just tore down, and
+            // keeping it is how the app ended up in standalone mode recording through a Shizuku service
+            // — reported as "Ready — using CallVault", with handoff, VoIP arming and speaker
+            // attribution all silently absent. Dropping it makes the next ensureRunning start the
+            // backend the user actually chose, or fail honestly.
             AppLogger.w(TAG, "The previous recorder is still connected after ${TEARDOWN_TIMEOUT_MS}ms")
+            RecorderConnection.forceClear("it belongs to $from, and we are switching to $to")
         } else {
             AppLogger.i(TAG, "Previous recorder is gone; starting the $to backend")
         }
