@@ -533,7 +533,16 @@ class RecordingForegroundService : Service() {
             // The mid-call daemon-death warning is the more actionable message and shares the same
             // notification ID — don't overwrite it (and double-vibrate) with the empty-file variant.
             if (!daemonLossNotified) {
-                notificationHelper.showErrorNotification(getString(R.string.recording_error_empty_file))
+                // The advice has to match the mode. Telling a Shizuku user to check Developer options
+                // and Wireless debugging sends them to settings they have never touched and do not need,
+                // and away from the one thing that is actually actionable: whether Shizuku is running.
+                val emptyFileMessage =
+                    if (AppPreferences(this).getPrivilegedMode().needsShizuku) {
+                        R.string.recording_error_empty_file_shizuku
+                    } else {
+                        R.string.recording_error_empty_file
+                    }
+                notificationHelper.showErrorNotification(getString(emptyFileMessage))
             }
             SafHelper.deleteDocument(doc, "the empty recording '$name'")
             recordHealth(sizeBytes, name)

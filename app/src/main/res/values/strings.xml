@@ -368,6 +368,7 @@
     <string name="recording_error_server_missing">Scrcpy-server binary is missing or the security SHA256 check failed. This should not happen, please report this.</string>
     <string name="recording_error_file_creation">Failed to create recording file. Please check the storage permissions and/or select a new recording folder in the app settings.</string>
     <string name="recording_error_start_failed">Failed to start the recording. An error occurred when calling the ShellService binder method.</string>
+    <string name="recording_error_empty_file_shizuku">The recording is empty — no audio was captured. Open Shizuku and check it is still running; it stops whenever the phone restarts.</string>
     <string name="recording_error_empty_file">The recording is empty — no audio was captured because the recorder daemon was not running. Check that Developer options and Wireless debugging are enabled.</string>
     <string name="recording_error_daemon_died">The recorder daemon stopped — this call is NOT being recorded. Check that Developer options and Wireless debugging are enabled.</string>
     <string name="recording_error_drive_copy_failed">A recording could not be copied to your cloud folder. It is still saved on this device — check the folder in Settings.</string>

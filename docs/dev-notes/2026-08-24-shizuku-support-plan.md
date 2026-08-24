@@ -342,10 +342,41 @@ the test uses `UiDevice` crashes the run with `IllegalStateException: UiAutomati
 registered!`. Two UiAutomation clients cannot coexist. Watch the test through logcat, never through a
 second automation channel.
 
-### 🟡 Still open: direct AudioRecord under Shizuku on real hardware
+### ✅ ANSWERED: a Shizuku-hosted process cannot record; scrcpy is the path
 
-Everything is now in place on the OP9 to answer it, but it needs a **real call** — the emulator's
-scrcpy fallback may or may not reproduce there.
+Settled on the OP9 with a real carrier call:
+
+```
+startRecording source=voice-call codec=opus bitRate=24000
+Direct capture unavailable, falling back to scrcpy: AudioRecord failed to enter RECORDING state
+Recording via scrcpy — source=voice-call codec=opus
+```
+
+Not an emulator artefact. The emulator showed it as a failed *create*, real hardware as a failed
+*start*; both end at scrcpy. **ShizuCallRecorder captures only through scrcpy**, which is the same
+answer reached from the other direction — worth trusting over any further theorising.
+
+**Two consequences for Shizuku mode, both now enforced in code:**
+
+- **The handoff path is ruled out** ([HandoffPolicy]). Its premise is that the daemon creates the
+  `AudioRecord` and hands the live capture to the app; a record that never reaches RECORDING state hands
+  over silence, and the app writes a 0-byte file while every layer reports success.
+- **A `daemon(true)` service must be restarted when the app is replaced.** It survives the update by
+  design, and an update moves the APK to a new hashed directory — so the service kept a path to a file
+  that no longer existed and lost the scrcpy fallback without saying so. The service version is now the
+  app's versionCode (as upstream does), and `MY_PACKAGE_REPLACED` tears the service down explicitly,
+  because the version check does not cover same-version reinstalls.
+
+**Verified end to end on the OP9**, same 10-second call before and after the fixes:
+
+| | duration | size |
+|---|---|---|
+| before | 0:10 | **0 KB** |
+| after | 0:10 | **46 KB** |
+
+**Known trade-off, worth surfacing to users later:** Shizuku mode loses resilient recording (surviving a
+mid-call daemon death) and the front-clip fix from v1.4.0, because both depend on a privileged
+`AudioRecord`. Standalone keeps them.
 
 ### 🔴 Superseded: ColorOS makes the phase-3 grants impossible, and Shizuku cannot fix it
 

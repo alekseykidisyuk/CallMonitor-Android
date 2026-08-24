@@ -141,6 +141,7 @@
     <string name="playback_title">Nagranie</string>
     <string name="recording_error_daemon_died">Demon nagrywania zatrzymał się — to połączenie NIE jest nagrywane. Sprawdź, czy opcje programistyczne i debugowanie bezprzewodowe są włączone.</string>
     <string name="recording_error_drive_copy_failed">Nie udało się skopiować nagrania do twojego folderu w chmurze. Nadal jest zapisane na tym urządzeniu — sprawdź folder w Ustawieniach.</string>
+    <string name="recording_error_empty_file_shizuku">Nagranie jest puste — nie przechwycono dźwięku. Otwórz Shizuku i sprawdź, czy nadal działa; zatrzymuje się przy każdym restarcie telefonu.</string>
     <string name="recording_error_empty_file">Nagranie jest puste — nie przechwycono dźwięku, ponieważ demon nagrywania nie był uruchomiony. Sprawdź, czy opcje programistyczne i debugowanie bezprzewodowe są włączone.</string>
     <string name="recording_error_file_creation">Nie udało się utworzyć pliku nagrania. Sprawdź uprawnienia do dostępu do pamięci i/lub wybierz nowy folder na nagrania w ustawieniach aplikacji.</string>
     <string name="recording_error_folder_missing">Wybrany folder wyjściowy nie istnieje, jest nieprawidłowy lub nie mamy uprawnień do zapisu w nim. Wybierz folder w ustawieniach aplikacji.</string>

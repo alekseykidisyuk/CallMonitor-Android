@@ -141,6 +141,7 @@
     <string name="playback_title">录音</string>
     <string name="recording_error_daemon_died">录音守护进程已停止 — 此通话未被录音。请检查开发者选项和无线调试是否已启用。</string>
     <string name="recording_error_drive_copy_failed">有一个录音无法复制到你的云端文件夹。它仍保存在本设备上 — 请在设置中检查该文件夹。</string>
+    <string name="recording_error_empty_file_shizuku">录音为空——未捕获到音频。请打开 Shizuku 确认它仍在运行；每次重启手机后它都会停止。</string>
     <string name="recording_error_empty_file">录音为空 — 由于录音守护进程未运行，未捕获任何音频。请检查开发者选项和无线调试是否已启用。</string>
     <string name="recording_error_file_creation">保存录音文件失败，请检查输出目录的读写权限，或者尝试换一个目录后重试。</string>
     <string name="recording_error_folder_missing">选择的输出目录被删除、无效或者权限被撤销。请在App中重新指定输出目录。</string>

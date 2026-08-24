@@ -144,6 +144,7 @@
     <string name="playback_title">Gravação</string>
     <string name="recording_error_daemon_died">O serviço de gravação parou — esta chamada NÃO está sendo gravada. Verifique se as Opções do desenvolvedor e a Depuração sem fio estão ativadas.</string>
     <string name="recording_error_drive_copy_failed">Não foi possível copiar uma gravação para a sua pasta na nuvem. Ela continua salva neste dispositivo — confira a pasta nas Configurações.</string>
+    <string name="recording_error_empty_file_shizuku">A gravação está vazia — nenhum áudio foi capturado. Abra o Shizuku e verifique se ainda está em execução; ele para sempre que o telefone reinicia.</string>
     <string name="recording_error_empty_file">A gravação está vazia — nenhum áudio foi capturado porque o serviço de gravação não estava em execução. Verifique se as Opções do desenvolvedor e a Depuração sem fio estão ativadas.</string>
     <string name="recording_error_file_creation">Falha ao criar o arquivo de gravação. Verifique as permissões de armazenamento e/ou escolha uma nova pasta de gravação nas configurações do app.</string>
     <string name="recording_error_folder_missing">A pasta de destino escolhida está ausente, é inválida ou não temos permissão para gravar nela. Escolha uma nas configurações do app.</string>
