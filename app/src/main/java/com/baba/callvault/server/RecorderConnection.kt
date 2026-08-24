@@ -72,8 +72,22 @@ object RecorderConnection {
     @Volatile
     var onDeath: (() -> Unit)? = null
 
-    /** Cleared when the daemon dies (via [deathRecipient]) so callers observe a stale channel. */
+    /**
+     * Cleared when the daemon dies (via [deathRecipient]) so callers observe a stale channel.
+     *
+     * **Only when the binder we are actually holding is the dead one.** One recipient is linked to every
+     * binder we are handed, and a mode switch deliberately kills the previous host - so the OLD binder's
+     * death arrives AFTER the new one has already been stored. Clearing unconditionally threw the live
+     * recorder away: measured on the OP9, the new ADB daemon connected at 16:15:33.5, the killed Shizuku
+     * service's death landed at 16:15:35.2, and the app was left believing it had no recorder while one
+     * was running perfectly well.
+     */
     fun onBinderDied() {
+        val current = service?.asBinder()
+        if (current != null && runCatching { current.isBinderAlive }.getOrDefault(false)) {
+            AppLogger.i(TAG, "A previous recorder's binder died; the current one is alive - keeping it")
+            return
+        }
         this.service = null
         runCatching { onDeath?.invoke() }.onFailure { AppLogger.w(TAG, "onDeath hook failed: ${it.message}") }
     }

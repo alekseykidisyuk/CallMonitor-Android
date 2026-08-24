@@ -34,6 +34,7 @@ import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbNotice
 import com.baba.callvault.integrations.adb.WirelessDebuggingPolicy
 import com.baba.callvault.server.RecorderConnection
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.utils.AppLogger
 
@@ -155,7 +156,7 @@ class DaemonKeepAliveService : Service() {
                     if (!usbOn && !wdOn) AdbShell.enableWirelessDebugging(applicationContext)
                     // Re-runs the transport policy: with the daemon already connected this is just the
                     // decision, no relaunch — and it is what switches Wireless debugging off.
-                    RecorderServerLauncher.ensureServerRunning(applicationContext)
+                    RecorderBackend.ensureRunning(applicationContext)
                 }.onFailure { AppLogger.w(TAG, "Could not apply the transport change: ${it.message}") }
             }.apply { isDaemon = true; name = "cv-transport-change" }.start()
         }
@@ -198,7 +199,7 @@ class DaemonKeepAliveService : Service() {
 
             AppLogger.i(TAG, "Wireless debugging switched on by hand but USB debugging covers adbd — switching it back off")
             Thread {
-                runCatching { RecorderServerLauncher.ensureServerRunning(applicationContext) }
+                runCatching { RecorderBackend.ensureRunning(applicationContext) }
                     .onFailure { AppLogger.w(TAG, "Could not re-apply the transport policy: ${it.message}") }
             }.apply { isDaemon = true; name = "cv-wd-change" }.start()
             // Say so. Undoing a switch the user just flipped, silently, reads as the app fighting them —
@@ -244,6 +245,11 @@ class DaemonKeepAliveService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Stand down if the mode changed underneath us. start() guards the entry, but this service
+        // outlives a mode switch, and a keep-alive left over from standalone goes on relaunching the ADB
+        // daemon — which is how an ADB daemon turned up in Shizuku mode after a switch, on the OP9.
+        if (standDownIfShizuku()) return START_NOT_STICKY
+
         val startedForeground = runCatching {
             startForeground(NOTIF_ID, buildNotification(RecorderConnection.isConnected), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         }.onFailure { AppLogger.e(TAG, "keep-alive startForeground failed", it) }.isSuccess
@@ -395,7 +401,7 @@ class DaemonKeepAliveService : Service() {
         val ok = java.util.concurrent.atomic.AtomicBoolean(false)
         val worker = Thread {
             ok.set(
-                runCatching { RecorderServerLauncher.ensureServerRunning(applicationContext) }
+                runCatching { RecorderBackend.ensureRunning(applicationContext) }
                     .onFailure { AppLogger.w(TAG, "keep-alive relaunch failed: ${it.message}") }
                     .getOrDefault(false)
             )
@@ -510,6 +516,14 @@ class DaemonKeepAliveService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /** True when this service has no business running, having stopped itself. */
+    private fun standDownIfShizuku(): Boolean {
+        if (!AppPreferences(applicationContext).getPrivilegedMode().needsShizuku) return false
+        AppLogger.i(TAG, "Shizuku mode: the keep-alive has nothing to keep alive; stopping")
+        stopSelf()
+        return true
+    }
 
     companion object {
         private const val TAG = "CV:DaemonKeepAlive"

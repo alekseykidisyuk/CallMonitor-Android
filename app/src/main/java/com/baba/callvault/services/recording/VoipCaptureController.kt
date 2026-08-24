@@ -11,7 +11,7 @@ package com.baba.callvault.services.recording
 import android.content.Context
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.server.RecorderConnection
-import com.baba.callvault.server.RecorderServerLauncher
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -41,7 +41,7 @@ object VoipCaptureController {
             return false
         }
         // The daemon owns the policy, so it has to be up before we can arm anything.
-        if (!RecorderServerLauncher.ensureServerRunning(context)) {
+        if (!RecorderBackend.ensureRunning(context)) {
             AppLogger.w(TAG, "VoIP arm deferred: daemon unavailable")
             return false
         }

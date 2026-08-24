@@ -26,7 +26,7 @@ import com.baba.callvault.data.health.SetupFingerprint
 import com.baba.callvault.data.health.SetupHealthStore
 import com.baba.callvault.data.health.record
 import com.baba.callvault.integrations.adb.AdbShell
-import com.baba.callvault.server.RecorderServerLauncher
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.R
 import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.data.waveform.RecordingExtrasRepository
@@ -290,7 +290,7 @@ class RecordingForegroundService : Service() {
                     // ensureServerRunning is a no-op when the binder is already connected (WD untouched); it
                     // only transiently re-enables WD to relaunch the daemon if it died, then turns WD back off.
                     AppLogger.i(TAG, "Entered standby for ${currentMeta?.direction} call; ensuring recorder daemon is running")
-                    RecorderServerLauncher.ensureServerRunning(this@RecordingForegroundService)
+                    RecorderBackend.ensureRunning(this@RecordingForegroundService)
                 }
             }
 

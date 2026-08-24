@@ -36,6 +36,12 @@ object RecorderBackend {
     private const val POLL_MS = 100L
 
     /**
+     * How long to wait for a torn-down recorder's binder to actually die before starting the next one.
+     * Generous: getting this wrong reports the wrong backend as ready, which is worse than a slow switch.
+     */
+    private const val TEARDOWN_TIMEOUT_MS = 5_000L
+
+    /**
      * Makes sure a recorder is running and its binder is in [RecorderConnection].
      *
      * @return true when a binder is available, false when it could not be obtained — a normal outcome
@@ -84,7 +90,36 @@ object RecorderBackend {
             }
         }
 
+        // Wait for the old recorder to actually be GONE before anyone asks whether one is running.
+        //
+        // destroy()/unbind only *ask*; the binder's death arrives asynchronously. Measured on the OP9:
+        // the mode switch asked the ADB daemon to die at 16:11:56.731, and 3ms later ensureRunning saw
+        // RecorderConnection still connected, reported "already connected; reusing existing binder",
+        // and declared the switch ready — about the very daemon it had just killed. Shizuku was never
+        // bound. The death landed 17ms after that, far too late to matter.
+        val clearedBy = SystemClock.elapsedRealtime() + TEARDOWN_TIMEOUT_MS
+        while (RecorderConnection.isConnected && SystemClock.elapsedRealtime() < clearedBy) {
+            Thread.sleep(POLL_MS)
+        }
+        if (RecorderConnection.isConnected) {
+            // Rare, and worth saying out loud: the next check will now see a binder that belongs to the
+            // mode we just left, so the switch may report the wrong thing.
+            AppLogger.w(TAG, "The previous recorder is still connected after ${TEARDOWN_TIMEOUT_MS}ms")
+        } else {
+            AppLogger.i(TAG, "Previous recorder is gone; starting the $to backend")
+        }
+
         prefs.setPrivilegedMode(to)
+
+        // Entering Shizuku mode starts from a clean slate: drop any existing user-service record so the
+        // next bind spawns a FRESH process running current code. A daemon(true) service survives app
+        // updates, and an old one cannot clean up after itself — it predates the code that knows how —
+        // so asking it to is useless. Done only on entering the mode, never on an ordinary start, which
+        // would kill a warm recorder (possibly mid-call) for no reason.
+        if (to.needsShizuku) {
+            runCatching { ShizukuBackend.stop(remove = true) }
+                .onFailure { AppLogger.d(TAG, "No previous Shizuku service to drop: ${it.message}") }
+        }
 
         // Turn off what the new mode cannot honour, rather than leaving switches on that promise
         // something they cannot deliver. Two of them (resilient recording, VoIP) previously produced
