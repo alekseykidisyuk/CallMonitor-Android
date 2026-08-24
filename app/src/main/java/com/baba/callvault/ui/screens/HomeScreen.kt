@@ -685,18 +685,14 @@ fun HomeScreen(
                 contact = title,
                 sideA = stringResource(R.string.transcript_speaker_a),
                 sideB = stringResource(R.string.transcript_speaker_b),
-                // Only a guess worth questioning: neutral labels claim nothing, and a confirmed
-                // mapping has already been looked at.
-                isGuess = channelMap != ChannelMap.UNKNOWN && !speakersConfirmed
+                // Unsettled until the user says otherwise — including when nothing has been
+                // worked out, which is when being asked is worth the most: the convention needs two
+                // agreeing calls, and until then this is the only way to get names at all.
+                isGuess = !speakersConfirmed
             ),
-            onSwapSpeakers = {
+            onChooseSpeakerMap = { chosen ->
                 val prefs = AppPreferences(context)
-                prefs.setSpeakerMapOverride(
-                    when (channelMap) {
-                        ChannelMap.A_IS_FAR -> ChannelMap.B_IS_FAR.key
-                        else -> ChannelMap.A_IS_FAR.key
-                    }
-                )
+                prefs.setSpeakerMapOverride(chosen.key)
                 prefs.setSpeakerMapConfirmed(true)
                 speakerMapNonce++
             },

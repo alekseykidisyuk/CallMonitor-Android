@@ -375,6 +375,7 @@
     <string name="transcript_speaker_b">Rozmówca B</string>
     <string name="transcript_speaker_you">Ja</string>
     <string name="transcript_speakers_correct">Poprawnie</string>
+    <string name="transcript_speakers_which_is_you">Który to ty?</string>
     <string name="transcript_speakers_guessed">Imiona ustalone automatycznie</string>
     <string name="transcript_speakers_swap">Zamień</string>
     <string name="transcription_batch_label">Połączenia na przebieg</string>

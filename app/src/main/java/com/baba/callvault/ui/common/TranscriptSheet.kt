@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
+import com.baba.callvault.data.ChannelMap
 import com.baba.callvault.data.SpeakerNames
 import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
 import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
@@ -96,9 +97,9 @@ fun TranscriptSheet(
      * ringback over several calls and applies to all of them at once.
      */
     speakerNames: SpeakerNames,
-    /** Flips which side is which, for good. Offered only while [SpeakerNames.isGuess]. */
-    onSwapSpeakers: () -> Unit = {},
-    /** Accepts the guess, which stops the offer without changing anything. */
+    /** The user says the mapping is this one, settling it for good. */
+    onChooseSpeakerMap: (ChannelMap) -> Unit = {},
+    /** Accepts what was worked out, which stops the offer without pinning anything. */
     onConfirmSpeakers: () -> Unit = {},
     /** The summary for this recording, so the sheet can show a stored one rather than rewrite it. */
     summaryState: SummaryCardState,
@@ -156,8 +157,18 @@ fun TranscriptSheet(
                     if (active >= 0) listState.animateScrollToItem(active)
                 }
 
-                if (speakerNames.isGuess) {
-                    SpeakerNamesHint(onSwap = onSwapSpeakers, onConfirm = onConfirmSpeakers)
+                // Only where there is something to name. A transcript whose segments carry no
+                // speaker at all — a mono capture, or a call whisper returned as one block — would
+                // otherwise be asked a question about two sides it never shows.
+                val hasSpeakers = remember(segments, speakerNames) {
+                    segments.any { speakerNames.of(it.speaker) != null }
+                }
+                if (hasSpeakers && speakerNames.isGuess) {
+                    SpeakerNamesHint(
+                        names = speakerNames,
+                        onChoose = onChooseSpeakerMap,
+                        onConfirm = onConfirmSpeakers
+                    )
                 }
 
                 LazyColumn(state = listState, modifier = Modifier.weight(1f, fill = false)) {
@@ -225,18 +236,28 @@ fun TranscriptSheet(
 }
 
 /**
- * Offers to correct the names, while they are still a guess.
+ * Asks who is who, until the user has said.
  *
- * Which channel is the far party is worked out from a convention — on an outgoing call the person
- * who answers speaks first — corroborated over two calls. That is right nearly always and wrong
- * sometimes, and being wrong means showing one person's words under the other's name.
+ * The bar has two jobs and shows whichever one applies. **While nothing has been worked out** the
+ * lines read "Speaker A" and "Speaker B" and the app has no opinion, so it simply asks which of the
+ * two is the user — one tap, and both transcripts and every later one are named. **Once a mapping
+ * has been worked out** — from a convention, corroborated over two calls — it says so and offers to
+ * swap it, because that convention is right nearly always and wrong sometimes, and being wrong
+ * means showing one person's words under the other's name.
  *
- * So it is said plainly, and the fix is one tap. It disappears for good once the user has answered
- * either way: agreeing is as much an answer as correcting, and a bar that kept asking after being
- * told would be worse than one that never asked.
+ * Asking first matters more than it looks: the convention needs two agreeing calls before it says
+ * anything, so without this the very first labelled transcript showed anonymous sides with no way
+ * to fix them, which reads as the feature being broken rather than as it being careful.
+ *
+ * It disappears for good once the user has answered either way. Agreeing is as much an answer as
+ * correcting, and a bar that kept asking after being told would be worse than one that never asked.
  */
 @Composable
-private fun SpeakerNamesHint(onSwap: () -> Unit, onConfirm: () -> Unit) {
+private fun SpeakerNamesHint(
+    names: SpeakerNames,
+    onChoose: (ChannelMap) -> Unit,
+    onConfirm: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -244,17 +265,36 @@ private fun SpeakerNamesHint(onSwap: () -> Unit, onConfirm: () -> Unit) {
             .padding(start = 24.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val unknown = names.map == ChannelMap.UNKNOWN
         Text(
-            text = stringResource(R.string.transcript_speakers_guessed),
+            text = stringResource(
+                if (unknown) R.string.transcript_speakers_which_is_you
+                else R.string.transcript_speakers_guessed
+            ),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
-        TextButton(onClick = onSwap) {
-            Text(stringResource(R.string.transcript_speakers_swap))
-        }
-        TextButton(onClick = onConfirm) {
-            Text(stringResource(R.string.transcript_speakers_correct))
+        if (unknown) {
+            // Labelled with the very words on the lines above, so the choice is read off the screen
+            // rather than remembered. Naming one side names the other: picking A as the user makes
+            // B the far party.
+            TextButton(onClick = { onChoose(ChannelMap.B_IS_FAR) }) { Text(names.sideA) }
+            TextButton(onClick = { onChoose(ChannelMap.A_IS_FAR) }) { Text(names.sideB) }
+        } else {
+            TextButton(
+                onClick = {
+                    onChoose(
+                        if (names.map == ChannelMap.A_IS_FAR) ChannelMap.B_IS_FAR
+                        else ChannelMap.A_IS_FAR
+                    )
+                }
+            ) {
+                Text(stringResource(R.string.transcript_speakers_swap))
+            }
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.transcript_speakers_correct))
+            }
         }
     }
 }

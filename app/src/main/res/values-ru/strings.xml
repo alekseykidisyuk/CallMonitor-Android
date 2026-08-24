@@ -375,6 +375,7 @@
     <string name="transcript_speaker_b">Говорящий B</string>
     <string name="transcript_speaker_you">Я</string>
     <string name="transcript_speakers_correct">Верно</string>
+    <string name="transcript_speakers_which_is_you">Кто из них вы?</string>
     <string name="transcript_speakers_guessed">Имена определены автоматически</string>
     <string name="transcript_speakers_swap">Поменять</string>
     <string name="transcription_batch_label">Звонков за запуск</string>

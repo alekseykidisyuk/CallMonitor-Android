@@ -33,10 +33,11 @@ data class SpeakerNames(
     val sideA: String,
     val sideB: String,
     /**
-     * Whether these names were worked out rather than confirmed by the user.
+     * Whether the user has yet to settle who is who.
      *
-     * Drives the offer to correct them. False both when nothing is named yet (there is nothing to
-     * be wrong about) and once the user has answered the offer.
+     * Drives the offer to name or correct the two sides, in both directions: while [map] is
+     * [ChannelMap.UNKNOWN] the offer is the only way to get names at all, and once something has
+     * been worked out it becomes the way to disagree with it. False only once the user has answered.
      */
     val isGuess: Boolean = false
 ) {

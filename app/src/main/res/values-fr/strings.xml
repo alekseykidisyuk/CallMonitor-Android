@@ -375,6 +375,7 @@
     <string name="transcript_speaker_b">Interlocuteur B</string>
     <string name="transcript_speaker_you">Moi</string>
     <string name="transcript_speakers_correct">Correct</string>
+    <string name="transcript_speakers_which_is_you">Lequel est vous ?</string>
     <string name="transcript_speakers_guessed">Noms déduits automatiquement</string>
     <string name="transcript_speakers_swap">Inverser</string>
     <string name="transcription_batch_label">Appels par exécution</string>

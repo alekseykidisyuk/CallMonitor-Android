@@ -375,6 +375,7 @@
     <string name="transcript_speaker_b">Người nói B</string>
     <string name="transcript_speaker_you">Tôi</string>
     <string name="transcript_speakers_correct">Đúng</string>
+    <string name="transcript_speakers_which_is_you">Bên nào là bạn?</string>
     <string name="transcript_speakers_guessed">Tên được xác định tự động</string>
     <string name="transcript_speakers_swap">Đổi</string>
     <string name="transcription_batch_label">Số cuộc gọi mỗi lần chạy</string>

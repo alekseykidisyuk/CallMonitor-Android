@@ -375,6 +375,7 @@
     <string name="transcript_speaker_b">说话人 B</string>
     <string name="transcript_speaker_you">我</string>
     <string name="transcript_speakers_correct">正确</string>
+    <string name="transcript_speakers_which_is_you">哪一位是你？</string>
     <string name="transcript_speakers_guessed">姓名为自动判断</string>
     <string name="transcript_speakers_swap">对调</string>
     <string name="transcription_batch_label">每次运行的通话数</string>
