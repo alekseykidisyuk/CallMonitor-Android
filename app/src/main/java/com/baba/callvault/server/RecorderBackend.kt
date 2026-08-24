@@ -151,6 +151,15 @@ object RecorderBackend {
         // something they cannot deliver. Two of them (resilient recording, VoIP) previously produced
         // silent EMPTY recordings when the mode could not deliver, which is the worst possible shape
         // for a call recorder to fail in.
+        // Put back what a previous switch took away, now that this mode can honour it again. Only ever
+        // switches WE turned off, so the round trip is lossless without ever enabling something the user
+        // turned off themselves. Before this, trying Shizuku once and coming straight back left resilient
+        // recording, VoIP and offline recording off for good, and nothing said so.
+        val restored = prefs.restoreWhatModeCanDoAgain(to)
+        if (restored.isNotEmpty()) {
+            AppLogger.i(TAG, "Turned back on (supported again in $to): ${restored.joinToString()}")
+        }
+
         val turnedOff = prefs.disableWhatModeCannotDo(to)
         if (turnedOff.isNotEmpty()) {
             AppLogger.i(TAG, "Turned off (unsupported in $to): ${turnedOff.joinToString()}")

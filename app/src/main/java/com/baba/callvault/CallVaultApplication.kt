@@ -109,7 +109,15 @@ class CallVaultApplication : Application() {
         // off, and only what the mode cannot do, so it is safe to run on every start.
         runCatching {
             val prefs = AppPreferences(applicationContext)
-            val turnedOff = prefs.disableWhatModeCannotDo(prefs.getPrivilegedMode())
+            val mode = prefs.getPrivilegedMode()
+            // Both directions, for the same reason the disable runs here: a mode change that was
+            // interrupted — or that happened before this app version — never completed its reconcile.
+            // Restoring is a no-op in a mode that still cannot do the thing, and keeps the record.
+            val restored = prefs.restoreWhatModeCanDoAgain(mode)
+            if (restored.isNotEmpty()) {
+                AppLogger.i(TAG, "Turned back on at start (supported in $mode): ${restored.joinToString()}")
+            }
+            val turnedOff = prefs.disableWhatModeCannotDo(mode)
             if (turnedOff.isNotEmpty()) {
                 AppLogger.i(TAG, "Turned off on start (unsupported in this mode): ${turnedOff.joinToString()}")
             }

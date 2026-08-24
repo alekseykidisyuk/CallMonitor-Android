@@ -234,25 +234,42 @@ have **no Settings row at all**, and their preferences have no reader anywhere �
 `DaemonKeepAliveService` gates on the privileged mode directly. Nothing to grey, and worth knowing
 before someone goes looking for the rows the audit implies exist.
 
-### A consequence of the design worth stating
+### Bug 3 — a mode round trip was a one-way door (fixed after the run)
 
-Returning to standalone deliberately never re-enables what Shizuku turned off — the asymmetry in
-`disableWhatModeCannotDo` is the point, so a mode switch cannot silently re-arm something the user had
-turned off themselves. The flip side, measured this run: at the start of the pass the keep-alive was
-running in standalone, and after a Shizuku round trip it was not. **Trying Shizuku once and coming back
-leaves resilient recording, VoIP and offline recording off, and they stay off until the user turns them
-on again.** That is correct behaviour and bad news at the same time; it belongs in the UI, not only here.
+Raised by the maintainer reading the first draft of this document, and the sharpest catch of the day.
 
-### Still open
+`disableWhatModeCannotDo` only ever switched things **off**, and nothing ever switched them back. So
+turning Shizuku on to look at it, and immediately off again, permanently left resilient recording, VoIP
+recording and offline recording disabled — with nothing on screen saying so, because the list of what
+changed went only to the log. Recording still worked, so there was no symptom to report; the user just
+silently lost the setup they had chosen.
 
-1. 🔴 **D10 — speaker attribution is silently absent under Shizuku.** Unchanged by this pass. A call
-   recorded there has no turns, and nothing tells the user why names never appear.
-2. 🟡 **B12/B13** — the two binder round-trip instrumented tests were not executed. B13 now includes the
-   new teardown regression test, so running it is worth more than it was this morning.
-3. 🟡 **E7** — boot behaviour in both modes needs an actual reboot.
-4. 🟡 **D6 is now more important than it looks.** VoIP arming happens on a daemon binder, and this run
-   changed which binder that is after a round trip. A real VoIP call in standalone *after* switching
-   away from Shizuku and back is the single most valuable maintainer test on the list.
+The original one-way design existed to protect a real property: a mode switch must never re-enable
+something the *user* had deliberately turned off. That property is kept, because the fix does not
+snapshot settings — it records **which switches CallVault itself turned off**, and restores only those.
+Anything the user turned off was never recorded, so it is never touched.
+
+Recorded per switch rather than per capability, because VoIP recording and VoIP auto-start share one
+capability: restoring the capability wholesale would hand auto-start to someone who only ever wanted the
+manual prompt.
+
+Verified on the OP9, reading the actual switch node at each step:
+
+| Step | Resilient recording |
+|---|---|
+| standalone, turned on by hand | `checked=true enabled=true` |
+| → Shizuku | `checked=false enabled=false` |
+| → standalone | `checked=true enabled=true` |
+
+```
+Turned off (unsupported in SHIZUKU): RESILIENT_RECORDING
+Turned back on (supported again in STANDALONE): RESILIENT_RECORDING
+```
+
+Eight unit tests cover the round trip, including the cases that make it safe rather than merely
+convenient: a switch the user turned off stays off, a restored record is consumed so a later reconcile
+cannot resurrect it, a restore in a mode that still cannot do the thing is a no-op that keeps the record,
+and a second round trip remembers the newer answer.
 
 ### One loose end, not chased
 

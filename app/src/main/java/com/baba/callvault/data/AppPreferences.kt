@@ -224,6 +224,8 @@ class AppPreferences(context: Context) {
         TRANSCRIPTION_LANGUAGE("transcription_language"),
         TRANSCRIPTION_ASK_LANGUAGE("transcription_ask_language"),
         PRIVILEGED_MODE("privileged_mode"),
+        /** Which switches *CallVault* turned off for the current mode, so a round trip can undo it. */
+        MODE_AUTO_DISABLED("mode_auto_disabled"),
         SPEAKER_MAP_OVERRIDE("speaker_map_override"),
         SPEAKER_MAP_CONFIRMED("speaker_map_confirmed"),
 
@@ -720,22 +722,98 @@ class AppPreferences(context: Context) {
      */
     fun disableWhatModeCannotDo(mode: PrivilegedMode): Set<ModeCapability> {
         val turnedOff = mutableSetOf<ModeCapability>()
+        val marks = getStringSet(Key.MODE_AUTO_DISABLED).toMutableSet()
 
-        fun off(capability: ModeCapability, isOn: () -> Boolean, turnOff: () -> Unit) {
-            if (capability.isAvailableIn(mode) || !isOn()) return
-            turnOff()
-            turnedOff += capability
+        gatedSwitches().forEach { gated ->
+            if (gated.capability.isAvailableIn(mode) || !gated.isOn()) return@forEach
+            gated.set(false)
+            // Remember that WE turned this one off, so [restoreWhatModeCanDoAgain] can undo exactly
+            // this and nothing else. Recorded per switch rather than per capability: VoIP recording and
+            // VoIP auto-start share a capability, and restoring them together would hand auto-start to
+            // someone who only ever wanted the prompt.
+            marks += gated.id
+            turnedOff += gated.capability
         }
 
-        off(ModeCapability.RESILIENT_RECORDING, ::isHandoffPersistEnabled) { setHandoffPersistEnabled(false) }
-        off(ModeCapability.VOIP_RECORDING, ::isVoipRecordingEnabled) { setVoipRecordingEnabled(false) }
-        off(ModeCapability.VOIP_RECORDING, ::isVoipAutoStartEnabled) { setVoipAutoStartEnabled(false) }
-        off(ModeCapability.OFFLINE_RECORDING, ::isOfflineRecordingEnabled) { setOfflineRecordingEnabled(false) }
-        off(ModeCapability.DAEMON_KEEP_ALIVE, ::isPersistentServerEnabled) { setPersistentServerEnabled(false) }
-        off(ModeCapability.WIRELESS_DEBUGGING_CONTROL, ::isWdDisableWhenIdle) { setWdDisableWhenIdle(false) }
-
+        if (turnedOff.isNotEmpty()) setStringSet(Key.MODE_AUTO_DISABLED, marks)
         return turnedOff
     }
+
+    /**
+     * Turns back on what *this app* turned off, once [mode] can honour it again, and reports what came
+     * back.
+     *
+     * The counterpart to [disableWhatModeCannotDo], and the reason a mode round trip is no longer a
+     * one-way door. Trying Shizuku once and coming straight back used to leave resilient recording,
+     * VoIP recording and offline recording off for good, with nothing on screen saying so — recording
+     * still worked, so there was no symptom, and the user simply lost the setup they had chosen.
+     *
+     * **Only ever restores switches recorded by [disableWhatModeCannotDo]**, which by construction were
+     * on immediately before it turned them off. So the safety property that made this one-way in the
+     * first place still holds exactly: a switch the *user* turned off is never touched, because it was
+     * never recorded. A restored switch's record is consumed, so a later reconcile cannot resurrect
+     * something the user turned off in the meantime.
+     */
+    fun restoreWhatModeCanDoAgain(mode: PrivilegedMode): Set<ModeCapability> {
+        val marks = getStringSet(Key.MODE_AUTO_DISABLED)
+        if (marks.isEmpty()) return emptySet()
+
+        val restored = mutableSetOf<ModeCapability>()
+        val remaining = marks.toMutableSet()
+
+        gatedSwitches().forEach { gated ->
+            // Still impossible in this mode? Keep the record rather than dropping it — an app start in
+            // Shizuku mode must be a no-op, not an amnesia.
+            if (gated.id !in marks || !gated.capability.isAvailableIn(mode)) return@forEach
+            gated.set(true)
+            remaining -= gated.id
+            restored += gated.capability
+        }
+
+        if (restored.isNotEmpty()) setStringSet(Key.MODE_AUTO_DISABLED, remaining)
+        return restored
+    }
+
+    /**
+     * One user-facing switch a privileged mode can make impossible, and how to read and write it.
+     *
+     * The single table both [disableWhatModeCannotDo] and [restoreWhatModeCanDoAgain] walk, so the two
+     * directions cannot drift apart — a switch added to one is automatically handled by the other.
+     */
+    private class GatedSwitch(
+        /** Stable across preference renames: it is persisted, so it must never change. */
+        val id: String,
+        val capability: ModeCapability,
+        val isOn: () -> Boolean,
+        val set: (Boolean) -> Unit,
+    )
+
+    private fun gatedSwitches(): List<GatedSwitch> = listOf(
+        GatedSwitch(
+            "handoff_persist", ModeCapability.RESILIENT_RECORDING,
+            ::isHandoffPersistEnabled, ::setHandoffPersistEnabled,
+        ),
+        GatedSwitch(
+            "voip_recording", ModeCapability.VOIP_RECORDING,
+            ::isVoipRecordingEnabled, ::setVoipRecordingEnabled,
+        ),
+        GatedSwitch(
+            "voip_auto_start", ModeCapability.VOIP_RECORDING,
+            ::isVoipAutoStartEnabled, ::setVoipAutoStartEnabled,
+        ),
+        GatedSwitch(
+            "offline_recording", ModeCapability.OFFLINE_RECORDING,
+            ::isOfflineRecordingEnabled, ::setOfflineRecordingEnabled,
+        ),
+        GatedSwitch(
+            "persistent_server", ModeCapability.DAEMON_KEEP_ALIVE,
+            ::isPersistentServerEnabled, ::setPersistentServerEnabled,
+        ),
+        GatedSwitch(
+            "wd_disable_when_idle", ModeCapability.WIRELESS_DEBUGGING_CONTROL,
+            ::isWdDisableWhenIdle, ::setWdDisableWhenIdle,
+        ),
+    )
 
     /**
      * Whether the privileged transport this mode uses has been set up.
