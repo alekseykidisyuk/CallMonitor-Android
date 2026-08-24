@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         // Anchor the recorder daemon whenever the app is opened. Modern Android requires a foreground
         // context to (re)start a foreground service, so we do it here rather than from Application.onCreate.
         // Idempotent — no-op if the keep-alive service is already running.
-        if (AppPreferences(applicationContext).isAdbPaired()) {
+        if (AppPreferences(applicationContext).isPrivilegedTransportSetUp()) {
             DaemonKeepAliveService.start(applicationContext)
         }
     }

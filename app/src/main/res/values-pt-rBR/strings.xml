@@ -246,6 +246,7 @@
     <string name="home_status_shizuku_suggestion">Abra o Shizuku e inicie-o. Ele para sempre que o telefone reinicia, e o CallVault não consegue gravar até que esteja em execução.</string>
     <string name="home_health_missed_shizuku">%1$s não foi gravada — o Shizuku não estava em execução</string>
     <string name="home_health_missed_shizuku_unnamed">Uma chamada não foi gravada — o Shizuku não estava em execução</string>
+    <string name="settings_unavailable_in_shizuku">Indisponível no modo Shizuku — isto precisa do gravador do próprio CallVault.</string>
     <string name="settings_subsection_privileges">De onde o CallVault obtém permissões</string>
     <string name="settings_shizuku_mode">Usar o Shizuku no lugar</string>
     <string name="settings_shizuku_not_installed">O Shizuku não está instalado. O CallVault não precisa dele — isto é só para quem já o usa.</string>

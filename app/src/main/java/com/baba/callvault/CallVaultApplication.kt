@@ -100,7 +100,10 @@ class CallVaultApplication : Application() {
         // background: this (transiently) enables Wireless debugging if needed, launches the daemon,
         // waits for its binder, then turns WD back OFF — so the app is recording-ready over binder and
         // WD is off when idle, with no user action. Best-effort; the call path also ensures it on demand.
-        if (AppPreferences(applicationContext).isAdbPaired()) {
+        // isPrivilegedTransportSetUp, not isAdbPaired: a Shizuku user never pairs, and gating on
+        // pairing meant the app never bound Shizuku at startup — so the first call after a cold
+        // start raced an unbound recorder.
+        if (AppPreferences(applicationContext).isPrivilegedTransportSetUp()) {
             Thread {
                 // Warm the persistent daemon in the background so the app is recording-ready over binder.
                 // Readiness ("starting up… → ready to record") is surfaced by the SINGLE persistent

@@ -704,6 +704,53 @@ class AppPreferences(context: Context) {
     /** Sets where privileges come from. Changing this tears down one backend and starts the other. */
     fun setPrivilegedMode(mode: PrivilegedMode) = setString(Key.PRIVILEGED_MODE, mode.key)
 
+    /**
+     * Turns off every opt-in [mode] cannot honour, and reports what was turned off.
+     *
+     * Called when the mode changes. Leaving them on would be worse than cosmetic: each of these reads as
+     * a promise on the settings screen, and two of them (resilient recording, VoIP) previously produced
+     * **silent empty recordings** rather than an error when the mode could not deliver.
+     *
+     * Only ever switches things OFF, and only things the mode cannot do — so returning to standalone
+     * cannot silently re-enable something the user had deliberately turned off. They stay off until the
+     * user asks for them again, which is the safe direction to be wrong in.
+     */
+    fun disableWhatModeCannotDo(mode: PrivilegedMode): Set<ModeCapability> {
+        val turnedOff = mutableSetOf<ModeCapability>()
+
+        fun off(capability: ModeCapability, isOn: () -> Boolean, turnOff: () -> Unit) {
+            if (capability.isAvailableIn(mode) || !isOn()) return
+            turnOff()
+            turnedOff += capability
+        }
+
+        off(ModeCapability.RESILIENT_RECORDING, ::isHandoffPersistEnabled) { setHandoffPersistEnabled(false) }
+        off(ModeCapability.VOIP_RECORDING, ::isVoipRecordingEnabled) { setVoipRecordingEnabled(false) }
+        off(ModeCapability.VOIP_RECORDING, ::isVoipAutoStartEnabled) { setVoipAutoStartEnabled(false) }
+        off(ModeCapability.OFFLINE_RECORDING, ::isOfflineRecordingEnabled) { setOfflineRecordingEnabled(false) }
+        off(ModeCapability.DAEMON_KEEP_ALIVE, ::isPersistentServerEnabled) { setPersistentServerEnabled(false) }
+        off(ModeCapability.WIRELESS_DEBUGGING_CONTROL, ::isWdDisableWhenIdle) { setWdDisableWhenIdle(false) }
+
+        return turnedOff
+    }
+
+    /**
+     * Whether the privileged transport this mode uses has been set up.
+     *
+     * **Not the same question as "is it paired".** Pairing is standalone's answer; a Shizuku user never
+     * pairs anything and would otherwise read as permanently unfinished — which is exactly what kept the
+     * boot receiver, the app-start warmup and onboarding from ever running in Shizuku mode.
+     *
+     * Deliberately a *persisted* fact rather than a live check, matching what `isAdbPaired` was used for:
+     * a live connection is per-process and would force re-onboarding on every launch.
+     */
+    fun isPrivilegedTransportSetUp(): Boolean = when (getPrivilegedMode()) {
+        PrivilegedMode.STANDALONE -> isAdbPaired()
+        // The user chose Shizuku explicitly; whether its server happens to be running right now is a
+        // liveness question, answered separately by SetupPrerequisites and the status card.
+        PrivilegedMode.SHIZUKU -> true
+    }
+
     // -------- Who is who on a transcript --------
 
     /**

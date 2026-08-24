@@ -77,6 +77,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.annotation.StringRes
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.ModeCapability
 import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
@@ -1677,6 +1678,25 @@ private fun SettingsSubHeader(text: String, nested: Boolean = false, modifier: M
  * places, and support is per-app — an app that opts out of capture cannot be recorded at all, and we
  * can only tell once a call is under way.
  */
+/**
+ * Whether [capability] works in the mode the user has chosen, for greying a row out.
+ *
+ * Read on each recomposition rather than remembered: the mode can change from the privileges section
+ * on this very screen, and a row that stayed enabled after the switch would offer something that
+ * cannot work.
+ */
+@Composable
+internal fun capabilityAvailable(capability: ModeCapability): Boolean {
+    val context = LocalContext.current
+    return capability.isAvailableIn(AppPreferences(context).getPrivilegedMode())
+}
+
+/** The one-line reason a row is greyed out, or null when it is not. */
+@Composable
+internal fun unavailableReason(capability: ModeCapability): String? =
+    if (capabilityAvailable(capability)) null
+    else stringResource(R.string.settings_unavailable_in_shizuku)
+
 @Composable
 internal fun VoipRecordingToggle() {
     val context = LocalContext.current
@@ -1687,6 +1707,11 @@ internal fun VoipRecordingToggle() {
     var showWarning by remember { mutableStateOf(false) }
     var arming by remember { mutableStateOf(false) }
     var unavailable by remember { mutableStateOf(false) }
+
+    // VoIP capture runs two AudioRecords against a dynamic audio policy, and neither can start in a
+    // Shizuku-hosted process — so in Shizuku mode this is greyed out rather than left to fail silently.
+    val supported = capabilityAvailable(ModeCapability.VOIP_RECORDING)
+    val unsupportedNote = unavailableReason(ModeCapability.VOIP_RECORDING)
 
     // Arming touches the daemon (and may launch it), so never on the main thread. The policy has to be
     // registered before any VoIP call starts, which is why this happens on the toggle rather than when
@@ -1709,8 +1734,9 @@ internal fun VoipRecordingToggle() {
     SettingsToggleRow(
         icon = Icons.Filled.Groups,
         label = stringResource(R.string.settings_voip_recording_label),
-        description = stringResource(R.string.settings_voip_recording_description),
-        checked = enabled,
+        description = unsupportedNote ?: stringResource(R.string.settings_voip_recording_description),
+        checked = enabled && supported,
+        enabled = supported,
         onCheckedChange = { turnOn ->
             if (turnOn) showWarning = true  // confirm before enabling; never before turning OFF
             else applyPreference(false)
@@ -1780,11 +1806,16 @@ internal fun HandoffPersistToggle() {
     val prefs = remember { AppPreferences(context) }
     var enabled by remember { mutableStateOf(prefs.isHandoffPersistEnabled()) }
 
+    // The daemon hands its live AudioRecord to the app; a Shizuku-hosted process cannot start one.
+    val supported = capabilityAvailable(ModeCapability.RESILIENT_RECORDING)
+
     SettingsToggleRow(
         icon = Icons.Filled.Shield,
         label = stringResource(R.string.settings_handoff_persist_label),
-        description = stringResource(R.string.settings_handoff_persist_description),
-        checked = enabled,
+        description = unavailableReason(ModeCapability.RESILIENT_RECORDING)
+            ?: stringResource(R.string.settings_handoff_persist_description),
+        checked = enabled && supported,
+        enabled = supported,
         onCheckedChange = { turnOn ->
             enabled = turnOn
             prefs.setHandoffPersistEnabled(turnOn)

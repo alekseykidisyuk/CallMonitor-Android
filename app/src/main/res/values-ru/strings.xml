@@ -243,6 +243,7 @@
     <string name="home_status_shizuku_suggestion">Откройте Shizuku и запустите его. Он останавливается при каждой перезагрузке телефона, и до запуска CallVault не может записывать.</string>
     <string name="home_health_missed_shizuku">%1$s не записан — Shizuku не был запущен</string>
     <string name="home_health_missed_shizuku_unnamed">Звонок не записан — Shizuku не был запущен</string>
+    <string name="settings_unavailable_in_shizuku">Недоступно в режиме Shizuku — для этого нужен собственный рекордер CallVault.</string>
     <string name="settings_subsection_privileges">Откуда CallVault получает права</string>
     <string name="settings_shizuku_mode">Использовать Shizuku</string>
     <string name="settings_shizuku_not_installed">Shizuku не установлен. CallVault в нём не нуждается — это только для тех, кто уже им пользуется.</string>

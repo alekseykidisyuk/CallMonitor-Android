@@ -87,7 +87,9 @@ object OnboardingStatus {
             // persisted flag) — not only while a live connection exists, since a connection is
             // per-process and would otherwise force re-onboarding on every launch. The live
             // connection is (re)established lazily by the recording path and on app start.
-            adbConnected             = preferences.isAdbPaired() ||
+            // In Shizuku mode there is nothing to pair, so this step is satisfied by the choice
+            // itself; otherwise onboarding would never complete and the app would loop on setup.
+            adbConnected             = preferences.isPrivilegedTransportSetUp() ||
                 AdbConnectionManager.getInstance(context).isConnected,
             wizardCompleted          = preferences.isWizardCompleted()
         )

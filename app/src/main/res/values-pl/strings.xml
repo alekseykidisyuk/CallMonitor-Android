@@ -243,6 +243,7 @@
     <string name="home_status_shizuku_suggestion">Otwórz Shizuku i uruchom je. Zatrzymuje się przy każdym restarcie telefonu, a CallVault nie może nagrywać, dopóki nie działa.</string>
     <string name="home_health_missed_shizuku">%1$s nie zostało nagrane — Shizuku nie działało</string>
     <string name="home_health_missed_shizuku_unnamed">Połączenie nie zostało nagrane — Shizuku nie działało</string>
+    <string name="settings_unavailable_in_shizuku">Niedostępne w trybie Shizuku — wymaga własnego rejestratora CallVault.</string>
     <string name="settings_subsection_privileges">Skąd CallVault bierze uprawnienia</string>
     <string name="settings_shizuku_mode">Użyj zamiast tego Shizuku</string>
     <string name="settings_shizuku_not_installed">Shizuku nie jest zainstalowane. CallVault go nie potrzebuje — to tylko dla osób, które już go używają.</string>

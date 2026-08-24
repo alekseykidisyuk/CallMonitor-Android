@@ -24,7 +24,10 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val action = intent?.action ?: return
         if (action != Intent.ACTION_BOOT_COMPLETED && action != "android.intent.action.QUICKBOOT_POWERON") return
-        if (!AppPreferences(context).isAdbPaired()) return
+        // Same reason as the app-start warmup: gating on pairing meant a Shizuku user got NOTHING
+        // on boot — no call monitor, no recorder bind — on the one path where a reboot has just
+        // stopped Shizuku too.
+        if (!AppPreferences(context).isPrivilegedTransportSetUp()) return
         AppLogger.i(TAG, "Boot completed; starting ADB connection service + post-boot call monitor")
         AdbConnectionService.start(context)
         // Hold a live telephony listener for a bounded window so the first call(s) after a reboot are

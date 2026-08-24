@@ -77,6 +77,15 @@ object RecorderBackend {
         }
 
         prefs.setPrivilegedMode(to)
+
+        // Turn off what the new mode cannot honour, rather than leaving switches on that promise
+        // something they cannot deliver. Two of them (resilient recording, VoIP) previously produced
+        // silent EMPTY recordings when the mode could not deliver, which is the worst possible shape
+        // for a call recorder to fail in.
+        val turnedOff = prefs.disableWhatModeCannotDo(to)
+        if (turnedOff.isNotEmpty()) {
+            AppLogger.i(TAG, "Turned off (unsupported in $to): ${turnedOff.joinToString()}")
+        }
         AppLogger.i(TAG, "Privileged mode is now $to")
     }
 
