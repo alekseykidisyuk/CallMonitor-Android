@@ -152,4 +152,36 @@ interface IRecorderService {
      * transcript is displayed.
      */
     String speakerTurns();
+
+    /**
+     * Allows an app op for a package, returning whether it is allowed AFTERWARDS.
+     *
+     * Appended at the END of this interface deliberately. The methods here have implicit transaction
+     * ids taken from their position, so inserting anywhere else renumbers everything below it and a
+     * daemon left running by the previous version would answer the wrong call. RecorderTransactionCodesTest
+     * pins the numbering.
+     *
+     * Needs shell (uid 2000), which both hosts provide; NOT root. The result is read back from the
+     * system rather than taken from the command's exit code, because the uid-level variant of this
+     * command exits 0 while doing nothing — see PrivilegedGrants.
+     */
+    boolean grantAppOp(String packageName, String opName, int userId);
+
+    /**
+     * Makes a package a holder of a role, returning whether it holds it AFTERWARDS.
+     *
+     * False usually means the package does not QUALIFY for the role (e.g. CallVault is refused
+     * android.app.role.DIALER while it declares no android.intent.action.DIAL component) rather than
+     * that the caller lacked privilege. Root would not change that.
+     */
+    boolean grantRole(String roleName, String packageName, int userId);
+
+    /**
+     * The uid this recorder process is running as: 2000 for shell, 0 when Shizuku itself was started
+     * as root (Sui, or a rooted start).
+     *
+     * Asked rather than assumed, because it decides what the grants above can reach, and because
+     * "Shizuku is running" says nothing about which of the two it is.
+     */
+    int hostUid();
 }

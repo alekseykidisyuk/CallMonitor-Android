@@ -158,9 +158,48 @@ Shizuku-hosted process that names **Shizuku's own APK**, not ours. The scrcpy ex
 reads as ours and is not. `ShizukuClasspath.apkFrom` now requires the entry to belong to our package,
 and returns empty rather than something confidently wrong.
 
-**Phase 3 — the grants.** `grantAppOp` / `grantRole` equivalents on the user service, so the
-permissions the standalone path grants over ADB have a Shizuku route (this is what upstream's service
-grew to do, and it is what the dialer-role work will need).
+**Phase 3 — the grants. DONE 2026-08-24.** `grantAppOp`, `grantRole` and `hostUid` appended to the AIDL
+(appended, never inserted — the ids are positional and `RecorderTransactionCodesTest` pins all 17), with
+`PrivilegedGrants` running them inside `RecorderServiceImpl`. They therefore work on **both** hosts, so
+the ADB path gains the same capability rather than only Shizuku.
+
+### Does any of this need root? No — and that was worth checking
+
+The maintainer asked, because ShizuCallRecorder ships root and non-root features side by side and some
+might be root-only. Checked on 2026-08-24 by reading their code and then running the commands as shell
+on the emulator:
+
+- Upstream is **explicitly non-root** — "the first non-root FOSS call recorder app for Android 11+" —
+  and their `ShellCommandExecutor` runs plain `appops` / `cmd role` commands with no `su` anywhere.
+- `appops set --user 0 <pkg> <op> allow` — **works as shell.** Verified: `grantAppOp(…, RECORD_AUDIO)
+  → true` through our own binder.
+- `cmd role add-role-holder --user 0 <role> <pkg>` — **works as shell.** It refuses CallVault the
+  dialer role, but for **qualification, not privilege**: `not qualified for android.app.role.DIALER due
+  to missing RequiredComponent … action='android.intent.action.DIAL'`. We declare no dialer component.
+  **Root would not change that, and neither would Sui.** When the dialer-mode branch lands and declares
+  the component, this same call is expected to succeed as shell.
+- The contrast case, for calibration: `cat /data/system/packages.xml` is refused to shell. That is what
+  a genuine root requirement looks like, and nothing we need looks like it.
+
+So Shizuku mode is shell-equivalent to the ADB mode, and neither needs root. `hostUid()` exists anyway,
+because a Shizuku started rooted (Sui) hands us uid 0, and "Shizuku is running" says nothing about
+which of the two you got.
+
+### 🚩 `grantAppOpByUid` is deliberately NOT offered
+
+Upstream exposes it and documents it as taking priority over the package-level value. That was true
+once. On Android 14+ it **exits 0 and does nothing** whenever the op backs a runtime permission
+(`RECORD_AUDIO`, `READ_PHONE_STATE`, …):
+
+```
+W AppOpService: Ignored setUidMode call for runtime permission app op:
+uid = 10275, code = RECORD_AUDIO, mode = allow, callingUid = 2000
+```
+
+An API whose success means nothing is worse than no API, so it is not offered. For the same reason
+every grant here **reads the result back** from `appops get` / `cmd role get-role-holders` instead of
+trusting an exit code — and `GrantOutput` excludes the `Uid mode:` line, which appears *first* and
+usually still says `ignore`, so a naive parse reports the opposite of the truth.
 
 **Phase 4 — the UI.** Onboarding detect-and-offer; a status row on Home/Settings showing which mode is
 active and whether Shizuku is running; the mode switch, which must safely tear down one backend before

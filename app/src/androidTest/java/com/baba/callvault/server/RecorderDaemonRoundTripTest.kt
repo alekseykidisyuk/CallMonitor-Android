@@ -12,6 +12,8 @@ import android.os.ParcelFileDescriptor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -67,27 +69,7 @@ class RecorderDaemonRoundTripTest {
 
     @Test
     fun the_daemon_starts_delivers_its_binder_and_records_a_file() {
-        val apk = context.applicationInfo.sourceDir
-
-        // Start clean: a daemon left over from an earlier run would answer with old code.
-        shell("pkill -f $DAEMON_CLASS")
-        Thread.sleep(500)
-
-        // NOT RecorderServerLauncher's literal command. That one is written for an ADB shell and leans
-        // on redirection, backgrounding and a trailing sleep; `UiAutomation.executeShellCommand` is not a
-        // shell and silently drops all of it — the first version of this test failed with no daemon and
-        // no log line at all, because app_process was never reached. `setsid env` is a pure exec chain
-        // that needs no shell: setsid detaches into its own session exactly as production does, and env
-        // carries CLASSPATH in without a shell assignment.
-        //
-        // The returned pipe is kept OPEN for the life of the test (closed in tearDown) rather than read
-        // to EOF: reading would block forever on a daemon that runs a Looper, and closing early is what
-        // kills a child before app_process has finished loading.
-        launchPipe = instrumentation.uiAutomation.executeShellCommand(
-            "setsid env CLASSPATH=$apk app_process / $DAEMON_CLASS $apk"
-        )
-
-        val binder = awaitBinder()
+        val binder = startDaemonAndAwaitBinder()
         assertNotNull("The daemon never delivered its binder to the app", binder)
         service = binder
 
@@ -117,6 +99,58 @@ class RecorderDaemonRoundTripTest {
 
         assertTrue("stopRecording() should leave the daemon idle", !binder.isRecording)
         assertTrue("The daemon wrote no audio at all", out.length() > 0)
+    }
+
+    @Test
+    fun the_daemon_can_make_the_grants_that_need_shell_and_says_honestly_when_it_cannot() {
+        val binder = startDaemonAndAwaitBinder()
+        assertNotNull("The daemon never delivered its binder to the app", binder)
+        service = binder
+
+        // Shell, not root — the whole premise. 0 would mean Shizuku was started rooted (Sui).
+        assertEquals("The daemon should be running as shell", 2000, binder!!.hostUid())
+
+        // An app op the shell user is allowed to set, read back rather than assumed: the command that
+        // sets it can exit 0 while doing nothing.
+        assertTrue(
+            "shell could not grant a package-level app op",
+            binder.grantAppOp(context.packageName, "RECORD_AUDIO", 0)
+        )
+
+        // And the honest negative. CallVault declares no android.intent.action.DIAL component, so it
+        // does not QUALIFY for the dialer role — the grant must report false rather than claim success.
+        // This is not a privilege problem and root would not fix it; logcat's Role tag says as much.
+        assertFalse(
+            "A package that does not qualify for a role must not be reported as holding it",
+            binder.grantRole("android.app.role.DIALER", context.packageName, 0)
+        )
+    }
+
+    /**
+     * Starts the daemon as shell and waits for its binder.
+     *
+     * NOT RecorderServerLauncher's literal command. That one is written for an ADB shell and leans on
+     * redirection, backgrounding and a trailing sleep; `UiAutomation.executeShellCommand` is not a shell
+     * and silently drops all of it — the first version of this test failed with no daemon and no log
+     * line at all, because app_process was never reached. `setsid env` is a pure exec chain that needs
+     * no shell: setsid detaches into its own session exactly as production does, and env carries
+     * CLASSPATH in without a shell assignment.
+     *
+     * The returned pipe is kept OPEN for the life of the test (closed in tearDown) rather than read to
+     * EOF: reading would block forever on a daemon that runs a Looper, and closing early is what kills a
+     * child before app_process has finished loading.
+     */
+    private fun startDaemonAndAwaitBinder(): IRecorderService? {
+        val apk = context.applicationInfo.sourceDir
+
+        // Start clean: a daemon left over from an earlier run would answer with old code.
+        shell("pkill -f $DAEMON_CLASS")
+        Thread.sleep(500)
+
+        launchPipe = instrumentation.uiAutomation.executeShellCommand(
+            "setsid env CLASSPATH=$apk app_process / $DAEMON_CLASS $apk"
+        )
+        return awaitBinder()
     }
 
     /** Polls the holder the daemon pushes its binder into; the push is asynchronous. */

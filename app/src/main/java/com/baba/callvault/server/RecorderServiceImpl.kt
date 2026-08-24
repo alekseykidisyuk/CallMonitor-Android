@@ -299,6 +299,26 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
         }.onFailure { AppLogger.w(TAG, "startHandoffHeld failed: ${it.message}") }.getOrDefault(false)
     }
 
+    // ---- Privileged grants (shell-level, no root) -------------------------------------------
+
+    override fun grantAppOp(packageName: String?, opName: String?, userId: Int): Boolean {
+        if (packageName.isNullOrBlank() || opName.isNullOrBlank()) {
+            AppLogger.e(TAG, "grantAppOp: null arg (package=$packageName op=$opName)")
+            return false
+        }
+        return PrivilegedGrants.grantAppOp(packageName, opName, userId)
+    }
+
+    override fun grantRole(roleName: String?, packageName: String?, userId: Int): Boolean {
+        if (roleName.isNullOrBlank() || packageName.isNullOrBlank()) {
+            AppLogger.e(TAG, "grantRole: null arg (role=$roleName package=$packageName)")
+            return false
+        }
+        return PrivilegedGrants.grantRole(roleName, packageName, userId)
+    }
+
+    override fun hostUid(): Int = android.os.Process.myUid()
+
     override fun stopHandoff() {
         AppLogger.i(TAG, "stopHandoff requested")
         runCatching { HandoffSource.releaseHeld() }
