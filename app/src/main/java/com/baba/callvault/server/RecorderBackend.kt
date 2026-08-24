@@ -1,0 +1,135 @@
+/*
+ * CallVault: FOSS call recording, self-contained over embedded ADB
+ *  Copyright (C) 2026-present The CallVault Authors
+ *  This software is licensed under the GNU General Public License v3 or later, with additional terms as permitted under Section 7.
+ *  The full license text is available in the LICENSE file at the root of this project.
+ *  This software is distributed WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+package com.baba.callvault.server
+
+import android.content.Context
+import android.os.SystemClock
+import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.PrivilegedMode
+import com.baba.callvault.utils.AppLogger
+
+/**
+ * The one way to get a recorder running, whichever backend the user chose.
+ *
+ * Everything that needs the daemon — app start, a boot, an incoming call, the offline path, a
+ * post-update relaunch — calls [ensureRunning] and does not care how it is served. The mode lives in
+ * [AppPreferences.getPrivilegedMode]; the two implementations are [RecorderServerLauncher] (our own
+ * ADB daemon) and [ShizukuBackend].
+ *
+ * Deliberately the same shape as `RecorderServerLauncher.ensureServerRunning`: blocking, returns
+ * whether a usable binder is now in [RecorderConnection]. The call sites predate Shizuku and should not
+ * have to be restructured to gain it.
+ */
+object RecorderBackend {
+
+    private const val TAG = "CV:RecorderBackend"
+
+    /** How long to wait for Shizuku to hand back a binder. Its bind is asynchronous. */
+    private const val SHIZUKU_BIND_TIMEOUT_MS = 10_000L
+
+    private const val POLL_MS = 100L
+
+    /**
+     * Makes sure a recorder is running and its binder is in [RecorderConnection].
+     *
+     * @return true when a binder is available, false when it could not be obtained — a normal outcome
+     *   for Shizuku mode on a phone where Shizuku is not running, and never an exception.
+     */
+    fun ensureRunning(context: Context, timeoutMs: Long = 24_000): Boolean {
+        val mode = AppPreferences(context).getPrivilegedMode()
+        return when (BackendChoice.of(mode)) {
+            BackendChoice.ADB -> RecorderServerLauncher.ensureServerRunning(context, timeoutMs)
+            BackendChoice.SHIZUKU -> ensureShizukuRunning(context)
+        }
+    }
+
+    /**
+     * Moves to [to], stopping whatever the old mode had running first.
+     *
+     * The order is the point. Two shell-uid recorders would compete for the same audio input and the
+     * loser is not predictable, so the old one is stopped and only then is the new one started.
+     */
+    fun switchTo(context: Context, to: PrivilegedMode) {
+        val prefs = AppPreferences(context)
+        val from = prefs.getPrivilegedMode()
+
+        when (BackendChoice.toTearDown(from, to)) {
+            BackendChoice.ADB -> {
+                AppLogger.i(TAG, "Leaving standalone mode; stopping our daemon")
+                runCatching { RecorderConnection.service?.destroy() }
+                    .onFailure { AppLogger.w(TAG, "Could not stop the daemon: ${it.message}") }
+            }
+            BackendChoice.SHIZUKU -> {
+                AppLogger.i(TAG, "Leaving Shizuku mode; releasing the user service")
+                runCatching { ShizukuBackend.stop(remove = true) }
+                    .onFailure { AppLogger.w(TAG, "Could not stop the Shizuku service: ${it.message}") }
+            }
+            null -> {
+                AppLogger.d(TAG, "Mode unchanged ($to); leaving the running recorder alone")
+                return
+            }
+        }
+
+        prefs.setPrivilegedMode(to)
+        AppLogger.i(TAG, "Privileged mode is now $to")
+    }
+
+    /**
+     * Whether the chosen mode can actually serve a recorder right now, without starting anything.
+     *
+     * What the status row on Settings reports. Standalone's readiness is a whole wizard's worth of
+     * state and is reported elsewhere; this answers only the Shizuku half honestly.
+     */
+    fun shizukuStatus(context: Context): ShizukuStatus = when {
+        !ShizukuBackend.isInstalled(context) -> ShizukuStatus.NOT_INSTALLED
+        !ShizukuBackend.isRunning() -> ShizukuStatus.NOT_RUNNING
+        !ShizukuBackend.hasPermission() -> ShizukuStatus.NO_PERMISSION
+        else -> ShizukuStatus.READY
+    }
+
+    private fun ensureShizukuRunning(context: Context): Boolean {
+        if (RecorderConnection.isConnected) {
+            AppLogger.d(TAG, "Recorder already connected; reusing existing binder")
+            return true
+        }
+
+        val status = shizukuStatus(context)
+        if (status != ShizukuStatus.READY) {
+            AppLogger.i(TAG, "Shizuku cannot serve a recorder right now: $status")
+            return false
+        }
+
+        if (!ShizukuBackend.start()) return false
+
+        // The bind is asynchronous: Shizuku starts the process, then calls back. Poll the holder the
+        // callback fills, exactly as the ADB path polls for its pushed binder.
+        val deadline = SystemClock.elapsedRealtime() + SHIZUKU_BIND_TIMEOUT_MS
+        while (SystemClock.elapsedRealtime() < deadline) {
+            if (RecorderConnection.isConnected) return true
+            Thread.sleep(POLL_MS)
+        }
+        AppLogger.w(TAG, "Shizuku did not hand back a recorder binder within ${SHIZUKU_BIND_TIMEOUT_MS}ms")
+        return false
+    }
+}
+
+/** Why Shizuku mode can or cannot serve a recorder, in the order a user would fix them. */
+enum class ShizukuStatus {
+    /** No Shizuku app on the phone at all. */
+    NOT_INSTALLED,
+
+    /** Installed, but its server is not running — it must be started after every reboot. */
+    NOT_RUNNING,
+
+    /** Running, but CallVault has not been allowed to use it. */
+    NO_PERMISSION,
+
+    /** Running and permitted. */
+    READY,
+}

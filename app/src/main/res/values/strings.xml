@@ -125,6 +125,14 @@
     <string name="retention_confirm_message">Recordings older than the selected period will be permanently deleted from your device and/or Google Drive. This can\'t be undone.</string>
     <string name="retention_confirm_enable">Enable</string>
     <string name="settings_section_recording_storage">Recording &amp; storage</string>
+    <string name="settings_subsection_privileges">How CallVault gets permission</string>
+    <string name="settings_shizuku_mode">Use Shizuku instead</string>
+    <string name="settings_shizuku_not_installed">Shizuku is not installed. CallVault does not need it — this is only for people who already use it.</string>
+    <string name="settings_shizuku_not_running">Shizuku is installed but not running. It has to be started again after every restart of the phone.</string>
+    <string name="settings_shizuku_no_permission">Shizuku is running, but has not allowed CallVault to use it yet.</string>
+    <string name="settings_shizuku_ready">Shizuku is running and ready. With this on, CallVault does not need its own pairing.</string>
+    <string name="settings_shizuku_grant">Allow CallVault in Shizuku</string>
+    <string name="settings_shizuku_grant_description">Opens Shizuku so you can allow it. Nothing records until you do.</string>
     <string name="settings_section_general">General</string>
     <string name="settings_section_visual">Visual settings</string>
     <string name="settings_section_audio">Audio configuration</string>

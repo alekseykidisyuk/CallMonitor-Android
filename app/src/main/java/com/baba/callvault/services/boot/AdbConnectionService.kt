@@ -21,7 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.baba.callvault.R
-import com.baba.callvault.server.RecorderServerLauncher
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -65,7 +65,7 @@ class AdbConnectionService : Service() {
             // ensureServerRunning (transiently) enables Wireless debugging, launches the daemon, waits
             // for its binder, then turns WD back OFF — it internally ensures the ADB connection, so no
             // separate ensureConnected is needed.
-            val started = runCatching { RecorderServerLauncher.ensureServerRunning(applicationContext) }
+            val started = runCatching { RecorderBackend.ensureRunning(applicationContext) }
                 .getOrDefault(false)
             AppLogger.i(TAG, "Boot: recorder daemon connected=$started")
 

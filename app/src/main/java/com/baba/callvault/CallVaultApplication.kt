@@ -10,7 +10,7 @@ package com.baba.callvault
 
 import android.app.Application
 import com.baba.callvault.data.AppPreferences
-import com.baba.callvault.server.RecorderServerLauncher
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.services.debug.DebugNotificationHelper
 import com.baba.callvault.system.storage.RetentionScheduler
 import com.baba.callvault.system.storage.SyncScheduler
@@ -106,7 +106,7 @@ class CallVaultApplication : Application() {
                 // Readiness ("starting up… → ready to record") is surfaced by the SINGLE persistent
                 // DaemonKeepAliveService notification — no separate notifier here, which previously
                 // produced a DUPLICATE readiness notification alongside the keep-alive one.
-                runCatching { RecorderServerLauncher.ensureServerRunning(applicationContext) }
+                runCatching { RecorderBackend.ensureRunning(applicationContext) }
                     .onFailure { AppLogger.w(TAG, "Startup recorder-daemon warmup failed: ${it.message}") }
             }.apply { isDaemon = true }.start()
         }

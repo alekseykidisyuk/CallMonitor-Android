@@ -26,7 +26,7 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyClient
 import com.baba.callvault.integrations.scrcpy.ScrcpyLauncher
 import com.baba.callvault.server.DirectAudioRecorderSession
 import com.baba.callvault.server.RecorderConnection
-import com.baba.callvault.server.RecorderServerLauncher
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.services.recording.handoff.HandoffReceiver
 import com.baba.callvault.services.recording.handoff.HandoffSource
 import com.baba.callvault.system.storage.SafHelper
@@ -370,7 +370,7 @@ class AudioRecordingEngine {
         isCancelled: () -> Boolean
     ): Boolean {
         AppLogger.i(TAG, "Ensuring recorder daemon is running")
-        val connected = RecorderServerLauncher.ensureServerRunning(context)
+        val connected = RecorderBackend.ensureRunning(context)
         // ensureServerRunning can block for tens of seconds cold-starting the daemon; the call may have
         // ENDED in the meantime. Abort BEFORE startRecording so we never start capture after the call
         // (the stuck-mic bug). Throw (not return false) so the caller does NOT fall back to the local
@@ -436,7 +436,7 @@ class AudioRecordingEngine {
     ): Boolean {
         AppLogger.i(TAG, "Ensuring recorder daemon is running (handoff)")
         val t0 = System.currentTimeMillis()
-        val connected = RecorderServerLauncher.ensureServerRunning(context)
+        val connected = RecorderBackend.ensureRunning(context)
         AppLogger.i(TAG, "Handoff: ensureServerRunning=$connected in ${System.currentTimeMillis() - t0}ms")
         // Same cold-start abort as the daemon path: if the call ended while the daemon was coming up,
         // abort before creating any capture so the mic never turns on after the call (stuck-mic bug).

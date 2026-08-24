@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 import com.baba.callvault.MainActivity
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
-import com.baba.callvault.server.RecorderServerLauncher
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.utils.AppLogger
 
 class AdbPairingService : Service() {
@@ -210,7 +210,7 @@ class AdbPairingService : Service() {
                     getString(R.string.notif_pairing_success_text),
                     tapToOpen = true,
                 ))
-                runCatching { RecorderServerLauncher.ensureServerRunning(applicationContext) }
+                runCatching { RecorderBackend.ensureRunning(applicationContext) }
                     .onFailure { AppLogger.e(TAG, "ensureServerRunning after pairing failed", it) }
             } else {
                 val msg = paired.exceptionOrNull()?.message ?: "pair() returned false (wrong code?)"

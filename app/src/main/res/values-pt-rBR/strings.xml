@@ -234,6 +234,14 @@
     <string name="settings_section_audio">Configuração de áudio</string>
     <string name="settings_section_debug">Depuração</string>
     <string name="settings_section_experimental">Experimental</string>
+    <string name="settings_subsection_privileges">De onde o CallVault obtém permissões</string>
+    <string name="settings_shizuku_mode">Usar o Shizuku no lugar</string>
+    <string name="settings_shizuku_not_installed">O Shizuku não está instalado. O CallVault não precisa dele — isto é só para quem já o usa.</string>
+    <string name="settings_shizuku_not_running">O Shizuku está instalado, mas não está em execução. Ele precisa ser iniciado de novo a cada reinício do telefone.</string>
+    <string name="settings_shizuku_no_permission">O Shizuku está em execução, mas ainda não permitiu que o CallVault o use.</string>
+    <string name="settings_shizuku_ready">O Shizuku está pronto. Com isto ligado, o CallVault não precisa do próprio pareamento.</string>
+    <string name="settings_shizuku_grant">Permitir o CallVault no Shizuku</string>
+    <string name="settings_shizuku_grant_description">Abre o Shizuku para você permitir. Nada é gravado até lá.</string>
     <string name="settings_section_general">Geral</string>
     <string name="settings_section_recorder_server">Serviço de gravação</string>
     <string name="settings_section_recording">Gravação</string>

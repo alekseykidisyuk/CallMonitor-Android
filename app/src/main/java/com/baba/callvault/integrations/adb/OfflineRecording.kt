@@ -10,7 +10,7 @@ package com.baba.callvault.integrations.adb
 
 import android.content.Context
 import com.baba.callvault.data.AppPreferences
-import com.baba.callvault.server.RecorderServerLauncher
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -35,7 +35,7 @@ object OfflineRecording {
         AppPreferences(context).setOfflineRecordingEnabled(true)
         val armed = AdbShell.armLoopbackIfNeeded(context)
         if (armed) {
-            runCatching { RecorderServerLauncher.ensureServerRunning(context) }
+            runCatching { RecorderBackend.ensureRunning(context) }
                 .onFailure { AppLogger.w(TAG, "re-warm after enable failed: ${it.message}") }
         } else {
             AppLogger.i(TAG, "Could not arm loopback (needs Wi-Fi + Wireless Debugging once)")

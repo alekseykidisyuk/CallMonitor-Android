@@ -14,6 +14,7 @@ import android.content.Intent
 import com.baba.callvault.BuildConfig
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.integrations.adb.AdbShell
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.server.RecorderServerLauncher
 import com.baba.callvault.utils.AppLogger
 
@@ -72,7 +73,7 @@ class UpdatePackageReplacedReceiver : BroadcastReceiver() {
         AppLogger.i(TAG, "WRITE_SECURE_SETTINGS lost on update; attempting non-churning self-heal")
         Thread {
             val healed = runCatching { AdbShell.tryHealWriteSecureSettings(context) }.getOrDefault(false)
-            runCatching { RecorderServerLauncher.ensureServerRunning(context) }
+            runCatching { RecorderBackend.ensureRunning(context) }
             AppLogger.i(TAG, "Post-replace recovery: WRITE_SECURE_SETTINGS regranted=$healed")
         }.apply { isDaemon = true; name = "cv-post-update-recover" }.start()
     }

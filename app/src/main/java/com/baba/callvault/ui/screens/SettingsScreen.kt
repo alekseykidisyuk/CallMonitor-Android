@@ -454,6 +454,7 @@ private const val SUB_RETENTION = "sub_retention"
 private const val SUB_VISUAL = "sub_visual"
 private const val SUB_EXPERIMENTAL = "sub_experimental"
 private const val SUB_UPDATES = "sub_updates"
+private const val SUB_PRIVILEGES = "privileges"
 private const val SECTION_VISUAL = "visual"
 private const val SECTION_EXPERIMENTAL = "reliability"   // key kept so a user's open-section state survives the rename
 private const val SECTION_BUG_REPORT = "bug_report"
@@ -1340,6 +1341,11 @@ private fun GeneralSection(
             expanded = openSub == SUB_UPDATES,
             onToggle = { openSub = if (openSub == SUB_UPDATES) null else SUB_UPDATES },
         ) { UpdatesSubSection(preferences, updateTrigger, actions) }
+        SettingsSubSection(
+            title = stringResource(R.string.settings_subsection_privileges),
+            expanded = openSub == SUB_PRIVILEGES,
+            onToggle = { openSub = if (openSub == SUB_PRIVILEGES) null else SUB_PRIVILEGES },
+        ) { PrivilegedModeSubSection() }
     }
 }
 
