@@ -116,6 +116,10 @@ class AppPreferences(context: Context) {
         // returns fluent text in the wrong language. See the device-test plan.
         val TRANSCRIPTION_LANGUAGE: String? = null
 
+        // Standalone: one app, no dependency on anything else being installed — the project's whole
+        // premise. An install that predates Shizuku support has no stored value and must land here.
+        val PRIVILEGED_MODE: String = PrivilegedMode.STANDALONE.key
+
         // Off: one language for every call is the right assumption for most phones, and an extra
         // dialog between a tap and its result is a cost worth paying only by people who take calls in
         // more than one language.
@@ -216,6 +220,7 @@ class AppPreferences(context: Context) {
         TRANSCRIPTION_MODEL_ID("transcription_model_id"),
         TRANSCRIPTION_LANGUAGE("transcription_language"),
         TRANSCRIPTION_ASK_LANGUAGE("transcription_ask_language"),
+        PRIVILEGED_MODE("privileged_mode"),
         SPEAKER_MAP_OVERRIDE("speaker_map_override"),
         SPEAKER_MAP_CONFIRMED("speaker_map_confirmed"),
 
@@ -684,6 +689,20 @@ class AppPreferences(context: Context) {
 
     /** Sets whether tapping Transcribe asks which language. */
     fun setTranscriptionAskLanguage(ask: Boolean) = setBoolean(Key.TRANSCRIPTION_ASK_LANGUAGE, ask)
+
+    // -------- Where privileges come from --------
+
+    /**
+     * Whether the recorder is started by CallVault's own embedded ADB or by a Shizuku server.
+     *
+     * Never null and never unknown: an unrecognised stored value answers
+     * [PrivilegedMode.STANDALONE], so a downgrade cannot leave the app in a mode it cannot serve.
+     */
+    fun getPrivilegedMode(): PrivilegedMode =
+        PrivilegedMode.fromKey(getString(Key.PRIVILEGED_MODE, DefaultsValue.PRIVILEGED_MODE))
+
+    /** Sets where privileges come from. Changing this tears down one backend and starts the other. */
+    fun setPrivilegedMode(mode: PrivilegedMode) = setString(Key.PRIVILEGED_MODE, mode.key)
 
     // -------- Who is who on a transcript --------
 

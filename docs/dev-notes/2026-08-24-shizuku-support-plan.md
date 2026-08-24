@@ -90,10 +90,12 @@ every call it received. Instead `RecorderServiceImpl` **overrides `onTransact`**
 
 Each phase ends somewhere shippable, and nothing before phase 4 changes behaviour for an existing user.
 
-**Phase 1 — the seam, no Shizuku.** Extract `RecorderServiceImpl` from `RecorderServer.createStub()`;
-add the `onTransact` 16777114 route; add `PrivilegedMode` to preferences (unused). Existing ADB path
-must be byte-for-byte equivalent in behaviour. *Acceptance:* unit tests green, a real call still records
-on the phone.
+**Phase 1 — the seam, no Shizuku. DONE 2026-08-24.** `RecorderServiceImpl` now holds the recorder and
+all its state; `RecorderServer` is only the `app_process` entrypoint. `onTransact` routes 16777114 to
+`destroy()`, so the AIDL keeps its positional IDs — guarded by `RecorderTransactionCodesTest`, which
+fails if anyone reorders a method. `PrivilegedMode` added, defaulting to `STANDALONE`, and not yet read
+by anything. 737 unit tests green, `lintVitalRelease` clean, release APK builds. **Still owed: a real
+two-sided call on the phone**, because no test on a laptop can tell whether audio still arrives.
 
 **Phase 2 — the Shizuku backend.** Add `dev.rikka.shizuku:api` + `:provider`, the manifest permission
 and `ShizukuProvider`, `RecorderUserService`, and a `ShizukuBackend` that binds and feeds
@@ -126,8 +128,9 @@ reporting must not blame the user for a Shizuku that was not running.
   ours is. Worth measuring, not assuming.
 - **All three capture paths must be exercised**, not just the direct one — the handoff path is what the
   reference phone actually uses for carrier calls, and VoIP is a third that is routinely forgotten.
-- **R8.** A user service class reached only by reflection from another process is exactly what a
-  minifier deletes.
+- ~~**R8.**~~ Checked during phase 1: `isMinifyEnabled = false` for release, so nothing is shrunk or
+  obfuscated and a reflectively-instantiated user service is in no danger. `@Keep` is on the class
+  anyway, for the day that changes.
 
 ## Testing on the emulator
 
