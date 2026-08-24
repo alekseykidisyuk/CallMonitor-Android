@@ -87,6 +87,9 @@ interface SettingsActions {
     fun setTranscriptionBatchLimit(limit: Int)
     fun setTranscriptionModelId(id: String)
     fun setTranscriptionLanguage(language: String?)
+
+    /** Whether tapping Transcribe asks which language, for phones that take calls in several. */
+    fun setTranscriptionAskLanguage(ask: Boolean)
     fun downloadTranscriptionModel(model: TranscriptionModel)
     fun deleteTranscriptionModel(model: TranscriptionModel)
 
@@ -440,6 +443,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Saves the language passed to whisper, or null to auto-detect. */
     override fun setTranscriptionLanguage(language: String?) {
         preferences.setTranscriptionLanguage(language)
+        refresh()
+    }
+
+    /** Saves whether tapping Transcribe asks which language first. */
+    override fun setTranscriptionAskLanguage(ask: Boolean) {
+        preferences.setTranscriptionAskLanguage(ask)
         refresh()
     }
 

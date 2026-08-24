@@ -384,6 +384,12 @@
     <string name="transcription_charging_subtitle">Transkrypcja mocno obciąża procesor i rozładuje baterię.</string>
     <string name="transcription_charging_title">Tylko podczas ładowania</string>
     <string name="transcription_confirm_subtitle">Pokazuje, ile to potrwa, i pozwala anulować.</string>
+    <string name="transcribe_language_title">Jaki język?</string>
+    <string name="transcribe_language_message">Transkrybuj %1$s w języku:</string>
+    <string name="transcribe_language_current">%1$s (zwykle używany)</string>
+    <string name="transcribe_language_confirm">Transkrybuj</string>
+    <string name="transcription_ask_language_title">Pytaj o język za każdym razem</string>
+    <string name="transcription_ask_language_subtitle">Wybierz język dla każdego nagrania zamiast zawsze używać powyższego. Dotyczy tylko tego nagrania.</string>
     <string name="transcription_confirm_title">Pytaj przed transkrypcją</string>
     <string name="transcription_hour_label">Godzina</string>
     <string name="transcription_language_arabic">Arabski</string>

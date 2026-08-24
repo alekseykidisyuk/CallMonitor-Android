@@ -28,6 +28,14 @@ Transcripts learn who was speaking.
   words as the other person's, on a record of a real conversation, is worse than showing no name at
   all.
 
+- **Transcribe in another language, just this once.** The transcription language is pinned rather
+  than detected, because auto-detect is worse in a way that is hard to spot — it writes Hebrew in
+  Latin letters and merges a whole call into one block. But a pin is one answer for every call, and a
+  phone that takes calls in two languages gets it wrong half the time. Turn on **Ask which language
+  each time** under Transcription, and tapping Transcribe asks first, with your usual language
+  already selected. The answer covers that recording only; your default stays where you left it. Off
+  by default, so nothing changes for anyone who takes calls in one language.
+
 - **Summaries know it too.** With the sides known, a summary can say what *you* agreed to and what
   the other person did, instead of describing the call from nowhere.
 

@@ -91,12 +91,28 @@ object TranscriptionScheduler {
      * Runs with **no constraints**: the user asked for this one and is presumably waiting, so making
      * them find a charger first would be obtuse. [displayName] names a single recording; null drains
      * the queue.
+     *
+     * [language] is a per-recording pick encoded by [TranscriptionLanguageChoice.encode], null meaning
+     * "use the setting". It only reaches a named recording: a queue drain covers calls in whatever
+     * languages happen to be waiting, and one answer could not be right for all of them.
      */
-    fun runNow(context: Context, displayName: String? = null, requiresCharging: Boolean = false) {
+    fun runNow(
+        context: Context,
+        displayName: String? = null,
+        requiresCharging: Boolean = false,
+        language: String? = null,
+    ) {
         val request = OneTimeWorkRequestBuilder<TranscriptionWorker>()
             .apply {
                 if (displayName != null) {
-                    setInputData(workDataOf(TranscriptionWorker.KEY_DISPLAY_NAME to displayName))
+                    setInputData(
+                        workDataOf(
+                            TranscriptionWorker.KEY_DISPLAY_NAME to displayName,
+                            // Absent unless the user picked one, which is what lets the worker tell
+                            // "chose auto-detect" apart from "did not choose".
+                            TranscriptionWorker.KEY_LANGUAGE to language
+                        )
+                    )
                 }
                 if (requiresCharging) {
                     setConstraints(Constraints.Builder().setRequiresCharging(true).build())

@@ -12,6 +12,7 @@ import androidx.annotation.StringRes
 import java.text.Collator
 import com.baba.callvault.R
 import com.baba.callvault.data.TranscriptionMode
+import com.baba.callvault.transcription.TranscriptionLanguageChoice
 import com.baba.callvault.transcription.model.TranscriptionModel
 
 /**
@@ -23,8 +24,13 @@ import com.baba.callvault.transcription.model.TranscriptionModel
  */
 object TranscriptionLabels {
 
-    /** Key standing in for "no language", since a dropdown option cannot carry a null key. */
-    const val AUTO_DETECT_KEY = "auto"
+    /**
+     * Key standing in for "no language", since a dropdown option cannot carry a null key.
+     *
+     * The same value [TranscriptionLanguageChoice] sends through work input data, and deliberately so:
+     * two spellings of "auto" that had to agree would eventually stop agreeing.
+     */
+    const val AUTO_DETECT_KEY = TranscriptionLanguageChoice.AUTO
 
     /** Minutes offered for the automatic run — quarter hours, matching the upload schedule. */
     val MINUTE_OPTIONS = listOf(0, 15, 30, 45)
@@ -49,10 +55,12 @@ object TranscriptionLabels {
      *
      * The order here is only the source list; the dropdown sorts it by translated name via
      * [sortLanguageOptions].
+     *
+     * The codes come from [TranscriptionLanguageChoice.SUPPORTED], which is also what validates a
+     * per-recording pick — a list added to here and not there would offer a language the picker then
+     * refused to honour.
      */
-    val LANGUAGE_OPTIONS: List<String?> = listOf(
-        "he", "en", "ar", "zh", "fr", "de", "hu", "it", "pl", "pt", "ru", "es", "vi", null
-    )
+    val LANGUAGE_OPTIONS: List<String?> = TranscriptionLanguageChoice.SUPPORTED + null
 
     /**
      * [options] as (key, displayed name), ordered A-Z by the **name**, with auto-detect pinned last.

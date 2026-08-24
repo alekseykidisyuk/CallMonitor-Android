@@ -130,6 +130,7 @@ import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
@@ -761,6 +762,7 @@ private fun TranscriptionSection(
     val confirmBeforeRun = remember(updateTrigger) { preferences.getTranscriptionConfirmBeforeRun() }
     val modelId = remember(updateTrigger) { preferences.getTranscriptionModelId() }
     val language = remember(updateTrigger) { preferences.getTranscriptionLanguage() }
+    val askLanguage = remember(updateTrigger) { preferences.getTranscriptionAskLanguage() }
     val installed = remember(updateTrigger) { ModelRepository.installedModels(context) }
 
     val selectedModel = TranscriptionModel.fromId(modelId) ?: TranscriptionModel.DEFAULT
@@ -912,6 +914,16 @@ private fun TranscriptionSection(
                 }
             )
         }
+
+        // Directly under the language it overrides, because it only makes sense as an answer to
+        // "but this call was in another language".
+        SettingsToggleRow(
+            icon = Icons.Filled.Translate,
+            label = stringResource(R.string.transcription_ask_language_title),
+            description = stringResource(R.string.transcription_ask_language_subtitle),
+            checked = askLanguage,
+            onCheckedChange = { actions.setTranscriptionAskLanguage(it) }
+        )
 
         // Its home is here so the "don't ask again" checkbox in the dialog can be undone — a dialog
         // that can permanently remove itself with no way back would be a trap.
@@ -2409,6 +2421,7 @@ private fun SettingsScreenPreview() {
             override fun setTranscriptionBatchLimit(limit: Int) {}
             override fun setTranscriptionModelId(id: String) {}
             override fun setTranscriptionLanguage(language: String?) {}
+            override fun setTranscriptionAskLanguage(ask: Boolean) {}
             override fun downloadTranscriptionModel(model: TranscriptionModel) {}
             override fun deleteTranscriptionModel(model: TranscriptionModel) {}
             override fun downloadSummaryModel(model: SummaryModel) {}

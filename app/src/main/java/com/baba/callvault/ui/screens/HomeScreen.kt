@@ -109,6 +109,7 @@ import com.baba.callvault.transcription.TranscriptionEstimate
 import com.baba.callvault.ui.common.BidiText
 import com.baba.callvault.ui.common.RecordingLabel
 import com.baba.callvault.ui.common.TranscribeConfirmDialog
+import com.baba.callvault.ui.common.TranscribeLanguageDialog
 import com.baba.callvault.summary.SummaryScheduler
 import com.baba.callvault.ui.common.rememberSummaryState
 import com.baba.callvault.ui.common.TranscribingPill
@@ -241,30 +242,30 @@ fun HomeScreen(
     /** Raised when transcription is asked for but the model it needs is not installed. */
     var showModelMissing by remember { mutableStateOf(false) }
 
-    /**
-     * Starts transcription, or explains why it cannot.
-     *
-     * The worker retries indefinitely while its model is absent, which is right for a download still
-     * in flight but wrong for a tap: nothing would appear to happen, for ever. So the same condition
-     * the worker checks is checked here, where it can be said out loud.
-     */
-    /** The recording awaiting a "this will take N minutes" confirmation, or null. */
-    var confirmTranscribe by remember { mutableStateOf<Pair<String, Long?>?>(null) }
+    /** The recording awaiting a "this will take N minutes" confirmation, with the language picked for
+     *  it (null = use the setting), or null when nothing is waiting. */
+    var confirmTranscribe by remember { mutableStateOf<Triple<String, Long?, String?>?>(null) }
+
+    /** The recording awaiting a "which language?" answer, or null. Only ever set when the user has
+     *  turned that ask on; see AppPreferences.getTranscriptionAskLanguage. */
+    var askLanguageFor by remember { mutableStateOf<String?>(null) }
 
     /** Enqueues without asking. retry() clears the row and enqueues; clearing nothing is a no-op, so
      *  it serves a first transcription, a retry and "transcribe again" alike — and the queue skips
      *  FAILED and DONE rows, so leaving the row in place would make the tap do nothing. */
-    val enqueueTranscription: (String) -> Unit = { displayName ->
-        transcriptScope.launch { TranscriptRepository.retry(context, displayName) }
+    val enqueueTranscription: (String, String?) -> Unit = { displayName, language ->
+        transcriptScope.launch { TranscriptRepository.retry(context, displayName, language) }
     }
 
-    val startTranscription: (String) -> Unit = { displayName ->
+    /**
+     * Everything after the language is settled: the estimate confirmation if it is on, otherwise straight
+     * to the queue. [language] is a per-recording pick, null meaning "use the setting".
+     */
+    val continueTranscription: (String, String?) -> Unit = { displayName, language ->
         val prefs = AppPreferences(context)
         val model = TranscriptionModel.fromId(prefs.getTranscriptionModelId()) ?: TranscriptionModel.DEFAULT
-        if (!ModelRepository.isInstalled(context, model)) {
-            showModelMissing = true
-        } else if (!prefs.getTranscriptionConfirmBeforeRun()) {
-            enqueueTranscription(displayName)
+        if (!prefs.getTranscriptionConfirmBeforeRun()) {
+            enqueueTranscription(displayName, language)
         } else {
             // Estimating is arithmetic on a duration read from the container — microseconds — so the
             // dialog can open with the answer already in it rather than spinning first.
@@ -277,8 +278,29 @@ fun HomeScreen(
                         rtf = prefs.getTranscriptionRtf(model.id) ?: model.realTimeFactor
                     )
                 }
-                confirmTranscribe = displayName to estimate
+                confirmTranscribe = Triple(displayName, estimate, language)
             }
+        }
+    }
+
+    /**
+     * Starts transcription, or explains why it cannot.
+     *
+     * The worker retries indefinitely while its model is absent, which is right for a download still
+     * in flight but wrong for a tap: nothing would appear to happen, for ever. So the same condition
+     * the worker checks is checked here, where it can be said out loud — and it stays ahead of both
+     * dialogs, since asking someone to choose a language for work that cannot start would be a worse
+     * kind of nothing-happens than the one it already guards against.
+     */
+    val startTranscription: (String) -> Unit = { displayName ->
+        val prefs = AppPreferences(context)
+        val model = TranscriptionModel.fromId(prefs.getTranscriptionModelId()) ?: TranscriptionModel.DEFAULT
+        if (!ModelRepository.isInstalled(context, model)) {
+            showModelMissing = true
+        } else if (prefs.getTranscriptionAskLanguage()) {
+            askLanguageFor = displayName
+        } else {
+            continueTranscription(displayName, null)
         }
     }
 
@@ -733,7 +755,7 @@ fun HomeScreen(
         }
     }
 
-    confirmTranscribe?.let { (displayName, estimateMs) ->
+    confirmTranscribe?.let { (displayName, estimateMs, language) ->
         TranscribeConfirmDialog(
             title = RecordingLabel.forDisplayName(uiState.recordings, displayName),
             estimate = estimateMs?.let { formatEstimate(it) },
@@ -741,7 +763,19 @@ fun HomeScreen(
             onConfirm = { dontAskAgain ->
                 if (dontAskAgain) AppPreferences(context).setTranscriptionConfirmBeforeRun(false)
                 confirmTranscribe = null
-                enqueueTranscription(displayName)
+                enqueueTranscription(displayName, language)
+            }
+        )
+    }
+
+    askLanguageFor?.let { displayName ->
+        TranscribeLanguageDialog(
+            title = RecordingLabel.forDisplayName(uiState.recordings, displayName),
+            setting = AppPreferences(context).getTranscriptionLanguage(),
+            onDismiss = { askLanguageFor = null },
+            onConfirm = { language ->
+                askLanguageFor = null
+                continueTranscription(displayName, language)
             }
         )
     }

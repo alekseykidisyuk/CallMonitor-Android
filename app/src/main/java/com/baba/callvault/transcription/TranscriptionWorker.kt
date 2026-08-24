@@ -102,7 +102,10 @@ class TranscriptionWorker(
         val transcribed = TranscriptionRunner(applicationContext).runBatch(
             modelId = model.id,
             modelPath = modelPath,
-            language = prefs.getTranscriptionLanguage(),
+            language = TranscriptionLanguageChoice.resolve(
+                chosen = inputData.getString(KEY_LANGUAGE),
+                setting = prefs.getTranscriptionLanguage()
+            ),
             displayNames = names,
             shouldStop = { isStopped },
             onProgress = { completed, total, current ->
@@ -130,6 +133,12 @@ class TranscriptionWorker(
 
         /** Input key naming a single recording, for the manual button. Absent means "drain the queue". */
         const val KEY_DISPLAY_NAME = "displayName"
+
+        /**
+         * Input key carrying the language picked for this one recording, encoded by
+         * [TranscriptionLanguageChoice.encode]. Absent means "use the setting".
+         */
+        const val KEY_LANGUAGE = "language"
 
         /**
          * Progress keys read by Home's transcribing pill.

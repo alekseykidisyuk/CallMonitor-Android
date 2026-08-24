@@ -116,6 +116,11 @@ class AppPreferences(context: Context) {
         // returns fluent text in the wrong language. See the device-test plan.
         val TRANSCRIPTION_LANGUAGE: String? = null
 
+        // Off: one language for every call is the right assumption for most phones, and an extra
+        // dialog between a tap and its result is a cost worth paying only by people who take calls in
+        // more than one language.
+        const val TRANSCRIPTION_ASK_LANGUAGE = false
+
         // --- Retention (auto-delete old recordings) ---
         // Delete recordings older than N days. 0 = keep forever (OFF). Applied per copy: device copies
         // use RETENTION_LOCAL_DAYS, Drive copies use RETENTION_DRIVE_DAYS. When RETENTION_LINKED is true
@@ -210,6 +215,7 @@ class AppPreferences(context: Context) {
         SUMMARY_LANGUAGE("summary_language"),
         TRANSCRIPTION_MODEL_ID("transcription_model_id"),
         TRANSCRIPTION_LANGUAGE("transcription_language"),
+        TRANSCRIPTION_ASK_LANGUAGE("transcription_ask_language"),
         SPEAKER_MAP_OVERRIDE("speaker_map_override"),
         SPEAKER_MAP_CONFIRMED("speaker_map_confirmed"),
 
@@ -665,6 +671,19 @@ class AppPreferences(context: Context) {
 
     /** Sets the language passed to whisper, or null to auto-detect. */
     fun setTranscriptionLanguage(language: String?) = setString(Key.TRANSCRIPTION_LANGUAGE, language)
+
+    /**
+     * Whether tapping Transcribe asks which language, instead of always using the setting above.
+     *
+     * For phones that take calls in more than one language, where a single pin is wrong about half the
+     * time. The answer applies to that recording only — see
+     * [com.baba.callvault.transcription.TranscriptionLanguageChoice].
+     */
+    fun getTranscriptionAskLanguage() =
+        getBoolean(Key.TRANSCRIPTION_ASK_LANGUAGE, DefaultsValue.TRANSCRIPTION_ASK_LANGUAGE)
+
+    /** Sets whether tapping Transcribe asks which language. */
+    fun setTranscriptionAskLanguage(ask: Boolean) = setBoolean(Key.TRANSCRIPTION_ASK_LANGUAGE, ask)
 
     // -------- Who is who on a transcript --------
 

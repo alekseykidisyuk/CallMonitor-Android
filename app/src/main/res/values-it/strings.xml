@@ -384,6 +384,12 @@
     <string name="transcription_charging_subtitle">La trascrizione usa molto il processore e consuma la batteria.</string>
     <string name="transcription_charging_title">Solo durante la ricarica</string>
     <string name="transcription_confirm_subtitle">Mostra quanto tempo richiede e ti lascia annullare.</string>
+    <string name="transcribe_language_title">Quale lingua?</string>
+    <string name="transcribe_language_message">Trascrivi %1$s in:</string>
+    <string name="transcribe_language_current">%1$s (la solita)</string>
+    <string name="transcribe_language_confirm">Trascrivi</string>
+    <string name="transcription_ask_language_title">Chiedi la lingua ogni volta</string>
+    <string name="transcription_ask_language_subtitle">Scegli la lingua per ogni registrazione invece di usare sempre quella sopra. Vale solo per quella registrazione.</string>
     <string name="transcription_confirm_title">Chiedi prima di trascrivere</string>
     <string name="transcription_hour_label">Ora</string>
     <string name="transcription_language_arabic">Arabo</string>

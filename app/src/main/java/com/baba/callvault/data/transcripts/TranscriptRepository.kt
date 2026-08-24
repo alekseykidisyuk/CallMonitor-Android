@@ -82,9 +82,14 @@ object TranscriptRepository {
     fun transcript(context: Context, displayName: String): Flow<TranscriptWithSegments?> =
         dao(context).observe(displayName)
 
-    /** Transcribes [displayName] now, at the user's request — no charging or schedule constraints. */
-    fun transcribeNow(context: Context, displayName: String) {
-        TranscriptionScheduler.runNow(context, displayName)
+    /**
+     * Transcribes [displayName] now, at the user's request — no charging or schedule constraints.
+     *
+     * [language] is a per-recording pick (see
+     * [com.baba.callvault.transcription.TranscriptionLanguageChoice]); null uses the setting.
+     */
+    fun transcribeNow(context: Context, displayName: String, language: String? = null) {
+        TranscriptionScheduler.runNow(context, displayName, language = language)
     }
 
     /**
@@ -100,8 +105,10 @@ object TranscriptRepository {
      * It is then marked QUEUED **before** the work is enqueued, so the row shows that it is waiting the
      * moment it is tapped. Taps chain — one run at a time — so without this a second tapped call sits
      * looking exactly like an untapped one, inviting the user to tap it again.
+     *
+     * [language] is the language picked for this recording alone, null meaning "use the setting".
      */
-    suspend fun retry(context: Context, displayName: String) {
+    suspend fun retry(context: Context, displayName: String, language: String? = null) {
         val dao = dao(context)
         dao.deleteFor(displayName)
         dao.upsertTranscript(
@@ -111,7 +118,7 @@ object TranscriptRepository {
                 updatedAt = System.currentTimeMillis()
             )
         )
-        transcribeNow(context, displayName)
+        transcribeNow(context, displayName, language)
     }
 
     /** Removes a transcript, leaving the recording. Someone may want the audio but not the text. */

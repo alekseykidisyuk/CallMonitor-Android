@@ -603,6 +603,12 @@
     <string name="transcribe_confirm_title_unknown">Transcribe this call?</string>
     <string name="transcribe_confirm_message">Transcribing %1$s keeps your phone busy and uses noticeable battery. You can stop it at any time.\n\nThis question can be turned back on under Transcription in Settings.</string>
     <string name="transcribe_confirm_dont_ask">Don\'t ask again</string>
+    <string name="transcribe_language_title">Which language?</string>
+    <string name="transcribe_language_message">Transcribe %1$s in:</string>
+    <string name="transcribe_language_current">%1$s (your usual)</string>
+    <string name="transcribe_language_confirm">Transcribe</string>
+    <string name="transcription_ask_language_title">Ask which language each time</string>
+    <string name="transcription_ask_language_subtitle">Choose the language per recording instead of always using the one above. It applies to that recording only.</string>
     <string name="transcription_confirm_title">Ask before transcribing</string>
     <string name="transcription_confirm_subtitle">Shows how long it will take and lets you cancel.</string>
     <string name="transcript_action_busy">Transcribing…</string>
