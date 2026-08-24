@@ -258,6 +258,7 @@
     <string name="mode_switch_shizuku_not_running">Shizuku не запущен. Откройте его, запустите и повторите — он останавливается при каждой перезагрузке.</string>
     <string name="mode_switch_shizuku_not_permitted">Shizuku ещё не разрешил CallVault. Откройте его, разрешите и повторите.</string>
     <string name="mode_switch_recorder_failed">Рекордер не запустился. До этого ничего записываться не будет.</string>
+    <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>
     <string name="home_mode_badge_shizuku">Shizuku</string>
     <string name="settings_subsection_privileges">Откуда CallVault получает права</string>

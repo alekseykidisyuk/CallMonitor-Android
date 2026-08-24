@@ -258,6 +258,7 @@
     <string name="mode_switch_shizuku_not_running">Shizuku non è in esecuzione. Aprilo, avvialo e riprova: si ferma a ogni riavvio del telefono.</string>
     <string name="mode_switch_shizuku_not_permitted">Shizuku non ha ancora autorizzato CallVault. Aprilo, concedi l\'autorizzazione e riprova.</string>
     <string name="mode_switch_recorder_failed">Il registratore non è partito. Finché non parte non verrà registrato nulla.</string>
+    <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>
     <string name="home_mode_badge_shizuku">Shizuku</string>
     <string name="settings_subsection_privileges">Da dove CallVault ottiene i permessi</string>

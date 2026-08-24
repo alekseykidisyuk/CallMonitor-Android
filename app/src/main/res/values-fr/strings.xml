@@ -258,6 +258,7 @@
     <string name="mode_switch_shizuku_not_running">Shizuku ne fonctionne pas. Ouvrez-le, démarrez-le puis réessayez — il s\'arrête à chaque redémarrage.</string>
     <string name="mode_switch_shizuku_not_permitted">Shizuku n\'a pas encore autorisé CallVault. Ouvrez-le, autorisez-le puis réessayez.</string>
     <string name="mode_switch_recorder_failed">L\'enregistreur n\'a pas démarré. Rien ne sera enregistré tant que ce n\'est pas le cas.</string>
+    <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>
     <string name="home_mode_badge_shizuku">Shizuku</string>
     <string name="settings_subsection_privileges">D\'où CallVault tire ses autorisations</string>

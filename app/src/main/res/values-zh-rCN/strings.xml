@@ -258,6 +258,7 @@
     <string name="mode_switch_shizuku_not_running">Shizuku 未运行。请打开并启动它后重试——每次重启手机后它都会停止。</string>
     <string name="mode_switch_shizuku_not_permitted">Shizuku 尚未允许 CallVault。请打开 Shizuku 授权后重试。</string>
     <string name="mode_switch_recorder_failed">录音器未能启动。在启动之前不会录制任何内容。</string>
+    <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>
     <string name="home_mode_badge_shizuku">Shizuku</string>
     <string name="settings_subsection_privileges">CallVault 的权限来源</string>

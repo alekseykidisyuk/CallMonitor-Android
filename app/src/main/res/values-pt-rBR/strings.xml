@@ -261,6 +261,7 @@
     <string name="mode_switch_shizuku_not_running">O Shizuku não está em execução. Abra-o, inicie-o e tente de novo — ele para a cada reinício do telefone.</string>
     <string name="mode_switch_shizuku_not_permitted">O Shizuku ainda não permitiu o CallVault. Abra-o, permita e tente de novo.</string>
     <string name="mode_switch_recorder_failed">O gravador não iniciou. Nada será gravado até que inicie.</string>
+    <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>
     <string name="home_mode_badge_shizuku">Shizuku</string>
     <string name="settings_subsection_privileges">De onde o CallVault obtém permissões</string>

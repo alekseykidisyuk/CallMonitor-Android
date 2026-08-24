@@ -1145,30 +1145,11 @@ private fun HeroStatusCard(
             }
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_hero_status_label).uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.weight(1f))
-                    // Which backend is serving the recorder. On this line rather than beside the title:
-                    // sharing a row with titleLarge squeezed "Ready to record" into two lines, and a
-                    // wrapped status headline looks broken. Here the label leaves the whole row spare.
-                    //
-                    // Info, not Neutral: Neutral resolves to the coral onSurfaceVariant in this scheme,
-                    // and a red badge next to a healthy status reads as an error.
-                    CvStatusPill(
-                        text = stringResource(
-                            if (mode.needsShizuku) R.string.home_mode_badge_shizuku
-                            else R.string.home_mode_badge_standalone
-                        ),
-                        tone = CvTone.Info,
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.home_hero_status_label).uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = stringResource(status.titleResId),
@@ -1185,7 +1166,17 @@ private fun HeroStatusCard(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(14.dp))
-        CvStatusPill(text = pillText, tone = tone)
+        CvStatusPill(
+            text = stringResource(
+                R.string.home_hero_pill_with_mode,
+                pillText,
+                stringResource(
+                    if (mode.needsShizuku) R.string.home_mode_badge_shizuku
+                    else R.string.home_mode_badge_standalone
+                ),
+            ),
+            tone = tone,
+        )
     }
 }
 
