@@ -377,6 +377,7 @@
     <string name="transcript_speakers_correct">Helyes</string>
     <string name="transcript_speakers_which_is_you">Melyik vagy te?</string>
     <string name="transcript_speakers_guessed">A neveket a program állapította meg</string>
+    <string name="transcript_speakers_swap_names">Nevek cseréje</string>
     <string name="transcript_speakers_swap">Csere</string>
     <string name="transcription_batch_label">Hívások futásonként</string>
     <string name="transcription_batch_no_limit">Nincs korlát</string>

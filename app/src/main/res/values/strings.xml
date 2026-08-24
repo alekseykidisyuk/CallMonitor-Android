@@ -609,6 +609,7 @@
     <string name="transcript_no_speech">No speech was recognised in this recording.</string>
     <string name="transcript_speakers_which_is_you">Which one is you?</string>
     <string name="transcript_speakers_guessed">Names worked out automatically</string>
+    <string name="transcript_speakers_swap_names">Swap names</string>
     <string name="transcript_speakers_swap">Swap</string>
     <string name="transcript_speakers_correct">Correct</string>
     <string name="transcript_speaker_you">You</string>

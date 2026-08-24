@@ -128,6 +128,13 @@ fun TranscriptSheet(
 
         val segments = transcript?.segments.orEmpty()
 
+        // Only where there is something to name. A transcript whose segments carry no speaker at
+        // all — a mono capture, or a call whisper returned as one block — must not be asked a
+        // question about two sides it never shows.
+        val hasSpeakers = remember(segments, speakerNames) {
+            segments.any { speakerNames.of(it.speaker) != null }
+        }
+
         when {
             transcript == null -> Text(
                 text = stringResource(R.string.transcript_loading),
@@ -157,12 +164,6 @@ fun TranscriptSheet(
                     if (active >= 0) listState.animateScrollToItem(active)
                 }
 
-                // Only where there is something to name. A transcript whose segments carry no
-                // speaker at all — a mono capture, or a call whisper returned as one block — would
-                // otherwise be asked a question about two sides it never shows.
-                val hasSpeakers = remember(segments, speakerNames) {
-                    segments.any { speakerNames.of(it.speaker) != null }
-                }
                 if (hasSpeakers && speakerNames.isGuess) {
                     SpeakerNamesHint(
                         names = speakerNames,
@@ -219,6 +220,27 @@ fun TranscriptSheet(
             }
             TextButton(onClick = onRetranscribe) {
                 Text(stringResource(R.string.transcript_retranscribe))
+            }
+            // The way back, once the question above has been answered and stops being asked.
+            //
+            // Without this, answering it was a one-way door: a mis-tap pinned an override that
+            // outranks everything derived, silenced the bar for good, and left every transcript
+            // from then on showing one person's words under the other's name with nothing on
+            // screen to suggest it. That is the exact failure the two-call corroboration exists to
+            // prevent, so it must not be reachable by a single tap either.
+            //
+            // Here rather than in Settings because this is where the mistake is visible.
+            if (hasSpeakers && !speakerNames.isGuess && speakerNames.map != ChannelMap.UNKNOWN) {
+                TextButton(
+                    onClick = {
+                        onChooseSpeakerMap(
+                            if (speakerNames.map == ChannelMap.A_IS_FAR) ChannelMap.B_IS_FAR
+                            else ChannelMap.A_IS_FAR
+                        )
+                    }
+                ) {
+                    Text(stringResource(R.string.transcript_speakers_swap_names))
+                }
             }
             // Error-tinted, because it destroys something: the audio survives but the text does not,
             // and getting it back costs a full re-run of the model.

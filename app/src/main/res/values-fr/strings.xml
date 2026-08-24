@@ -377,6 +377,7 @@
     <string name="transcript_speakers_correct">Correct</string>
     <string name="transcript_speakers_which_is_you">Lequel est vous ?</string>
     <string name="transcript_speakers_guessed">Noms déduits automatiquement</string>
+    <string name="transcript_speakers_swap_names">Inverser les noms</string>
     <string name="transcript_speakers_swap">Inverser</string>
     <string name="transcription_batch_label">Appels par exécution</string>
     <string name="transcription_batch_no_limit">Sans limite</string>

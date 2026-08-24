@@ -377,6 +377,7 @@
     <string name="transcript_speakers_correct">Correcto</string>
     <string name="transcript_speakers_which_is_you">¿Cuál eres tú?</string>
     <string name="transcript_speakers_guessed">Nombres deducidos automáticamente</string>
+    <string name="transcript_speakers_swap_names">Intercambiar nombres</string>
     <string name="transcript_speakers_swap">Intercambiar</string>
     <string name="transcription_batch_label">Llamadas por ejecución</string>
     <string name="transcription_batch_no_limit">Sin límite</string>

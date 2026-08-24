@@ -380,6 +380,7 @@
     <string name="transcript_speakers_correct">Correto</string>
     <string name="transcript_speakers_which_is_you">Qual é você?</string>
     <string name="transcript_speakers_guessed">Nomes deduzidos automaticamente</string>
+    <string name="transcript_speakers_swap_names">Trocar nomes</string>
     <string name="transcript_speakers_swap">Trocar</string>
     <string name="transcription_batch_label">Chamadas por execução</string>
     <string name="transcription_batch_no_limit">Sem limite</string>
