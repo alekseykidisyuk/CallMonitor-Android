@@ -127,12 +127,30 @@ Direct capture unavailable, falling back to scrcpy: AudioRecord would not initia
 
 Our own daemon opens the same source on the same emulator moments earlier and gets
 `Recording via DIRECT AudioRecord`. This matters: direct capture is what removed the ~1–2 s front clip
-in v1.4.0, so a Shizuku user would silently get the older, worse path. **Ruled out so far:** the uid
-(both hosts log `uid=2000`), and Shizuku's Context (removing the Context constructor changed nothing).
-Still to try: what `opPackageName`/`AttributionSource` each process presents to AudioFlinger, and
-whether the emulator's audio HAL simply allows one record client at a time. Note that upstream
-ShizuCallRecorder only ever used scrcpy under Shizuku — consistent with this being real rather than
-local.
+in v1.4.0, so a Shizuku user would silently get the older, worse path.
+
+**Six hypotheses tested and eliminated on 2026-08-24**, each by measurement rather than reasoning:
+
+| # | Hypothesis | How it was tested | Result |
+|---|---|---|---|
+| 1 | Different uid | Both hosts log their own identity | **Identical** — `uid=2000` |
+| 2 | Shizuku's `Context` binds the process to our package | Deleted the `(Context)` constructor and re-ran | **No change** — still falls back |
+| 3 | Different `opPackageName` presented to AudioFlinger | `AudioAttribution.opPackageName()` in both | **Identical** — `<none>` in both |
+| 4 | Missing audio group (gid 1005) | `/proc/self/status` groups in both | **Identical** lists, and *neither* has gid 1005 |
+| 5 | Different SELinux domain | `/proc/self/attr/current` in both | **Identical** — `u:r:shell:s0` |
+| 6 | A leftover scrcpy/daemon holding the single emulator mic | Killed everything, then ran Shizuku **first** | **Still fails** — the failure follows the host, not the order |
+| 7 | Process name `com.baba.callvault:recorder` confuses the audio stack | Launched our own daemon with `--nice-name=com.baba.callvault:recorder` | **Still succeeds** — the name is not it |
+
+So two processes that are identical in uid, groups, SELinux context, presented package and even process
+name behave differently. Whatever remains is in **how the process was created** — Shizuku spawns its
+user service itself, and something about that spawn is not visible in `/proc` identity.
+
+**The next thing to try is a phone, not more emulator work.** The emulator's audio HAL is unusual and
+this may not reproduce on real hardware at all. Upstream ShizuCallRecorder only ever used scrcpy under
+Shizuku, which is *weak* evidence the limitation is real — they may simply never have tried.
+
+**Not a blocker for the feature.** Shizuku mode records correctly today via the scrcpy fallback, which
+is the path the app shipped with until v1.4.0.
 
 ⚠️ **A Context from Shizuku is not optional.** Without it the fallback reads `java.class.path`, and in a
 Shizuku-hosted process that names **Shizuku's own APK**, not ours. The scrcpy extractor then failed with

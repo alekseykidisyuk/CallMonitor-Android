@@ -65,6 +65,16 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
     private val worker = HandlerThread("recorder-worker").apply { start() }
     private val workerHandler = android.os.Handler(worker.looper)
 
+    init {
+        // Which package this process presents to the audio stack, which is NOT obvious and differs
+        // between hosts. AudioFlinger authorises a capture against (uid, package): our own daemon has
+        // no ActivityThread, so it presents nothing and the framework resolves uid 2000 to
+        // "com.android.shell" — which AudioService's own recording log shows on every successful
+        // capture. A host that has initialised an ActivityThread for OUR package presents
+        // "com.baba.callvault" under uid 2000 instead, which is a pairing no app owns.
+        AppLogger.i(TAG, "recorder host: ${AudioAttribution.describe()}")
+    }
+
     /**
      * Routes Shizuku's out-of-band destroy to the same teardown [destroy] does.
      *
