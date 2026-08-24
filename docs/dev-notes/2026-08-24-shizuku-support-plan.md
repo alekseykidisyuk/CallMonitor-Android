@@ -263,6 +263,48 @@ system installer.
 
 ---
 
+## Measured on real hardware — OnePlus 9 Pro, ColorOS 14, Android 14 (2026-08-24)
+
+The designated Shizuku test phone. Shizuku 13.6.0 installed and its server started from adb; it runs as
+shell, exactly as on the emulator.
+
+### 🔴 ColorOS makes the phase-3 grants impossible, and Shizuku cannot fix it
+
+```
+$ appops set --user 0 <pkg> RECORD_AUDIO allow
+java.lang.SecurityException: uid 2000 does not have android.permission.MANAGE_APP_OPS_MODES
+```
+
+**ColorOS strips from the shell user a permission AOSP grants it.** So `PrivilegedGrants.grantAppOp`
+cannot work on this device — not because of our code, and not because of Shizuku. **Shizuku does not
+help here: Shizuku *is* shell.** Only a Shizuku started as root (Sui) would clear it, which is why
+`hostUid()` exists. `cmd role add-role-holder` is refused too.
+
+Shizuku itself knows: its app shows **"Shizuku: The permission of adb is limited"** on this phone.
+
+This vindicates the design decision made on the emulator — every grant **reads its result back** instead
+of trusting an exit code. On this device `grantAppOp` returns an honest `false` rather than claiming a
+permission the user does not have. It also explains the long-standing note that the OP9 needs an
+owner-only toggle for the recorder grant: it was never a CallVault bug.
+
+For calibration, the root contrast holds here as it did on the emulator: `cat /data/system/packages.xml`
+is refused to shell.
+
+### 🟡 Still unanswered: direct AudioRecord under Shizuku on real hardware
+
+The phase-2 question. Blocked on granting CallVault permission **inside Shizuku**, which needs one human
+tap: `Shizuku.requestPermission()` wants a foreground Activity, and an instrumentation test has none, so
+the automated grant that works on the emulator does not fire here. Four automation attempts failed —
+Shizuku's "adb is limited" warning consumes the window, and the `-PisolateTestApp` build on the device
+exposes no launcher activity to drive the app's own UI with.
+
+**What to do next:** grant it once by hand on the OP9 (open CallVault → the Shizuku offer during setup,
+or Settings ▸ How CallVault gets permission → Allow), then re-run
+`RecorderShizukuRoundTripTest` there. That answers whether the emulator's scrcpy fallback is a real
+limitation or an emulator artefact.
+
+---
+
 ## Open risks, stated before they are discovered
 
 - **The screen-off adbd kill probably is not fixed by this.** Our own notes say Shizuku hits the same
