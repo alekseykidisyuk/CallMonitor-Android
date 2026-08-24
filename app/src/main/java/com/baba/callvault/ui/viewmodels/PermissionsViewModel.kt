@@ -85,7 +85,9 @@ class PermissionsViewModel(application: Application) : AndroidViewModel(applicat
      */
     private fun setupAdb(onDone: () -> Unit) {
         viewModelScope.launch {
-            val connected = withContext(Dispatchers.IO) { AdbShell.ensureConnected(appContext) }
+            val connected = withContext(Dispatchers.IO) {
+                AdbShell.asAdbUser(appContext, "the permissions screen") { AdbShell.ensureConnected(appContext) }
+            }
             if (!connected) {
                 // Not paired yet (or connect failed) — guide the user through one-time pairing.
                 AdbPairingService.start(appContext)

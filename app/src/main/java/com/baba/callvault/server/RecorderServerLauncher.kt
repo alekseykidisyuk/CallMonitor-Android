@@ -139,7 +139,12 @@ object RecorderServerLauncher {
     fun ensureServerRunning(context: Context, timeoutMs: Long = 24_000): Boolean =
         // Serialize with the update installer (and other daemon launches) on the shared ADB lock, so
         // a launch's reconnect/WD-toggle never tears down an in-flight update install stream.
-        synchronized(AdbShell.heavyOperationLock) { ensureServerRunningLocked(context, timeoutMs) }
+        synchronized(AdbShell.heavyOperationLock) {
+            // Holds the Wireless-debugging lease across the whole launch. Without it, a settings screen
+            // finishing its USB probe could switch WD off midway through — and switching it off drops
+            // the embedded ADB connection this launch is running on.
+            AdbShell.asAdbUser(context, "the daemon launch") { ensureServerRunningLocked(context, timeoutMs) }
+        }
 
     private fun ensureServerRunningLocked(context: Context, timeoutMs: Long): Boolean {
         if (RecorderConnection.isConnected) {

@@ -85,7 +85,7 @@ object UpdateInstaller {
     }
 
     private fun installLocked(context: Context, apkFile: File, size: Long): ShellResult {
-        if (!AdbShell.ensureConnected(context)) {
+        if (!AdbShell.asAdbUser(context, "the updater") { AdbShell.ensureConnected(context) }) {
             AppLogger.w(TAG, "Silent install unavailable: embedded ADB shell did not connect")
             return ShellResult.UNAVAILABLE
         }

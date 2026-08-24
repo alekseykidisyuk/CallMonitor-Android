@@ -284,7 +284,12 @@ object UsbDefaultConfig {
      * flaky ("Stream closed"), so retry once with a fresh connection — mirroring the daemon launcher.
      * Returns null if both attempts fail. Call OFF the main thread.
      */
-    private fun runShell(context: Context, cmd: String, ensure: Boolean): String? {
+    private fun runShell(context: Context, cmd: String, ensure: Boolean): String? =
+        // Held for the whole retry loop, not per attempt: this probe is what was measured leaving
+        // Wireless debugging on indefinitely on the OP9, because nothing after it ever switched it off.
+        AdbShell.asAdbUser(context, "the USB-default probe") { runShellInner(context, cmd, ensure) }
+
+    private fun runShellInner(context: Context, cmd: String, ensure: Boolean): String? {
         val attempts = if (ensure) 2 else 1
         repeat(attempts) { attempt ->
             val connected = when {

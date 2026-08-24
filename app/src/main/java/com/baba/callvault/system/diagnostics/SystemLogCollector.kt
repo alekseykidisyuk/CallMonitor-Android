@@ -140,7 +140,10 @@ object SystemLogCollector {
      * bit us on the first device test — `logcat -G 8M` took effect and `logcat -g` returned nothing,
      * so the ring grew with no recorded size to restore it to.
      */
-    private fun runShell(context: Context, command: String, expectOutput: Boolean = true): String? {
+    private fun runShell(context: Context, command: String, expectOutput: Boolean = true): String? =
+        AdbShell.asAdbUser(context, "the log collector") { runShellInner(context, command, expectOutput) }
+
+    private fun runShellInner(context: Context, command: String, expectOutput: Boolean): String? {
         repeat(SHELL_ATTEMPTS) { attempt ->
             val connected =
                 if (attempt == 0) AdbShell.ensureConnected(context) else AdbShell.forceReconnect(context)

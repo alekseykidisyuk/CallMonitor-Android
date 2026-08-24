@@ -522,6 +522,58 @@ object AdbShell {
     }
 
     /**
+     * Runs [block] as an ADB user, switching Wireless debugging back off when the last user finishes.
+     *
+     * **Every entry point that may need the ADB connection should go through this.** Wireless debugging
+     * is turned on in exactly one place ([connectViaWirelessDebugging]) but used to be turned off in
+     * quite another — the recorder launcher, once the daemon's binder arrived. So every other caller
+     * that needed a connection (the USB-default probe, the log collector, the updater, the permissions
+     * screen) turned it on and left it on. Measured on the OP9: a reconnect with no launch after it, and
+     * `adb_wifi_enabled` still 1 three minutes later — an open network port outliving its purpose.
+     *
+     * The release is deliberately conditional on being the last user: [disableWirelessDebugging] drops
+     * the app's embedded ADB connection, so releasing eagerly could cut it out from under a recording
+     * being armed on another thread.
+     */
+    fun <T> asAdbUser(context: Context, reason: String, block: () -> T): T {
+        WirelessDebuggingLease.acquire()
+        try {
+            return block()
+        } finally {
+            val last = WirelessDebuggingLease.release()
+            AppLogger.d(TAG, "ADB user done: $reason (last=$last)")
+            if (last) releaseWirelessDebugging(context, reason)
+        }
+    }
+
+    /**
+     * Switches Wireless debugging off if it is on and it is safe to do so, saying why when it is not.
+     *
+     * "WD only when needed" is CallVault's core behaviour rather than a user toggle, so this does not
+     * ask whether the user would like it — but it does respect the one case where switching off is
+     * destructive: `adbd` stops when its LAST transport goes away, and the daemon is a child of an adbd
+     * shell, so dropping WD while it is the only transport kills the daemon. Measured on a Galaxy
+     * S24 FE as a six-round relaunch loop that never reached "ready to record".
+     */
+    fun releaseWirelessDebugging(context: Context, reason: String) {
+        if (!isWirelessDebuggingEnabled(context)) {
+            AppLogger.d(TAG, "Nothing to release after $reason; Wireless debugging is already off")
+            return
+        }
+
+        val plan = wirelessDebuggingPlan(context)
+        if (WirelessDebuggingPolicy.mustKeepWirelessDebugging(plan)) {
+            AppLogger.i(TAG, "Keeping Wireless debugging on after $reason: it is adbd's only transport")
+            return
+        }
+        if (disableWirelessDebugging(context)) {
+            AppLogger.i(TAG, "Wireless debugging disabled after $reason ($plan)")
+        } else {
+            AppLogger.w(TAG, "Could not disable Wireless debugging after $reason (missing WRITE_SECURE_SETTINGS?)")
+        }
+    }
+
+    /**
      * While connected, grant ourselves WRITE_SECURE_SETTINGS via our own ADB shell so we can
      * re-enable Wireless debugging on future boots. Idempotent; no-op once already granted.
      */
