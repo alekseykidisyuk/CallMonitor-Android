@@ -22,24 +22,62 @@ with `&&`/`||` chains and silently reported the opposite answer while this was b
 
 ---
 
-## Current state — 2026-08-21
+## Current state — 2026-08-24
 
-Sixty-eight commits sit unreleased on `worktree-feat+transcription-engine` (and its descendant
-`spike/summarisation`), all documented under **[Unreleased]** in `CHANGELOG.md`. Neither branch is
-merged or pushed.
+**157 commits** sit unreleased on `feat/speaker-labels` → `spike/summarisation` →
+`worktree-feat+transcription-engine`, all documented under **[Unreleased]** in `CHANGELOG.md` as
+**2.1.0**. None of the three branches is merged or pushed. That is a whole major release in a stack
+of three unmerged branches; the longer it stacks, the more a single bad merge costs.
 
-### 🔵 Before that release can be cut
+`ciVersionName` is already **2.1.0** and `versionCode` **20100** (an earlier entry here said to bump
+to 1.6.0 — stale, written before the version scheme moved). 20100 clears the 10720 floor.
 
-- **Re-verify transcription broadly after the whisper bump.** v1.7.4 → v1.9.3 is nineteen months of
-  upstream change. One Hebrew recording was transcribed correctly on the OP12 on 2026-08-21, which
-  retires the "does it work at all" question and nothing more. Worth a pass over several languages
-  and a long call before shipping.
-- **Re-measure transcription speed.** Every stored figure predates two changes that alter it: the
-  thread policy, and the removal of a background task that was competing for the same cores. The
-  estimate recalibrates itself from real runs, so this is a matter of doing a few.
-- **Bump `ciVersionName`.** This is a feature release, so 1.6.0 rather than 1.5.9.
-- **The B1–B9 device pass is still largely unrun** — deletion cascade, survival across restarts,
-  speaker mapping, and section C.
+The maintainer is running this build daily for a few days before cutting the release.
+
+### 🔵 The release gate, agreed 2026-08-24
+
+Judged by **which failures are silent**, since a call recorder's worst outcome is losing a call
+without anyone noticing.
+
+| # | Item | Why it blocks |
+|---|---|---|
+| 1 | ~~Silent VoIP failure~~ | **DONE 2026-08-24.** See below. |
+| 2 | **B8 — the speaker tap must not harm recording** | Highest severity left. This exact failure already happened once: the downlink probe silently took the near side off a recording and looked completely normal in the logs, the file size and the waveform. The tap now runs on every call. |
+| 3 | **B5 — deletion and privacy** | Entirely unrun, and it is the privacy promise, not a nicety. Transcripts are full searchable text of private calls in a *separate* database with the cascade enforced by code rather than a foreign key. The retention-sweep path matters most — that is how calls actually expire. |
+| 4 | **Transcription re-verified broadly** | Reduced scope: **one long call and one non-Hebrew language**. The last device pass found that every transcript came back empty for every user by default (`detect_language` means *exit after detecting*). Nineteen months of upstream whisper change deserves better than ten-second clips. |
+
+**Explicitly NOT blocking: re-measuring transcription speed.** The estimate recalibrates itself from
+real runs, so it heals in the field, and being wrong costs a misleading figure on a dialog that
+already says you can stop at any time. The long call in #4 re-measures it for free.
+
+**Also done 2026-08-24, not on the original list:** B7 rewritten (it still tested the deleted
+ringback detector), and the CHANGELOG corrected — it told users the attribution came from the
+network's ringback tone, which is both deleted and never true on this phone.
+
+### ✅ Silent VoIP failure — fixed 2026-08-24
+
+An app call that could not be recorded is now reported: a notification while the call is still
+remembered, and a status-card entry that survives to tomorrow. Split by cause — a missing folder is
+the user's and is recorded as an *excused* miss against that prerequisite; an absent daemon is ours
+and is recorded as an *unexplained gap*. Silent until the setup has recorded at least one call
+successfully, matching the carrier path's gate. Rule extracted to `VoipMissPolicy`, unit-tested.
+
+**There is no retry, and there cannot be.** Capture depends on a dynamic audio policy the daemon
+registers, and Android fixes a track's routing when the track is *created* — `startVoipRecording`
+refuses with "policy was not armed before the call" for exactly this reason. Arming is already re-done
+on every fresh daemon binder, which is what keeps the window small. A call landing inside it is lost
+and no amount of waiting recovers it. **Do not re-propose a retry here.**
+
+### 🔵 App calls get no speaker labels — found 2026-08-24, not scheduled
+
+`VoipCaptureSession` is a **third** capture path beside the daemon's direct one and the app's handoff
+one, and the only one with no `SpeakerTurnDetector`. So VoIP transcripts cannot be labelled at all.
+
+Galling, because VoIP is the *easy* case: the two directions arrive as separate streams interleaved
+LEFT near, RIGHT far, so the mapping is known by construction with nothing to infer. Adding the
+detector is small. The real question it raises: the trusted mapping is currently **one global value
+per device**, while VoIP's is fixed and the carrier's is an OEM detail — the two cannot share one
+value on a phone where they disagree.
 
 ### 🔵 "A call was not recorded" may be a false positive
 
