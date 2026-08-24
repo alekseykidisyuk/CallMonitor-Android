@@ -108,6 +108,32 @@ One thing worth keeping from the attempt: the system-mix plan would have needed 
 call**, which is the constraint that makes a missed VoIP call unrecoverable in standalone. If a device is
 ever found where the submix does carry call audio, that is the prize worth re-opening this for.
 
+## Is the other mode really off? Measured, 2026-08-24
+
+The maintainer asked whether the unused backend is shut down *as services*, not merely disabled as
+features — a battery question, not a correctness one. Measured on the OP9 in Shizuku mode:
+
+```
+dumpsys activity services com.baba.callvault   ->  (nothing)
+ps | grep callvault                            ->  the app, and ONE com.baba.callvault:recorder
+pgrep -f com.baba.callvault.server.RecorderServer -> none
+settings get global adb_wifi_enabled           ->  0
+log: "Shizuku mode: not starting the keep-alive; Shizuku owns the recorder"
+```
+
+**It was not true before that check.** `DaemonKeepAliveService` — a *foreground* service — was found
+running in Shizuku mode, and the log showed it doing real work: *"relaunch keeps timing out — rebuilding
+the ADB connection"*. It only consulted the mode in `onStartCommand`, and a service already running when
+the switch happened never gets another one. It is now stopped explicitly on entering Shizuku mode and on
+every app start in that mode.
+
+### Wireless debugging is NOT needed for Shizuku
+
+Measured directly: `adb_wifi_enabled=0` while `shizuku_server` runs perfectly well. Shizuku needs adb
+**once**, to start its server; after that the server is a detached process that lives until reboot. So
+Shizuku mode leaves wireless debugging alone and it can stay off — which also means CallVault's
+WD-toggling machinery has nothing to do there, as `ModeCapability` already says.
+
 ## Gaps still open
 
 1. 🔴 **Speaker attribution is silently absent under Shizuku.** A call recorded there has no turns, so its

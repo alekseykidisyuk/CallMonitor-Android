@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
 import com.baba.callvault.data.PrivilegedMode
+import com.baba.callvault.ui.theme.LocalCvBrand
 import com.baba.callvault.server.ModeSwitchResult
 
 /**
@@ -53,15 +54,16 @@ fun ModeSwitchDialog(
     AlertDialog(
         // Uninterruptible while the work is in flight; freely dismissible once it is done.
         onDismissRequest = { if (!working) onDismiss() },
-        icon = {
-            when {
-                working -> CircularProgressIndicator(Modifier.size(24.dp))
-                result.isReady -> Icon(Icons.Filled.CheckCircle, contentDescription = null)
-                else -> Icon(Icons.Filled.WarningAmber, contentDescription = null)
-            }
+        // No icon slot: it centres its content above the title, and a success mark floating over the
+        // headline reads as a separate thing rather than as part of it. The mark goes inline below.
+        icon = if (working) {
+            { CircularProgressIndicator(Modifier.size(24.dp)) }
+        } else {
+            null
         },
         title = {
-            Text(
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
                 stringResource(
                     when {
                         working && target.needsShizuku -> R.string.mode_switch_to_shizuku
@@ -72,8 +74,21 @@ fun ModeSwitchDialog(
                         result.isReady -> R.string.mode_switch_done_standalone
                         else -> R.string.mode_switch_problem_title
                     }
+                ),
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-            )
+                if (!working) {
+                    Spacer(Modifier.width(6.dp))
+                    // Tinted explicitly. Left to the M3 default this comes out coral, so a "ready"
+                    // dialog announced success in the colour the app uses for failure.
+                    Icon(
+                        imageVector = if (result.isReady) Icons.Filled.CheckCircle else Icons.Filled.WarningAmber,
+                        contentDescription = null,
+                        tint = if (result.isReady) LocalCvBrand.current.success else LocalCvBrand.current.warning,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
         },
         text = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {

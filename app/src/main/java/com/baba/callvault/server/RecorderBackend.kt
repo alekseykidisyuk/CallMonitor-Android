@@ -12,6 +12,7 @@ import android.content.Context
 import android.os.SystemClock
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.PrivilegedMode
+import com.baba.callvault.services.recording.DaemonKeepAliveService
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -119,6 +120,13 @@ object RecorderBackend {
         if (to.needsShizuku) {
             runCatching { ShizukuBackend.stop(remove = true) }
                 .onFailure { AppLogger.d(TAG, "No previous Shizuku service to drop: ${it.message}") }
+
+            // Stop the keep-alive outright rather than trusting it to notice. It only checks the mode
+            // in onStartCommand, and a service already running when the switch happens never gets
+            // another one — so it kept running as a foreground service in Shizuku mode, holding a
+            // notification and polling for a daemon that must not exist. Found on the OP9.
+            runCatching { DaemonKeepAliveService.stop(context) }
+                .onFailure { AppLogger.w(TAG, "Could not stop the keep-alive: ${it.message}") }
         }
 
         // Turn off what the new mode cannot honour, rather than leaving switches on that promise

@@ -12,6 +12,7 @@ import android.app.Application
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.server.ShizukuBackend
+import com.baba.callvault.services.recording.DaemonKeepAliveService
 import com.baba.callvault.services.debug.DebugNotificationHelper
 import com.baba.callvault.system.storage.RetentionScheduler
 import com.baba.callvault.system.storage.SyncScheduler
@@ -122,10 +123,15 @@ class CallVaultApplication : Application() {
         //
         // Safe to run unconditionally: stop() is a no-op when there is nothing to remove.
         runCatching {
-            if (!AppPreferences(applicationContext).getPrivilegedMode().needsShizuku) {
+            if (AppPreferences(applicationContext).getPrivilegedMode().needsShizuku) {
+                // Also on every start, not only on a switch: a keep-alive can outlive the process that
+                // started it, and one left running in Shizuku mode is a foreground service burning
+                // battery to watch for a daemon that must not be there.
+                DaemonKeepAliveService.stop(applicationContext)
+            } else {
                 ShizukuBackend.stop(remove = true)
             }
-        }.onFailure { AppLogger.d(TAG, "No leftover Shizuku service to clear: ${it.message}") }
+        }.onFailure { AppLogger.d(TAG, "Nothing left over to clear: ${it.message}") }
 
         // isPrivilegedTransportSetUp, not isAdbPaired: a Shizuku user never pairs, and gating on
         // pairing meant the app never bound Shizuku at startup — so the first call after a cold
