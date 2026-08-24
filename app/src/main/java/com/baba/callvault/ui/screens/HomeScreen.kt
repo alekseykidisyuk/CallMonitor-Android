@@ -148,6 +148,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Groups
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.data.health.FailureReason
 import com.baba.callvault.data.health.Prerequisite
 import com.baba.callvault.data.health.SetupHealth
@@ -315,10 +316,21 @@ fun HomeScreen(
     BackHandler(enabled = selectionMode) { clearSelection() }
 
     // Refresh status + recordings whenever the user returns to the screen (e.g. after a new call).
+    // Bumped whenever this screen resumes, so the mode badge below is re-read rather than remembered
+    // from whenever the card first composed.
+    var modeTick by remember { mutableIntStateOf(0) }
+    val privilegedMode = remember(modeTick, uiState) { AppPreferences(context).getPrivilegedMode() }
+
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.refresh()
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+                // The mode can have changed in Settings while this screen was stopped. Without this the
+                // badge kept showing the previous backend until something unrelated happened to redraw
+                // the card, which is exactly how it was seen still saying "Shizuku" after switching off.
+                modeTick++
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -512,6 +524,7 @@ fun HomeScreen(
                 HeroStatusCard(
                     status = uiState.status,
                     health = uiState.setupHealth,
+                    mode = privilegedMode,
                     onAction = if (uiState.status == HomeViewModel.HomeStatus.UPDATE_REGRANT_NEEDED) {
                         { context.openWirelessDebugging() }
                     } else {
@@ -1081,6 +1094,7 @@ private fun SupportPill(onClick: () -> Unit) {
 private fun HeroStatusCard(
     status: HomeViewModel.HomeStatus,
     health: SetupHealth,
+    mode: PrivilegedMode,
     onAction: (() -> Unit)? = null,
 ) {
     val brand = LocalCvBrand.current
@@ -1131,11 +1145,30 @@ private fun HeroStatusCard(
             }
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.home_hero_status_label).uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_hero_status_label).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.weight(1f))
+                    // Which backend is serving the recorder. On this line rather than beside the title:
+                    // sharing a row with titleLarge squeezed "Ready to record" into two lines, and a
+                    // wrapped status headline looks broken. Here the label leaves the whole row spare.
+                    //
+                    // Info, not Neutral: Neutral resolves to the coral onSurfaceVariant in this scheme,
+                    // and a red badge next to a healthy status reads as an error.
+                    CvStatusPill(
+                        text = stringResource(
+                            if (mode.needsShizuku) R.string.home_mode_badge_shizuku
+                            else R.string.home_mode_badge_standalone
+                        ),
+                        tone = CvTone.Info,
+                    )
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = stringResource(status.titleResId),
@@ -1144,22 +1177,6 @@ private fun HeroStatusCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            // Which backend is serving the recorder, at the end of the status line itself. Two modes
-            // that look identical from the home screen is how a phone ends up recording through a
-            // backend nobody chose — while both were silently running, nothing here would have said so.
-            //
-            // Info, not Neutral: Neutral resolves to the coral onSurfaceVariant in this scheme, and a red
-            // badge beside a healthy status reads as something being wrong.
-            CvStatusPill(
-                text = stringResource(
-                    if (AppPreferences(LocalContext.current).getPrivilegedMode().needsShizuku) {
-                        R.string.home_mode_badge_shizuku
-                    } else {
-                        R.string.home_mode_badge_standalone
-                    }
-                ),
-                tone = CvTone.Info,
-            )
         }
         Spacer(Modifier.height(14.dp))
         Text(
