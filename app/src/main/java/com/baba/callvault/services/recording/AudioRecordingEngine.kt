@@ -270,7 +270,15 @@ class AudioRecordingEngine {
         // dying mid-call. Anything else (pref off, or output/playback sources) falls through to the
         // unchanged daemon path below. When the pref is OFF this branch is skipped entirely, so the
         // default recording path is byte-identical to before.
-        if (preferences.isHandoffPersistEnabled() && HandoffSource.supportsHandoff(audioSourceEnum.cliKey) &&
+        // Ruled out entirely in Shizuku mode — see [HandoffPolicy]. A Shizuku-hosted process cannot get
+        // an AudioRecord into RECORDING state, and unlike the daemon's own capture the handoff has no
+        // fallback: the app would hold a record that never produces a frame and write an empty file
+        // while reporting success.
+        if (HandoffPolicy.isUsable(
+                enabled = preferences.isHandoffPersistEnabled(),
+                sourceSupported = HandoffSource.supportsHandoff(audioSourceEnum.cliKey),
+                mode = preferences.getPrivilegedMode(),
+            ) &&
             startHandoffPipeline(context, audioSourceEnum, codecEnum, bitRate, isCancelled)
         ) {
             handoffMode = true
