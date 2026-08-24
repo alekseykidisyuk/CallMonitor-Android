@@ -16,6 +16,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.data.health.CallGapDetector
 import com.baba.callvault.data.health.CallLogReader
 import com.baba.callvault.data.health.SetupFingerprint
@@ -151,6 +152,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val dateFilter: String? = null,
         /** Release tag of a known-newer version (drives the update banner), or null. */
         val availableUpdateTag: String? = null,
+        /**
+         * Which backend serves the recorder. In the state rather than read where it is drawn, so it
+         * updates the moment the preference changes — the card previously kept whatever mode it first
+         * composed with, because switching happens on another screen in the same activity and no
+         * lifecycle event ever fires on the way back.
+         */
+        val privilegedMode: PrivilegedMode = PrivilegedMode.STANDALONE,
         /** True while the banner's Update action is downloading/dispatching the install. */
         val isUpdateInstalling: Boolean = false,
         /** Download percentage (0-100) while installing, or -1 before the download reports. */
@@ -237,6 +245,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key == AppPreferences.AVAILABLE_UPDATE_TAG_KEY) {
                 _uiState.update { it.copy(availableUpdateTag = preferences.getAvailableUpdateTag()) }
+            }
+            if (key == AppPreferences.PRIVILEGED_MODE_KEY) {
+                _uiState.update { it.copy(privilegedMode = preferences.getPrivilegedMode()) }
             }
         }
 
@@ -359,6 +370,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 status = status,
                 isLoading = true,
                 availableUpdateTag = preferences.getAvailableUpdateTag(),
+                privilegedMode = preferences.getPrivilegedMode(),
                 updatedToVersion = updatedTo,
                 // Shown only after an update, and only once for a given version.
                 showWhatsNew = pendingWhatsNew(updatedTo),

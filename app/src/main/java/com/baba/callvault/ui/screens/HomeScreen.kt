@@ -316,21 +316,10 @@ fun HomeScreen(
     BackHandler(enabled = selectionMode) { clearSelection() }
 
     // Refresh status + recordings whenever the user returns to the screen (e.g. after a new call).
-    // Bumped whenever this screen resumes, so the mode badge below is re-read rather than remembered
-    // from whenever the card first composed.
-    var modeTick by remember { mutableIntStateOf(0) }
-    val privilegedMode = remember(modeTick, uiState) { AppPreferences(context).getPrivilegedMode() }
-
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refresh()
-                // The mode can have changed in Settings while this screen was stopped. Without this the
-                // badge kept showing the previous backend until something unrelated happened to redraw
-                // the card, which is exactly how it was seen still saying "Shizuku" after switching off.
-                modeTick++
-            }
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refresh()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -524,7 +513,7 @@ fun HomeScreen(
                 HeroStatusCard(
                     status = uiState.status,
                     health = uiState.setupHealth,
-                    mode = privilegedMode,
+                    mode = uiState.privilegedMode,
                     onAction = if (uiState.status == HomeViewModel.HomeStatus.UPDATE_REGRANT_NEEDED) {
                         { context.openWirelessDebugging() }
                     } else {

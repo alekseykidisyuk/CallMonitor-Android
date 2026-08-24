@@ -30,6 +30,9 @@ class AppPreferences(context: Context) {
         /** Public key id for the available-update tag, for change-listener comparisons. */
         const val AVAILABLE_UPDATE_TAG_KEY = "available_update_tag"
 
+        /** Public key id for the privileged mode, so the UI can react the moment it changes. */
+        const val PRIVILEGED_MODE_KEY = "privileged_mode"
+
         /**
          * Range for the randomly-chosen loopback ADB port ([getLoopbackAdbPort]). Deliberately an
          * uncommon high range: above the ephemeral/registered clutter, and NOT the well-known adb
