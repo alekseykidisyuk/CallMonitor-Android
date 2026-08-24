@@ -43,7 +43,7 @@ without anyone noticing.
 |---|---|---|
 | 1 | ~~Silent VoIP failure~~ | **DONE 2026-08-24.** See below. |
 | 2 | **B8 — the speaker tap must not harm recording** | Highest severity left. This exact failure already happened once: the downlink probe silently took the near side off a recording and looked completely normal in the logs, the file size and the waveform. The tap now runs on every call. |
-| 3 | **B5 — deletion and privacy** | Entirely unrun, and it is the privacy promise, not a nicety. Transcripts are full searchable text of private calls in a *separate* database with the cascade enforced by code rather than a foreign key. The retention-sweep path matters most — that is how calls actually expire. |
+| 3 | **B5 — deletion and privacy** | Reading it on 2026-08-24 already found one: the retention sweep's *untracked* half deleted files without cascading, so transcripts outlived the recordings. Fixed (`UntrackedCascade`); the device checks are still unrun, and it is the privacy promise, not a nicety. Transcripts are full searchable text of private calls in a *separate* database with the cascade enforced by code rather than a foreign key. The retention-sweep path matters most — that is how calls actually expire. |
 | 4 | **Transcription re-verified broadly** | Reduced scope: **one long call and one non-Hebrew language**. The last device pass found that every transcript came back empty for every user by default (`detect_language` means *exit after detecting*). Nineteen months of upstream whisper change deserves better than ten-second clips. |
 
 **Explicitly NOT blocking: re-measuring transcription speed.** The estimate recalibrates itself from

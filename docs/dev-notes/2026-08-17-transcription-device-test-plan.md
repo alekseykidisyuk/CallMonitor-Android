@@ -111,6 +111,23 @@ only the unit tests.
 - [ ] For a call synced to Drive: deleting **only the device copy** must *keep* the transcript, since
       the recording still exists.
 
+**A hole found and closed on 2026-08-24, before any of the above was run.** The sweep has two halves:
+it deletes catalogued copies through `RecordingsRepository.deleteFile` (which drops the row, which
+cascades), and it deletes *untracked* files — ones the catalog has no row for — straight through SAF,
+where nothing was dropped and so nothing cascaded. The transcript, the note and the summary outlived
+the recording, searchable.
+
+Reachable rather than theoretical: `RecordingDatabase` uses a **destructive migration**, so a single
+catalog schema bump turns every existing recording untracked while the transcripts database — which
+migrates properly — keeps every word of them. `RetentionSweepWorker` now cascades for the untracked
+half too, but only for names *no copy of which is left anywhere* (`UntrackedCascade`, unit-tested):
+untracked-ness is per folder, so a name can be untracked on the device and catalogued on Drive, and
+taking that transcript would destroy the user's data rather than protect it.
+
+The device check for it: transcribe a call, delete its **catalog** (clear the app's data is too blunt —
+instead let a schema bump do it, or delete the row) so the file is untracked, set a short retention,
+let the sweep run, then search for a word from the call.
+
 ### B6. Survival — Plan 2, Task 1
 
 - [ ] Transcripts survive an app **update** (install a newer build over the top).

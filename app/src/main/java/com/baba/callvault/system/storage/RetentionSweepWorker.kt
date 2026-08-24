@@ -19,6 +19,7 @@ import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.data.recordings.RecordingsRepository
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.recordings.UntrackedRecordings
+import com.baba.callvault.data.transcripts.TranscriptCascade
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -76,8 +77,11 @@ class RetentionSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWo
         // one it remembers, and the setting promises a daily check of the folder — so a bookkeeping gap
         // must not quietly become an exemption that lasts forever.
         val untracked = UntrackedRecordings.find(applicationContext)
-        deletedLocal += deleteExpired(untracked.device, localCutoff, "device")
-        deletedDrive += deleteExpired(untracked.drive, driveCutoff, "Drive")
+        val deletedDeviceNames = deleteExpired(untracked.device, localCutoff, "device")
+        val deletedDriveNames = deleteExpired(untracked.drive, driveCutoff, "Drive")
+        deletedLocal += deletedDeviceNames.size
+        deletedDrive += deletedDriveNames.size
+        cascadeForUntracked(untracked, deletedDeviceNames + deletedDriveNames)
 
         AppLogger.i(TAG, "Retention sweep complete (deletedLocal=$deletedLocal deletedDrive=$deletedDrive).")
         return Result.success()
@@ -90,17 +94,50 @@ class RetentionSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWo
      * the sweep that retries itself for free: the folder is re-enumerated every run, so a copy that fails
      * to delete today is simply found again tomorrow.
      */
-    private fun deleteExpired(items: List<RecordingItem>, cutoff: Long?, where: String): Int {
-        var deleted = 0
+    private fun deleteExpired(items: List<RecordingItem>, cutoff: Long?, where: String): List<RecordingItem> {
+        val deleted = mutableListOf<RecordingItem>()
         for (item in items) {
             if (!RetentionPolicy.isExpired(item.lastModified, cutoff)) continue
             val gone = runCatching {
                 DocumentFile.fromSingleUri(applicationContext, item.uri)?.delete() == true
             }.getOrDefault(false)
-            if (gone) deleted++ else AppLogger.w(TAG, "Could not delete untracked $where copy '${item.displayName}'")
+            if (gone) deleted += item
+            else AppLogger.w(TAG, "Could not delete untracked $where copy '${item.displayName}'")
         }
-        if (deleted > 0) AppLogger.i(TAG, "Deleted $deleted untracked $where recording(s) past the retention period")
+        if (deleted.isNotEmpty()) {
+            AppLogger.i(TAG, "Deleted ${deleted.size} untracked $where recording(s) past the retention period")
+        }
         return deleted
+    }
+
+    /**
+     * Takes the transcript, note and summary of every untracked recording this sweep deleted the LAST copy
+     * of — the cascade the catalogued half gets for free from [RecordingCatalog], and this half never had.
+     *
+     * Only names nothing is left of: an untracked copy that survived in the other folder, or a catalog row
+     * that still holds a copy, means the recording still exists and its transcript must stay. See
+     * [UntrackedCascade] for why that distinction is the whole point.
+     */
+    private suspend fun cascadeForUntracked(untracked: UntrackedRecordings.Found, deleted: List<RecordingItem>) {
+        if (deleted.isEmpty()) return
+        // By URI, not by name: a name with a copy in each folder appears twice, and only the copy that was
+        // actually deleted may be crossed off. Comparing names here would call a surviving copy deleted.
+        val deletedUris = deleted.map { it.uri }.toSet()
+        val survivingUntracked = (untracked.device + untracked.drive)
+            .filterNot { it.uri in deletedUris }
+            .map { it.displayName }
+        val cataloguedWithCopies = RecordingCatalog.all(applicationContext)
+            .filter { it.localUri != null || it.driveUri != null }
+            .map { it.displayName }
+
+        val orphaned = UntrackedCascade.orphanedNames(
+            deleted = deleted.map { it.displayName },
+            survivingUntracked = survivingUntracked,
+            cataloguedWithCopies = cataloguedWithCopies,
+        )
+        if (orphaned.isEmpty()) return
+        AppLogger.i(TAG, "Removing what ${orphaned.size} deleted untracked recording(s) left behind")
+        TranscriptCascade.deleteFor(applicationContext, orphaned)
     }
 
     companion object {
