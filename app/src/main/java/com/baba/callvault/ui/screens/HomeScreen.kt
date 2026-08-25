@@ -1845,13 +1845,24 @@ private fun RecordingRow(
             // hint but keep playback state attached to the active sub-copy if one is playing.
             // The disc opens the recording on every row. On a two-copy row the card tap expands, so
             // without this there would be no way to reach playback from the row at all.
-            Box(modifier = Modifier.clip(CircleShape).clickable(enabled = !selectionMode) { onOpenPlayback() }) {
-                PlayDisc(
-                    direction = item.direction,
-                    voipApp = item.voipApp,
-                    isActive = !isBoth && isRowActive,
-                    playback = playback
-                )
+            // The badge is drawn OUTSIDE the circular clip, not inside it.
+            //
+            // That clip is here to shape the ripple, and it clips *content* too — so the origin badge,
+            // which is pinned to the disc's corner and deliberately overhangs it, was being sliced along
+            // the circle's edge. It looked like the badge was cut off; the cause was an ancestor two
+            // levels up. Giving the badge an outline made the cut MORE obvious rather than fixing it.
+            Box(contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable(enabled = !selectionMode) { onOpenPlayback() }
+                ) {
+                    PlayDisc(
+                        isActive = !isBoth && isRowActive,
+                        playback = playback
+                    )
+                }
+                CallOriginBadge(item.direction, item.voipApp)
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
@@ -2111,8 +2122,6 @@ private fun CopySubEntry(
  */
 @Composable
 private fun PlayDisc(
-    direction: RecordingDirection?,
-    voipApp: String?,
     isActive: Boolean,
     playback: RecordingPlaybackController.PlaybackState
 ) {
@@ -2144,7 +2153,6 @@ private fun PlayDisc(
         }
         // A VoIP recording has no direction (there is no call-log entry behind it), so the same corner
         // slot carries the app it came from instead — the two can never collide.
-        CallOriginBadge(direction, voipApp)
     }
 }
 
