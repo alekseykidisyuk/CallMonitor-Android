@@ -372,6 +372,25 @@ Every row records the same four things:
 `A` in the table below = needs real two-sided audio. `Q` = quick, connect and drop.
 
 ### Results as rows are run
+**S13-baseline — INCOMING call, standalone, everything on. PASS (2026-08-25).** Closes the day's one
+structural gap: every other call was outgoing.
+
+| What | Result |
+|---|---|
+| Ring → answer | rang after 8 s, answered by `KEYCODE_HEADSETHOOK`, reached off-hook |
+| Direction | correctly identified — `Sending stop INTENT for INCOMING call` |
+| Contact | resolved from an **inbound** number: `20260825_132010.896+0300_in_פרוזה.ogg` |
+| Pipeline | handoff — `HandoffEncoder finished: 21.768s` |
+| Speaker turns | produced and stored |
+| Services | `RecordingForegroundService` up mid-call, gone after; keep-alive as expected |
+| WD | 0 throughout |
+| File | 75,134 bytes, mono opus, 21.76 s, mean -35.8 dB |
+
+The incoming path exercises code the outgoing rows never touch — a different `PhoneStateReceiver` state
+sequence, the direction branch in `CallSessionManager`, the separate auto-record-incoming switch, and
+contact resolution against a number this phone did not dial. All four fixes made on 2026-08-25 sit on
+code this path also runs through, and it behaves identically to the outgoing case.
+
 ### Coverage after the 2026-08-25 session
 
 Thirteen rows run, twelve pass, one void and re-run. What is now demonstrated on a real device:
