@@ -427,6 +427,23 @@ mode that is supposed to never touch it. Two separate faults:
 The second was a bug in the lease added the same morning, and it is exactly the failure it was meant to
 prevent, arriving by a different door. `last=false` in the log is the tell.
 
+**Z7 — VoIP after a mode round trip. Already covered, no separate call needed.**
+
+The last Shizuku → standalone switch was at 12:28:53. S6's VoIP call ran at 13:00:00 with
+`armVoipCapture -> true` and a clean recording, and the maintainer's own VoIP rows at 13:34 followed the
+same round trip. "VoIP arming survives a mode round trip" is therefore demonstrated twice, which is the
+whole content of Z7.
+
+**Z5 — `mic-voice-communication` under Shizuku. Dropped deliberately.**
+
+It would only tell us whether scrcpy degrades that source the same way the daemon path does. Since S14
+established the source is a fallback and the maintainer has parked it, that is a curiosity about a
+source users are being steered away from, not a risk. Recording the decision so nobody re-adds it as an
+oversight.
+
+**That leaves S15 as the only unsettled row** — an ignore rule matching the caller, which needs a real
+contact added to and then removed from the ignore list.
+
 ### Coverage after the 2026-08-25 session
 
 Thirteen rows run, twelve pass, one void and re-run. What is now demonstrated on a real device:
