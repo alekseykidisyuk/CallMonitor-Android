@@ -79,7 +79,7 @@ in order: the `CaptureAudit` line for the capture (was a microphone opened at al
 the `AudioRecord` ever reach RECORDING), the config header (mode, resilient, transport), and whether a
 teardown or mode switch lands inside the call. See [[diagnosing-a-user-report]].
 
-### 🔵 Refuse to transcribe a recording over 15 minutes — agreed 2026-08-25
+### ✅ Refuse to transcribe a recording over 15 minutes — DONE 2026-08-25, on every path
 
 Decided while closing the test matrix: the long-call OOM is **not** a release gate, because shipping as
 it stands is acceptable — but transcribing a call over ~15 minutes decodes the whole file and can
@@ -94,6 +94,34 @@ than whole-file). That is the real fix and it needs its own investigation; see
 [[long-call-decode-oom]] for the two known causes and the costed options.
 
 The English-language transcription gate is **done** — confirmed working on a real call.
+
+**Done, and wider than agreed.** The refusal first landed at the manual tap only; it now sits in
+`TranscriptionRunner.runOne` and `TranscriptionQueue.pending`, so the nightly sweep and the per-call
+automatic runs inherit it too. Those two previously walked straight into the OOM this entry exists to
+prevent — and a too-long recording also held the oldest slots of the nightly batch for ever, starving
+every call behind it. See the entry below for the one part still missing.
+
+### 🔵 A call skipped for being too long says so only in the log — found 2026-08-25
+
+The 15-minute transcription limit is now enforced in `TranscriptionRunner.runOne` and
+`TranscriptionQueue.pending`, so every route inherits it — nightly sweep, per-call, manual tap and
+queue drain alike. Before that it lived at the manual tap alone, and automatic transcription walked
+straight into the OOM the limit exists to prevent.
+
+**What is still missing is the user's side of it.** The tap raises a dialog, but that dialog only
+fires when the **call log** knows the duration. When the call log has no duration and the container
+does — which is exactly the case for app calls — the recording is skipped with nothing but a `W`
+line to show for it, and the row simply never transcribes. No status, no explanation.
+
+There is no cheap surface to reuse. `TranscriptEntry.errorMessage` is stored but rendered nowhere,
+and `TranscriptStatus`/`TranscriptRowAction` carry only NONE/BUSY/OPEN/RETRY. Reusing `FAILED` would
+be worse than the gap: a red retry icon with no reason, **and** it would bar those calls from every
+future automatic run — including the ones that become possible the moment the limit is lifted.
+
+**The fix** is a `TOO_LONG` status, a row action for it and one string — roughly half a day. It
+disappears entirely once long calls are transcribed in pieces, so weigh it against just doing that.
+
+Related: the skip is deliberately *not* recorded as a failure, so nothing has to be un-marked later.
 
 ### 🔴 Shell process left with the microphone on after a carrier call — reported 2026-08-25, UNDIAGNOSED
 

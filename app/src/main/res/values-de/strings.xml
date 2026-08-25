@@ -437,6 +437,7 @@
     <string name="transcription_hour_label">Stunde</string>
     <string name="transcription_language_arabic">Arabisch</string>
     <string name="transcription_language_auto">Automatisch erkennen</string>
+    <string name="transcription_language_auto_hint">Bei Sprachen, die nicht in lateinischen Buchstaben geschrieben werden, ist die Erkennung unzuverlässig — Hebräisch, Arabisch, Russisch und Chinesisch kommen oft in englischen Buchstaben zurück oder als ein einziger langer Textblock. Nennen Sie die Sprache, wenn Sie können.</string>
     <string name="transcription_language_chinese">Chinesisch</string>
     <string name="transcription_language_english">Englisch</string>
     <string name="transcription_language_french">Französisch</string>
@@ -530,6 +531,11 @@
     <string name="wizard_storage_subtitle">Wählen Sie, wo Ihre Aufnahmen gespeichert werden. Sie können dies später in den Einstellungen ändern.</string>
     <string name="wizard_storage_title">Speicherort für Aufnahmen</string>
     <string name="wizard_title">CallVault einrichten</string>
+    <string name="wizard_transcription_cost_note">Zum Transkribieren braucht das Telefon zuerst ein Sprachmodell: %1$s hat %2$d MB, %3$s hat %4$d MB. Jetzt wird nichts heruntergeladen — die Schaltfläche ist in den Einstellungen, und geladen wird nur über WLAN. Ein Anruf braucht dann etwa seine eigene Länge und belastet den Prozessor stark.</string>
+    <string name="wizard_transcription_language_note">Eingestellt ist die Sprache, auf die dieses Telefon eingestellt ist. Sie zu benennen ist weit zuverlässiger, als die App raten zu lassen, und Sie können später pro Anruf eine andere wählen.</string>
+    <string name="wizard_transcription_subtitle">CallVault kann eine Aufnahme direkt auf dem Telefon transkribieren — nichts wird irgendwohin gesendet. Wählen Sie, wann das geschieht und in welcher Sprache Ihre Anrufe geführt werden.</string>
+    <string name="wizard_transcription_summary_note">Sobald ein Anruf ein Transkript hat, kann CallVault auch eine kurze Zusammenfassung davon schreiben. Dafür ist ein deutlich größeres Modell nötig, also wird separat gefragt — an derselben Stelle in den Einstellungen.</string>
+    <string name="wizard_transcription_title">Anrufe in Text umwandeln</string>
     <string name="wizard_updates_subtitle">CallVault ist in keinem App-Store, daher sucht es selbst auf GitHub nach neuen Versionen.</string>
     <string name="wizard_updates_title">Auf dem neuesten Stand bleiben</string>
 </resources>

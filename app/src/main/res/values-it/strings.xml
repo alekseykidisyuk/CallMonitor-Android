@@ -437,6 +437,7 @@
     <string name="transcription_hour_label">Ora</string>
     <string name="transcription_language_arabic">Arabo</string>
     <string name="transcription_language_auto">Rileva automaticamente</string>
+    <string name="transcription_language_auto_hint">Il rilevamento non è affidabile per le lingue che non si scrivono in caratteri latini: ebraico, arabo, russo e cinese tornano spesso scritti con lettere inglesi, o come un unico lungo blocco di testo. Se puoi, indica la lingua.</string>
     <string name="transcription_language_chinese">Cinese</string>
     <string name="transcription_language_english">Inglese</string>
     <string name="transcription_language_french">Francese</string>
@@ -530,6 +531,11 @@
     <string name="wizard_storage_subtitle">Scelga dove archiviare le registrazioni. Potrà modificarlo in seguito nelle Impostazioni.</string>
     <string name="wizard_storage_title">Dove salvare le registrazioni</string>
     <string name="wizard_title">Configura CallVault</string>
+    <string name="wizard_transcription_cost_note">Per trascrivere serve prima un modello vocale sul telefono: %1$s occupa %2$d MB, %3$s occupa %4$d MB. Ora non viene scaricato nulla — il pulsante è nelle Impostazioni e scarica solo tramite Wi-Fi. Trascrivere una chiamata richiede poi all\'incirca la sua stessa durata e impegna molto il processore.</string>
+    <string name="wizard_transcription_language_note">È impostata la lingua a cui è impostato questo telefono. Indicarla è molto più affidabile che lasciar indovinare l\'app, e puoi comunque sceglierne un\'altra per la singola chiamata.</string>
+    <string name="wizard_transcription_subtitle">CallVault può trascrivere una registrazione sul telefono stesso: non viene inviato nulla da nessuna parte. Scegli quando succede e in che lingua sono le tue chiamate.</string>
+    <string name="wizard_transcription_summary_note">Quando una chiamata ha una trascrizione, CallVault può anche scriverne un breve riepilogo. Serve un modello molto più grande, quindi lo chiede a parte — si trova nello stesso punto nelle Impostazioni.</string>
+    <string name="wizard_transcription_title">Trasformare le chiamate in testo</string>
     <string name="wizard_updates_subtitle">CallVault non è su nessuno store, quindi cerca da sé le nuove versioni su GitHub.</string>
     <string name="wizard_updates_title">Restare aggiornati</string>
 </resources>

@@ -437,6 +437,7 @@
     <string name="transcription_hour_label">Godzina</string>
     <string name="transcription_language_arabic">Arabski</string>
     <string name="transcription_language_auto">Wykryj automatycznie</string>
+    <string name="transcription_language_auto_hint">Wykrywanie jest zawodne przy językach, których nie zapisuje się alfabetem łacińskim — hebrajski, arabski, rosyjski i chiński często wracają zapisane literami angielskimi albo jako jeden długi blok tekstu. Jeśli możesz, wskaż język.</string>
     <string name="transcription_language_chinese">Chiński</string>
     <string name="transcription_language_english">Angielski</string>
     <string name="transcription_language_french">Francuski</string>
@@ -530,6 +531,11 @@
     <string name="wizard_storage_subtitle">Wybierz, gdzie przechowywane są Twoje nagrania. Możesz to zmienić później w Ustawieniach.</string>
     <string name="wizard_storage_title">Gdzie zapisywać nagrania</string>
     <string name="wizard_title">Skonfiguruj CallVault</string>
+    <string name="wizard_transcription_cost_note">Transkrypcja wymaga najpierw modelu mowy na telefonie: %1$s ma %2$d MB, %3$s ma %4$d MB. Teraz nic się nie pobiera — przycisk jest w Ustawieniach, a pobieranie działa tylko przez Wi-Fi. Przepisanie rozmowy trwa potem mniej więcej tyle, co sama rozmowa, i mocno obciąża procesor.</string>
+    <string name="wizard_transcription_language_note">Ustawiony jest język, na który ustawiony jest ten telefon. Wskazanie go jest znacznie pewniejsze niż zdanie się na zgadywanie aplikacji, a później i tak możesz wybrać inny dla pojedynczej rozmowy.</string>
+    <string name="wizard_transcription_subtitle">CallVault potrafi przepisać nagranie na samym telefonie — nic nigdzie nie jest wysyłane. Wybierz, kiedy się to dzieje i w jakim języku są Twoje rozmowy.</string>
+    <string name="wizard_transcription_summary_note">Gdy rozmowa ma już transkrypcję, CallVault może też napisać jej krótkie podsumowanie. Wymaga to znacznie większego modelu, więc pyta o to osobno — jest w tym samym miejscu w Ustawieniach.</string>
+    <string name="wizard_transcription_title">Zamiana rozmów w tekst</string>
     <string name="wizard_updates_subtitle">CallVault nie jest w żadnym sklepie z aplikacjami, więc sam sprawdza nowe wersje na GitHubie.</string>
     <string name="wizard_updates_title">Bądź na bieżąco</string>
 </resources>

@@ -437,6 +437,7 @@
     <string name="transcription_hour_label">Giờ</string>
     <string name="transcription_language_arabic">Tiếng Ả Rập</string>
     <string name="transcription_language_auto">Tự động nhận diện</string>
+    <string name="transcription_language_auto_hint">Việc nhận diện không đáng tin với những ngôn ngữ không viết bằng chữ Latinh — tiếng Do Thái, tiếng Ả Rập, tiếng Nga và tiếng Trung thường trả về dưới dạng chữ cái tiếng Anh, hoặc thành một khối văn bản dài liền mạch. Nếu được, hãy chọn đúng ngôn ngữ.</string>
     <string name="transcription_language_chinese">Tiếng Trung</string>
     <string name="transcription_language_english">Tiếng Anh</string>
     <string name="transcription_language_french">Tiếng Pháp</string>
@@ -530,6 +531,11 @@
     <string name="wizard_storage_subtitle">Chọn nơi lưu các bản ghi âm. Bạn có thể thay đổi sau trong Cài đặt.</string>
     <string name="wizard_storage_title">Nơi lưu bản ghi âm</string>
     <string name="wizard_title">Thiết lập CallVault</string>
+    <string name="wizard_transcription_cost_note">Việc chép lời cần có một mô hình giọng nói trên máy trước: %1$s nặng %2$d MB, %3$s nặng %4$d MB. Bây giờ chưa tải gì cả — nút nằm trong Cài đặt và chỉ tải qua Wi-Fi. Sau đó, chép lời một cuộc gọi mất khoảng đúng bằng độ dài cuộc gọi và chiếm dụng bộ xử lý rất nặng.</string>
+    <string name="wizard_transcription_language_note">Đang đặt theo ngôn ngữ của điện thoại này. Nêu rõ ngôn ngữ đáng tin cậy hơn nhiều so với để ứng dụng đoán, và sau này bạn vẫn có thể chọn ngôn ngữ khác cho từng cuộc gọi.</string>
+    <string name="wizard_transcription_subtitle">CallVault có thể chép lời một bản ghi ngay trên điện thoại — không có gì được gửi đi đâu cả. Hãy chọn khi nào việc đó diễn ra và các cuộc gọi của bạn dùng ngôn ngữ nào.</string>
+    <string name="wizard_transcription_summary_note">Khi một cuộc gọi đã có bản chép lời, CallVault còn có thể viết một bản tóm tắt ngắn cho nó. Việc này cần một mô hình lớn hơn nhiều nên được hỏi riêng — cũng ở cùng chỗ đó trong Cài đặt.</string>
+    <string name="wizard_transcription_title">Biến cuộc gọi thành văn bản</string>
     <string name="wizard_updates_subtitle">CallVault không có trên kho ứng dụng nào, nên tự tìm phiên bản mới trên GitHub.</string>
     <string name="wizard_updates_title">Luôn được cập nhật</string>
 </resources>

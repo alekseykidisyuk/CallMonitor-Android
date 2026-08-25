@@ -437,6 +437,7 @@
     <string name="transcription_hour_label">Час</string>
     <string name="transcription_language_arabic">Арабский</string>
     <string name="transcription_language_auto">Определять автоматически</string>
+    <string name="transcription_language_auto_hint">Для языков с нелатинской письменностью определение работает ненадёжно — иврит, арабский, русский и китайский часто возвращаются записанными английскими буквами или одним сплошным куском текста. Если можете, укажите язык.</string>
     <string name="transcription_language_chinese">Китайский</string>
     <string name="transcription_language_english">Английский</string>
     <string name="transcription_language_french">Французский</string>
@@ -530,6 +531,11 @@
     <string name="wizard_storage_subtitle">Выберите, где будут храниться ваши записи. Это можно изменить позже в настройках.</string>
     <string name="wizard_storage_title">Куда сохранять записи</string>
     <string name="wizard_title">Настройка CallVault</string>
+    <string name="wizard_transcription_cost_note">Для расшифровки на телефон сначала нужна речевая модель: %1$s — %2$d МБ, %3$s — %4$d МБ. Сейчас ничего не загружается — кнопка находится в настройках, и загрузка идёт только по Wi-Fi. Расшифровка звонка потом занимает примерно столько же, сколько сам звонок, и сильно нагружает процессор.</string>
+    <string name="wizard_transcription_language_note">Выбран язык, на который настроен этот телефон. Указать его гораздо надёжнее, чем позволять приложению угадывать, а позже для отдельного звонка можно выбрать другой.</string>
+    <string name="wizard_transcription_subtitle">CallVault может расшифровать запись прямо на телефоне — никуда ничего не отправляется. Выберите, когда это происходит и на каком языке ваши звонки.</string>
+    <string name="wizard_transcription_summary_note">Когда у звонка есть расшифровка, CallVault может написать по ней и краткую сводку. Для этого нужна гораздо более крупная модель, поэтому о ней спрашивают отдельно — она в том же месте в настройках.</string>
+    <string name="wizard_transcription_title">Звонки в текст</string>
     <string name="wizard_updates_subtitle">CallVault не публикуется в магазинах приложений, поэтому сам проверяет новые версии на GitHub.</string>
     <string name="wizard_updates_title">Быть в курсе обновлений</string>
 </resources>

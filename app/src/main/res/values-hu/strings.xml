@@ -437,6 +437,7 @@
     <string name="transcription_hour_label">Óra</string>
     <string name="transcription_language_arabic">Arab</string>
     <string name="transcription_language_auto">Automatikus felismerés</string>
+    <string name="transcription_language_auto_hint">A felismerés megbízhatatlan azoknál a nyelveknél, amelyeket nem latin betűkkel írnak — a héber, az arab, az orosz és a kínai gyakran angol betűkkel kiírva jön vissza, vagy egyetlen hosszú szövegtömbként. Ha teheti, nevezze meg a nyelvet.</string>
     <string name="transcription_language_chinese">Kínai</string>
     <string name="transcription_language_english">Angol</string>
     <string name="transcription_language_french">Francia</string>
@@ -530,6 +531,11 @@
     <string name="wizard_storage_subtitle">Válassza ki, hová mentse a felvételeit. Ezt később a Beállításokban módosíthatja.</string>
     <string name="wizard_storage_title">Hová mentse a felvételeket</string>
     <string name="wizard_title">CallVault beállítása</string>
+    <string name="wizard_transcription_cost_note">Az átíráshoz előbb egy beszédmodell kell a telefonra: %1$s: %2$d MB, %3$s: %4$d MB. Most nem tölt le semmit — a gomb a Beállításokban van, és csak Wi-Fi-n tölt. Egy hívás átírása utána nagyjából annyi ideig tart, mint maga a hívás, és erősen igénybe veszi a processzort.</string>
+    <string name="wizard_transcription_language_note">A telefon nyelvére van állítva. Ha megnevezi a nyelvet, az sokkal megbízhatóbb, mintha az alkalmazás találgatna, és később hívásonként is választhat másikat.</string>
+    <string name="wizard_transcription_subtitle">A CallVault magán a telefonon írja át a felvételt — semmi nem megy sehová. Válassza ki, mikor történjen ez, és milyen nyelvűek a hívásai.</string>
+    <string name="wizard_transcription_summary_note">Ha egy híváshoz már van átirat, a CallVault rövid összefoglalót is írhat róla. Ehhez sokkal nagyobb modell kell, ezért külön kérdez rá — ugyanott van a Beállításokban.</string>
+    <string name="wizard_transcription_title">Hívásokból szöveg</string>
     <string name="wizard_updates_subtitle">A CallVault nincs alkalmazásboltban, ezért maga keresi az új verziókat a GitHubon.</string>
     <string name="wizard_updates_title">Naprakészen tartás</string>
 </resources>

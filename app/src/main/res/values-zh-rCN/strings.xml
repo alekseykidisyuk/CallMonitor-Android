@@ -437,6 +437,7 @@
     <string name="transcription_hour_label">小时</string>
     <string name="transcription_language_arabic">阿拉伯语</string>
     <string name="transcription_language_auto">自动检测</string>
+    <string name="transcription_language_auto_hint">对于不用拉丁字母书写的语言，自动检测并不可靠——希伯来语、阿拉伯语、俄语和中文常常会以英文字母拼写的形式返回，或者变成一整段没有断句的文字。如果可以，请直接指定语言。</string>
     <string name="transcription_language_chinese">中文</string>
     <string name="transcription_language_english">英语</string>
     <string name="transcription_language_french">法语</string>
@@ -530,6 +531,11 @@
     <string name="wizard_storage_subtitle">选择录音的存储位置。你之后可以在设置中更改。</string>
     <string name="wizard_storage_title">录音保存位置</string>
     <string name="wizard_title">设置 CallVault</string>
+    <string name="wizard_transcription_cost_note">转写需要先在手机上准备一个语音模型：%1$s 为 %2$d MB，%3$s 为 %4$d MB。现在不会下载任何内容——下载按钮在设置里，而且只通过 Wi-Fi 下载。之后转写一通电话所需的时间大致与通话本身一样长，并且会重度占用处理器。</string>
+    <string name="wizard_transcription_language_note">已按这部手机的系统语言设定。指明语言比让应用去猜可靠得多，之后你仍然可以为单通电话选择别的语言。</string>
+    <string name="wizard_transcription_subtitle">CallVault 可以在手机本机上转写录音，不会把任何内容发送出去。请选择何时进行转写，以及你的通话使用哪种语言。</string>
+    <string name="wizard_transcription_summary_note">通话有了转写之后，CallVault 还可以为它写一段简短摘要。这需要大得多的模型，所以会单独询问——就在设置里的同一个位置。</string>
+    <string name="wizard_transcription_title">把通话变成文字</string>
     <string name="wizard_updates_subtitle">CallVault 不在任何应用商店上架，因此会自行到 GitHub 查看新版本。</string>
     <string name="wizard_updates_title">保持最新</string>
 </resources>

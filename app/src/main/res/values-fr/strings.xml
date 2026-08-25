@@ -437,6 +437,7 @@
     <string name="transcription_hour_label">Heure</string>
     <string name="transcription_language_arabic">Arabe</string>
     <string name="transcription_language_auto">Détecter automatiquement</string>
+    <string name="transcription_language_auto_hint">La détection n\'est pas fiable pour les langues qui ne s\'écrivent pas en caractères latins : l\'hébreu, l\'arabe, le russe et le chinois reviennent souvent écrits en lettres anglaises, ou en un seul long bloc de texte. Indiquez la langue si vous le pouvez.</string>
     <string name="transcription_language_chinese">Chinois</string>
     <string name="transcription_language_english">Anglais</string>
     <string name="transcription_language_french">Français</string>
@@ -530,6 +531,11 @@
     <string name="wizard_storage_subtitle">Choisissez l\'emplacement de stockage de vos enregistrements. Vous pourrez le modifier plus tard dans les Paramètres.</string>
     <string name="wizard_storage_title">Où enregistrer les enregistrements</string>
     <string name="wizard_title">Configurer CallVault</string>
+    <string name="wizard_transcription_cost_note">Transcrire demande d\'abord un modèle vocal sur le téléphone : %1$s fait %2$d Mo, %3$s fait %4$d Mo. Rien n\'est téléchargé maintenant — le bouton est dans les Paramètres, et le téléchargement se fait uniquement en Wi-Fi. Transcrire un appel prend ensuite environ la durée de l\'appel et sollicite fortement le processeur.</string>
+    <string name="wizard_transcription_language_note">Réglé sur la langue de ce téléphone. L\'indiquer est bien plus fiable que de laisser l\'application deviner, et vous pourrez toujours en choisir une autre appel par appel.</string>
+    <string name="wizard_transcription_subtitle">CallVault peut transcrire un enregistrement sur le téléphone lui-même : rien n\'est envoyé nulle part. Choisissez quand cela se produit et dans quelle langue se passent vos appels.</string>
+    <string name="wizard_transcription_summary_note">Une fois qu\'un appel a une transcription, CallVault peut aussi en écrire un court résumé. Cela demande un modèle bien plus gros, donc c\'est demandé séparément — au même endroit dans les Paramètres.</string>
+    <string name="wizard_transcription_title">Transformer les appels en texte</string>
     <string name="wizard_updates_subtitle">CallVault n\'est sur aucune boutique d\'applications : il cherche donc lui-même les nouvelles versions sur GitHub.</string>
     <string name="wizard_updates_title">Rester à jour</string>
 </resources>

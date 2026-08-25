@@ -437,6 +437,7 @@
     <string name="transcription_hour_label">Hora</string>
     <string name="transcription_language_arabic">Árabe</string>
     <string name="transcription_language_auto">Detectar automáticamente</string>
+    <string name="transcription_language_auto_hint">La detección no es fiable con los idiomas que no se escriben en alfabeto latino: el hebreo, el árabe, el ruso y el chino suelen volver escritos con letras inglesas, o como un único bloque largo de texto. Indica el idioma si puedes.</string>
     <string name="transcription_language_chinese">Chino</string>
     <string name="transcription_language_english">Inglés</string>
     <string name="transcription_language_french">Francés</string>
@@ -530,6 +531,11 @@
     <string name="wizard_storage_subtitle">Elija dónde se almacenan sus grabaciones. Puede cambiar esto más tarde en Ajustes.</string>
     <string name="wizard_storage_title">Dónde guardar las grabaciones</string>
     <string name="wizard_title">Configurar CallVault</string>
+    <string name="wizard_transcription_cost_note">Para transcribir hace falta antes un modelo de voz en el teléfono: %1$s ocupa %2$d MB y %3$s ocupa %4$d MB. Ahora no se descarga nada: el botón está en Ajustes y solo descarga por Wi-Fi. Transcribir una llamada tarda después aproximadamente lo que dura la llamada y exige mucho al procesador.</string>
+    <string name="wizard_transcription_language_note">Está puesto el idioma en el que está este teléfono. Indicarlo es mucho más fiable que dejar que la app lo adivine, y aún puedes elegir otro para una llamada concreta.</string>
+    <string name="wizard_transcription_subtitle">CallVault puede transcribir una grabación en el propio teléfono: no se envía nada a ninguna parte. Elige cuándo ocurre y en qué idioma son tus llamadas.</string>
+    <string name="wizard_transcription_summary_note">Cuando una llamada ya tiene transcripción, CallVault también puede escribir un breve resumen de ella. Eso necesita un modelo mucho mayor, así que se pide aparte: está en el mismo sitio, en Ajustes.</string>
+    <string name="wizard_transcription_title">Convertir las llamadas en texto</string>
     <string name="wizard_updates_subtitle">CallVault no está en ninguna tienda de aplicaciones, así que busca nuevas versiones en GitHub por su cuenta.</string>
     <string name="wizard_updates_title">Mantente al día</string>
 </resources>
