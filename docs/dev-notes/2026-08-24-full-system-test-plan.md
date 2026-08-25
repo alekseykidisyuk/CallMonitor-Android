@@ -647,6 +647,32 @@ Three things are worth keeping from a void row:
    three consecutive checks. Without that, "nothing recorded" is ambiguous — and the ambiguity points at
    the product first, which is the wrong place to start looking.
 
+**S6 — VoIP over the loopback transport (re-run). PASS (2026-08-25).**
+
+| What | Result |
+|---|---|
+| Detection | `VoIP call detected (mode=IN_COMMUNICATION)`, app resolved to uid 10207 on attempt 1 |
+| Pipeline | `startVoipRecording` → `VoIP capture started: rate=48000` |
+| Transport | offline/loopback, **wireless debugging 0 throughout** |
+| Far side | `farPartyHeard=true` |
+| File | 64,775 bytes, mono opus, 16.08 s, mean **-19.3 dB** |
+
+**VoIP recording works over the loopback transport with wireless debugging off** — the last combination
+that had not been shown to work.
+
+**The near-side dropout rate is now measured twice and it is not a fluke:**
+
+| Row | Transport | Call length | "near capture silenced" | Rate |
+|---|---|---|---|---|
+| S2 | wireless debugging | 19 s | 7 | 0.37/s |
+| S6 | loopback | 16 s | 8 | 0.50/s |
+
+The platform takes the microphone away from our near-side capture roughly every two to three seconds,
+and the recovery re-takes it each time. The transport makes no difference, so this is a property of the
+VoIP capture path itself, not of how the daemon is reached. Both files sound fine, and no silence span
+reaches 1.5 s — but on a long call this is the thing most likely to degrade, and it is now the single
+best-evidenced open question in the VoIP path.
+
 ### Mode switching — the rows that need a call, not just a process check
 
 B1/B2 proved a switch leaves exactly one recorder alive. They did **not** prove the next call goes
