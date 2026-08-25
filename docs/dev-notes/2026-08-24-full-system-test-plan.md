@@ -398,6 +398,29 @@ Worth remembering for any future audio test: a silent near side has two complete
 look identical in the file — the app failed to capture it, or nothing was ever transmitted. Only the
 second one is a harness bug, and the way to tell them apart is to ask whether the far end *heard* it.
 
+**S2 — standalone, everything on, WhatsApp call. PASS, with one thing to watch (2026-08-25).**
+
+| What | Result |
+|---|---|
+| Detection | `VoIP call detected (mode=IN_COMMUNICATION)`, app resolved to uid 10207 on attempt 1 |
+| Pipeline | `startVoipRecording codec=opus bitRate=24000` → `VoIP capture started: rate=48000` |
+| Far side | `farPartyHeard=true` |
+| WD after | **0** |
+| File | 83,471 bytes, **mono** opus, 19.64 s, mean **-19.0 dB** / max -3.8 dB |
+| Silence spans | none over 1.5 s |
+
+Much louder than the carrier call (-19.0 dB against -42.1 dB), which is worth knowing before judging any
+future recording by its level alone: the two paths do not land in the same place.
+
+**The thing to watch:** the log reported `near capture silenced by the platform — re-taking the mic`
+**seven times** in nineteen seconds, and the capture summary agreed — `19s, 7 silence-filled chunks`.
+This is the platform taking the microphone away from our near-side capture mid-call, exactly the
+behaviour that makes VoIP recording fragile. The recovery works — no silence span exceeds 1.5 s, so
+each gap is short and the file is continuous — but seven interruptions in nineteen seconds is a high
+rate, and on a longer call it is worth knowing whether it stays proportional or gets worse.
+
+*A carrier call in the same session showed none of this, so it is specific to the VoIP path.*
+
 ### Standalone
 
 | # | Configuration | Call | Expect | Verify | |
