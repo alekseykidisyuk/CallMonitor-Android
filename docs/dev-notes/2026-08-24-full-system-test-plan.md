@@ -328,6 +328,35 @@ or the UI, never the path the audio takes.
 Under Shizuku the first three are greyed and forced off, so that mode has fewer rows — that is the
 point of the greying, and rows Z2 checks it.
 
+### Where each switch lives, and the baseline it starts from
+
+Mapped on the OP9, 2026-08-25, by `spike-tools/crawl.sh`. Worth writing down because two of them are
+not where you would look for them.
+
+| Setting | Path |
+|---|---|
+| Record phone calls | RECORDING ▸ **Phone calls** (accordion) |
+| Automatically record incoming / outgoing | RECORDING ▸ **Incoming calls** / **Outgoing calls** (accordions) |
+| Ignore anonymous / cross-country / contacts | inside those same two accordions |
+| Resilient recording | GENERAL ▸ **Experimental** |
+| Offline recording | GENERAL ▸ **Experimental** |
+| Record VoIP calls + **Start automatically** | GENERAL ▸ **Experimental** — not under RECORDING |
+| USB debugging | GENERAL ▸ **Experimental** |
+| Audio source / codec / bit rate | AUDIO CONFIGURATION (pickers, not switches) |
+
+**S1 baseline, set and verified:** mode standalone; record phone calls **on**; auto-record incoming and
+outgoing **on**; every ignore rule **off** with "Record all contacts" both directions; resilient
+recording **on**; VoIP recording **on** with auto-start **on**; offline recording **off** (it has its own
+row, S5); audio source `Voice call`.
+
+Two things the mapping turned up, neither chased:
+
+1. **"Ignore cross-country incoming calls" is greyed out** while the outgoing equivalent is not. There
+   may be a good reason — an incoming rule needs a home country the SIM has not supplied — but it is
+   asymmetric and undocumented.
+2. **Turning VoIP recording on raises a confirmation** ("I understand, turn it on"), so it cannot be
+   flipped blind. The driver knows that dialog now; anything else automating it will not.
+
 ### How each row is judged
 
 Every row records the same four things:

@@ -77,9 +77,13 @@ where() {
     usbdebug)     echo "GENERAL|Experimental|USB debugging" ;;
     shizuku)      echo "GENERAL|How CallVault gets permission|Use Shizuku instead" ;;
     voip)         echo "GENERAL|Experimental|Record VoIP calls" ;;
+    voipauto)     echo "GENERAL|Experimental|Start automatically" ;;
     carrier)      echo "RECORDING|Phone calls|Record phone calls" ;;
-    incoming)     echo "RECORDING||Incoming calls" ;;
-    outgoing)     echo "RECORDING||Outgoing calls" ;;
+    incoming)     echo "RECORDING|Incoming calls|Automatically record incoming calls" ;;
+    outgoing)     echo "RECORDING|Outgoing calls|Automatically record outgoing calls" ;;
+    ignoreanon)   echo "RECORDING|Incoming calls|Ignore anonymous incoming calls" ;;
+    ignorexcin)   echo "RECORDING|Incoming calls|Ignore cross-country incoming calls" ;;
+    ignorexcout)  echo "RECORDING|Outgoing calls|Ignore cross-country outgoing calls" ;;
     *) echo ""; return 1 ;;
   esac
 }
@@ -113,7 +117,11 @@ cmd_set() {
   tap_xy $xy
   sleep 3
   # Some toggles raise a confirm dialog; accept the affirmative if one appeared.
-  for t in "Turn on" "Enable" "OK" "Continue"; do tap_row "$t" >/dev/null 2>&1 && break; done
+  # Some toggles raise a confirm dialog first. VoIP's affirmative is "I understand, turn it on" —
+  # a generic "OK" never matches it, and the toggle silently stayed off.
+  for t in "I understand, turn it on" "Turn on" "Enable" "Continue" "OK"; do
+    tap_row "$t" >/dev/null 2>&1 && break
+  done
   sleep 2
 
   local now; now=$(node switch "$lab")
