@@ -34,6 +34,22 @@ to 1.6.0 — stale, written before the version scheme moved). 20100 clears the 1
 
 The maintainer is running this build daily for a few days before cutting the release.
 
+### 🔵 Refuse to transcribe a recording over 15 minutes — agreed 2026-08-25
+
+Decided while closing the test matrix: the long-call OOM is **not** a release gate, because shipping as
+it stands is acceptable — but transcribing a call over ~15 minutes decodes the whole file and can
+exhaust the heap, so the app should stop rather than try and die.
+
+**Agreed for now:** a hard refusal with a modal explaining why, on any recording longer than 15 minutes.
+Not a silent skip and not a spinner that ends in a crash — the user should be told the recording is too
+long to transcribe on-device yet.
+
+**Deliberately deferred:** actually making long transcription work (streaming or chunked decode rather
+than whole-file). That is the real fix and it needs its own investigation; see
+[[long-call-decode-oom]] for the two known causes and the costed options.
+
+The English-language transcription gate is **done** — confirmed working on a real call.
+
 ### 🔵 The release gate, agreed 2026-08-24
 
 Judged by **which failures are silent**, since a call recorder's worst outcome is losing a call
