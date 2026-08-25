@@ -485,6 +485,42 @@ release, and it said so rather than toggling anything.
 | S14 | audio source `mic-voice-communication` | cell | records, different source | source named in log; **listen** — this is the pair that can drop the near side | A |
 | S15 | ignore rule matches the caller | cell | **not recorded** | no file, ignore reason logged | Q |
 
+**Z1 — switch to Shizuku, then a cell call. PASS (2026-08-25), and it took two bug fixes to get here.**
+
+| What | Result |
+|---|---|
+| Host | `shizuku(17449)` — the user service, and the only recorder |
+| Pipeline | **scrcpy** — `ScrcpyClient` packets, `ScrcpyAudioMuxer` finalising |
+| Speaker turns | **absent**, as predicted: `No speaker turns for this recording (mono capture, or an older daemon)` |
+| Channels | **stereo** — standalone produces mono, this does not |
+| File | 76,922 bytes, 20.69 s, mean **-23.6 dB**; per channel **L -36.6 dB / R -20.7 dB** |
+| Services | none running in Shizuku mode |
+
+Two things worth keeping. **Shizuku's output is stereo where standalone's is mono**, so the per-channel
+check only works on this path — on a standalone carrier recording there is nothing to split. And the
+"no speaker turns" line names *mono capture* as the reason, which is misleading here: the capture is
+stereo, the reason is that the scrcpy path never exposes the raw channels to `SpeakerTurnDetector`.
+
+**The bug this row was written to catch, caught twice.** Switching into Shizuku left the phone being
+served by our own ADB daemon — the mirror image of yesterday's teardown bug:
+
+```
+11:46:49.893  keep-alive: binder-death signal — relaunching immediately
+11:46:49.939  Privileged mode is now SHIZUKU
+11:46:50.006  Attempt 1: launching recorder daemon
+11:46:50.302  Shizuku started the recorder service
+11:46:50.547  Clearing 2 other recorder process(es)      <- our daemon killed Shizuku's
+```
+
+The keep-alive relaunches on confirmed binder death, and a mode switch causes exactly that death on
+purpose. The death signal beat the mode change by **46 ms**, so every mode-aware guard downstream was
+too late. The first fix — stopping the keep-alive before the teardown instead of after — was not enough,
+because `stopService` only *asks*: the service lives until `onDestroy`, and the death lands in that
+window. What closed it was clearing `RecorderConnection.onDeath` **synchronously** inside `stop()`.
+
+Neither would have been found by a process check. B1/B2 both passed throughout — one recorder was alive
+each time. It was the wrong one.
+
 ### Mode switching — the rows that need a call, not just a process check
 
 B1/B2 proved a switch leaves exactly one recorder alive. They did **not** prove the next call goes
