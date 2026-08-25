@@ -5,9 +5,26 @@ All notable changes to CallVault are documented here. The format is based on
 
 ## [2.1.0]
 
-Transcripts learn who was speaking.
+Transcripts learn who was speaking, and CallVault can run on Shizuku instead of its own helper.
 
 ### Added
+
+- **Run on Shizuku instead, if you already have it.** CallVault has always started its own
+  shell-level helper over ADB, which is why it needs nothing else installed — but it also means
+  leaving a debugging switch on. If you already run [Shizuku](https://shizuku.rikka.app/) for other
+  apps, CallVault can now borrow its privilege instead: no pairing, no debugging switch, no second
+  thing to keep alive. The choice sits at the top of Settings and can be changed at any time.
+
+  It is a genuine trade rather than a free upgrade, so the app is blunt about the cost. Recording
+  app calls, resilient recording, recording away from Wi-Fi, speaker names and one-tap update
+  installs all need a capture path that only CallVault's own helper can open — under Shizuku they
+  are switched off and greyed out with the reason, instead of silently doing nothing. Shizuku also
+  has to be started again after every reboot, where CallVault's own helper comes back on its own.
+
+  Switching either way is reversible: the settings a mode cannot honour are turned off when you
+  enter it and restored when you leave, so nothing is quietly lost. The switch waits for the new
+  helper to actually be serving — and for app-call capture to be armed — before it reports success,
+  because a mode change that returns early is a mode change that loses the next call.
 
 - **Who said what.** Each line of a new transcript is attributed to the side that spoke it. The
   attribution is read off the two capture channels *during the call* — the phone records the two
