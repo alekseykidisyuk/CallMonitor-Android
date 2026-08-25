@@ -74,6 +74,23 @@ object RecorderBackend {
         val prefs = AppPreferences(context)
         val from = prefs.getPrivilegedMode()
 
+        // Stop the keep-alive BEFORE tearing anything down, not after.
+        //
+        // It watches for binder death and relaunches our daemon *immediately* on that signal — which is
+        // exactly what the teardown below produces. Measured on the OP9 entering Shizuku mode: the
+        // daemon was destroyed at 47.350, the keep-alive saw the death and relaunched it at 47.466, our
+        // daemon delivered its binder at 47.752, Shizuku's service started at 48.039, and our daemon's
+        // killStaleRecorders then killed Shizuku's service at 48.098. The app settled in SHIZUKU mode
+        // with our own ADB daemon serving it — the mirror image of the bug fixed yesterday, and just as
+        // silent, because a recorder *was* running and everything reported success.
+        //
+        // Stopping it here (rather than after `setPrivilegedMode`, where it used to live) closes the
+        // window entirely: there is nothing left to resurrect the daemon we are about to destroy.
+        if (to.needsShizuku) {
+            runCatching { DaemonKeepAliveService.stop(context) }
+                .onFailure { AppLogger.w(TAG, "Could not stop the keep-alive before teardown: ${it.message}") }
+        }
+
         when (BackendChoice.toTearDown(from, to)) {
             BackendChoice.ADB -> {
                 AppLogger.i(TAG, "Leaving standalone mode; stopping our daemon")
@@ -139,10 +156,11 @@ object RecorderBackend {
             runCatching { ShizukuBackend.stop(remove = true) }
                 .onFailure { AppLogger.d(TAG, "No previous Shizuku service to drop: ${it.message}") }
 
-            // Stop the keep-alive outright rather than trusting it to notice. It only checks the mode
-            // in onStartCommand, and a service already running when the switch happens never gets
-            // another one — so it kept running as a foreground service in Shizuku mode, holding a
-            // notification and polling for a daemon that must not exist. Found on the OP9.
+            // Stopped a second time, deliberately. The stop that matters happens before the teardown
+            // above, so nothing can resurrect the daemon mid-switch; this one catches a keep-alive that
+            // started again in between (it only checks the mode in onStartCommand, so one already
+            // running when the switch happens never notices on its own). Stopping is idempotent, and
+            // the cost of missing it is a foreground service polling for a daemon that must not exist.
             runCatching { DaemonKeepAliveService.stop(context) }
                 .onFailure { AppLogger.w(TAG, "Could not stop the keep-alive: ${it.message}") }
         }

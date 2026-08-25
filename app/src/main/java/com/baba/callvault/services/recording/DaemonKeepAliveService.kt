@@ -612,6 +612,19 @@ class DaemonKeepAliveService : Service() {
 
         /** Stop the keep-alive anchor (e.g. if the user disables persistence). */
         fun stop(context: Context) {
+            // Clear the relaunch hook FIRST, and synchronously.
+            //
+            // `stopService` only *asks*; the service keeps running until the framework delivers
+            // onDestroy, and that is where the hook used to be cleared. In the window between the two, a
+            // binder death still triggers an immediate relaunch — and a mode switch produces exactly
+            // that death, on purpose, one line later.
+            //
+            // Measured on the OP9 switching into Shizuku mode: the death signal fired at 11:46:49.893,
+            // 46 ms BEFORE "Privileged mode is now SHIZUKU", the keep-alive relaunched our ADB daemon,
+            // and that daemon's killStaleRecorders then killed the Shizuku service that had just
+            // started. The phone settled in Shizuku mode being served by our own ADB daemon — a wrong
+            // host, silently, with every layer reporting success.
+            RecorderConnection.onDeath = null
             runCatching { context.stopService(Intent(context, DaemonKeepAliveService::class.java)) }
         }
     }
