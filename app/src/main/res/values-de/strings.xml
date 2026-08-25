@@ -238,6 +238,8 @@
     <string name="permissions_shizuku_active">Shizuku wird verwendet. Es gibt nichts zu koppeln — die Einrichtung ist fertig.</string>
     <string name="permissions_shizuku_use">Shizuku verwenden</string>
     <string name="permissions_shizuku_use_callvault">CallVault verwenden</string>
+    <string name="permissions_shizuku_offer_title_stopped">Shizuku läuft nicht</string>
+    <string name="permissions_shizuku_offer_stopped">Starten Sie es in der Shizuku-App und kommen Sie zurück, dann kann CallVault es statt der Kopplung nutzen. Oder richten Sie CallVault eigenständig ein — dann muss nichts anderes laufen.</string>
     <string name="home_hero_pill_shizuku">Shizuku gestoppt</string>
     <string name="home_status_shizuku_title">Shizuku ist nicht bereit</string>
     <string name="home_status_shizuku_suggestion">Öffnen Sie Shizuku und starten Sie es. Es stoppt bei jedem Neustart des Telefons, und CallVault kann bis dahin nicht aufzeichnen.</string>
@@ -489,6 +491,7 @@
     <string name="voip_recording_warning_title">VoIP-Anrufe aufnehmen?</string>
     <string name="wizard_audio_subtitle">Wählen Sie das Aufnahmeformat und die Bitrate. Opus mit 16 kbps wird für klare Sprache bei geringer Dateigröße empfohlen.</string>
     <string name="wizard_audio_title">Audioqualität</string>
+    <string name="wizard_auto_record_nothing_warning">Wenn Telefonanrufe und App-Anrufe beide aus sind, nimmt CallVault gar nichts auf. Schalten Sie mindestens eines ein, sofern das nicht so gewollt ist.</string>
     <string name="wizard_auto_record_subtitle">Wählen Sie, welche Anrufe automatisch aufgezeichnet werden. Sie können dies später in den Einstellungen feinabstimmen.</string>
     <string name="wizard_auto_record_title">Automatische Aufnahme</string>
     <string name="wizard_back">Zurück</string>
@@ -500,14 +503,12 @@
     <string name="wizard_day_thursday">Donnerstag</string>
     <string name="wizard_day_tuesday">Dienstag</string>
     <string name="wizard_day_wednesday">Mittwoch</string>
-    <string name="wizard_experimental_subtitle">Zwei Funktionen, die noch erprobt werden. Beide sind standardmäßig aus — Sie können sie später in den Einstellungen aktivieren.</string>
+    <string name="wizard_experimental_subtitle">Eine Funktion, die noch erprobt wird. Sie ist standardmäßig aus — Sie können sie später in den Einstellungen aktivieren.</string>
     <string name="wizard_experimental_title">Optionale Extras</string>
     <string name="wizard_filename_subtitle">Wählen Sie, wie gespeicherte Aufnahmen benannt werden.</string>
     <string name="wizard_filename_title">Dateinamenformat</string>
     <string name="wizard_finish">Fertigstellen</string>
     <string name="wizard_next">Weiter</string>
-    <string name="wizard_reliability_offline_button">Aktivieren</string>
-    <string name="wizard_reliability_offline_done">Offline-Aufnahme ist aktiviert</string>
     <string name="wizard_reliability_subtitle">Zwei optionale Einstellungen, die die Aufnahme unter schwierigen Bedingungen am Laufen halten. Du kannst sie überspringen und später in den Einstellungen ändern.</string>
     <string name="wizard_reliability_title">Zuverlässige Aufnahme</string>
     <string name="wizard_reliability_usb_button">USB auf „Nur Laden“ setzen</string>

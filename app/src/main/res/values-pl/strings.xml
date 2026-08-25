@@ -238,6 +238,8 @@
     <string name="permissions_shizuku_active">Używasz Shizuku. Nie ma czego parować — konfiguracja gotowa.</string>
     <string name="permissions_shizuku_use">Użyj Shizuku</string>
     <string name="permissions_shizuku_use_callvault">Użyj CallVault</string>
+    <string name="permissions_shizuku_offer_title_stopped">Shizuku nie działa</string>
+    <string name="permissions_shizuku_offer_stopped">Uruchom go w aplikacji Shizuku i wróć tutaj, a CallVault będzie mógł z niego skorzystać zamiast parowania. Albo skonfiguruj CallVault samodzielnie — wtedy nie potrzebuje niczego innego.</string>
     <string name="home_hero_pill_shizuku">Shizuku zatrzymane</string>
     <string name="home_status_shizuku_title">Shizuku nie jest gotowe</string>
     <string name="home_status_shizuku_suggestion">Otwórz Shizuku i uruchom je. Zatrzymuje się przy każdym restarcie telefonu, a CallVault nie może nagrywać, dopóki nie działa.</string>
@@ -489,6 +491,7 @@
     <string name="voip_recording_warning_title">Nagrywać połączenia VoIP?</string>
     <string name="wizard_audio_subtitle">Wybierz format nagrywania i przepływność. Opus przy 16 kb/s jest zalecany dla wyraźnego głosu przy małym rozmiarze plików.</string>
     <string name="wizard_audio_title">Jakość dźwięku</string>
+    <string name="wizard_auto_record_nothing_warning">Gdy połączenia telefoniczne i połączenia w aplikacjach są wyłączone, CallVault nic nie nagra. Włącz przynajmniej jedno, chyba że o to właśnie chodzi.</string>
     <string name="wizard_auto_record_subtitle">Wybierz, które rozmowy są nagrywane automatycznie. Możesz to później dostosować w Ustawieniach.</string>
     <string name="wizard_auto_record_title">Automatyczne nagrywanie</string>
     <string name="wizard_back">Wstecz</string>
@@ -500,14 +503,12 @@
     <string name="wizard_day_thursday">Czwartek</string>
     <string name="wizard_day_tuesday">Wtorek</string>
     <string name="wizard_day_wednesday">Środa</string>
-    <string name="wizard_experimental_subtitle">Dwie funkcje wciąż sprawdzane w praktyce. Obie są domyślnie wyłączone — możesz je włączyć później w Ustawieniach.</string>
+    <string name="wizard_experimental_subtitle">Jedna funkcja wciąż sprawdzana w praktyce. Jest domyślnie wyłączona — możesz ją włączyć później w Ustawieniach.</string>
     <string name="wizard_experimental_title">Dodatki opcjonalne</string>
     <string name="wizard_filename_subtitle">Wybierz, jak nazywane są zapisane nagrania.</string>
     <string name="wizard_filename_title">Format nazwy pliku</string>
     <string name="wizard_finish">Zakończ</string>
     <string name="wizard_next">Dalej</string>
-    <string name="wizard_reliability_offline_button">Włącz</string>
-    <string name="wizard_reliability_offline_done">Nagrywanie offline jest włączone</string>
     <string name="wizard_reliability_subtitle">Dwa opcjonalne ustawienia, które utrzymują nagrywanie w trudnych warunkach. Możesz je pominąć i zmienić później w Ustawieniach.</string>
     <string name="wizard_reliability_title">Niezawodne nagrywanie</string>
     <string name="wizard_reliability_usb_button">Ustaw USB na Tylko ładowanie</string>

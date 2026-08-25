@@ -238,6 +238,8 @@
     <string name="permissions_shizuku_active">Usando Shizuku. No hay nada que emparejar: la configuración está lista.</string>
     <string name="permissions_shizuku_use">Usar Shizuku</string>
     <string name="permissions_shizuku_use_callvault">Usar CallVault</string>
+    <string name="permissions_shizuku_offer_title_stopped">Shizuku no se está ejecutando</string>
+    <string name="permissions_shizuku_offer_stopped">Inícialo desde la app de Shizuku y vuelve aquí, y CallVault podrá usarlo en lugar del emparejamiento. O configura CallVault por su cuenta — no necesita nada más en marcha.</string>
     <string name="home_hero_pill_shizuku">Shizuku detenido</string>
     <string name="home_status_shizuku_title">Shizuku no está listo</string>
     <string name="home_status_shizuku_suggestion">Abre Shizuku e inícialo. Se detiene cada vez que se reinicia el teléfono, y CallVault no puede grabar hasta que esté en marcha.</string>
@@ -489,6 +491,7 @@
     <string name="voip_recording_warning_title">¿Grabar llamadas VoIP?</string>
     <string name="wizard_audio_subtitle">Elija el formato de grabación y la tasa de bits. Se recomienda Opus a 16 kbps para una voz clara con archivos de tamaño reducido.</string>
     <string name="wizard_audio_title">Calidad de audio</string>
+    <string name="wizard_auto_record_nothing_warning">Con las llamadas telefónicas y las llamadas de apps desactivadas, CallVault no grabará nada. Activa al menos una, salvo que sea lo que quieres.</string>
     <string name="wizard_auto_record_subtitle">Elija qué llamadas se graban automáticamente. Puede ajustar esto con más detalle más tarde en Ajustes.</string>
     <string name="wizard_auto_record_title">Grabación automática</string>
     <string name="wizard_back">Atrás</string>
@@ -500,14 +503,12 @@
     <string name="wizard_day_thursday">Jueves</string>
     <string name="wizard_day_tuesday">Martes</string>
     <string name="wizard_day_wednesday">Miércoles</string>
-    <string name="wizard_experimental_subtitle">Dos funciones que aún se están probando. Ambas están desactivadas por defecto: puedes activarlas más tarde en Ajustes.</string>
+    <string name="wizard_experimental_subtitle">Una función que aún se está probando. Está desactivada por defecto: puedes activarla más tarde en Ajustes.</string>
     <string name="wizard_experimental_title">Extras opcionales</string>
     <string name="wizard_filename_subtitle">Elija cómo se nombran las grabaciones guardadas.</string>
     <string name="wizard_filename_title">Formato del nombre de archivo</string>
     <string name="wizard_finish">Finalizar</string>
     <string name="wizard_next">Siguiente</string>
-    <string name="wizard_reliability_offline_button">Activar</string>
-    <string name="wizard_reliability_offline_done">La grabación sin conexión está activada</string>
     <string name="wizard_reliability_subtitle">Dos ajustes opcionales que mantienen la grabación en condiciones difíciles. Puedes omitirlos y cambiarlos más tarde en Ajustes.</string>
     <string name="wizard_reliability_title">Grabación fiable</string>
     <string name="wizard_reliability_usb_button">Poner USB en Solo carga</string>

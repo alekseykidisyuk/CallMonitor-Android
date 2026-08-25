@@ -238,6 +238,8 @@
     <string name="permissions_shizuku_active">Shizuku in uso. Non c\'è nulla da abbinare: la configurazione è completa.</string>
     <string name="permissions_shizuku_use">Usa Shizuku</string>
     <string name="permissions_shizuku_use_callvault">Usa CallVault</string>
+    <string name="permissions_shizuku_offer_title_stopped">Shizuku non è in esecuzione</string>
+    <string name="permissions_shizuku_offer_stopped">Avvialo dall\'app Shizuku e torna qui: CallVault potrà usarlo al posto dell\'abbinamento. Oppure configura CallVault da solo — non serve nient\'altro in esecuzione.</string>
     <string name="home_hero_pill_shizuku">Shizuku fermo</string>
     <string name="home_status_shizuku_title">Shizuku non è pronto</string>
     <string name="home_status_shizuku_suggestion">Apri Shizuku e avvialo. Si ferma a ogni riavvio del telefono, e CallVault non può registrare finché non è in esecuzione.</string>
@@ -489,6 +491,7 @@
     <string name="voip_recording_warning_title">Registrare le chiamate VoIP?</string>
     <string name="wizard_audio_subtitle">Scelga il formato di registrazione e il bit rate. Opus a 16 kbps è consigliato per una voce nitida con file di piccole dimensioni.</string>
     <string name="wizard_audio_title">Qualità audio</string>
+    <string name="wizard_auto_record_nothing_warning">Con le chiamate telefoniche e le chiamate nelle app entrambe disattivate, CallVault non registrerà nulla. Attivane almeno una, a meno che non sia quello che vuoi.</string>
     <string name="wizard_auto_record_subtitle">Scelga quali chiamate registrare automaticamente. Potrà perfezionarlo in seguito nelle Impostazioni.</string>
     <string name="wizard_auto_record_title">Registrazione automatica</string>
     <string name="wizard_back">Indietro</string>
@@ -500,14 +503,12 @@
     <string name="wizard_day_thursday">Giovedì</string>
     <string name="wizard_day_tuesday">Martedì</string>
     <string name="wizard_day_wednesday">Mercoledì</string>
-    <string name="wizard_experimental_subtitle">Due funzioni ancora in prova. Entrambe sono disattivate per impostazione predefinita: puoi attivarle più tardi nelle Impostazioni.</string>
+    <string name="wizard_experimental_subtitle">Una funzione ancora in prova. È disattivata per impostazione predefinita: puoi attivarla più tardi nelle Impostazioni.</string>
     <string name="wizard_experimental_title">Extra facoltativi</string>
     <string name="wizard_filename_subtitle">Scelga come vengono denominate le registrazioni salvate.</string>
     <string name="wizard_filename_title">Formato nome file</string>
     <string name="wizard_finish">Fine</string>
     <string name="wizard_next">Avanti</string>
-    <string name="wizard_reliability_offline_button">Attiva</string>
-    <string name="wizard_reliability_offline_done">La registrazione offline è attiva</string>
     <string name="wizard_reliability_subtitle">Due impostazioni facoltative che mantengono attiva la registrazione in condizioni difficili. Puoi saltarle e modificarle in seguito nelle Impostazioni.</string>
     <string name="wizard_reliability_title">Registrazione affidabile</string>
     <string name="wizard_reliability_usb_button">Imposta USB su Solo ricarica</string>

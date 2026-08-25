@@ -238,6 +238,8 @@
     <string name="permissions_shizuku_active">正在使用 Shizuku。无需配对——设置已完成。</string>
     <string name="permissions_shizuku_use">使用 Shizuku</string>
     <string name="permissions_shizuku_use_callvault">使用 CallVault</string>
+    <string name="permissions_shizuku_offer_title_stopped">Shizuku 未在运行</string>
+    <string name="permissions_shizuku_offer_stopped">在 Shizuku 应用中启动它再回到这里，CallVault 就能改用它，无需配对。或者单独设置 CallVault，无需依赖其他程序运行。</string>
     <string name="home_hero_pill_shizuku">Shizuku 已停止</string>
     <string name="home_status_shizuku_title">Shizuku 尚未就绪</string>
     <string name="home_status_shizuku_suggestion">请打开 Shizuku 并启动它。每次重启手机后它都会停止，在它运行之前 CallVault 无法录音。</string>
@@ -489,6 +491,7 @@
     <string name="voip_recording_warning_title">录制 VoIP 通话？</string>
     <string name="wizard_audio_subtitle">选择录音格式和比特率。推荐使用 16 kbps 的 Opus，可在小文件下获得清晰的语音。</string>
     <string name="wizard_audio_title">音频质量</string>
+    <string name="wizard_auto_record_nothing_warning">电话通话和应用内通话都关闭时，CallVault 不会录制任何内容。除非你就是这个打算，否则请至少开启一项。</string>
     <string name="wizard_auto_record_subtitle">选择哪些通话会被自动录制。你之后可以在设置中进一步调整。</string>
     <string name="wizard_auto_record_title">自动录音</string>
     <string name="wizard_back">上一步</string>
@@ -500,14 +503,12 @@
     <string name="wizard_day_thursday">星期四</string>
     <string name="wizard_day_tuesday">星期二</string>
     <string name="wizard_day_wednesday">星期三</string>
-    <string name="wizard_experimental_subtitle">两项仍在验证中的功能，默认均为关闭，你可以稍后在「设置」中开启。</string>
+    <string name="wizard_experimental_subtitle">一项仍在验证中的功能，默认关闭，你可以稍后在「设置」中开启。</string>
     <string name="wizard_experimental_title">可选功能</string>
     <string name="wizard_filename_subtitle">选择已保存录音的命名方式。</string>
     <string name="wizard_filename_title">文件名格式</string>
     <string name="wizard_finish">完成</string>
     <string name="wizard_next">下一步</string>
-    <string name="wizard_reliability_offline_button">启用</string>
-    <string name="wizard_reliability_offline_done">离线录音已开启</string>
     <string name="wizard_reliability_subtitle">两项可选设置，让录音在复杂情况下也能正常工作。你可以跳过，稍后在“设置”中更改。</string>
     <string name="wizard_reliability_title">可靠录音</string>
     <string name="wizard_reliability_usb_button">将 USB 设为仅充电</string>

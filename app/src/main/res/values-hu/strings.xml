@@ -238,6 +238,8 @@
     <string name="permissions_shizuku_active">A Shizuku van használatban. Nincs mit párosítani — a beállítás kész.</string>
     <string name="permissions_shizuku_use">Shizuku használata</string>
     <string name="permissions_shizuku_use_callvault">CallVault használata</string>
+    <string name="permissions_shizuku_offer_title_stopped">A Shizuku nem fut</string>
+    <string name="permissions_shizuku_offer_stopped">Indítsa el a Shizuku alkalmazásban, majd térjen vissza, és a CallVault használhatja a párosítás helyett. Vagy állítsa be a CallVaultot önállóan — így semmi másnak nem kell futnia.</string>
     <string name="home_hero_pill_shizuku">Shizuku leállt</string>
     <string name="home_status_shizuku_title">A Shizuku nem áll készen</string>
     <string name="home_status_shizuku_suggestion">Nyissa meg a Shizukut és indítsa el. A telefon minden újraindításakor leáll, és a CallVault addig nem tud rögzíteni.</string>
@@ -489,6 +491,7 @@
     <string name="voip_recording_warning_title">Rögzíted a VoIP-hívásokat?</string>
     <string name="wizard_audio_subtitle">Válassza ki a rögzítési formátumot és a bitrátát. A tiszta hang és a kis fájlméret érdekében az Opus 16 kbps ajánlott.</string>
     <string name="wizard_audio_title">Hangminőség</string>
+    <string name="wizard_auto_record_nothing_warning">Ha a telefonhívások és az alkalmazáshívások is ki vannak kapcsolva, a CallVault semmit nem rögzít. Kapcsoljon be legalább egyet, hacsak nem ez a szándéka.</string>
     <string name="wizard_auto_record_subtitle">Válassza ki, mely hívások rögzüljenek automatikusan. Ezt később a Beállításokban finomhangolhatja.</string>
     <string name="wizard_auto_record_title">Automatikus rögzítés</string>
     <string name="wizard_back">Vissza</string>
@@ -500,14 +503,12 @@
     <string name="wizard_day_thursday">Csütörtök</string>
     <string name="wizard_day_tuesday">Kedd</string>
     <string name="wizard_day_wednesday">Szerda</string>
-    <string name="wizard_experimental_subtitle">Két funkció, amely még bizonyít. Mindkettő alapból ki van kapcsolva — később a Beállításokban bekapcsolhatja.</string>
+    <string name="wizard_experimental_subtitle">Egy funkció, amely még bizonyít. Alapból ki van kapcsolva — később a Beállításokban bekapcsolhatja.</string>
     <string name="wizard_experimental_title">Választható extrák</string>
     <string name="wizard_filename_subtitle">Válassza ki, hogyan legyenek elnevezve a mentett felvételek.</string>
     <string name="wizard_filename_title">Fájlnévformátum</string>
     <string name="wizard_finish">Befejezés</string>
     <string name="wizard_next">Tovább</string>
-    <string name="wizard_reliability_offline_button">Bekapcsolás</string>
-    <string name="wizard_reliability_offline_done">Az offline rögzítés be van kapcsolva</string>
     <string name="wizard_reliability_subtitle">Két opcionális beállítás, amely nehéz körülmények között is működteti a rögzítést. Kihagyhatod, és később a Beállításokban módosíthatod.</string>
     <string name="wizard_reliability_title">Megbízható rögzítés</string>
     <string name="wizard_reliability_usb_button">USB beállítása Csak töltésre</string>

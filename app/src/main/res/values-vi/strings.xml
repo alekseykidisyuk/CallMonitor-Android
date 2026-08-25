@@ -238,6 +238,8 @@
     <string name="permissions_shizuku_active">Đang dùng Shizuku. Không có gì để ghép nối — thiết lập đã xong.</string>
     <string name="permissions_shizuku_use">Dùng Shizuku</string>
     <string name="permissions_shizuku_use_callvault">Dùng CallVault</string>
+    <string name="permissions_shizuku_offer_title_stopped">Shizuku chưa chạy</string>
+    <string name="permissions_shizuku_offer_stopped">Hãy mở ứng dụng Shizuku, khởi động nó rồi quay lại, CallVault sẽ dùng được nó thay cho việc ghép nối. Hoặc thiết lập CallVault độc lập — khi đó không cần thứ gì khác chạy kèm.</string>
     <string name="home_hero_pill_shizuku">Shizuku đã dừng</string>
     <string name="home_status_shizuku_title">Shizuku chưa sẵn sàng</string>
     <string name="home_status_shizuku_suggestion">Mở Shizuku và khởi động nó. Nó dừng mỗi khi điện thoại khởi động lại, và CallVault không thể ghi âm cho đến khi nó chạy.</string>
@@ -489,6 +491,7 @@
     <string name="voip_recording_warning_title">Ghi âm cuộc gọi VoIP?</string>
     <string name="wizard_audio_subtitle">Chọn định dạng ghi âm và bit rate. Opus ở 16 kbps được khuyến nghị để có giọng nói rõ ràng với kích thước tệp nhỏ.</string>
     <string name="wizard_audio_title">Chất lượng âm thanh</string>
+    <string name="wizard_auto_record_nothing_warning">Khi cả cuộc gọi điện thoại lẫn cuộc gọi trong ứng dụng đều tắt, CallVault sẽ không ghi âm gì cả. Hãy bật ít nhất một mục, trừ khi bạn thực sự muốn vậy.</string>
     <string name="wizard_auto_record_subtitle">Chọn cuộc gọi nào được ghi âm tự động. Bạn có thể tinh chỉnh sau trong Cài đặt.</string>
     <string name="wizard_auto_record_title">Tự động ghi âm</string>
     <string name="wizard_back">Quay lại</string>
@@ -500,14 +503,12 @@
     <string name="wizard_day_thursday">Thứ Năm</string>
     <string name="wizard_day_tuesday">Thứ Ba</string>
     <string name="wizard_day_wednesday">Thứ Tư</string>
-    <string name="wizard_experimental_subtitle">Hai tính năng vẫn đang được kiểm chứng. Cả hai đều tắt theo mặc định — bạn có thể bật sau trong Cài đặt.</string>
+    <string name="wizard_experimental_subtitle">Một tính năng vẫn đang được kiểm chứng. Mặc định tính năng này tắt — bạn có thể bật sau trong Cài đặt.</string>
     <string name="wizard_experimental_title">Tùy chọn bổ sung</string>
     <string name="wizard_filename_subtitle">Chọn cách đặt tên cho các bản ghi âm đã lưu.</string>
     <string name="wizard_filename_title">Định dạng tên tệp</string>
     <string name="wizard_finish">Hoàn tất</string>
     <string name="wizard_next">Tiếp theo</string>
-    <string name="wizard_reliability_offline_button">Bật</string>
-    <string name="wizard_reliability_offline_done">Ghi âm ngoại tuyến đang bật</string>
     <string name="wizard_reliability_subtitle">Hai tùy chọn giúp việc ghi âm hoạt động trong điều kiện khó khăn. Bạn có thể bỏ qua và thay đổi sau trong Cài đặt.</string>
     <string name="wizard_reliability_title">Ghi âm đáng tin cậy</string>
     <string name="wizard_reliability_usb_button">Đặt USB thành Chỉ sạc</string>

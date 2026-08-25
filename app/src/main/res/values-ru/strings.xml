@@ -238,6 +238,8 @@
     <string name="permissions_shizuku_active">Используется Shizuku. Привязывать нечего — настройка завершена.</string>
     <string name="permissions_shizuku_use">Использовать Shizuku</string>
     <string name="permissions_shizuku_use_callvault">Использовать CallVault</string>
+    <string name="permissions_shizuku_offer_title_stopped">Shizuku не запущен</string>
+    <string name="permissions_shizuku_offer_stopped">Запустите его в приложении Shizuku и вернитесь — тогда CallVault сможет использовать его вместо привязки. Или настройте CallVault самостоятельно: ему больше ничего не потребуется.</string>
     <string name="home_hero_pill_shizuku">Shizuku остановлен</string>
     <string name="home_status_shizuku_title">Shizuku не готов</string>
     <string name="home_status_shizuku_suggestion">Откройте Shizuku и запустите его. Он останавливается при каждой перезагрузке телефона, и до запуска CallVault не может записывать.</string>
@@ -489,6 +491,7 @@
     <string name="voip_recording_warning_title">Записывать звонки VoIP?</string>
     <string name="wizard_audio_subtitle">Выберите формат записи и битрейт. Рекомендуется Opus с 16 кбит/с для чёткого голоса при небольшом размере файлов.</string>
     <string name="wizard_audio_title">Качество звука</string>
+    <string name="wizard_auto_record_nothing_warning">Если телефонные звонки и звонки в приложениях выключены, CallVault не запишет ничего. Включите хотя бы одно, если только вы не хотите именно этого.</string>
     <string name="wizard_auto_record_subtitle">Выберите, какие звонки записываются автоматически. Это можно точнее настроить позже в настройках.</string>
     <string name="wizard_auto_record_title">Автоматическая запись</string>
     <string name="wizard_back">Назад</string>
@@ -500,14 +503,12 @@
     <string name="wizard_day_thursday">Четверг</string>
     <string name="wizard_day_tuesday">Вторник</string>
     <string name="wizard_day_wednesday">Среда</string>
-    <string name="wizard_experimental_subtitle">Две функции, которые ещё проверяются. Обе выключены по умолчанию — включить их можно позже в настройках.</string>
+    <string name="wizard_experimental_subtitle">Функция, которая ещё проверяется. По умолчанию она выключена — включить её можно позже в настройках.</string>
     <string name="wizard_experimental_title">Дополнительно</string>
     <string name="wizard_filename_subtitle">Выберите, как именуются сохранённые записи.</string>
     <string name="wizard_filename_title">Формат имени файла</string>
     <string name="wizard_finish">Готово</string>
     <string name="wizard_next">Далее</string>
-    <string name="wizard_reliability_offline_button">Включить</string>
-    <string name="wizard_reliability_offline_done">Автономная запись включена</string>
     <string name="wizard_reliability_subtitle">Две необязательные настройки, которые сохраняют запись в сложных условиях. Их можно пропустить и изменить позже в настройках.</string>
     <string name="wizard_reliability_title">Надёжная запись</string>
     <string name="wizard_reliability_usb_button">Установить USB «Только зарядка»</string>

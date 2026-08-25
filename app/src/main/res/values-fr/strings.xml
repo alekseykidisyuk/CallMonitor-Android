@@ -238,6 +238,8 @@
     <string name="permissions_shizuku_active">Shizuku est utilisé. Il n\'y a rien à appairer — la configuration est terminée.</string>
     <string name="permissions_shizuku_use">Utiliser Shizuku</string>
     <string name="permissions_shizuku_use_callvault">Utiliser CallVault</string>
+    <string name="permissions_shizuku_offer_title_stopped">Shizuku ne fonctionne pas</string>
+    <string name="permissions_shizuku_offer_stopped">Lancez-le depuis l\'application Shizuku puis revenez, et CallVault pourra l\'utiliser au lieu de l\'appairage. Ou configurez CallVault seul — il n\'a besoin de rien d\'autre.</string>
     <string name="home_hero_pill_shizuku">Shizuku arrêté</string>
     <string name="home_status_shizuku_title">Shizuku n\'est pas prêt</string>
     <string name="home_status_shizuku_suggestion">Ouvrez Shizuku et démarrez-le. Il s\'arrête à chaque redémarrage du téléphone, et CallVault ne peut pas enregistrer tant qu\'il ne fonctionne pas.</string>
@@ -489,6 +491,7 @@
     <string name="voip_recording_warning_title">Enregistrer les appels VoIP ?</string>
     <string name="wizard_audio_subtitle">Choisissez le format d\'enregistrement et le débit. Opus à 16 kbps est recommandé pour une voix claire dans des fichiers de petite taille.</string>
     <string name="wizard_audio_title">Qualité audio</string>
+    <string name="wizard_auto_record_nothing_warning">Si les appels téléphoniques et les appels dans les applis sont tous deux désactivés, CallVault n\'enregistrera rien. Activez-en au moins un, sauf si c\'est ce que vous voulez.</string>
     <string name="wizard_auto_record_subtitle">Choisissez quels appels sont enregistrés automatiquement. Vous pourrez affiner ce réglage plus tard dans les Paramètres.</string>
     <string name="wizard_auto_record_title">Enregistrement automatique</string>
     <string name="wizard_back">Précédent</string>
@@ -500,14 +503,12 @@
     <string name="wizard_day_thursday">Jeudi</string>
     <string name="wizard_day_tuesday">Mardi</string>
     <string name="wizard_day_wednesday">Mercredi</string>
-    <string name="wizard_experimental_subtitle">Deux fonctionnalités encore à l\'épreuve. Les deux sont désactivées par défaut : vous pourrez les activer plus tard dans les Paramètres.</string>
+    <string name="wizard_experimental_subtitle">Une fonctionnalité encore à l\'épreuve. Elle est désactivée par défaut : vous pourrez l\'activer plus tard dans les Paramètres.</string>
     <string name="wizard_experimental_title">Options supplémentaires</string>
     <string name="wizard_filename_subtitle">Choisissez la façon dont les enregistrements sont nommés.</string>
     <string name="wizard_filename_title">Format du nom de fichier</string>
     <string name="wizard_finish">Terminer</string>
     <string name="wizard_next">Suivant</string>
-    <string name="wizard_reliability_offline_button">Activer</string>
-    <string name="wizard_reliability_offline_done">L\'enregistrement hors ligne est activé</string>
     <string name="wizard_reliability_subtitle">Deux réglages facultatifs qui maintiennent l\'enregistrement dans des conditions difficiles. Tu peux les ignorer et les modifier plus tard dans les Paramètres.</string>
     <string name="wizard_reliability_title">Enregistrement fiable</string>
     <string name="wizard_reliability_usb_button">Régler l\'USB sur Charge uniquement</string>
