@@ -485,6 +485,26 @@ release, and it said so rather than toggling anything.
 | S14 | audio source `mic-voice-communication` | cell | records, different source | source named in log; **listen** — this is the pair that can drop the near side | A |
 | S15 | ignore rule matches the caller | cell | **not recorded** | no file, ignore reason logged | Q |
 
+### Mode switching — the rows that need a call, not just a process check
+
+B1/B2 proved a switch leaves exactly one recorder alive. They did **not** prove the next call goes
+through the right one, and that is precisely the shape yesterday's bug took: the app sat in standalone
+mode, reported "Ready — using CallVault", and recorded through a leftover Shizuku host. Every layer was
+happy. Only a real call names the pipeline.
+
+| # | Do this | Then | Must see |
+|---|---|---|---|
+| **Z1** | switch standalone → **Shizuku** | cell call | scrcpy in the log, **no** handoff, **no** speaker turns |
+| **Z8** | switch Shizuku → **standalone** | cell call | handoff *or* direct, **never** scrcpy, speaker turns back |
+| **Z7** | switch Shizuku → **standalone** | VoIP call | `armVoipCapture` true again |
+
+Z8 is the direct regression test for the teardown fix. A pass means the standalone call after a round
+trip really is served by our own daemon; a scrcpy line there would mean the old host survived again.
+
+The switch itself should also be visibly honest each time: the modal names the mode it ended in, the
+Home pill agrees, and the capability reconcile turns the right switches off on the way in — and, since
+this morning, back on on the way out.
+
 ### Shizuku
 
 | # | Configuration | Call | Expect | Verify | |
