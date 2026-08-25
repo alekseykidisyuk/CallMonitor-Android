@@ -50,6 +50,43 @@ than whole-file). That is the real fix and it needs its own investigation; see
 
 The English-language transcription gate is **done** — confirmed working on a real call.
 
+### 🔴 Shell process left with the microphone on after a carrier call — reported 2026-08-25, UNDIAGNOSED
+
+A user on **1.5.8** reported that after an ordinary carrier call (not VoIP) the shell process stayed
+alive with the microphone on. A force-stop cleared it; no reboot needed.
+
+**What the two reports do show.** At 10:58:02–04 the system log has `AudioPolicyService:
+updateUidStates_l() current->uid=2000 current->pid=26306 allowCapture=1`, repeatedly — a **shell-uid
+process in an active capture state four minutes after the last call ended** (10:54:02). That is
+consistent with the report.
+
+**What they cannot show, and why.** The app-side teardown is complete and identical for both recent
+calls: `stop requested` → `HandoffEncoder finished` → `handoff encode DONE` → `handoff capture input
+released`, with **no `stopHandoff` failure logged**. But whether the *daemon* released its own
+`AudioRecord` is invisible:
+
+- The debug export is **app-process only** — it contains no `CV:RecorderServer`, `CV:HandoffSource` or
+  `CV:DirectCapture` lines at all, so `releaseHeld` could not appear in it either way.
+- The system report *would* keep those tags (the filter passes everything `CV:`), but it is truncated to
+  the most recent 69 matching lines and covers **10:58:02 → 10:58:19** — seventeen seconds, ending four
+  minutes after the call. The teardown had already rotated out of the logcat ring.
+
+So the decisive evidence was gone before the report was taken. **Fixing that is the first job**, not
+guessing at the cause.
+
+**Fixed already, because it is provable without the missing logs:** `RecorderConnection.service?.
+stopHandoff()` on a null binder was a silent no-op that `runCatching` reported as success — "the daemon
+released its microphone" and "there was nobody to ask" wrote identical logs. Both outcomes are now
+logged distinctly, in the handoff and daemon paths alike. That does not explain the report, but it
+removes one way the logs could hide it.
+
+**Next, in order:**
+1. Make the daemon's teardown visible in the app's own debug export, or make the system report cover
+   enough history to include the call — the ring was grown to 8M at 09:01 and the export still scanned
+   only 9,865 lines, so the growth needs verifying rather than assuming.
+2. Ask the reporter whether it is reproducible, and for a report captured **within a minute** of the
+   call while the mic indicator is still lit.
+
 ### 🔵 The release gate, agreed 2026-08-24
 
 Judged by **which failures are silent**, since a call recorder's worst outcome is losing a call

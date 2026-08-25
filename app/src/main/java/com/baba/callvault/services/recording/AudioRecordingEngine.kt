@@ -530,8 +530,20 @@ class AudioRecordingEngine {
             // which is exactly the case this path exists to survive).
             runCatching { HandoffReceiver.stop() }
                 .onFailure { AppLogger.w(TAG, "Handoff stop error during release: ${it.message}") }
-            runCatching { RecorderConnection.service?.stopHandoff() }
-                .onFailure { AppLogger.w(TAG, "Daemon stopHandoff failed during release: ${it.message}") }
+            // Say which of the two happened. `service?.stopHandoff()` on a null binder is a silent
+            // no-op that runCatching then reports as success, so "the daemon released its microphone"
+            // and "there was nobody to ask" produced identical logs — and the daemon is precisely the
+            // process that would still be holding the mic. A user reported exactly that shape on 1.5.8
+            // (shell process live with the microphone on after a carrier call) and the logs could not
+            // tell the two apart.
+            val daemon = RecorderConnection.service
+            if (daemon == null) {
+                AppLogger.w(TAG, "No daemon binder at release: its handoff AudioRecord was never asked to stop")
+            } else {
+                runCatching { daemon.stopHandoff() }
+                    .onSuccess { AppLogger.i(TAG, "Asked the daemon to release its handoff capture") }
+                    .onFailure { AppLogger.w(TAG, "Daemon stopHandoff failed during release: ${it.message}") }
+            }
             runCatching { outputPfd?.close() }
             handoffRecording = false
             finalizeStagingIfNeeded()
@@ -541,8 +553,13 @@ class AudioRecordingEngine {
         if (daemonMode) {
             // Ask the daemon to stop + finalise the container, then close our local fd handle. The local
             // muxer/launcher/client/scope do not exist in this mode, so there is nothing else to tear down.
-            runCatching { RecorderConnection.service?.stopRecording() }
-                .onFailure { AppLogger.w(TAG, "Daemon stopRecording failed during release: ${it.message}") }
+            val daemon = RecorderConnection.service
+            if (daemon == null) {
+                AppLogger.w(TAG, "No daemon binder at release: its recording was never asked to stop")
+            } else {
+                runCatching { daemon.stopRecording() }
+                    .onFailure { AppLogger.w(TAG, "Daemon stopRecording failed during release: ${it.message}") }
+            }
             runCatching { outputPfd?.close() }
             daemonRecording = false
             finalizeStagingIfNeeded()
