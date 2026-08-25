@@ -446,6 +446,25 @@ Levels so far, all the same phone and the same clip, which is worth keeping in o
 | S3 | direct | -33.7 dB |
 | S2 | VoIP | -19.0 dB |
 
+**S5 — standalone, offline recording ON, outgoing cell call. PASS (2026-08-25).**
+
+The transport row: the daemon is reached over a loopback port instead of wireless debugging.
+
+| What | Result |
+|---|---|
+| Transport | `Connected over loopback tcpip :57780 (works off-WiFi)`, `service.adb.tcp.port=57780` |
+| WD | **0 before, during and after** — `Nothing to release after the daemon launch; Wireless debugging is already off` |
+| Pipeline | handoff (resilient is back on) — `HandoffEncoder finished: 20.536s` |
+| Speaker turns | produced and stored |
+| VoIP arming | `VoIP capture policy armed (loopback-render, 48000Hz)` → `armVoipCapture -> true` |
+| File | 69,948 bytes, mono opus, 20.52 s, mean **-34.9 dB** / max -11.9 dB |
+| Audio | confirmed by ear |
+
+Worth stating plainly because it is the whole point of the mode: **a call recorded correctly with
+wireless debugging switched off the entire time**, over a loopback listener that survives being off
+Wi-Fi. The lease added yesterday did exactly nothing here, which is right — there was nothing to
+release, and it said so rather than toggling anything.
+
 ### Standalone
 
 | # | Configuration | Call | Expect | Verify | |

@@ -32,14 +32,16 @@ tap_row() {
 }
 
 # Scroll until the label appears (settings screens are longer than one page).
+# Substring, not text="..." — the row reads "Offline recording (no Wi-Fi)" while the setting is known
+# here as "Offline recording", so an exact match never scrolled to it and the setting read as missing.
 scroll_to() {
   local want="$1" i
   for i in $(seq 1 10); do
-    dump | grep -qF "text=\"$want\"" && return 0
+    dump | grep -qF "$want" && return 0
     a shell input swipe 540 1900 540 800 250
     sleep 1
   done
-  dump | grep -qF "text=\"$want\""
+  dump | grep -qF "$want"
 }
 
 launch_fresh() {
