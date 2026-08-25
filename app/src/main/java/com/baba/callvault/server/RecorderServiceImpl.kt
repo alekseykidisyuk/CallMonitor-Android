@@ -324,6 +324,15 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
         // Logged after enabling so the very first line in the ring says when collection began — which is
         // the difference between "the daemon logged nothing" and "the daemon was not collecting".
         AppLogger.i(TAG, "Diagnostics ring ${if (enabled) "enabled" else "disabled"} in the recorder host")
+        // Re-state who this process IS, every time collection starts.
+        //
+        // It is logged at daemon startup too, but the ring is switched on later — so in practice the
+        // identity line was always older than the collection and never appeared in a report at all
+        // (zero occurrences in the first real export). It matters more than it looks: this process runs
+        // as uid 2000, which belongs to com.android.shell, so Android's microphone indicator attributes
+        // ANY capture here to "Shell". A user reporting "the Shell process has the microphone on" is
+        // describing this process, and the report should say which pid that was.
+        if (enabled) AppLogger.i(TAG, "recorder host identity: ${AudioAttribution.describe()}")
     }
 
     override fun drainDiagnostics(): Array<String> = AppLogger.drainRing().toTypedArray()
