@@ -92,6 +92,9 @@ interface SettingsActions {
     /** Whether tapping Transcribe asks which language, for phones that take calls in several. */
     fun setTranscriptionAskLanguage(ask: Boolean)
     fun downloadTranscriptionModel(model: TranscriptionModel)
+
+    /** Stops a download in progress. The partial file is kept, so resuming does not re-fetch it. */
+    fun cancelTranscriptionModelDownload(model: TranscriptionModel)
     fun deleteTranscriptionModel(model: TranscriptionModel)
 
     /** The summarisation model, which uses the same download machinery at six times the size. */
@@ -456,6 +459,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Queues a model download (unmetered network only). */
     override fun downloadTranscriptionModel(model: TranscriptionModel) {
         ModelDownloadWorker.enqueue(appContext, model)
+        refresh()
+    }
+
+    /**
+     * Stops a speech-model download without discarding it.
+     *
+     * Kept, exactly as the summariser's is: 574 MB is smaller but a resumed download still starts
+     * from the banked offset, and re-fetching it because someone needed the Wi-Fi is pure waste.
+     */
+    override fun cancelTranscriptionModelDownload(model: TranscriptionModel) {
+        ModelDownloadWorker.cancel(appContext, model)
         refresh()
     }
 

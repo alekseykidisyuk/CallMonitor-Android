@@ -88,7 +88,6 @@ import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.data.TranscriptionMode
 import com.baba.callvault.transcription.TranscriptionQueue
 import com.baba.callvault.summary.SummaryModel
-import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.ui.common.TranscriptionLabels
@@ -136,6 +135,7 @@ import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Shield
@@ -357,9 +357,29 @@ fun SettingsContent(
                             updateTrigger = updateTrigger,
                             onDownload = { actions.downloadSummaryModel(it) },
                             onCancel = { actions.cancelSummaryModelDownload(it) },
-                            onDelete = { actions.deleteSummaryModel(it) },
-                            onSettingChanged = { actions.refreshSettings() }
-                        )
+                            onDelete = { actions.deleteSummaryModel(it) }
+                        ) {
+                            // Settings-only, and passed in rather than living in SummaryRows because
+                            // the wizard renders those same rows and has no business offering a
+                            // preference about a dialog it is showing for the first time.
+                            //
+                            // Its home is here so the dialog's "don't show this again" can be undone
+                            // — a dialog that can permanently remove itself with no way back would be
+                            // a trap. Same reasoning as the transcription confirmation switch above.
+                            val askFirst = remember(updateTrigger) {
+                                preferences.getSummaryConfirmRequirements()
+                            }
+                            SettingsToggleRow(
+                                icon = Icons.Filled.Info,
+                                label = stringResource(R.string.summary_requirements_heading),
+                                description = stringResource(R.string.summary_requirements_toggle_description),
+                                checked = askFirst,
+                                onCheckedChange = {
+                                    preferences.setSummaryConfirmRequirements(it)
+                                    actions.refreshSettings()
+                                }
+                            )
+                        }
                     }
                 )
             }
@@ -766,7 +786,6 @@ private fun TranscriptionSection(
     /** The summariser's rows, rendered last — see the call site for why they live in here. */
     summaryRows: @Composable () -> Unit = {}
 ) {
-    val context = LocalContext.current
     val mode = remember(updateTrigger) { preferences.getTranscriptionMode() }
     val hour = remember(updateTrigger) { preferences.getTranscriptionHour() }
     val minute = remember(updateTrigger) { preferences.getTranscriptionMinute() }
@@ -776,7 +795,6 @@ private fun TranscriptionSection(
     val modelId = remember(updateTrigger) { preferences.getTranscriptionModelId() }
     val language = remember(updateTrigger) { preferences.getTranscriptionLanguage() }
     val askLanguage = remember(updateTrigger) { preferences.getTranscriptionAskLanguage() }
-    val installed = remember(updateTrigger) { ModelRepository.installedModels(context) }
 
     val selectedModel = TranscriptionModel.fromId(modelId) ?: TranscriptionModel.DEFAULT
 
@@ -844,17 +862,10 @@ private fun TranscriptionSection(
             )
         }
 
-        val modelOptions = TranscriptionModel.entries.map {
-            OptionItem(it.id, stringResource(TranscriptionLabels.titleOf(it)))
-        }
-        DropdownRow {
-            M3DropdownField(
-                label = stringResource(R.string.transcription_model_label),
-                selected = modelOptions.find { it.key == modelId } ?: modelOptions.first(),
-                options = modelOptions,
-                onOptionSelected = { actions.setTranscriptionModelId(it.key) }
-            )
-        }
+        TranscriptionModelField(
+            modelId = modelId,
+            onModelChange = { actions.setTranscriptionModelId(it) }
+        )
 
         TranscriptionLanguageField(
             language = language,
@@ -888,26 +899,17 @@ private fun TranscriptionSection(
             onCheckedChange = { actions.setTranscriptionConfirmBeforeRun(it) }
         )
 
-        // The model is the gate: nothing can be transcribed until one is on the device, so its state
-        // is stated plainly rather than left for the user to infer from a button that does nothing.
-        if (selectedModel in installed) {
-            NavigationRow(
-                icon = Icons.Filled.Delete,
-                label = stringResource(R.string.transcription_model_delete),
-                value = stringResource(R.string.transcription_model_installed),
-                onClick = { actions.deleteTranscriptionModel(selectedModel) }
-            )
-        } else {
-            NavigationRow(
-                icon = Icons.Filled.Download,
-                label = stringResource(R.string.transcription_model_download),
-                value = stringResource(
-                    R.string.transcription_model_download_subtitle,
-                    selectedModel.sizeBytes / BYTES_PER_MB
-                ),
-                onClick = { actions.downloadTranscriptionModel(selectedModel) }
-            )
-        }
+        // Shared with the wizard, which now offers the same download. These rows also replaced a
+        // pair that read `installedModels` once per updateTrigger: a download that ran while this
+        // section was open showed nothing at all, and only reached "Downloaded and ready" if some
+        // unrelated setting happened to bump the trigger.
+        TranscriptionModelRows(
+            model = selectedModel,
+            updateTrigger = updateTrigger,
+            onDownload = { actions.downloadTranscriptionModel(it) },
+            onCancel = { actions.cancelTranscriptionModelDownload(it) },
+            onDelete = { actions.deleteTranscriptionModel(it) }
+        )
 
         Text(
             text = stringResource(
@@ -930,6 +932,33 @@ private fun TranscriptionSection(
 
 /** Bytes in a megabyte, for stating a model's download size. Shared with the wizard's own cost note. */
 internal const val BYTES_PER_MB = 1_000_000L
+
+/**
+ * The "Model: Fast / Best quality" dropdown.
+ *
+ * Extracted for the setup wizard, which offers the download and therefore has to let the user say
+ * *which* model is being fetched — 190 MB against 574 MB is the difference between a minute and
+ * several on a slow connection, and between gist Hebrew and clean Hebrew afterwards. Shared rather
+ * than copied for the same reason as [TranscriptionModeField]: the row that starts the download
+ * reads this setting, so two dropdowns writing it would be two chances to disagree about what is
+ * being downloaded.
+ *
+ * @param modelId The stored id; anything unrecognised falls back to the first offered tier.
+ */
+@Composable
+internal fun TranscriptionModelField(modelId: String, onModelChange: (String) -> Unit) {
+    val modelOptions = TranscriptionModel.entries.map {
+        OptionItem(it.id, stringResource(TranscriptionLabels.titleOf(it)))
+    }
+    DropdownRow {
+        M3DropdownField(
+            label = stringResource(R.string.transcription_model_label),
+            selected = modelOptions.find { it.key == modelId } ?: modelOptions.first(),
+            options = modelOptions,
+            onOptionSelected = { onModelChange(it.key) }
+        )
+    }
+}
 
 /**
  * The "Transcribe: manually / after each call / automatically" dropdown, with the cost warning that
@@ -2575,6 +2604,7 @@ private fun SettingsScreenPreview() {
             override fun setTranscriptionLanguage(language: String?) {}
             override fun setTranscriptionAskLanguage(ask: Boolean) {}
             override fun downloadTranscriptionModel(model: TranscriptionModel) {}
+            override fun cancelTranscriptionModelDownload(model: TranscriptionModel) {}
             override fun deleteTranscriptionModel(model: TranscriptionModel) {}
             override fun downloadSummaryModel(model: SummaryModel) {}
             override fun cancelSummaryModelDownload(model: SummaryModel) {}

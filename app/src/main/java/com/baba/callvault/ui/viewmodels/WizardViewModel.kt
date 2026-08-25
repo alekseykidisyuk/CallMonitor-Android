@@ -15,6 +15,9 @@ import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.system.storage.SyncScheduler
+import com.baba.callvault.transcription.model.DownloadableModel
+import com.baba.callvault.transcription.model.ModelDownloadWorker
+import com.baba.callvault.transcription.model.ModelRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -127,6 +130,46 @@ class WizardViewModel(application: Application) : AndroidViewModel(application) 
     /** Persists the recording file-name template (one of the shared presets). */
     fun setFileNameTemplate(template: String) {
         preferences.setFileNameTemplate(template)
+        bump()
+    }
+
+    // ------ Step 6: transcription + summaries
+
+    /** Persists the chosen speech-model tier, which is the one the download row then fetches. */
+    fun setTranscriptionModelId(id: String) {
+        preferences.setTranscriptionModelId(id)
+        bump()
+    }
+
+    /**
+     * Queues a model for download and leaves it running.
+     *
+     * **Deliberately not tied to this screen.** [ModelDownloadWorker] is unique WorkManager work
+     * enqueued against the application context and constrained to an unmetered network, so it
+     * outlives the wizard, the Activity and — with a foreground download in flight — a good deal
+     * else. That is the whole point: the summariser is 3.46 GB, the wizard has four steps left, and
+     * making either wait for the other would be absurd. Nothing here cancels on navigation, and
+     * [finish] does not touch it.
+     *
+     * The same call Settings makes, so a download started here shows its progress there and vice
+     * versa: both screens read it back through `rememberModelDownloadState`, which observes the
+     * work rather than the calendar.
+     */
+    fun downloadModel(model: DownloadableModel) {
+        ModelDownloadWorker.enqueue(appContext, model)
+        bump()
+    }
+
+    /** Stops a download in progress. The partial file is kept, so resuming does not re-fetch it. */
+    fun cancelModelDownload(model: DownloadableModel) {
+        ModelDownloadWorker.cancel(appContext, model)
+        bump()
+    }
+
+    /** Removes a downloaded model and any partial download of it. */
+    fun deleteModel(model: DownloadableModel) {
+        ModelDownloadWorker.cancel(appContext, model)
+        ModelRepository.delete(appContext, model)
         bump()
     }
 

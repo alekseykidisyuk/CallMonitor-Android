@@ -70,6 +70,7 @@ import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.system.updates.UpdateScheduler
 import com.baba.callvault.integrations.scrcpy.AUDIO_BIT_RATE_OPTIONS
 import com.baba.callvault.transcription.TranscriptionScheduler
+import com.baba.callvault.transcription.model.DownloadableModel
 import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.ui.common.TranscriptionLabels
@@ -173,14 +174,11 @@ fun WizardScreen(
     val currentStep = steps[safeIndex]
 
     // Whether the current step's requirements are satisfied (gates the Next/Finish button).
-    val canAdvance = when (currentStep) {
-        WizardStep.STORAGE -> {
-            val hasRecordingFolder = recordingFolderLabel != null
-            val hasDriveFolder = !usesDrive || driveFolderLabel != null
-            hasRecordingFolder && hasDriveFolder
-        }
-        else -> true
-    }
+    val canAdvance = canAdvanceFrom(
+        step = currentStep,
+        hasRecordingFolder = recordingFolderLabel != null,
+        hasDriveFolder = !usesDrive || driveFolderLabel != null
+    )
 
     val isLastStep = safeIndex == steps.lastIndex
 
@@ -268,7 +266,12 @@ fun WizardScreen(
                         template = fileNameTemplate,
                         onSelectTemplate = viewModel::setFileNameTemplate
                     )
-                    WizardStep.TRANSCRIPTION -> TranscriptionStep()
+                    WizardStep.TRANSCRIPTION -> TranscriptionStep(
+                        updateTrigger = updateTrigger,
+                        onDownloadModel = viewModel::downloadModel,
+                        onCancelModelDownload = viewModel::cancelModelDownload,
+                        onDeleteModel = viewModel::deleteModel
+                    )
                 }
             }
         }
@@ -305,6 +308,27 @@ internal fun wizardSteps(usesDrive: Boolean, usesEmbeddedAdb: Boolean): List<Wiz
     // would otherwise never hear about, since the What's New dialog only fires after an *update*.
     add(WizardStep.TRANSCRIPTION)
     add(WizardStep.UPDATES)
+}
+
+/**
+ * Whether Next (or Finish, on the last step) is enabled on [step].
+ *
+ * Storage is the only step that can withhold it, and only because a recording with nowhere to go is
+ * not a setup that works. Everything else is a preference, an opt-in or — since the transcription
+ * step started offering them — a download, and **a download must never gate setup**: the summariser
+ * is 3.46 GB over an unmetered network, so a user on mobile data would be held on step seven of nine
+ * until they got home. The work continues on its own; the wizard has no reason to wait for it.
+ *
+ * A pure function for the same reason [wizardSteps] is one — it is a rule about the wizard rather
+ * than a piece of its drawing, and this is the shape a test can hold on to.
+ */
+internal fun canAdvanceFrom(
+    step: WizardStep,
+    hasRecordingFolder: Boolean,
+    hasDriveFolder: Boolean
+): Boolean = when (step) {
+    WizardStep.STORAGE -> hasRecordingFolder && hasDriveFolder
+    else -> true
 }
 
 // ── Shell: header + progress + bottom bar ─────────────────────────────────────────────────────
@@ -969,26 +993,41 @@ private fun FileNameStep(
 }
 
 /**
- * Transcription: when it runs, and in which language.
+ * Transcription and summaries: when they run, in which language, and — now — their models.
  *
- * Here at all because a fresh install has no other route to the feature — the What's New dialog needs
- * an *update* to fire, and the wizard cannot be re-run, so a step omitted here leaves the flagship of
- * this release buried in a Settings accordion nobody was told to open.
+ * Here at all because a fresh install has no other route to either feature — the What's New dialog
+ * needs an *update* to fire, and the wizard cannot be re-run, so a step omitted here leaves the
+ * flagship of this release buried in a Settings accordion nobody was told to open.
  *
- * Both controls are Settings' own composables, not wizard copies of them: the mode dropdown carries the
- * "this is slow and heavy" confirmation and the language dropdown carries the auto-detect warning, and a
- * copy that lost either would be a copy that lies. The same reason [ExperimentalStep] shares its toggle.
+ * Every control is Settings' own composable, not a wizard copy of it: the mode dropdown carries the
+ * "this is slow and heavy" confirmation, the language dropdown carries the auto-detect warning, and
+ * the summariser's rows carry the requirements dialog that guards 3.46 GB. A copy that lost any of
+ * those would be a copy that lies — the same reason [ExperimentalStep] shares its toggle and
+ * [ReliabilityStep] shares the offline switch, both after a hand-rolled version had already dropped
+ * the half that mattered.
  *
- * Nothing is downloaded from here. The model is 190-574 MB over Wi-Fi and the wizard is where someone is
- * least able to judge whether they want it — so the step is honest that one is needed and leaves the
- * button in Settings.
+ * **The downloads start here and nothing waits for them.** The step used to say the button was in
+ * Settings, which asked someone who has just been told about the feature to go and find it later.
+ * They are WorkManager jobs on an unmetered network, so Next and Finish stay enabled throughout
+ * ([canAdvanceFrom] never asks about this step) and the download carries on while the user finishes
+ * setup and lands on Home.
+ *
+ * @param updateTrigger Bumped by the view model after each write, which re-reads the filesystem
+ *   under the model rows — deleting a model touches no WorkManager state, so nothing else would.
  */
 @Composable
-private fun TranscriptionStep() {
+private fun TranscriptionStep(
+    updateTrigger: Int,
+    onDownloadModel: (DownloadableModel) -> Unit,
+    onCancelModelDownload: (DownloadableModel) -> Unit,
+    onDeleteModel: (DownloadableModel) -> Unit
+) {
     val context = LocalContext.current
     val prefs = remember { AppPreferences(context) }
     var mode by remember { mutableStateOf(prefs.getTranscriptionMode()) }
     var language by remember { mutableStateOf(prefs.getTranscriptionLanguage()) }
+    var modelId by remember { mutableStateOf(prefs.getTranscriptionModelId()) }
+    val selectedModel = TranscriptionModel.fromId(modelId) ?: TranscriptionModel.DEFAULT
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         CvCard(contentPadding = PaddingValues(vertical = 8.dp)) {
@@ -1009,6 +1048,25 @@ private fun TranscriptionStep() {
                     prefs.setTranscriptionLanguage(chosen)
                 }
             )
+
+            // Offered here because the download row below fetches whatever this says. Told to pick a
+            // model without being told which one is coming, the difference between 190 MB and 574 MB
+            // would arrive as a surprise on a metered month.
+            TranscriptionModelField(
+                modelId = modelId,
+                onModelChange = { chosen ->
+                    modelId = chosen
+                    prefs.setTranscriptionModelId(chosen)
+                }
+            )
+
+            TranscriptionModelRows(
+                model = selectedModel,
+                updateTrigger = updateTrigger,
+                onDownload = onDownloadModel,
+                onCancel = onCancelModelDownload,
+                onDelete = onDeleteModel
+            )
         }
 
         // Said even though the field already shows the language: the value arrived without being asked
@@ -1021,7 +1079,7 @@ private fun TranscriptionStep() {
 
         NoteCard(
             stringResource(
-                R.string.wizard_transcription_cost_note,
+                R.string.wizard_transcription_model_note,
                 stringResource(TranscriptionLabels.titleOf(TranscriptionModel.SMALL_Q5_1)),
                 TranscriptionModel.SMALL_Q5_1.sizeBytes / BYTES_PER_MB,
                 stringResource(TranscriptionLabels.titleOf(TranscriptionModel.LARGE_V3_TURBO_Q5_0)),
@@ -1029,9 +1087,34 @@ private fun TranscriptionStep() {
             )
         )
 
-        // One sentence, and no decision. The summariser is 3.5 GB with its own requirements dialog;
-        // asking about it here would be asking someone to weigh a cost this screen cannot explain.
-        NoteCard(stringResource(R.string.wizard_transcription_summary_note))
+        // A card of its own rather than the single sentence that used to be here. Summaries are half
+        // of what this step is for, and a footnote pointing at Settings is how a feature ends up
+        // never being found. The rows are the summariser's own, so the requirements dialog — 3.46 GB
+        // to download, about 3.5 GB of memory to run — still stands between the tap and the fetch.
+        CvCard(contentPadding = PaddingValues(vertical = 8.dp)) {
+            Text(
+                text = stringResource(R.string.wizard_transcription_summary_heading),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+            Text(
+                text = stringResource(R.string.wizard_transcription_summary_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            SummaryRows(
+                updateTrigger = updateTrigger,
+                onDownload = onDownloadModel,
+                onCancel = onCancelModelDownload,
+                onDelete = onDeleteModel
+            )
+        }
+
+        // Last, and about both downloads: whatever was started here does not have to finish here.
+        NoteCard(stringResource(R.string.wizard_transcription_background_note))
     }
 }
 

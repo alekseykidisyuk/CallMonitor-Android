@@ -17,6 +17,9 @@ import org.junit.Test
  * Covers which steps the wizard shows, because one of them had a side effect: entering the reliability
  * step probed the USB default over the embedded shell, which turned **Wireless debugging on** in Shizuku
  * mode — a mode that never pairs and could never have used the answer.
+ *
+ * And which of them may withhold Next, because the transcription step now starts model downloads and
+ * must not be allowed to hold setup hostage to one.
  */
 class WizardStepsTest {
 
@@ -67,6 +70,39 @@ class WizardStepsTest {
             "Transcription reads a finished recording, so it follows capture, encoding and naming.",
             steps.indexOf(WizardStep.TRANSCRIPTION) > steps.indexOf(WizardStep.FILE_NAME),
         )
+    }
+
+    @Test
+    fun `never withholds Next on the transcription step`() {
+        // The step now starts the downloads: 190-574 MB for the speech model, 3.46 GB for the
+        // summariser, both over Wi-Fi only. Gating on any of that would hold a user on mobile data
+        // at step seven of nine until they got home — for work that finishes on its own afterwards.
+        assertTrue(
+            "A download in progress must never gate the wizard.",
+            canAdvanceFrom(WizardStep.TRANSCRIPTION, hasRecordingFolder = false, hasDriveFolder = false),
+        )
+    }
+
+    @Test
+    fun `only the storage step can withhold Next`() {
+        // Stated over the whole enum rather than the one step, so a future step cannot quietly add a
+        // second gate: everything after storage is a preference or an opt-in, and none of them is a
+        // reason to refuse to finish setting the app up.
+        for (step in WizardStep.entries - WizardStep.STORAGE) {
+            assertTrue(
+                "$step must not gate the wizard",
+                canAdvanceFrom(step, hasRecordingFolder = false, hasDriveFolder = false),
+            )
+        }
+    }
+
+    @Test
+    fun `withholds Next until storage has every folder it needs`() {
+        // A recording with nowhere to go is not a setup that works, which is the one thing worth
+        // stopping for. The Drive folder is already reported as satisfied when Drive is not a target.
+        assertFalse(canAdvanceFrom(WizardStep.STORAGE, hasRecordingFolder = false, hasDriveFolder = true))
+        assertFalse(canAdvanceFrom(WizardStep.STORAGE, hasRecordingFolder = true, hasDriveFolder = false))
+        assertTrue(canAdvanceFrom(WizardStep.STORAGE, hasRecordingFolder = true, hasDriveFolder = true))
     }
 
     @Test

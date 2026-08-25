@@ -440,14 +440,27 @@
     <string name="wizard_reliability_usb_button">Set USB to Charging only</string>
     <string name="wizard_reliability_usb_done">USB is set to Charging only</string>
     <!--
-      Wizard: transcription. The one place a new install is ever told the feature exists — the What's
-      New dialog only fires after an update, which a fresh install never has.
+      Wizard: transcription and summaries. The one place a new install is ever told either feature
+      exists — the What's New dialog only fires after an update, which a fresh install never has.
+
+      The step offers both downloads. wizard_transcription_cost_note and
+      wizard_transcription_summary_note were replaced rather than reworded: both said the download
+      button was in Settings, and a locale that still had the old sentence translated would have
+      gone on saying so next to a working button. New names fall back to English until translated,
+      which is wrong-language but never wrong.
     -->
     <string name="wizard_transcription_title">Turning calls into text</string>
-    <string name="wizard_transcription_subtitle">CallVault can transcribe a recording on the phone itself — nothing is sent anywhere. Choose when that happens and which language your calls are in.</string>
+    <!--
+      Reworded in place, unlike the two notes below it: the old sentence is incomplete now that the
+      step also asks about summaries and models, but it is not untrue, so a locale still showing it
+      until the next translation pass says less rather than something wrong.
+    -->
+    <string name="wizard_transcription_subtitle">CallVault can turn a recording into text on the phone itself, and write a short summary from it — nothing is sent anywhere. Choose when that happens, which language your calls are in, and download what it needs.</string>
     <string name="wizard_transcription_language_note">Set to the language this phone is set to. Naming it is far more reliable than letting the app guess, and you can still pick a different one per call later.</string>
-    <string name="wizard_transcription_cost_note">Transcribing needs a speech model on the phone first: %1$s is %2$d MB, %3$s is %4$d MB. Nothing is downloaded now — the button is in Settings, and it only downloads over Wi-Fi. Transcribing a call then takes roughly the length of the call and works the processor hard.</string>
-    <string name="wizard_transcription_summary_note">Once a call has a transcript, CallVault can also write a short summary of it. That needs a much bigger model, so it asks separately — it is in the same place in Settings.</string>
+    <string name="wizard_transcription_model_note">Transcribing needs a speech model on the phone first: %1$s is %2$d MB, %3$s is %4$d MB. Transcribing a call then takes roughly the length of the call and works the processor hard.</string>
+    <string name="wizard_transcription_summary_heading">Summaries</string>
+    <string name="wizard_transcription_summary_body">Once a call has a transcript, CallVault can also write a short summary of it — on the phone, like everything else here.</string>
+    <string name="wizard_transcription_background_note">Both downloads only run over Wi-Fi, and they keep going in the background. You can carry on and finish setup now — Settings ▸ Transcription &amp; summaries shows the same progress afterwards.</string>
 
     <string name="wizard_audio_title">Audio quality</string>
     <string name="wizard_audio_subtitle">Pick the recording format and bit rate. Opus at 16 kbps is recommended for clear voice at small file sizes.</string>
@@ -547,6 +560,20 @@
     <string name="transcription_model_download_subtitle">%1$d MB, over Wi-Fi only</string>
     <string name="transcription_model_delete">Delete model</string>
     <string name="transcription_model_installed">Downloaded and ready</string>
+    <!--
+      The rest of the download's life, which the speech model never had wording for: its rows flipped
+      from "Download model" straight to "Downloaded and ready" with nothing in between. Deliberately
+      the summariser's sentences in megabytes rather than gigabytes — the same states, six times
+      smaller. "Cancel the download" is not one of them: summary_model_cancel says exactly that and
+      is shared by both, since it names no model.
+    -->
+    <string name="transcription_model_downloading">Downloading… %1$d%%</string>
+    <string name="transcription_model_waiting">Waiting for Wi-Fi</string>
+    <string name="transcription_model_resume">Resume the download</string>
+    <string name="transcription_model_resume_subtitle">%1$d MB of %2$d MB already downloaded</string>
+    <string name="transcription_model_failed_space">Not enough free space. Free some up and try again.</string>
+    <string name="transcription_model_failed_verify">The download was damaged and has been discarded. Try again.</string>
+    <string name="transcription_model_failed">The download did not finish. Try again.</string>
 
     <!--
       Call summaries. The numbers here are measured on the OP12, not estimated, and the copy is

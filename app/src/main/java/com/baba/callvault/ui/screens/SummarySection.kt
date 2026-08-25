@@ -10,16 +10,10 @@ package com.baba.callvault.ui.screens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,9 +28,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.ui.common.ConfirmDialog
-import com.baba.callvault.ui.common.M3DropdownField
-import com.baba.callvault.ui.common.OptionItem
-import com.baba.callvault.ui.common.TranscriptionLabels
 import com.baba.callvault.ui.common.SummaryRequirementsDialog
 import com.baba.callvault.summary.SummaryModel
 import com.baba.callvault.transcription.model.ModelDownloadWorker
@@ -53,6 +44,12 @@ import com.baba.callvault.ui.common.rememberModelDownloadState
  * wants about 3.5 GB of memory to run, which genuinely rules the feature out on smaller phones.
  * Measured on the OP12; the numbers come from [SummaryModel] so the copy cannot drift from what was
  * actually measured.
+ *
+ * @param extraRows Rendered between the model's rows and the licence line. Settings puts its
+ *   "ask me first" switch here; the setup wizard, which has no business offering a preference about
+ *   a dialog it has just shown, passes nothing. A slot rather than a flag so the wizard cannot end
+ *   up with a switch it must then explain — the same shape [TranscriptionSection] already uses to
+ *   host these rows inside itself.
  */
 @Composable
 internal fun SummaryRows(
@@ -60,8 +57,7 @@ internal fun SummaryRows(
     onDownload: (SummaryModel) -> Unit,
     onCancel: (SummaryModel) -> Unit,
     onDelete: (SummaryModel) -> Unit,
-    /** Re-reads preference-derived state, so a toggle here redraws the row it changed. */
-    onSettingChanged: () -> Unit
+    extraRows: @Composable ColumnScope.() -> Unit = {}
 ) {
     val context = LocalContext.current
     val model = SummaryModel.DEFAULT
@@ -172,13 +168,13 @@ internal fun SummaryRows(
 
             // Queued and 0% look identical on a bar and mean different things, so waiting says so
             // in words and shows an indeterminate bar rather than an empty one.
-            ModelDownloadState.Waiting -> DownloadingRow(
+            ModelDownloadState.Waiting -> ModelDownloadingRow(
                 label = stringResource(R.string.summary_model_waiting),
                 percent = null,
                 onCancel = { onCancel(model) }
             )
 
-            is ModelDownloadState.Downloading -> DownloadingRow(
+            is ModelDownloadState.Downloading -> ModelDownloadingRow(
                 label = stringResource(R.string.summary_model_downloading, current.percent),
                 percent = current.percent,
                 onCancel = { onCancel(model) }
@@ -202,67 +198,12 @@ internal fun SummaryRows(
             }
         }
 
-        // Its own setting, not whisper's. The transcription language says what to *listen* for;
-        // this says what to *write*, and someone transcribing with auto-detect still wants their
-        // summaries in one predictable language. "Match the call" never means "let the model
-        // decide" — SummaryLanguage always resolves it to a concrete language first.
-        // Its home is here so the dialog's "don't show this again" can be undone — a dialog that
-        // can permanently remove itself with no way back would be a trap. Same reasoning as the
-        // transcription confirmation switch above it.
-        SettingsToggleRow(
-            icon = Icons.Filled.Info,
-            label = stringResource(R.string.summary_requirements_heading),
-            description = stringResource(R.string.summary_requirements_toggle_description),
-            checked = askFirst,
-            onCheckedChange = {
-                preferences.setSummaryConfirmRequirements(it)
-                onSettingChanged()
-            }
-        )
+        extraRows()
 
         // Named where it can be read before the download starts. CallVault never ships the weights,
         // so its own licensing is unaffected — but the person accepting Google's terms is entitled
         // to know that is what they are doing.
         Note(stringResource(R.string.summary_model_licence))
-    }
-}
-
-/** A download in flight, with the one action that makes sense while it runs. */
-@Composable
-private fun DownloadingRow(label: String, percent: Int?, onCancel: () -> Unit) {
-    // Both colours are stated. Left to the theme, M3 resolves the track to CoralDeep and the bar
-    // renders teal-on-pink, which reads as an error rather than as progress — the same trap that
-    // has already produced a maroon tonal button, a maroon selected card and a red progress ring
-    // in this codebase. Observed here too, on the emulator, before it was pinned down.
-    val accent = MaterialTheme.colorScheme.primary
-    val track = accent.copy(alpha = TRACK_ALPHA)
-    val barModifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp)
-
-    Column(Modifier.fillMaxWidth()) {
-        NavigationRow(
-            icon = Icons.Filled.Close,
-            label = label,
-            value = stringResource(R.string.summary_model_cancel),
-            onClick = onCancel
-        )
-        // Determinate only once there is a real figure; an empty bar sitting at zero reads as stuck.
-        if (percent != null) {
-            LinearProgressIndicator(
-                progress = { percent / PERCENT },
-                modifier = barModifier,
-                color = accent,
-                trackColor = track
-            )
-        } else {
-            LinearProgressIndicator(
-                modifier = barModifier,
-                color = accent,
-                trackColor = track
-            )
-        }
-        Spacer(Modifier.height(8.dp))
     }
 }
 
@@ -275,11 +216,6 @@ private fun ColumnScope.Note(text: String) {
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
     )
 }
-
-private const val PERCENT = 100f
-
-/** How much of the accent shows through as the bar's unfilled track. */
-private const val TRACK_ALPHA = 0.20f
 
 /** Bytes as gigabytes, for copy that talks in the units a person would. */
 private fun Long.toGigabytes(): Float = this / 1_000_000_000f
