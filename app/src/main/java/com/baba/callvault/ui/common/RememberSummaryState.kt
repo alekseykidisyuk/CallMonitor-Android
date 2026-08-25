@@ -83,10 +83,19 @@ fun rememberSummaryState(displayName: String): State<SummaryCardState> {
     ) {
         val db = TranscriptDatabase.get(appContext)
 
+        // The transcript is in here too, and it is the fix for a real complaint: with a recording open,
+        // finishing its transcription left the summary card still saying there was nothing to summarise
+        // until you went back to the list and came in again.
+        //
+        // The card's "no transcript yet" answer comes from a one-shot read inside the collector, so it
+        // is only ever recomputed when this flow emits — and the flow watched the SUMMARY row and the
+        // summary's work info, neither of which changes when a TRANSCRIPT is written. Observing the
+        // transcript as well means the card re-evaluates the moment one lands.
         combine(
             db.summaryDao().observe(displayName),
+            db.transcriptDao().observe(displayName),
             workManager.getWorkInfosForUniqueWorkFlow(SummaryScheduler.WORK_NAME)
-        ) { stored, infos ->
+        ) { stored, _, infos ->
             // Only the job for *this* recording counts — the queue is shared, so a summary running
             // for a different call must not make this one look busy.
             //

@@ -8,6 +8,7 @@
 
 package com.baba.callvault.ui.screens
 
+import com.baba.callvault.ui.common.CallOriginBadge
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
@@ -204,6 +205,11 @@ private fun CallHeaderCard(
             // The initial, not a contact photo. Loading photos means querying the contacts provider
             // per row and holding bitmaps; the letter identifies the call just as well here, where
             // the name is already spelled out beside it.
+            // The avatar carries the same origin badge the list row does, so a recording is marked
+            // the same way wherever it is looked at. Before this the playback screen had no way of
+            // saying a call was VoIP at all: the direction chip below only appears for phone calls,
+            // and a VoIP recording has no direction to show.
+            Box(contentAlignment = Alignment.Center) {
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -228,6 +234,8 @@ private fun CallHeaderCard(
                         modifier = Modifier.size(24.dp)
                     )
                 }
+            }
+                CallOriginBadge(item.direction, item.voipApp)
             }
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {

@@ -144,7 +144,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.baba.callvault.ui.common.VoipAppIcons
+import com.baba.callvault.ui.common.CallOriginBadge
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Groups
 import com.baba.callvault.R
@@ -2144,72 +2144,7 @@ private fun PlayDisc(
         }
         // A VoIP recording has no direction (there is no call-log entry behind it), so the same corner
         // slot carries the app it came from instead — the two can never collide.
-        if (direction == null && voipApp != null) VoipAppBadge(voipApp) else DirectionBadge(direction)
-    }
-}
-
-/**
- * Corner badge showing which app a VoIP recording came from, using that app's OWN installed icon —
- * so no messenger's trademarked logo is bundled with CallVault. Falls back to a neutral glyph when the
- * app can't be resolved (uninstalled since, or a label we can't match).
- */
-@Composable
-private fun BoxScope.VoipAppBadge(appLabel: String) {
-    val context = LocalContext.current
-    val icon = remember(appLabel) { VoipAppIcons.iconFor(context, appLabel) }
-    Box(
-        modifier = Modifier
-            .size(18.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(2.dp)
-            .align(Alignment.BottomEnd),
-        contentAlignment = Alignment.Center
-    ) {
-        if (icon != null) {
-            Image(
-                bitmap = icon,
-                contentDescription = appLabel,
-                modifier = Modifier.size(13.dp).clip(CircleShape)
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Filled.Groups,
-                contentDescription = appLabel,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(11.dp)
-            )
-        }
-    }
-}
-
-/** Tiny corner badge indicating call direction, overlaid on the play disc. */
-@Composable
-private fun BoxScope.DirectionBadge(direction: RecordingDirection?) {
-    val icon = when (direction) {
-        RecordingDirection.INCOMING -> Icons.AutoMirrored.Filled.CallReceived
-        RecordingDirection.OUTGOING -> Icons.AutoMirrored.Filled.CallMade
-        null -> return
-    }
-    val description = when (direction) {
-        RecordingDirection.INCOMING -> stringResource(R.string.general_incoming)
-        RecordingDirection.OUTGOING -> stringResource(R.string.general_outgoing)
-    }
-    Box(
-        modifier = Modifier
-            .size(18.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(2.dp)
-            .align(Alignment.BottomEnd),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = description,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(11.dp)
-        )
+        CallOriginBadge(direction, voipApp)
     }
 }
 
