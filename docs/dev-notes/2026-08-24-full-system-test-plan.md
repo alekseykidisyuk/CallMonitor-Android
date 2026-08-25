@@ -304,6 +304,91 @@ disabling WD when it was the last transport killed the daemon and span. The fix 
 enable with its own disable in `AdbShell` rather than relying on the launcher, but it needs its own
 think and its own device test, and it is unrelated to the mode work this run was about.
 
+## The recording matrix — every flow-affecting setting, both call types, both modes
+
+Derived from the preferences the recording and call services actually read, not from the Settings screen
+— so it covers what changes behaviour and nothing that does not. Codec, bit rate, file-name template,
+storage target, theme and the transcription settings are all deliberately absent: they change the file
+or the UI, never the path the audio takes.
+
+### The axes that matter
+
+| Axis | Values | What it changes | Read by |
+|---|---|---|---|
+| Privileged mode | standalone / Shizuku | which process captures | `getPrivilegedMode` |
+| Resilient recording | on / off | **capture path**: handoff vs direct | `isHandoffPersistEnabled` |
+| Offline recording | on / off | **transport**: loopback vs wireless debugging | `isOfflineRecordingEnabled` |
+| VoIP recording | on / off | whether app calls record at all | `isVoipRecordingEnabled` |
+| VoIP auto-start | on / off | records by itself vs prompts | `isVoipAutoStartEnabled` |
+| Carrier recording | on / off | whether phone calls record at all | `isCarrierRecordingEnabled` |
+| Auto-record incoming / outgoing | on / off | whether that direction records | `isAutoRecordIncoming/OutgoingEnabled` |
+| Ignore rules | on / off | whether recording starts for this caller | `isIgnore*`, `getIgnoredContacts*` |
+| Audio source | `voice-call` / `mic-voice-communication` | which capture source | `getAudioSource` |
+
+Under Shizuku the first three are greyed and forced off, so that mode has fewer rows — that is the
+point of the greying, and rows Z2 checks it.
+
+### How each row is judged
+
+Every row records the same four things:
+
+1. **Result** — is there a file, and is it the expected size (or correctly absent)?
+2. **Pipeline** — which path the log names: `Handoff: startHandoff…`, the direct session, scrcpy, or
+   `armVoipCapture`.
+3. **WD status** — `adb_wifi_enabled` **after** the call settles. It must be `0` in standalone unless
+   wireless debugging is adbd's only transport. This is the row that was leaking until yesterday.
+4. **Audio** — only where the capture path itself changed. Rows expecting *no* recording need only a
+   few seconds of call; rows expecting audio need the near-side clip and a few words from the far side.
+
+`A` in the table below = needs real two-sided audio. `Q` = quick, connect and drop.
+
+### Standalone
+
+| # | Configuration | Call | Expect | Verify | |
+|---|---|---|---|---|---|
+| S1 | everything on (resilient **on**) | cell | records via **handoff** | `startHandoff`, speaker turns, WD=0 | A |
+| S2 | everything on | VoIP | records, auto-started | `armVoipCapture`, stereo file | A |
+| S3 | resilient **off** | cell | records via **direct** AudioRecord | direct session in log, no front clip | A |
+| S4 | resilient **off** | VoIP | unaffected — still records | `armVoipCapture` | Q |
+| S5 | offline recording **on** | cell | records over **loopback**, WD stays off | loopback in log, WD=0 throughout | A |
+| S6 | offline recording **on** | VoIP | unaffected | file present | Q |
+| S7 | VoIP recording **off** | cell | unaffected — records | handoff/direct as configured | Q |
+| S8 | VoIP recording **off** | VoIP | **no recording**, no false "ready" | no file, no arming in log | Q |
+| S9 | VoIP auto-start **off** | VoIP | **prompt** instead of auto-record | prompt appears; recording only if tapped | Q |
+| S10 | carrier recording **off** | cell | **no recording at all**, no notification | no file, call ignored | Q |
+| S11 | carrier recording **off** | VoIP | app calls unaffected — records | file present | Q |
+| S12 | auto-record outgoing **off** | cell (out) | **not recorded** | no file | Q |
+| S13 | auto-record incoming **off** | cell (**in**) | **not recorded** | no file — OP12 must call the OP9 | Q |
+| S14 | audio source `mic-voice-communication` | cell | records, different source | source named in log; **listen** — this is the pair that can drop the near side | A |
+| S15 | ignore rule matches the caller | cell | **not recorded** | no file, ignore reason logged | Q |
+
+### Shizuku
+
+| # | Configuration | Call | Expect | Verify | |
+|---|---|---|---|---|---|
+| Z1 | everything the mode allows | cell | records via **scrcpy** | scrcpy in log, front clip present, **no** speaker turns | A |
+| Z2 | same | VoIP | **no recording** — the mode cannot | no arming; the switch is greyed and off | Q |
+| Z3 | carrier recording **off** | cell | not recorded | no file | Q |
+| Z4 | auto-record outgoing **off** | cell (out) | not recorded | no file | Q |
+| Z5 | audio source `mic-voice-communication` | cell | records | source named in log | A |
+| Z6 | everything on | cell (**in**) | records incoming | file present, two-sided | A |
+| Z7 | after switching **back** to standalone | VoIP | arming restored | `armVoipCapture` true — the row yesterday's fix touched | A |
+
+### Cost, honestly
+
+**22 rows, of which 9 need real two-sided audio and 13 are quick connect-and-drop.** At roughly 20 s per
+audio call and 10 s per quick one, that is about 8 minutes of call time — but the real cost is the
+setting changes between rows, and there are 20-odd of those.
+
+Suggested split, so a session ends somewhere useful:
+
+- **Session 1 — the capture paths (S1, S2, S3, S5, S14, Z1, Z7).** Every row where the audio path itself
+  differs. These are the ones that can silently produce a one-sided or empty file, which is the failure
+  that matters. All need audio.
+- **Session 2 — the gates (S7–S13, S15, Z2–Z4).** All quick. They prove that turning something off
+  turns off *only* that thing, which is exactly where the mode work could have leaked.
+- **Session 3 — incoming (S13, Z6)** needs the OP12 to originate, so it is a different setup.
+
 ## The call schedule — which real call settles which row
 
 Four calls settle everything that automation cannot, and the order matters: the mode round trip has to
