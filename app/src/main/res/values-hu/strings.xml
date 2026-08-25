@@ -263,7 +263,7 @@
     <string name="home_mode_badge_standalone">CallVault</string>
     <string name="home_mode_badge_shizuku">Shizuku</string>
     <string name="settings_subsection_privileges">Honnan kapja a CallVault a jogosultságokat</string>
-    <string name="settings_shizuku_mode">Inkább a Shizuku használata</string>
+    <string name="settings_shizuku_mode">Shizuku mód</string>
     <string name="settings_shizuku_not_installed">A Shizuku nincs telepítve. A CallVaultnak nincs rá szüksége — ez csak azoknak szól, akik amúgy is használják.</string>
     <string name="settings_shizuku_not_running">A Shizuku telepítve van, de nem fut. A telefon minden újraindítása után újra el kell indítani.</string>
     <string name="settings_shizuku_no_permission">A Shizuku fut, de még nem engedélyezte a CallVault számára a használatát.</string>

@@ -78,7 +78,7 @@ where() {
     offline)      echo "GENERAL|Experimental|Offline recording" ;;
     usbdebug)     echo "GENERAL|Experimental|USB debugging" ;;
     # Now pinned at the top of Settings, above every section and inside none of them.
-    shizuku)      echo "||Use Shizuku instead" ;;
+    shizuku)      echo "||Shizuku mode" ;;
     voip)         echo "GENERAL|Experimental|Record VoIP calls" ;;
     voipauto)     echo "GENERAL|Experimental|Start automatically" ;;
     carrier)      echo "RECORDING|Phone calls|Record phone calls" ;;

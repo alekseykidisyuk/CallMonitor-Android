@@ -263,7 +263,7 @@
     <string name="home_mode_badge_standalone">CallVault</string>
     <string name="home_mode_badge_shizuku">Shizuku</string>
     <string name="settings_subsection_privileges">De dónde obtiene permisos CallVault</string>
-    <string name="settings_shizuku_mode">Usar Shizuku en su lugar</string>
+    <string name="settings_shizuku_mode">Modo Shizuku</string>
     <string name="settings_shizuku_not_installed">Shizuku no está instalado. CallVault no lo necesita: esto es solo para quien ya lo usa.</string>
     <string name="settings_shizuku_not_running">Shizuku está instalado pero no se está ejecutando. Hay que iniciarlo de nuevo cada vez que se reinicia el teléfono.</string>
     <string name="settings_shizuku_no_permission">Shizuku se está ejecutando, pero todavía no ha permitido que CallVault lo use.</string>
