@@ -1228,12 +1228,25 @@ private fun AudioSection(preferences: AppPreferences, updateTrigger: Int, action
 
         // Build the source list from the enum, always hiding debug-only entries.
         // Items that require an API level not available on this device are shown as disabled.
+        // `voice-call` is flagged in the list the same way the recommended bit rate is, because the
+        // four sources are not peers however evenly the dropdown presents them. Measured on a OnePlus 9
+        // Pro, 2026-08-25, same call and same clip: voice-call captures two channels at -42 dB with
+        // speaker attribution; `mic-voice-communication` captures ONE channel at -51.7 dB, is barely
+        // audible, and silently produces no speaker turns at all — there is nothing to attribute. The
+        // others exist for devices where voice-call is unavailable, which is worth keeping and worth
+        // saying at the point where someone picks one.
+        val recommendedSourceLabel = stringResource(R.string.general_recommended)
         val audioSourceOptions = ScrcpyAudioSource.entries
             .filter { !it.isDebugOnly }
             .map { source ->
+                val title = stringResource(source.titleResId)
                 OptionItem(
                     key         = source.cliKey,
-                    label       = stringResource(source.titleResId),
+                    label       = if (source == ScrcpyAudioSource.VOICE_CALL) {
+                        "$title ($recommendedSourceLabel)"
+                    } else {
+                        title
+                    },
                     description = stringResource(source.descriptionResId),
                     // Enabled only when the current SDK is within the source's API range.
                     enabled     = currentSdk >= source.minApi &&
