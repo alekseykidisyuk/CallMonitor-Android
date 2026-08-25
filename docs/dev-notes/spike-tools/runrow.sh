@@ -107,6 +107,14 @@ a pull "$REC_DIR/$NEW" "$OUT/" >/dev/null 2>&1 && {
   echo "   size: $(stat -f%z "$F") bytes"
   ffprobe -v error -show_entries format=duration:stream=channels,codec_name -of default=nw=1 "$F" | sed 's/^/   /'
   ffmpeg -i "$F" -af volumedetect -f null - 2>&1 | grep -oE 'mean_volume: [-0-9.]+ dB|max_volume: [-0-9.]+ dB' | sed 's/^/   /'
-  echo "   -- silence spans --"
-  ffmpeg -i "$F" -af silencedetect=noise=-35dB:d=1.5 -f null - 2>&1 | grep -oE 'silence_(start|end): [0-9.]+' | head -8 | sed 's/^/   /'
+  # Threshold RELATIVE to this file's own level, not a fixed -35 dB.
+  #
+  # The handoff path averages about -35 dB, so a fixed -35 dB threshold marks ordinary speech as
+  # silence: Z8 reported twelve seconds of "silence" in a recording the maintainer then confirmed had
+  # both sides perfectly audible. A false "the near side is missing" is worse than no check at all —
+  # it sends you hunting a capture bug that is not there.
+  MEAN=$(ffmpeg -i "$F" -af volumedetect -f null - 2>&1 | grep -oE 'mean_volume: [-0-9.]+' | grep -oE '[-0-9.]+$')
+  THRESH=$(python3 -c "print(round(min(float('$MEAN') - 12, -45), 1))" 2>/dev/null || echo -45)
+  echo "   -- quiet spans (below ${THRESH}dB, i.e. 12 dB under this file's own mean) --"
+  ffmpeg -i "$F" -af "silencedetect=noise=${THRESH}dB:d=1.5" -f null - 2>&1 | grep -oE 'silence_(start|end): [0-9.]+' | head -8 | sed 's/^/   /'
 }

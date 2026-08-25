@@ -521,6 +521,31 @@ window. What closed it was clearing `RecorderConnection.onDeath` **synchronously
 Neither would have been found by a process check. B1/B2 both passed throughout — one recorder was alive
 each time. It was the wrong one.
 
+**Z8 — standalone after a full Shizuku round trip, then a cell call. PASS (2026-08-25).**
+
+The direct regression test for the teardown fix, and the answer is unambiguous.
+
+| Check | Result |
+|---|---|
+| Pipeline | **handoff** — `HandoffEncoder finished: 19.384s` |
+| scrcpy mentions in the whole log | **0** — the line that must never appear here |
+| Speaker turns | **back** — `came from the handoff capture` |
+| Channels | mono, the standalone shape (Shizuku's is stereo) |
+
+So a standalone call after a round trip really is served by our own daemon. Both switch directions are
+now proven by a call rather than a process count.
+
+*The near-side clip did not transmit on this particular call — the middle of the file is quiet at any
+sensible threshold, most likely a missed speaker toggle in the harness. The maintainer placed a separate
+call in the same configuration immediately afterwards (mean -31.3 dB) and confirmed both sides audible,
+which is what settles the audio half of this row.*
+
+**A measurement lesson worth keeping.** The silence check used a fixed `-35 dB` threshold — but these
+recordings range from -19 dB (VoIP) to -42 dB (handoff) mean, so on the quiet paths ordinary speech sits
+below the threshold and reads as silence. The check now derives its threshold from each file's own mean
+(12 dB under it, floored at -45 dB). A false "the near side is missing" is worse than no check at all: it
+sends you hunting a capture bug that was never there.
+
 ### Mode switching — the rows that need a call, not just a process check
 
 B1/B2 proved a switch leaves exactly one recorder alive. They did **not** prove the next call goes
