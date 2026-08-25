@@ -31,18 +31,56 @@ toggle_speaker() {
 
 echo "############ ROW $ROW ############"
 echo "before: recordings=$(recs) wd=$(wd) mode=$(mode)"
+
+# DO NOT invite a call until the app is actually ready to record one.
+#
+# VoIP arming is fixed when the capture track is created, so a call arriving before the recorder is up
+# is lost for good — there is no retry. Learned the hard way on 2026-08-25: an APK was installed a
+# minute earlier (adb install force-stops the app), a real 19-second WhatsApp call ran from 12:53:00 to
+# 12:53:19, and CallVault's own process did not start until 12:53:28. Nothing recorded, and nothing
+# could even notify, because the app was not there to notice. A void row, not a failed one — and only
+# the timestamps tell you which.
+echo "== waiting for the recorder to be ready =="
+READY=0
+for i in $(seq 1 60); do
+  HOST=$(a shell ps -A -o PID,ARGS 2>/dev/null | grep -E 'RecorderServer|callvault:recorder' | grep -v ' sh -c ' | head -1)
+  APP=$(a shell pidof com.baba.callvault 2>/dev/null | tr -d '\r')
+  if [ -n "$HOST" ] && [ -n "$APP" ]; then
+    READY=$((READY + 1))
+    [ "$READY" -ge 3 ] && { echo "   app pid=$APP and a recorder are both up"; break; }
+  else
+    READY=0
+    printf "."
+  fi
+  sleep 1
+done
+if [ "$READY" -lt 3 ]; then
+  echo
+  echo "   recorder never came up — not inviting a call"
+  exit 1
+fi
+
 a logcat -c
 echo
 echo ">>> PLACE THE CALL NOW (waiting up to ${WAIT}s) <<<"
+# Require the mode to HOLD, not just appear. A WhatsApp call passes through
+# MODE_IN_COMMUNICATION while it is still ringing, and acting on that first sighting meant playing the
+# clip into a call that had not connected — and then reading the next dip as the call ending.
+STREAK=0
 for i in $(seq 1 "$WAIT"); do
-  M=$(mode)
-  [ "$M" = "MODE_IN_COMMUNICATION" ] && { echo "   call detected after ${i}s ($M)"; break; }
-  printf "."
+  if [ "$(mode)" = "MODE_IN_COMMUNICATION" ]; then
+    STREAK=$((STREAK + 1))
+    [ "$STREAK" -ge 5 ] && { echo "   call up and holding after ${i}s"; break; }
+  else
+    STREAK=0
+    printf "."
+  fi
   sleep 1
 done
-[ "$(mode)" != "MODE_IN_COMMUNICATION" ] && { echo; echo "   no VoIP call detected; giving up"; exit 1; }
+[ "$STREAK" -lt 5 ] && { echo; echo "   no VoIP call stayed up; giving up"; exit 1; }
 
-sleep 3
+# Extra settle so the clip lands in a connected call, not a ringing one.
+sleep 4
 echo "== mid-call =="
 echo "   services: $(services)"
 echo "   wd      : $(wd)"
@@ -55,8 +93,15 @@ a shell am force-stop com.heytap.browser >/dev/null 2>&1
 toggle_speaker off
 
 echo "   SPEAK NOW, then hang up when you are done"
-for i in $(seq 1 120); do
-  [ "$(mode)" != "MODE_IN_COMMUNICATION" ] && { echo "   call ended after ${i}s"; break; }
+# Same on the way out: three consecutive readings, so a momentary dip is not mistaken for a hang-up.
+GONE=0
+for i in $(seq 1 180); do
+  if [ "$(mode)" != "MODE_IN_COMMUNICATION" ]; then
+    GONE=$((GONE + 1))
+    [ "$GONE" -ge 3 ] && { echo "   call ended after ${i}s"; break; }
+  else
+    GONE=0
+  fi
   sleep 1
 done
 sleep 8

@@ -618,6 +618,35 @@ outcome there, and any future check that treats a one-sided file as a failure wo
 
 *Restored to `Voice call` after the row.*
 
+**S6 — VoIP over the loopback transport. VOID, not failed (2026-08-25) — and worth writing down anyway.**
+
+A real 19-second WhatsApp call, both sides speaking, was **not recorded**. It looked exactly like a
+serious bug — offline recording had just been enabled, and the obvious story was "the loopback transport
+breaks VoIP". The timestamps say otherwise:
+
+```
+12:53:00.406  setMode mode=3 from com.whatsapp     <- the call starts
+12:53:19.592  setMode mode=0 from com.whatsapp     <- the call ends, 19s later
+12:53:28.899  RecorderBinderProvider onCreate      <- CallVault's process starts
+12:53:33.663  RecorderServer starting
+12:53:34.254  armVoipCapture -> true
+```
+
+**CallVault was not running during the call.** An APK had been installed a minute earlier, and `adb
+install` force-stops the app; nothing brought it back until nine seconds *after* the call ended. So the
+row proves nothing about offline mode and has to be re-run.
+
+Three things are worth keeping from a void row:
+
+1. **A missed VoIP call is unrecoverable and, here, entirely silent.** No notification fired — and could
+   not have, because the app was not there to notice a call had happened. The miss notice can only
+   cover the case where the app is alive and the *daemon* is missing.
+2. **The window after an update is real, if narrow.** A user updating the app and receiving an app call
+   in the next minute loses it the same way. Worth knowing before dismissing this as a harness artifact.
+3. **The harness now refuses to invite a call until the app process and a recorder are both up** for
+   three consecutive checks. Without that, "nothing recorded" is ambiguous — and the ambiguity points at
+   the product first, which is the wrong place to start looking.
+
 ### Mode switching — the rows that need a call, not just a process check
 
 B1/B2 proved a switch leaves exactly one recorder alive. They did **not** prove the next call goes
