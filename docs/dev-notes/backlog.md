@@ -34,6 +34,51 @@ to 1.6.0 — stale, written before the version scheme moved). 20100 clears the 1
 
 The maintainer is running this build daily for a few days before cutting the release.
 
+### 🔴 Seven calls recorded zero audio on the OP12 — found 2026-08-25, WATCHING FOR A RECURRENCE
+
+Found while verifying the 2.1.0 install on the maintainer's daily driver. Seven consecutive **carrier**
+calls, 11:43 → 13:16 on 2026-08-25, each produced a file of **exactly 98 bytes**:
+
+```
+11:43  in   גבריאל 2b     98 B      13:02  out  יצחק 2b לוי   98 B
+11:56  in   גבריאל 2b     98 B      13:09  out  גבריאל 2b     98 B
+12:36  out  גבריאל 2b     98 B      13:16  in   גבריאל 2b     98 B
+12:37  in   גבריאל 2b     98 B
+```
+
+98 bytes is `OpusHead` + `OpusTags` and then end-of-file — both Opus headers (mono, 48 kHz, pre-skip
+312) and **not one audio packet**. `ffprobe` reports `End of file`; the playback screen draws a flat
+line and the row shows `0 KB`. The encoder was initialised and the container opened; no PCM ever
+reached it.
+
+**The window is clean and bracketed.** `11:32` before it is 1.5 MB and healthy; `16:08`, `16:10`
+(WhatsApp) and `16:12` after it are all healthy. Nothing outside 11:43–13:16 is affected, on any day.
+The device is in **standalone** mode — Shizuku is not installed on it — so the wrong-host and
+stale-service failure modes in [[only-one-recorder-host]] and [[shizuku-mode-capture-rules]] are ruled
+out as written.
+
+**Why it is not diagnosed.** The debug log for that window was deleted before anyone looked, so the
+decisive evidence is gone — the same way it was gone for the stuck-microphone report above. The two
+candidate stories the artefacts cannot separate:
+
+1. **Collateral from that morning's testing.** 11:43–13:16 is exactly when the mode-switch, keep-alive
+   and WD-lease bugs were being worked, and this phone was the far end of those test calls. A daemon
+   killed or a host torn down underneath a live capture would look precisely like this.
+2. **A real capture failure that the ~16:01 install happened to clear** — in which case it can ship.
+
+Nothing in a 98-byte file distinguishes those, and guessing between them is how two wrong conclusions
+got reached earlier the same day.
+
+**The plan, agreed with the maintainer 2026-08-25:** logging is switched back on on the OP12 and this
+waits for a recurrence. It is **not** a release gate — three later calls on the same phone, carrier and
+VoIP, recorded, transcribed and summarised correctly.
+
+**If it recurs, the log now answers it** — which is what the diagnostics pass that day was for. Look for,
+in order: the `CaptureAudit` line for the capture (was a microphone opened at all, and what did
+`release()` actually do), the daemon's own merged `CV:RecorderServer` / `CV:DirectCapture` lines (did
+the `AudioRecord` ever reach RECORDING), the config header (mode, resilient, transport), and whether a
+teardown or mode switch lands inside the call. See [[diagnosing-a-user-report]].
+
 ### 🔵 Refuse to transcribe a recording over 15 minutes — agreed 2026-08-25
 
 Decided while closing the test matrix: the long-call OOM is **not** a release gate, because shipping as
