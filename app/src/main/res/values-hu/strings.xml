@@ -257,6 +257,7 @@
     <string name="mode_switch_shizuku_not_installed">A Shizuku nincs telepítve, így nincs mire váltani.</string>
     <string name="mode_switch_shizuku_not_running">A Shizuku nem fut. Nyissa meg, indítsa el, majd próbálja újra — minden újraindításkor leáll.</string>
     <string name="mode_switch_shizuku_not_permitted">A Shizuku még nem engedélyezte a CallVaultot. Nyissa meg, engedélyezze, majd próbálja újra.</string>
+    <string name="mode_switch_voip_not_armed">Átváltva, de az alkalmazáshívások rögzítését nem sikerült előkészíteni. A telefonhívások rögzülnek; az alkalmazáshívások lehet, hogy csak a CallVault újranyitása után.</string>
     <string name="mode_switch_recorder_failed">A felvevő nem indult el. Addig semmi nem kerül rögzítésre.</string>
     <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>

@@ -150,6 +150,7 @@
     <string name="mode_switch_shizuku_not_installed">Shizuku is not installed, so there is nothing to switch to.</string>
     <string name="mode_switch_shizuku_not_running">Shizuku is not running. Open Shizuku and start it, then try again — it stops whenever the phone restarts.</string>
     <string name="mode_switch_shizuku_not_permitted">Shizuku has not allowed CallVault to use it yet. Open Shizuku and allow it, then try again.</string>
+    <string name="mode_switch_voip_not_armed">Switched, but app-call recording could not be armed. Phone calls will record; app calls may not until you reopen CallVault.</string>
     <string name="mode_switch_recorder_failed">The recorder did not start. Nothing will be recorded until it does.</string>
     <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>

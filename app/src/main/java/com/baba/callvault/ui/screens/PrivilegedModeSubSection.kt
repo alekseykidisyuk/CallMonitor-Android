@@ -82,11 +82,10 @@ fun PrivilegedModeSubSection() {
             scope.launch {
                 // Off the main thread: switchTo stops a backend and ensureRunning waits for a binder,
                 // both of which block. The dialog stays up, uninterruptible, until this answers.
-                val outcome = withContext(Dispatchers.IO) {
-                    RecorderBackend.switchTo(context, target)
-                    val connected = RecorderBackend.ensureRunning(context)
-                    ModeSwitchResult.of(target, connected, RecorderBackend.shizukuStatus(context))
-                }
+                // One call, because "the switch is finished" is one decision and it belongs in one
+                // place — see RecorderBackend.completeSwitch. Assembling it here is how the dialog came
+                // to report "Ready" while VoIP arming was still running on another thread.
+                val outcome = withContext(Dispatchers.IO) { RecorderBackend.completeSwitch(context, target) }
                 switchResult = outcome
                 refresh++
             }

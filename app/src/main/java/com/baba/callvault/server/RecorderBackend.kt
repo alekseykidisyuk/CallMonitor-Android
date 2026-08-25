@@ -13,6 +13,7 @@ import android.os.SystemClock
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.services.recording.DaemonKeepAliveService
+import com.baba.callvault.services.recording.VoipCaptureController
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -62,6 +63,49 @@ object RecorderBackend {
             }
             BackendChoice.SHIZUKU -> ensureShizukuRunning(context)
         }
+    }
+
+    /**
+     * Performs a whole mode switch and reports it — **the one definition of "the switch is finished".**
+     *
+     * A live binder is not the finish line. A switch tears things down, and the switch is not done until
+     * everything it tore down is standing again; anything left running on its own thread afterwards is a
+     * window in which the UI says "ready" and the app cannot do its job. That is not theoretical: VoIP
+     * arming is a blocking IPC done on a separate thread, and a VoIP call landing before it completes is
+     * **lost for good** — routing is fixed when the capture track is created, so there is no arming late
+     * and no retry.
+     *
+     * In order, and synchronously:
+     *  1. [switchTo] — tear the old backend down, reconcile the settings, set the mode.
+     *  2. [ensureRunning] — bring the new backend up and wait for its binder.
+     *  3. **Restart the keep-alive** in standalone. It is stopped on the way into Shizuku mode, and
+     *     nothing restarted it on the way back until the next cold start of the app — and it *hosts VoIP
+     *     detection*, so leaving it down silently costs detection as well as the daemon watchdog.
+     *  4. **Wait for VoIP arming**, when the user has VoIP recording on.
+     *
+     * @return what the dialog should say, judged on the state that is true once all of that is done.
+     */
+    fun completeSwitch(context: Context, to: PrivilegedMode): ModeSwitchResult {
+        switchTo(context, to)
+        val connected = ensureRunning(context)
+
+        if (!to.needsShizuku) {
+            // Safe to call unconditionally: the service checks the mode itself and stands down in
+            // Shizuku mode, and starting one that is already running is a no-op.
+            runCatching { DaemonKeepAliveService.start(context) }
+                .onFailure { AppLogger.w(TAG, "Could not restart the keep-alive after the switch: ${it.message}") }
+        }
+
+        val voipArmed = when {
+            !connected -> false
+            !AppPreferences(context).isVoipRecordingEnabled() -> true
+            else -> runCatching { VoipCaptureController.sync(context) }
+                .onFailure { AppLogger.w(TAG, "VoIP arming after the switch failed: ${it.message}") }
+                .getOrDefault(false)
+        }
+        AppLogger.i(TAG, "Switch to $to complete: connected=$connected voipArmed=$voipArmed")
+
+        return ModeSwitchResult.of(to, connected, voipArmed, shizukuStatus(context))
     }
 
     /**

@@ -257,6 +257,7 @@
     <string name="mode_switch_shizuku_not_installed">Shizuku chưa được cài đặt nên không có gì để chuyển sang.</string>
     <string name="mode_switch_shizuku_not_running">Shizuku chưa chạy. Mở Shizuku, khởi động rồi thử lại — nó dừng mỗi khi khởi động lại máy.</string>
     <string name="mode_switch_shizuku_not_permitted">Shizuku chưa cho phép CallVault. Mở Shizuku, cho phép rồi thử lại.</string>
+    <string name="mode_switch_voip_not_armed">Đã chuyển, nhưng không thể chuẩn bị ghi âm cuộc gọi trong ứng dụng. Cuộc gọi điện thoại sẽ được ghi; cuộc gọi trong ứng dụng có thể không, cho đến khi bạn mở lại CallVault.</string>
     <string name="mode_switch_recorder_failed">Trình ghi không khởi động được. Sẽ không ghi được gì cho đến khi nó chạy.</string>
     <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>

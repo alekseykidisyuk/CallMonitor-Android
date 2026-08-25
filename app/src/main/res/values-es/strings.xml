@@ -257,6 +257,7 @@
     <string name="mode_switch_shizuku_not_installed">Shizuku no está instalado, así que no hay a qué cambiar.</string>
     <string name="mode_switch_shizuku_not_running">Shizuku no se está ejecutando. Ábrelo, inícialo y vuelve a intentarlo: se detiene cada vez que se reinicia el teléfono.</string>
     <string name="mode_switch_shizuku_not_permitted">Shizuku todavía no ha permitido a CallVault usarlo. Ábrelo, concede el permiso y vuelve a intentarlo.</string>
+    <string name="mode_switch_voip_not_armed">Cambiado, pero no se pudo preparar la grabación de llamadas de aplicaciones. Las llamadas telefónicas se grabarán; las de aplicaciones puede que no hasta que vuelvas a abrir CallVault.</string>
     <string name="mode_switch_recorder_failed">El grabador no se inició. No se grabará nada hasta que lo haga.</string>
     <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>

@@ -257,6 +257,7 @@
     <string name="mode_switch_shizuku_not_installed">Shizuku nie jest zainstalowane, więc nie ma na co przełączać.</string>
     <string name="mode_switch_shizuku_not_running">Shizuku nie działa. Otwórz je, uruchom i spróbuj ponownie — zatrzymuje się przy każdym restarcie telefonu.</string>
     <string name="mode_switch_shizuku_not_permitted">Shizuku nie zezwoliło jeszcze CallVault. Otwórz je, udziel zgody i spróbuj ponownie.</string>
+    <string name="mode_switch_voip_not_armed">Przełączono, ale nie udało się przygotować nagrywania połączeń w aplikacjach. Połączenia telefoniczne będą nagrywane; połączenia w aplikacjach mogą nie być, dopóki nie otworzysz ponownie CallVault.</string>
     <string name="mode_switch_recorder_failed">Rejestrator nie wystartował. Do tego czasu nic nie będzie nagrywane.</string>
     <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>

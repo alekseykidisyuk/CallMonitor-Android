@@ -25,11 +25,11 @@ class ModeSwitchResultTest {
     fun a_connected_recorder_is_ready_in_either_mode() {
         assertEquals(
             ModeSwitchResult.Ready,
-            ModeSwitchResult.of(PrivilegedMode.STANDALONE, connected = true, shizuku = ShizukuStatus.NOT_INSTALLED)
+            ModeSwitchResult.of(PrivilegedMode.STANDALONE, connected = true, voipArmed = true, shizuku = ShizukuStatus.NOT_INSTALLED)
         )
         assertEquals(
             ModeSwitchResult.Ready,
-            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = true, shizuku = ShizukuStatus.READY)
+            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = true, voipArmed = true, shizuku = ShizukuStatus.READY)
         )
     }
 
@@ -37,15 +37,15 @@ class ModeSwitchResultTest {
     fun shizuku_failures_name_the_step_the_user_can_fix() {
         assertEquals(
             ModeSwitchResult.ShizukuNotInstalled,
-            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = false, shizuku = ShizukuStatus.NOT_INSTALLED)
+            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = false, voipArmed = true, shizuku = ShizukuStatus.NOT_INSTALLED)
         )
         assertEquals(
             ModeSwitchResult.ShizukuNotRunning,
-            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = false, shizuku = ShizukuStatus.NOT_RUNNING)
+            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = false, voipArmed = true, shizuku = ShizukuStatus.NOT_RUNNING)
         )
         assertEquals(
             ModeSwitchResult.ShizukuNotPermitted,
-            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = false, shizuku = ShizukuStatus.NO_PERMISSION)
+            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = false, voipArmed = true, shizuku = ShizukuStatus.NO_PERMISSION)
         )
     }
 
@@ -55,7 +55,7 @@ class ModeSwitchResultTest {
         // and saying "start Shizuku" here would send them to fix something that is not broken.
         assertEquals(
             ModeSwitchResult.RecorderDidNotStart,
-            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = false, shizuku = ShizukuStatus.READY)
+            ModeSwitchResult.of(PrivilegedMode.SHIZUKU, connected = false, voipArmed = true, shizuku = ShizukuStatus.READY)
         )
     }
 
@@ -64,7 +64,7 @@ class ModeSwitchResultTest {
         // Shizuku's state is irrelevant in standalone; reporting it would be a red herring.
         assertEquals(
             ModeSwitchResult.RecorderDidNotStart,
-            ModeSwitchResult.of(PrivilegedMode.STANDALONE, connected = false, shizuku = ShizukuStatus.READY)
+            ModeSwitchResult.of(PrivilegedMode.STANDALONE, connected = false, voipArmed = true, shizuku = ShizukuStatus.READY)
         )
     }
 
@@ -77,5 +77,33 @@ class ModeSwitchResultTest {
             ModeSwitchResult.ShizukuNotPermitted,
             ModeSwitchResult.RecorderDidNotStart,
         ).forEach { assertEquals("$it must not read as ready", false, it.isReady) }
+    }
+
+    @Test
+    fun `a switch is not ready until VoIP capture is armed`() {
+        // Arming is a blocking IPC the app runs on its own thread, so ensureRunning returns — and the
+        // dialog used to say "Ready" — while it was still in flight. A VoIP call landing in that window
+        // is lost for good: routing is fixed when the capture track is created, so there is no arming it
+        // late and no retry. The dialog must not call that a finished switch.
+        assertEquals(
+            ModeSwitchResult.VoipNotArmed,
+            ModeSwitchResult.of(
+                PrivilegedMode.STANDALONE, connected = true, voipArmed = false,
+                shizuku = ShizukuStatus.NOT_INSTALLED
+            )
+        )
+    }
+
+    @Test
+    fun `arming is irrelevant when no recorder came up at all`() {
+        // Reporting "VoIP is not armed" to someone whose recorder never started sends them to fix the
+        // wrong thing entirely.
+        assertEquals(
+            ModeSwitchResult.RecorderDidNotStart,
+            ModeSwitchResult.of(
+                PrivilegedMode.STANDALONE, connected = false, voipArmed = false,
+                shizuku = ShizukuStatus.NOT_INSTALLED
+            )
+        )
     }
 }

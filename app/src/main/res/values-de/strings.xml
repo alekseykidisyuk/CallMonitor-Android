@@ -257,6 +257,7 @@
     <string name="mode_switch_shizuku_not_installed">Shizuku ist nicht installiert, es gibt nichts, wohin gewechselt werden könnte.</string>
     <string name="mode_switch_shizuku_not_running">Shizuku läuft nicht. Öffnen Sie Shizuku, starten Sie es und versuchen Sie es erneut — es stoppt bei jedem Neustart.</string>
     <string name="mode_switch_shizuku_not_permitted">Shizuku hat CallVault noch nicht erlaubt. Öffnen Sie Shizuku, erlauben Sie es und versuchen Sie es erneut.</string>
+    <string name="mode_switch_voip_not_armed">Umgeschaltet, aber die App-Anrufaufzeichnung konnte nicht vorbereitet werden. Telefonanrufe werden aufgezeichnet; App-Anrufe möglicherweise erst, wenn du CallVault erneut öffnest.</string>
     <string name="mode_switch_recorder_failed">Der Recorder wurde nicht gestartet. Bis dahin wird nichts aufgezeichnet.</string>
     <string name="home_hero_pill_with_mode">%1$s · %2$s</string>
     <string name="home_mode_badge_standalone">CallVault</string>

@@ -41,18 +41,40 @@ enum class ModeSwitchResult(@param:StringRes val messageRes: Int, val isReady: B
      */
     RecorderDidNotStart(R.string.mode_switch_recorder_failed),
 
+    /**
+     * A recorder is running, but VoIP capture could not be armed and the user has VoIP recording on.
+     *
+     * **Not "ready", because a VoIP call arriving now is lost for good.** Capture depends on a dynamic
+     * audio policy the daemon registers, and Android fixes a track's routing when the track is
+     * *created* — so there is no arming it once a call is under way, and no retry. Arming is a blocking
+     * IPC the app runs on its own thread, which means `ensureRunning` returns (and this dialog used to
+     * say "Ready") while it is still in flight.
+     */
+    VoipNotArmed(R.string.mode_switch_voip_not_armed),
+
     ;
 
     companion object {
         /**
          * Judges the switch from what is true afterwards.
          *
-         * @param connected whether a recorder binder is live now — the only thing that means success.
+         * @param connected whether a recorder binder is live now.
+         * @param voipArmed whether VoIP capture is armed, or true when the user has VoIP recording off
+         *   and there is nothing to arm. A live binder alone is **not** success: everything the switch
+         *   tore down has to be standing again before the dialog may say so, and arming is the piece
+         *   that runs on its own thread and therefore finishes last.
          * @param shizuku Shizuku's state, consulted **only** in Shizuku mode; in standalone it is a red
          *   herring and naming it would send the user somewhere irrelevant.
          */
-        fun of(mode: PrivilegedMode, connected: Boolean, shizuku: ShizukuStatus): ModeSwitchResult {
-            if (connected) return Ready
+        fun of(
+            mode: PrivilegedMode,
+            connected: Boolean,
+            voipArmed: Boolean,
+            shizuku: ShizukuStatus,
+        ): ModeSwitchResult {
+            // Order matters: a recorder that never started is the bigger problem, and reporting "VoIP is
+            // not armed" to someone in that state sends them to fix the wrong thing.
+            if (connected) return if (voipArmed) Ready else VoipNotArmed
             if (!mode.needsShizuku) return RecorderDidNotStart
             return when (shizuku) {
                 ShizukuStatus.NOT_INSTALLED -> ShizukuNotInstalled
