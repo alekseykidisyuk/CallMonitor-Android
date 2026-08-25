@@ -565,6 +565,29 @@ implies but the code was free to get wrong.
 Each switch was restored immediately after its row, and the final state matches the starting state plus
 the one recording S7 was supposed to make.
 
+**Shizuku gate rows Z3, Z4 — PASS (2026-08-25), plus two checks that come for free.**
+
+| Row | Configuration | Expected | Result | Host during the call |
+|---|---|---|---|---|
+| Z3 | carrier recording **off**, Shizuku | no recording | ✅ 41 → 41 | `shizuku(729)` |
+| Z4 | auto-record outgoing **off**, Shizuku | no recording | ✅ 41 → 41 | `shizuku(729)` |
+
+The gates behave identically in both modes and give the same reasons — `Phone-call recording is off —
+ignoring this OUTGOING call entirely` and `Auto-record for outgoing call is disabled`. That is the
+answer to "does the mode change how the filters behave?": it does not.
+
+Two things this run confirmed without needing rows of their own:
+
+- **The switch landed on the right host and stayed there.** `shizuku(729)` before, during and after both
+  calls, and `daemon(8508)` after switching back. The resurrection bug fixed earlier today has not
+  returned across four more switches.
+- **The VoIP switch reads `off disabled` in Shizuku mode** — greyed *and* off, live on the device rather
+  than inferred from a screenshot. That is the capability gating doing its job, and it is most of
+  row Z2: the switch cannot be turned on, so nothing can arm.
+
+The round trip also restored all three switches again: `Turned back on (supported again in STANDALONE):
+RESILIENT_RECORDING, VOIP_RECORDING, OFFLINE_RECORDING`.
+
 ### Mode switching — the rows that need a call, not just a process check
 
 B1/B2 proved a switch leaves exactly one recorder alive. They did **not** prove the next call goes
