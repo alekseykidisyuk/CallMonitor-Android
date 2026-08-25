@@ -46,7 +46,9 @@ object TranscriptionLabels {
     /**
      * Languages offered, null meaning auto-detect.
      *
-     * Auto-detect is the default (`AppPreferences.TRANSCRIPTION_LANGUAGE` is null) and is shown first.
+     * Auto-detect is offered but is no longer the default: `AppPreferences.TRANSCRIPTION_LANGUAGE`
+     * seeds the pin from the phone's own language, and auto-detect is the fallback for a phone set to a
+     * language the app does not offer. It is still shown first — see [sortLanguageOptions].
      *
      * An older comment here claimed it was deliberately *not* the default, because "whisper decodes an
      * unspecified language as English". That was never the model's behaviour — it was this app's bug:
@@ -70,8 +72,9 @@ object TranscriptionLabels {
      * sort, because a plain sort files every accented letter after Z — which would leave a French or
      * German list looking broken.
      *
-     * Auto-detect is not a language and is pinned **first**: it is the default, and the entry most
-     * people want is worth reaching before the alphabet starts.
+     * Auto-detect is not a language and is pinned **first** rather than filed under "D": it is the one
+     * entry that is not a name, so leaving it in the alphabet would hide it somewhere different in every
+     * translation.
      */
     fun sortLanguageOptions(options: List<Pair<String, String>>): List<Pair<String, String>> {
         val collator = Collator.getInstance()

@@ -439,6 +439,16 @@
     <string name="wizard_reliability_usb_desc">On some phones, locking the screen during a call can stop the recording. Setting USB to \"Charging only\" prevents that. (Your phone then defaults to charging when plugged into a PC — pick File transfer manually when you need it.)</string>
     <string name="wizard_reliability_usb_button">Set USB to Charging only</string>
     <string name="wizard_reliability_usb_done">USB is set to Charging only</string>
+    <!--
+      Wizard: transcription. The one place a new install is ever told the feature exists — the What's
+      New dialog only fires after an update, which a fresh install never has.
+    -->
+    <string name="wizard_transcription_title">Turning calls into text</string>
+    <string name="wizard_transcription_subtitle">CallVault can transcribe a recording on the phone itself — nothing is sent anywhere. Choose when that happens and which language your calls are in.</string>
+    <string name="wizard_transcription_language_note">Set to the language this phone is set to. Naming it is far more reliable than letting the app guess, and you can still pick a different one per call later.</string>
+    <string name="wizard_transcription_cost_note">Transcribing needs a speech model on the phone first: %1$s is %2$d MB, %3$s is %4$d MB. Nothing is downloaded now — the button is in Settings, and it only downloads over Wi-Fi. Transcribing a call then takes roughly the length of the call and works the processor hard.</string>
+    <string name="wizard_transcription_summary_note">Once a call has a transcript, CallVault can also write a short summary of it. That needs a much bigger model, so it asks separately — it is in the same place in Settings.</string>
+
     <string name="wizard_audio_title">Audio quality</string>
     <string name="wizard_audio_subtitle">Pick the recording format and bit rate. Opus at 16 kbps is recommended for clear voice at small file sizes.</string>
     <string name="wizard_filename_title">File name format</string>
@@ -622,6 +632,7 @@
     <string name="transcription_language_portuguese">Portuguese</string>
     <string name="transcription_language_vietnamese">Vietnamese</string>
     <string name="transcription_language_auto">Detect automatically</string>
+    <string name="transcription_language_auto_hint">Detection is unreliable for languages that are not written in Latin letters — Hebrew, Arabic, Russian and Chinese often come back spelled out in English letters, or as one long block of text. Name the language if you can.</string>
     <string name="transcription_note_manual">Transcripts are made only when you ask for one, from the button on a recording.</string>
     <string name="transcription_note_after_each_call">Each call is transcribed as soon as it ends. Older calls are left alone — transcribe those from the button on a recording.</string>
     <string name="transcription_note_automatic">Calls that have no transcript yet are transcribed at the chosen time. A 30-minute call takes about 30 minutes.</string>

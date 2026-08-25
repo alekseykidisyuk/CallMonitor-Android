@@ -45,6 +45,31 @@ class WizardStepsTest {
     }
 
     @Test
+    fun `always offers the transcription step`() {
+        // The one route a fresh install has to transcripts and summaries: What's New only fires after
+        // an update, and the wizard cannot be re-run. It also needs nothing from ADB, so no mode or
+        // storage choice may drop it.
+        for (usesDrive in listOf(false, true)) {
+            for (usesEmbeddedAdb in listOf(false, true)) {
+                assertTrue(
+                    "usesDrive=$usesDrive usesEmbeddedAdb=$usesEmbeddedAdb lost the transcription step",
+                    wizardSteps(usesDrive, usesEmbeddedAdb).contains(WizardStep.TRANSCRIPTION),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `asks about transcription after the recording is made and named`() {
+        val steps = wizardSteps(usesDrive = false, usesEmbeddedAdb = true)
+
+        assertTrue(
+            "Transcription reads a finished recording, so it follows capture, encoding and naming.",
+            steps.indexOf(WizardStep.TRANSCRIPTION) > steps.indexOf(WizardStep.FILE_NAME),
+        )
+    }
+
+    @Test
     fun `keeps every other step in both modes`() {
         // The recording decisions, the audio settings and the update opt-in are mode-independent, so a
         // Shizuku user must still be asked about all of them — the exclusion is meant to be surgical.

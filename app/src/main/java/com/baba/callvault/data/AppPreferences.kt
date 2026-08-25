@@ -16,6 +16,7 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioSource
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.data.SyncScheduleMode
+import com.baba.callvault.transcription.TranscriptionLanguageChoice
 import com.baba.callvault.transcription.model.TranscriptionModel
 
 /**
@@ -110,14 +111,18 @@ class AppPreferences(context: Context) {
         // 3.5 GB and about the same again in memory, and someone should be told before they start.
         const val SUMMARY_CONFIRM_REQUIREMENTS = true
         val TRANSCRIPTION_MODEL_ID = TranscriptionModel.DEFAULT.id
-        // Null means auto-detect. Our JNI sets whisper's detect_language whenever no language is
-        // given, so null is genuine detection rather than a silent fall back to English — that
-        // failure mode belongs to upstream's JNI, which hardcodes "en".
+        // The phone's own language, and auto-detect (null) only when the app does not offer it.
         //
-        // Auto-detect is still a judgement call rather than an obvious default: naming the language
-        // outright is more reliable than detecting it, and mis-detection does not fail loudly, it
-        // returns fluent text in the wrong language. See the device-test plan.
-        val TRANSCRIPTION_LANGUAGE: String? = null
+        // Not a constant, because the right default is the one this phone is set to. It used to be a
+        // flat null, which meant every install transcribed on auto-detect until someone went looking
+        // for the setting — and auto-detect does not fail loudly, it returns Hebrew spelled out in
+        // Latin letters, with the whole call as one segment. Naming the language outright is more
+        // reliable, so the app names it rather than leaving it blank.
+        //
+        // Null still means genuine detection where it survives: our JNI sets whisper's
+        // detect_language whenever no language is given, rather than falling back to English the way
+        // upstream's JNI does.
+        val TRANSCRIPTION_LANGUAGE: String? get() = TranscriptionLanguageChoice.defaultLanguage()
 
         // Standalone: one app, no dependency on anything else being installed — the project's whole
         // premise. An install that predates Shizuku support has no stored value and must land here.
@@ -673,14 +678,24 @@ class AppPreferences(context: Context) {
     /**
      * Gets the language passed to whisper, or null to auto-detect.
      *
-     * Not a soft setting: whisper decodes an unspecified language as English, which for a Hebrew call
-     * produces fluent nonsense rather than an error.
+     * Not a soft setting: a call transcribed under the wrong language comes back as fluent nonsense
+     * rather than as an error, so an unanswered question here is worse than most.
+     *
+     * Which is why "nobody has chosen" resolves to [DefaultsValue.TRANSCRIPTION_LANGUAGE] — the phone's
+     * own language — and an explicit auto-detect is stored as [TranscriptionLanguageChoice.AUTO] rather
+     * than as an absent key. Writing null for auto-detect would make the two indistinguishable and the
+     * default would silently override the user, exactly as it does in work input data.
      */
     fun getTranscriptionLanguage(): String? =
-        getString(Key.TRANSCRIPTION_LANGUAGE, DefaultsValue.TRANSCRIPTION_LANGUAGE)
+        when (val stored = getString(Key.TRANSCRIPTION_LANGUAGE)) {
+            null -> DefaultsValue.TRANSCRIPTION_LANGUAGE
+            TranscriptionLanguageChoice.AUTO -> null
+            else -> stored
+        }
 
     /** Sets the language passed to whisper, or null to auto-detect. */
-    fun setTranscriptionLanguage(language: String?) = setString(Key.TRANSCRIPTION_LANGUAGE, language)
+    fun setTranscriptionLanguage(language: String?) =
+        setString(Key.TRANSCRIPTION_LANGUAGE, TranscriptionLanguageChoice.encode(language))
 
     /**
      * Whether tapping Transcribe asks which language, instead of always using the setting above.

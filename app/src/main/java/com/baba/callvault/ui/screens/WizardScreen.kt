@@ -69,7 +69,10 @@ import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.data.SyncScheduleMode
 import com.baba.callvault.system.updates.UpdateScheduler
 import com.baba.callvault.integrations.scrcpy.AUDIO_BIT_RATE_OPTIONS
+import com.baba.callvault.transcription.TranscriptionScheduler
+import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.ui.common.SyncScheduleLabels
+import com.baba.callvault.ui.common.TranscriptionLabels
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
@@ -265,6 +268,7 @@ fun WizardScreen(
                         template = fileNameTemplate,
                         onSelectTemplate = viewModel::setFileNameTemplate
                     )
+                    WizardStep.TRANSCRIPTION -> TranscriptionStep()
                 }
             }
         }
@@ -272,7 +276,7 @@ fun WizardScreen(
 }
 
 /** The logical steps of the wizard (two of them are conditionally included — see [wizardSteps]). */
-internal enum class WizardStep { STORAGE, SCHEDULE, AUTO_RECORD, RELIABILITY, EXPERIMENTAL, AUDIO, FILE_NAME, UPDATES }
+internal enum class WizardStep { STORAGE, SCHEDULE, AUTO_RECORD, RELIABILITY, EXPERIMENTAL, AUDIO, FILE_NAME, TRANSCRIPTION, UPDATES }
 
 /**
  * The visible step list, in order. Kept a pure function so the two exclusions are testable and stay
@@ -296,6 +300,10 @@ internal fun wizardSteps(usesDrive: Boolean, usesEmbeddedAdb: Boolean): List<Wiz
     add(WizardStep.EXPERIMENTAL)
     add(WizardStep.AUDIO)
     add(WizardStep.FILE_NAME)
+    // Follows the recording's own life: captured, encoded, named, and then read. It is unconditional
+    // because transcription needs nothing from ADB — it is the one flagship feature a fresh install
+    // would otherwise never hear about, since the What's New dialog only fires after an *update*.
+    add(WizardStep.TRANSCRIPTION)
     add(WizardStep.UPDATES)
 }
 
@@ -960,6 +968,73 @@ private fun FileNameStep(
     }
 }
 
+/**
+ * Transcription: when it runs, and in which language.
+ *
+ * Here at all because a fresh install has no other route to the feature — the What's New dialog needs
+ * an *update* to fire, and the wizard cannot be re-run, so a step omitted here leaves the flagship of
+ * this release buried in a Settings accordion nobody was told to open.
+ *
+ * Both controls are Settings' own composables, not wizard copies of them: the mode dropdown carries the
+ * "this is slow and heavy" confirmation and the language dropdown carries the auto-detect warning, and a
+ * copy that lost either would be a copy that lies. The same reason [ExperimentalStep] shares its toggle.
+ *
+ * Nothing is downloaded from here. The model is 190-574 MB over Wi-Fi and the wizard is where someone is
+ * least able to judge whether they want it — so the step is honest that one is needed and leaves the
+ * button in Settings.
+ */
+@Composable
+private fun TranscriptionStep() {
+    val context = LocalContext.current
+    val prefs = remember { AppPreferences(context) }
+    var mode by remember { mutableStateOf(prefs.getTranscriptionMode()) }
+    var language by remember { mutableStateOf(prefs.getTranscriptionLanguage()) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        CvCard(contentPadding = PaddingValues(vertical = 8.dp)) {
+            TranscriptionModeField(
+                mode = mode,
+                onModeChange = { chosen ->
+                    mode = chosen
+                    prefs.setTranscriptionMode(chosen)
+                    // Reconcile the sweep immediately, exactly as Settings does — persisting the mode
+                    // alone would leave WorkManager disagreeing with it until something else ran.
+                    TranscriptionScheduler.apply(context)
+                }
+            )
+            TranscriptionLanguageField(
+                language = language,
+                onLanguageChange = { chosen ->
+                    language = chosen
+                    prefs.setTranscriptionLanguage(chosen)
+                }
+            )
+        }
+
+        // Said even though the field already shows the language: the value arrived without being asked
+        // for, and a pre-filled answer nobody explains is one people scroll past rather than check.
+        // Only when there IS a pre-filled answer — a phone set to a language the app does not offer
+        // lands on auto-detect, and the field's own warning is the right thing to read there.
+        if (language != null) {
+            NoteCard(stringResource(R.string.wizard_transcription_language_note))
+        }
+
+        NoteCard(
+            stringResource(
+                R.string.wizard_transcription_cost_note,
+                stringResource(TranscriptionLabels.titleOf(TranscriptionModel.SMALL_Q5_1)),
+                TranscriptionModel.SMALL_Q5_1.sizeBytes / BYTES_PER_MB,
+                stringResource(TranscriptionLabels.titleOf(TranscriptionModel.LARGE_V3_TURBO_Q5_0)),
+                TranscriptionModel.LARGE_V3_TURBO_Q5_0.sizeBytes / BYTES_PER_MB
+            )
+        )
+
+        // One sentence, and no decision. The summariser is 3.5 GB with its own requirements dialog;
+        // asking about it here would be asking someone to weigh a cost this screen cannot explain.
+        NoteCard(stringResource(R.string.wizard_transcription_summary_note))
+    }
+}
+
 // ── String-resource mappers ───────────────────────────────────────────────────────────────────
 
 private fun stepTitleRes(step: WizardStep): Int = when (step) {
@@ -971,6 +1046,7 @@ private fun stepTitleRes(step: WizardStep): Int = when (step) {
     WizardStep.UPDATES -> R.string.wizard_updates_title
     WizardStep.AUDIO -> R.string.wizard_audio_title
     WizardStep.FILE_NAME -> R.string.wizard_filename_title
+    WizardStep.TRANSCRIPTION -> R.string.wizard_transcription_title
 }
 
 private fun stepSubtitleRes(step: WizardStep): Int = when (step) {
@@ -982,6 +1058,7 @@ private fun stepSubtitleRes(step: WizardStep): Int = when (step) {
     WizardStep.UPDATES -> R.string.wizard_updates_subtitle
     WizardStep.AUDIO -> R.string.wizard_audio_subtitle
     WizardStep.FILE_NAME -> R.string.wizard_filename_subtitle
+    WizardStep.TRANSCRIPTION -> R.string.wizard_transcription_subtitle
 }
 
 private fun storageTargetTitleRes(target: StorageTarget): Int = when (target) {

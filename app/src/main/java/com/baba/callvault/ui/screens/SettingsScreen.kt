@@ -785,52 +785,9 @@ private fun TranscriptionSection(
         expanded = expanded,
         onToggle = onToggle
     ) {
-        val modeOptions = TranscriptionMode.entries.map {
-            OptionItem(it.key, stringResource(TranscriptionLabels.titleOf(it)))
-        }
-
-        // Turning an automatic mode ON is confirmed; turning it off never is. The cost being warned
-        // about is the cost of it running, so there is nothing to warn about when stopping.
-        var pendingAutoMode by remember { mutableStateOf<TranscriptionMode?>(null) }
         var showTimePicker by remember { mutableStateOf(false) }
 
-        DropdownRow {
-            M3DropdownField(
-                label = stringResource(R.string.transcription_mode_label),
-                selected = modeOptions.find { it.key == mode.key } ?: modeOptions.first(),
-                options = modeOptions,
-                onOptionSelected = { option ->
-                    val chosen = TranscriptionMode.fromKey(option.key)
-                    if (chosen != TranscriptionMode.MANUAL && chosen != mode) {
-                        pendingAutoMode = chosen
-                    } else {
-                        actions.setTranscriptionMode(chosen)
-                    }
-                }
-            )
-        }
-
-        pendingAutoMode?.let { chosen ->
-            AlertDialog(
-                onDismissRequest = { pendingAutoMode = null },
-                icon = { Icon(imageVector = Icons.Filled.BatteryChargingFull, contentDescription = null) },
-                title = { Text(stringResource(R.string.transcription_warning_title)) },
-                text = { Text(stringResource(R.string.transcription_warning_message)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        actions.setTranscriptionMode(chosen)
-                        pendingAutoMode = null
-                    }) {
-                        Text(stringResource(R.string.transcription_warning_confirm))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { pendingAutoMode = null }) {
-                        Text(stringResource(R.string.general_cancel))
-                    }
-                }
-            )
-        }
+        TranscriptionModeField(mode = mode, onModeChange = { actions.setTranscriptionMode(it) })
 
         // Only the scheduled sweep has a run time and a backlog size to choose. Per-call has neither:
         // it runs when a call ends, and only ever on that one call.
@@ -899,34 +856,17 @@ private fun TranscriptionSection(
             )
         }
 
-        // Sorted by the translated name, so the list reads A-Z in whatever language the app is in.
-        val languageOptions = TranscriptionLabels
-            .sortLanguageOptions(
-                TranscriptionLabels.LANGUAGE_OPTIONS.map { code ->
-                    (code ?: TranscriptionLabels.AUTO_DETECT_KEY) to
-                        stringResource(TranscriptionLabels.languageOf(code))
-                }
-            )
-            .map { (key, label) -> OptionItem(key, label) }
-        DropdownRow {
-            M3DropdownField(
-                label = stringResource(R.string.transcription_language_label),
-                selected = languageOptions.find {
-                    it.key == (language ?: TranscriptionLabels.AUTO_DETECT_KEY)
-                } ?: languageOptions.first(),
-                options = languageOptions,
-                onOptionSelected = {
-                    // Clears the summary's own override as well as setting the transcription
-                    // language. The override used to be a second, separate setting; anyone who set
-                    // it before this merge would otherwise keep summarising in that old language
-                    // for ever, with nothing on screen to say so.
-                    preferences.setSummaryLanguage(null)
-                    actions.setTranscriptionLanguage(
-                        it.key.takeIf { k -> k != TranscriptionLabels.AUTO_DETECT_KEY }
-                    )
-                }
-            )
-        }
+        TranscriptionLanguageField(
+            language = language,
+            onLanguageChange = { chosen ->
+                // Clears the summary's own override as well as setting the transcription language.
+                // The override used to be a second, separate setting; anyone who set it before this
+                // merge would otherwise keep summarising in that old language for ever, with nothing
+                // on screen to say so.
+                preferences.setSummaryLanguage(null)
+                actions.setTranscriptionLanguage(chosen)
+            }
+        )
 
         // Directly under the language it overrides, because it only makes sense as an answer to
         // "but this call was in another language".
@@ -988,8 +928,117 @@ private fun TranscriptionSection(
     }
 }
 
-/** Bytes in a megabyte, for stating a model's download size. */
-private const val BYTES_PER_MB = 1_000_000L
+/** Bytes in a megabyte, for stating a model's download size. Shared with the wizard's own cost note. */
+internal const val BYTES_PER_MB = 1_000_000L
+
+/**
+ * The "Transcribe: manually / after each call / automatically" dropdown, with the cost warning that
+ * guards the two automatic modes.
+ *
+ * Shared with the setup wizard rather than copied into it. The warning **is** the control here — a
+ * hand-rolled second dropdown would be one edit away from persisting an automatic mode with nothing
+ * said about what it costs, which is the same drift the hand-rolled offline toggle produced.
+ *
+ * @param onModeChange Called only once the choice is settled — i.e. after the warning is accepted,
+ *   never on merely opening it. Callers persist AND reconcile `TranscriptionScheduler` from it.
+ */
+@Composable
+internal fun TranscriptionModeField(
+    mode: TranscriptionMode,
+    onModeChange: (TranscriptionMode) -> Unit,
+) {
+    val modeOptions = TranscriptionMode.entries.map {
+        OptionItem(it.key, stringResource(TranscriptionLabels.titleOf(it)))
+    }
+
+    // Turning an automatic mode ON is confirmed; turning it off never is. The cost being warned
+    // about is the cost of it running, so there is nothing to warn about when stopping.
+    var pendingAutoMode by remember { mutableStateOf<TranscriptionMode?>(null) }
+
+    DropdownRow {
+        M3DropdownField(
+            label = stringResource(R.string.transcription_mode_label),
+            selected = modeOptions.find { it.key == mode.key } ?: modeOptions.first(),
+            options = modeOptions,
+            onOptionSelected = { option ->
+                val chosen = TranscriptionMode.fromKey(option.key)
+                if (chosen != TranscriptionMode.MANUAL && chosen != mode) {
+                    pendingAutoMode = chosen
+                } else {
+                    onModeChange(chosen)
+                }
+            }
+        )
+    }
+
+    pendingAutoMode?.let { chosen ->
+        AlertDialog(
+            onDismissRequest = { pendingAutoMode = null },
+            icon = { Icon(imageVector = Icons.Filled.BatteryChargingFull, contentDescription = null) },
+            title = { Text(stringResource(R.string.transcription_warning_title)) },
+            text = { Text(stringResource(R.string.transcription_warning_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onModeChange(chosen)
+                    pendingAutoMode = null
+                }) {
+                    Text(stringResource(R.string.transcription_warning_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingAutoMode = null }) {
+                    Text(stringResource(R.string.general_cancel))
+                }
+            }
+        )
+    }
+}
+
+/**
+ * The transcription-language dropdown, and the one thing a dropdown alone cannot say: that auto-detect
+ * is not a neutral option.
+ *
+ * The hint appears only while auto-detect is selected. It is a warning about a state, not a label for
+ * the control, and a line that sat under every language would read as a scold to the majority who never
+ * chose auto-detect at all.
+ *
+ * Shared with the setup wizard for the same reason as [TranscriptionModeField]: the warning must not be
+ * the half that a second copy forgets.
+ *
+ * @param language The pinned language, null meaning auto-detect.
+ * @param onLanguageChange Given the new language, null meaning auto-detect.
+ */
+@Composable
+internal fun TranscriptionLanguageField(
+    language: String?,
+    onLanguageChange: (String?) -> Unit,
+) {
+    // Sorted by the translated name, so the list reads A-Z in whatever language the app is in.
+    val languageOptions = TranscriptionLabels
+        .sortLanguageOptions(
+            TranscriptionLabels.LANGUAGE_OPTIONS.map { code ->
+                (code ?: TranscriptionLabels.AUTO_DETECT_KEY) to
+                    stringResource(TranscriptionLabels.languageOf(code))
+            }
+        )
+        .map { (key, label) -> OptionItem(key, label) }
+
+    DropdownRow {
+        M3DropdownField(
+            label = stringResource(R.string.transcription_language_label),
+            selected = languageOptions.find {
+                it.key == (language ?: TranscriptionLabels.AUTO_DETECT_KEY)
+            } ?: languageOptions.first(),
+            options = languageOptions,
+            onOptionSelected = {
+                onLanguageChange(it.key.takeIf { k -> k != TranscriptionLabels.AUTO_DETECT_KEY })
+            }
+        )
+        if (language == null) {
+            HintText(stringResource(R.string.transcription_language_auto_hint))
+        }
+    }
+}
 
 /**
  * When finished recordings are uploaded to the Drive folder.
