@@ -140,6 +140,46 @@ class TranscriptionQueueTest {
         )
     }
 
+    @Test
+    fun excludes_a_recording_too_long_to_decode() = runBlocking {
+        // The nightly path. Offering it would spend the run on a decode that exhausts the heap, and
+        // since nothing ever marks it done or failed it would hold the same slot every night after.
+        catalogued("marathon.ogg", lastModified = 100L)
+
+        val pending = TranscriptionQueue.pending(context, audioDurationMs = { OVER_THE_LIMIT_MS })
+
+        assertTrue(pending.isEmpty())
+    }
+
+    @Test
+    fun a_too_long_recording_does_not_hold_the_slot_of_a_shorter_one_behind_it() = runBlocking {
+        // The reason exclusion beats "attempt and give up": the queue takes the oldest `limit` and a
+        // recording that can never finish stays eligible for ever, so the calls after it would never
+        // be reached at all.
+        catalogued("marathon.ogg", lastModified = 100L)
+        catalogued("short.ogg", lastModified = 200L)
+
+        val pending = TranscriptionQueue.pending(
+            context,
+            limit = 1,
+            audioDurationMs = { uri -> if (uri.toString().contains("marathon")) OVER_THE_LIMIT_MS else 60_000L }
+        )
+
+        assertEquals(listOf("short.ogg"), pending)
+    }
+
+    @Test
+    fun still_offers_a_recording_whose_length_is_unknown() = runBlocking {
+        // Deliberate: a container that declares no duration is far more common than a call over the
+        // limit, and refusing on "unknown" would keep ordinary short recordings out of every run.
+        catalogued("undated.ogg", lastModified = 100L)
+
+        assertEquals(
+            listOf("undated.ogg"),
+            TranscriptionQueue.pending(context, audioDurationMs = { UNKNOWN_LENGTH_MS })
+        )
+    }
+
     private suspend fun catalogued(name: String, lastModified: Long) {
         RecordingCatalog.recordLocal(context, name, "content://local/$name".toUri(), 10L, lastModified)
     }
@@ -147,5 +187,13 @@ class TranscriptionQueueTest {
     private suspend fun state(name: String, state: TranscriptState) {
         TranscriptDatabase.get(context).transcriptDao()
             .upsertTranscript(TranscriptEntry(displayName = name, state = state))
+    }
+
+    private companion object {
+        /** Comfortably past [TranscriptionLengthLimit.MAX_MINUTES], so the test does not track it. */
+        const val OVER_THE_LIMIT_MS = 50L * 60 * 1000
+
+        /** What a container that declares no duration reports. */
+        const val UNKNOWN_LENGTH_MS = 0L
     }
 }

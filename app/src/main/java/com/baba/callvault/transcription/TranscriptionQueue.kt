@@ -10,6 +10,8 @@ package com.baba.callvault.transcription
 
 import com.baba.callvault.utils.AppLogger
 import android.content.Context
+import android.net.Uri
+import androidx.core.net.toUri
 import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
 import com.baba.callvault.data.transcripts.db.TranscriptState
@@ -47,8 +49,17 @@ object TranscriptionQueue {
      *   scheduled run must not retry it nightly forever. Only an explicit tap retries.
      * - No local copy — a Drive-only recording has nothing to decode. Queuing it would fail and then
      *   mark it FAILED, which would also hide it from a later run made after it syncs back down.
+     * - Longer than [TranscriptionLengthLimit] — the decode would exhaust the heap, so the run is
+     *   spent and produces nothing. Nothing ever clears such a recording, so left in it would fill the
+     *   oldest [limit] slots of every nightly run for ever and the calls behind it would never be
+     *   reached. [TranscriptionRunner] refuses it too, for the paths that never come through here.
      */
-    suspend fun pending(context: Context, limit: Int = DEFAULT_LIMIT): List<String> {
+    suspend fun pending(
+        context: Context,
+        limit: Int = DEFAULT_LIMIT,
+        /** One recording's length. Injected for tests, which have no real audio to measure. */
+        audioDurationMs: (Uri) -> Long = { uri -> AudioDecoder.durationMs(context, uri) }
+    ): List<String> {
         val all = RecordingCatalog.all(context)
         val transcribable = all.filter { it.localUri != null }
         if (transcribable.isEmpty()) {
@@ -74,7 +85,14 @@ object TranscriptionQueue {
             }
         }
 
-        val selected = eligible
+        // Length is read from the container header rather than by decoding, so this costs milliseconds
+        // per recording and only for the ones still waiting. A length of 0 means the container declares
+        // none, which [TranscriptionLengthLimit] deliberately lets through.
+        val (tooLong, withinLimit) = eligible.partition { entry ->
+            TranscriptionLengthLimit.isTooLong(entry.localUri?.toUri()?.let(audioDurationMs) ?: 0L)
+        }
+
+        val selected = withinLimit
             .sortedBy { it.lastModified }
             .let { if (limit <= NO_LIMIT) it else it.take(limit) }
             .map { it.displayName }
@@ -83,11 +101,18 @@ object TranscriptionQueue {
         // transcribed?" is almost always a state the user cannot see, and a name-by-name dump of a
         // large library would bury it. FAILED and RUNNING are the two that surprise people — one is
         // never retried automatically, the other is invisible work or a stuck row.
-        val skipped = transcribable.size - eligible.size
+        val skipped = transcribable.size - withinLimit.size
         if (skipped > 0 || selected.isNotEmpty()) {
+            val tooLongNames = tooLong.map { it.displayName }.toSet()
             val byState = transcribable
                 .filterNot { it.displayName in selected }
-                .groupingBy { states[it.displayName]?.name ?: "NEW" }
+                // TOO_LONG in place of the stored state, of which these have none: "over the length
+                // limit" is the entire answer to "why was my call not transcribed?", and the NEW they
+                // would otherwise be counted as says the opposite — that they are still coming.
+                .groupingBy {
+                    if (it.displayName in tooLongNames) "TOO_LONG"
+                    else states[it.displayName]?.name ?: "NEW"
+                }
                 .eachCount()
                 .entries.sortedBy { it.key }
                 .joinToString { "${it.key}=${it.value}" }

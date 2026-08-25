@@ -50,6 +50,8 @@ class TranscriptionRunner(
     private val context: Context,
     /** Whether the attempt that just ended was stopped rather than finished. Injected for tests. */
     private val wasAborted: () -> Boolean = { TranscriptionEngine.wasAborted() },
+    /** One recording's length. Injected for tests, which have no real audio to measure. */
+    private val audioDurationMs: (Uri) -> Long = { uri -> AudioDecoder.durationMs(context, uri) },
     // Last, so `TranscriptionRunner(context) { ... }` still reads as "a runner with this transcriber".
     private val transcriber: Transcriber = Transcriber(TranscriptionEngine::transcribe)
 ) {
@@ -119,9 +121,29 @@ class TranscriptionRunner(
             return false
         }
 
+        // Length before anything is marked or decoded. Transcription decodes the whole recording into
+        // memory before the model sees any of it, so past a point the job dies — after a long wait —
+        // having produced nothing. Every route into transcription arrives here: the nightly sweep, the
+        // per-call run when a call ends, and a tap. Refusing at this one funnel is what stops the check
+        // from being a thing three callers each have to remember, which is how the automatic paths came
+        // to attempt 50-minute recordings while only the tap refused them.
+        val audioMs = audioDurationMs(uri)
+        if (TranscriptionLengthLimit.isTooLong(audioMs)) {
+            // Left with no row at all, as a stopped run is. FAILED would bar the recording from every
+            // future automatic run — including the ones that become possible when decoding is chunked
+            // and this limit goes away — and QUEUED, which a tap writes before enqueuing, would spin on
+            // the busy indicator for ever with nothing behind it.
+            dao.deleteFor(displayName)
+            AppLogger.w(
+                TAG,
+                "Skipped $displayName: ${audioMs / MS_PER_MINUTE} minutes is over the " +
+                    "${TranscriptionLengthLimit.MAX_MINUTES}-minute transcription limit"
+            )
+            return false
+        }
+
         mark(displayName, TranscriptState.RUNNING, modelId, language)
 
-        val audioMs = AudioDecoder.durationMs(context, uri)
         val startedAt = System.currentTimeMillis()
         // Named before the words are decoded, so a brand or a contact is spelled rather than
         // guessed at. Best-effort: no glossary and no resolvable name simply means no prompt.
@@ -253,5 +275,8 @@ class TranscriptionRunner(
 
     private companion object {
         const val TAG = "CV:TranscriptionRunner"
+
+        /** Only ever used to say a refused length out loud in minutes. */
+        const val MS_PER_MINUTE = 60_000L
     }
 }

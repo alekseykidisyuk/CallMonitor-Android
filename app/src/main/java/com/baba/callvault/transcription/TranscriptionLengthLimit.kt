@@ -22,6 +22,13 @@ package com.baba.callvault.transcription
  *
  * The threshold is a duration rather than a file size because size depends on codec and bit rate, while
  * the decoded buffer — the thing that actually exhausts the heap — depends only on length.
+ *
+ * **Where it is enforced.** [TranscriptionRunner.runOne] is the funnel every route reaches — nightly
+ * sweep, per-call run, and tap alike — so that is where the work is actually refused; a check at the
+ * tap alone is how the automatic paths came to attempt recordings this exists to reject.
+ * [TranscriptionQueue.pending] excludes them as well, because a recording nothing will ever transcribe
+ * would otherwise hold one of a nightly run's limited slots for ever. The tap keeps its own check on
+ * top of both: only there is there anyone to tell.
  */
 object TranscriptionLengthLimit {
 
