@@ -87,6 +87,39 @@ removes one way the logs could hide it.
 2. Ask the reporter whether it is reproducible, and for a report captured **within a minute** of the
    call while the mic indicator is still lit.
 
+### 🔵 Direction for VoIP calls — investigated 2026-08-25, parked
+
+A phone call shows incoming/outgoing; an app call shows only which app it came from. Whether the
+direction is obtainable at all was investigated rather than guessed:
+
+**The call log cannot answer it.** Measured on the OP9: 3,000 rows, and *every one* written by
+`com.android.phone/…TelephonyConnectionService`. WhatsApp writes nothing there, so there is no entry to
+read a direction from. (The same fact is why a VoIP recording had no duration until it was read from the
+file container instead.)
+
+**The one real route is the calling app's notification.** Android 12+ `CallStyle` notifications carry
+`android.callType` — 1 incoming, 2 ongoing — and `VoipCallerName` already parses that dump for the
+caller name, so reading one more field is nearly free.
+
+**What blocks it is timing, not access.** A VoIP call is detected when the audio mode becomes
+`MODE_IN_COMMUNICATION`, which for an *incoming* call is **after the user answers** — by which point the
+notification has flipped from incoming to ongoing. Sampled there, both directions report "ongoing".
+
+Getting it right means sampling while the phone is still ringing, and each way of doing that has a cost:
+
+| Approach | Cost |
+|---|---|
+| Hook the earlier `MODE_RINGTONE` transition | cheap — **if** the calling apps set it, which is unverified |
+| Poll the notification dump while idle | the daemon shells out per dump; battery, and it does not work in Shizuku mode |
+| `NotificationListenerService` | exact and real-time, but needs notification access — a heavy permission for a call recorder to ask for |
+
+**The experiment that decides it** takes five minutes: ring the phone on WhatsApp and, *before
+answering*, capture `dumpsys notification --noredact` and the audio mode. If `android.callType=1` is
+present and the mode passes through `MODE_RINGTONE`, the cheap option works. If not, drop the idea.
+
+Until then the current behaviour is honest: the app badge says where the call happened, and no direction
+is invented that we cannot know.
+
 ### 🔵 The release gate, agreed 2026-08-24
 
 Judged by **which failures are silent**, since a call recorder's worst outcome is losing a call
