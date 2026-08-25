@@ -12,6 +12,7 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import com.baba.callvault.integrations.scrcpy.androidAudioSourceForKey
 import com.baba.callvault.server.BinderDelivery
+import com.baba.callvault.server.CaptureAudit
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -42,6 +43,9 @@ object HandoffSource {
      * between creation and the app taking its own ref; released by [releaseHeld] at call end.
      */
     @Volatile private var heldRecord: AudioRecord? = null
+
+    /** Ledger id for [heldRecord], so the open and the release name the same capture. */
+    @Volatile private var heldAuditId: Int = 0
 
     /**
      * Creates the privileged capture for [sourceCliKey] and delivers the `IAudioRecord` binder + cblk fd
@@ -97,6 +101,7 @@ object HandoffSource {
         if (startTrack) record.startRecording()
         else AppLogger.i(T, "deliver: handing the track over STOPPED — the app will start it (Track A)")
         heldRecord = record
+        heldAuditId = CaptureAudit.opened("handoff held record (source=$sourceCliKey, ch=$channelCount, rate=$rate)")
 
         // The native android::AudioRecord* lives in an obfuscation-proof-but-unnamed long field; pick the
         // one that actually points at a native AudioRecord rather than trusting a field name.
@@ -132,9 +137,18 @@ object HandoffSource {
     fun releaseHeld() {
         val rec = heldRecord ?: return
         heldRecord = null
+        val id = heldAuditId
+        heldAuditId = 0
+
+        // Report what happened, not what was attempted. This used to announce "released" after two
+        // runCatching blocks that swallowed everything — so a release that threw produced a log
+        // indistinguishable from one that worked, on the single line that decides whether the
+        // microphone was let go.
         runCatching { rec.stop() }
-        runCatching { rec.release() }
-        AppLogger.i(T, "releaseHeld: daemon handoff AudioRecord released")
+            .onFailure { AppLogger.w(T, "releaseHeld: stop() failed: ${it.message}") }
+        val outcome = runCatching { rec.release() }
+        CaptureAudit.released(id, outcome.exceptionOrNull())
+        CaptureAudit.assertNoneLive("after releasing the handoff capture")
     }
 
     /** Whether [cliKey] can be captured via a direct handoff AudioRecord (else use the daemon path). */

@@ -103,6 +103,7 @@ internal class VoipCaptureSession(
             throw IllegalStateException("VoIP mic capture failed to initialise")
         }
         nearRecord = near
+        nearAuditId = CaptureAudit.opened("VoIP near capture (MIC)")
 
         val mime = when (codec) {
             ScrcpyAudioCodec.OPUS -> MediaFormat.MIMETYPE_AUDIO_OPUS
@@ -227,7 +228,14 @@ internal class VoipCaptureSession(
                 if (silentChunks >= SILENT_CHUNKS_BEFORE_RETAKE) {
                     silentChunks = 0
                     val fresh = retakeMic(record)
-                    if (fresh != null) { record = fresh; nearRecord = fresh }
+                    if (fresh != null) {
+                        // The platform took the mic away and we opened another. Without closing the
+                        // old id and opening a new one, every re-take would read as a leaked capture
+                        // — and this happens several times in a normal call.
+                        CaptureAudit.released(nearAuditId)
+                        record = fresh; nearRecord = fresh
+                        nearAuditId = CaptureAudit.opened("VoIP near capture (MIC, re-taken)")
+                    }
                 }
             }
             q.offer(buf.copyOf())
@@ -298,17 +306,25 @@ internal class VoipCaptureSession(
         }
     }
 
+    /** Ledger ids for the two microphones this session holds. */
+    @Volatile private var nearAuditId: Int = 0
+    @Volatile private var farAuditId: Int = 0
+
     override fun stop() {
         if (!stopRequested.compareAndSet(false, true)) return
         runCatching { muxThread?.join(STOP_JOIN_MS) }
-        runCatching { farRecord?.stop() }; runCatching { farRecord?.release() }
-        runCatching { nearRecord?.stop() }; runCatching { nearRecord?.release() }
+        runCatching { farRecord?.stop() }
+        CaptureAudit.released(farAuditId, runCatching { farRecord?.release() }.exceptionOrNull())
+        runCatching { nearRecord?.stop() }
+        CaptureAudit.released(nearAuditId, runCatching { nearRecord?.release() }.exceptionOrNull())
+        farAuditId = 0; nearAuditId = 0
         runCatching { encoder?.stop() }; runCatching { encoder?.release() }
         runCatching { muxer?.stop() }    // writes the trailer — without it the file won't play
         runCatching { muxer?.release() }
         runCatching { outFd.close() }
         farRecord = null; nearRecord = null; encoder = null; muxer = null
         AppLogger.i(TAG, "VoIP capture stopped")
+        CaptureAudit.assertNoneLive("after stopping VoIP capture")
     }
 
     /** Releases what start() managed to build, leaving [outFd] open for the caller. */

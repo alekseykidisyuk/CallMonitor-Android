@@ -84,6 +84,7 @@ internal class DirectAudioRecorderSession(
         // Capture stereo when the route allows it — that reliably gets BOTH directions (uplink on one
         // channel, the remote party's downlink on the other); mono routes fall back to 1 channel.
         val (record, captureChannels) = openAudioRecord(androidSource)
+        auditId = CaptureAudit.opened("direct capture (source=$androidSource, ch=$captureChannels)")
         audioRecord = record
 
         // ...but always ENCODE MONO. A phone call is mono content, and encoding the captured stereo as
@@ -231,11 +232,16 @@ internal class DirectAudioRecorderSession(
 
     /** Releases capture resources on a failed [start] WITHOUT closing [outFd] (the caller retries scrcpy). */
     private fun cleanupPartial() {
-        runCatching { audioRecord?.release() }
+        CaptureAudit.released(auditId, runCatching { audioRecord?.release() }.exceptionOrNull())
+        auditId = 0
         runCatching { encoder?.release() }
-        runCatching { muxer?.release() } // MediaMuxer.release() does NOT close the fd — outFd stays usable
+        runCatching { muxer?.release() }
+        CaptureAudit.assertNoneLive("after stopping direct capture") // MediaMuxer.release() does NOT close the fd — outFd stays usable
         audioRecord = null; encoder = null; muxer = null
     }
+
+    /** Ledger id for the capture this session holds, so a leak names itself in the report. */
+    @Volatile private var auditId: Int = 0
 
     private fun openAudioRecord(androidSource: Int): Pair<AudioRecord, Int> {
         for (channelMask in intArrayOf(AudioFormat.CHANNEL_IN_STEREO, AudioFormat.CHANNEL_IN_MONO)) {
