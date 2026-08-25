@@ -8,6 +8,7 @@
 
 package com.baba.callvault.transcription
 
+import com.baba.callvault.utils.AppLogger
 import android.content.Context
 import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
@@ -24,6 +25,8 @@ import com.baba.callvault.data.transcripts.db.TranscriptState
  * a night of battery to achieve nothing.
  */
 object TranscriptionQueue {
+
+    private const val TAG = "CV:TranscriptionQueue"
 
     /** How many recordings one scheduled run will take on. */
     const val DEFAULT_LIMIT = 25
@@ -46,8 +49,15 @@ object TranscriptionQueue {
      *   mark it FAILED, which would also hide it from a later run made after it syncs back down.
      */
     suspend fun pending(context: Context, limit: Int = DEFAULT_LIMIT): List<String> {
-        val transcribable = RecordingCatalog.all(context).filter { it.localUri != null }
-        if (transcribable.isEmpty()) return emptyList()
+        val all = RecordingCatalog.all(context)
+        val transcribable = all.filter { it.localUri != null }
+        if (transcribable.isEmpty()) {
+            // "Nothing was transcribed" has several innocent explanations and one real bug, and they
+            // are indistinguishable without this line: no recordings at all, or recordings that exist
+            // only in Drive and so have nothing local to decode.
+            AppLogger.i(TAG, "pending: nothing to do — ${all.size} recording(s), none with a local copy")
+            return emptyList()
+        }
 
         val states = if (TranscriptDatabase.exists(context)) {
             TranscriptDatabase.get(context).transcriptDao()
@@ -57,16 +67,37 @@ object TranscriptionQueue {
             emptyMap()
         }
 
-        return transcribable
-            .filter { entry ->
-                when (states[entry.displayName]) {
-                    null, TranscriptState.QUEUED -> true
-                    TranscriptState.DONE, TranscriptState.RUNNING, TranscriptState.FAILED -> false
-                }
+        val eligible = transcribable.filter { entry ->
+            when (states[entry.displayName]) {
+                null, TranscriptState.QUEUED -> true
+                TranscriptState.DONE, TranscriptState.RUNNING, TranscriptState.FAILED -> false
             }
+        }
+
+        val selected = eligible
             .sortedBy { it.lastModified }
             .let { if (limit <= NO_LIMIT) it else it.take(limit) }
             .map { it.displayName }
+
+        // Counted by reason rather than listed by name: the answer to "why was my call not
+        // transcribed?" is almost always a state the user cannot see, and a name-by-name dump of a
+        // large library would bury it. FAILED and RUNNING are the two that surprise people — one is
+        // never retried automatically, the other is invisible work or a stuck row.
+        val skipped = transcribable.size - eligible.size
+        if (skipped > 0 || selected.isNotEmpty()) {
+            val byState = transcribable
+                .filterNot { it.displayName in selected }
+                .groupingBy { states[it.displayName]?.name ?: "NEW" }
+                .eachCount()
+                .entries.sortedBy { it.key }
+                .joinToString { "${it.key}=${it.value}" }
+            AppLogger.i(
+                TAG,
+                "pending: ${selected.size} queued of ${transcribable.size} local " +
+                    "(limit=$limit); not queued: ${byState.ifEmpty { "none" }}"
+            )
+        }
+        return selected
     }
 
     /**

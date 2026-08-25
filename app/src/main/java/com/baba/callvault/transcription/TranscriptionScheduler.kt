@@ -168,7 +168,14 @@ object TranscriptionScheduler {
      */
     fun transcribeAfterCallIfEnabled(context: Context, displayName: String) {
         val prefs = AppPreferences(context)
-        if (!prefs.getTranscriptionMode().transcribesOnCallEnd) return
+        val mode = prefs.getTranscriptionMode()
+        if (!mode.transcribesOnCallEnd) {
+            // The silent branch of the pair. Queueing already says why it happened; not queueing said
+            // nothing at all, so "my call was never transcribed" and "transcription is set to nightly"
+            // produced identical logs.
+            AppLogger.i(TAG, "Not queueing $displayName: transcription mode is $mode, which does not run on call end")
+            return
+        }
 
         val requiresCharging = prefs.getTranscriptionRequiresCharging()
         AppLogger.i(

@@ -51,7 +51,10 @@ class ModelDownloadWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val model = requestedModel()
-            ?: return@withContext Result.failure() // nothing to fetch: retrying cannot help
+            ?: run {
+                AppLogger.e(TAG, "Model download started with no model named; nothing to fetch")
+                return@withContext Result.failure()
+            }
 
         val dir = ModelRepository.modelsDir(applicationContext)
         if (ModelRepository.isInstalled(dir, model)) {

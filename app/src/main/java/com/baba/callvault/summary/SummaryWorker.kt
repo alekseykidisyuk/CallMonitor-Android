@@ -43,7 +43,12 @@ class SummaryWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val displayName = inputData.getString(KEY_DISPLAY_NAME)
-            ?: return@withContext Result.failure() // nothing named: retrying cannot help
+            ?: run {
+                // Should be impossible — WorkManager always carries the name — but a summary that
+                // never happens for no stated reason is the worst possible shape for this to fail in.
+                AppLogger.e(TAG, "Summary job started with no recording name; nothing to summarise")
+                return@withContext Result.failure()
+            }
 
         val model = SummaryModel.fromId(inputData.getString(KEY_MODEL_ID)) ?: SummaryModel.DEFAULT
         val modelPath = ModelRepository.pathFor(applicationContext, model)?.absolutePath
