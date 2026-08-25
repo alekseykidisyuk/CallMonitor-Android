@@ -304,6 +304,81 @@ disabling WD when it was the last transport killed the daemon and span. The fix 
 enable with its own disable in `AdbShell` rather than relying on the launcher, but it needs its own
 think and its own device test, and it is unrelated to the mode work this run was about.
 
+## The call schedule — which real call settles which row
+
+Four calls settle everything that automation cannot, and the order matters: the mode round trip has to
+happen **before** the VoIP call, because that is the thing today's teardown fix changed.
+
+Each call is placed from the OP9 to the OP12 by `spike-tools/callharness.sh`, which plays a ~5 s
+near-side clip ("Testing, testing. One. Two. Three. This is OP9.") out of the OP9's speaker so its
+microphone transmits a near side. The far side is a person on the OP12. Both then have to be present in
+one file — that is D4, and it is the row that logs cannot answer.
+
+### Call 1 — standalone, resilient recording OFF
+
+Exercises the **direct AudioRecord** path, which is what v1.4.0 introduced to kill the front clip.
+
+| Row | What it settles | How it is judged |
+|---|---|---|
+| D1 | The direct path actually runs | the log names it, not the handoff |
+| D4 / I8 | Both sides are in the file | the clip AND the far voice are audible; `mean_volume` near -34 dB, not -73 |
+| D9 | Speaker turns are produced | `Stored speaker turns` in the log |
+| E1 | `CallMonitorService` starts and stops | `dumpsys activity services` during and after |
+| E2 | `RecordingForegroundService` shows and stops cleanly | notification during the call, gone after |
+| G3 | A non-Hebrew call transcribes | ← **speak English on this one** and it doubles as the 2.1.0 gate |
+
+### Call 2 — standalone, resilient recording ON
+
+Same phone, one switch different, and a different capture path entirely — this is the one the OP12 uses
+by default, so it is not an edge case.
+
+| Row | What it settles |
+|---|---|
+| D2 | The handoff path runs (`Handoff: startHandoff…` in the log) |
+| D4 | Two-sided again — the handoff encoder is a separate writer and has produced 0-byte files before |
+| D12 | The daemon is killed **mid-call** from adb; the recording must survive and finish |
+
+### Call 3 — Shizuku mode
+
+| Row | What it settles |
+|---|---|
+| D3 | Capture goes through scrcpy and produces a file |
+| D4 | Two-sided under scrcpy |
+| D10 | Speaker turns are absent **and nothing tells the user** — confirms the open gap rather than fixing it |
+| — | The front clip returns here; the first word of the clip may be missing, which is expected |
+
+### Call 4 — back to standalone, then a WhatsApp call
+
+**Do the mode switch back to standalone first, then place the VoIP call.** VoIP arming happens on a
+daemon binder, and today's fix changed which binder that is after a round trip.
+
+| Row | What it settles |
+|---|---|
+| D6 | VoIP arming survives a mode round trip — the highest-value row on the list today |
+| D5 | VoIP recording works in standalone |
+| D4 | Two-sided; VoIP files are stereo, so the per-channel numbers apply here |
+
+### After the calls — no further calls needed
+
+These all run on the recordings the four calls produced:
+
+| Row | What |
+|---|---|
+| G1 | Hebrew transcription produces segments |
+| G2 | The pinned language beats auto-detect |
+| G5 | Summaries generate |
+| G7 | Search finds a word inside a transcript |
+| F1 / F2 | The transcription and summary workers ran |
+| H4 | The playback screen opens, the waveform draws, notes persist |
+
+### Not covered by these four, and why
+
+- **G4 (a call over 15 minutes)** — an endurance run; it needs time, not coordination. Do it whenever.
+- **E7 / I7 (boot behaviour in both modes)** — needs a reboot, and Shizuku must be restarted by hand
+  afterwards.
+- **H3 (Drive sync)** — needs an account round trip, unrelated to calls.
+- **E5, H9 (pairing and onboarding)** — would mean resetting a working phone.
+
 ### What only the maintainer can settle
 
 A real two-sided carrier call in each mode, with the audio **listened to** — a lost far side is invisible
