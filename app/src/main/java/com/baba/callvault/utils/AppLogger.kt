@@ -38,11 +38,34 @@ object AppLogger {
 
     private const val TAG = "AppLogger"
 
-    /** Maximum number of lines the log file can hold before being trimmed. */
-    private const val MAX_LOG_LINES = 1000
+    /**
+     * Maximum number of lines the log file can hold before being trimmed.
+     *
+     * **Sized in days of history, not in bytes.** The old cap of 1,000 lines was chosen as a size limit
+     * and was far more conservative than it needed to be: measured from a real user's report on
+     * 2026-08-25 — 262 lines over 117 minutes including four calls, averaging **117 bytes per line** —
+     * 1,000 lines was only ~114 KB but just **7 hours** of history, and after each trim as little as
+     * 3.7 hours. A user reported a stuck microphone that could not be diagnosed partly for that reason:
+     * by the time anyone looked, the evidence had been trimmed away.
+     *
+     * At the same measured rate of ~2.2 lines per minute, 10,000 lines is a little over **three days**
+     * and about **1.1 MB** — a rounding error on any phone that records calls, and the difference
+     * between "not reproducible, so undiagnosable" and "wait for it to happen again and read the log".
+     *
+     * The rate is dominated by call activity rather than idle chatter, so a heavy user gets fewer days
+     * from the same number of lines. Three days is the target for ordinary use, not a guarantee.
+     */
+    private const val MAX_LOG_LINES = 10_000
 
-    /** Number of lines to retain when the log file is trimmed. */
-    private const val LINES_TO_KEEP = 500
+    /**
+     * Number of lines to retain when the log file is trimmed.
+     *
+     * Three quarters rather than the old half, so the *floor* stays useful: trimming to half meant the
+     * retained history swung between 3.7 and 7.4 hours, and a report captured just after a trim had
+     * barely half a day in it. At 75% the window is ~2.4 to ~3.2 days, and the cost is a trim every
+     * ~2,500 lines (about 19 hours) instead of every 500.
+     */
+    private const val LINES_TO_KEEP = 7_500
 
     /** Coroutine scope dedicated to background log persistence. */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
