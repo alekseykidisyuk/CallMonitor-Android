@@ -588,6 +588,36 @@ Two things this run confirmed without needing rows of their own:
 The round trip also restored all three switches again: `Turned back on (supported again in STANDALONE):
 RESILIENT_RECORDING, VOIP_RECORDING, OFFLINE_RECORDING`.
 
+**S14 — audio source `Voice communication mic`. RECORDS, BUT BADLY (2026-08-25). The most useful row so far.**
+
+Both sides are present — the maintainer could hear them — but only "bits and pieces, just barely". As a
+call recording it is not usable. Measured against the same call on the default source:
+
+| | `Voice call` (S1) | `Voice communication mic` (S14) |
+|---|---|---|
+| PCM streamed | 3,942,912 bytes | **1,931,520** — exactly half |
+| Capture channels | 2 → encoded mono | **1** |
+| Speaker turns | produced | **none** — `No speaker turns for this recording` |
+| Mean level | -42.1 dB | **-51.7 dB** |
+| Audible? | both sides, clearly | both sides, barely |
+
+Two things follow, and neither is written down anywhere in the app.
+
+1. **Choosing this source silently costs speaker attribution.** The capture is genuinely mono — half the
+   PCM bytes — so `SpeakerTurnDetector` has nothing to separate. The row's own description mentions only
+   echo cancellation. This is the same shape as Shizuku's missing speaker turns, except it is reachable
+   from a dropdown in standalone mode, in the mode where the feature is supposed to work.
+2. **It is a fallback, not a peer.** The picker presents four sources as equal choices. On this device
+   one of them produces a barely-audible recording with a feature silently removed. It exists because
+   `voice-call` is unavailable on some OEMs, which is a good reason to keep it — and a good reason to
+   say so where it is chosen.
+
+**Two sources are not in this matrix and should be:** `Voice call uplink` and `Voice call downlink`
+record one side *by design*. Worth rows of their own precisely because "only one side" is the correct
+outcome there, and any future check that treats a one-sided file as a failure would be wrong about them.
+
+*Restored to `Voice call` after the row.*
+
 ### Mode switching — the rows that need a call, not just a process check
 
 B1/B2 proved a switch leaves exactly one recorder alive. They did **not** prove the next call goes
