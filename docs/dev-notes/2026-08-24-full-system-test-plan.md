@@ -372,6 +372,29 @@ Every row records the same four things:
 `A` in the table below = needs real two-sided audio. `Q` = quick, connect and drop.
 
 ### Results as rows are run
+### Coverage after the 2026-08-25 session
+
+Thirteen rows run, twelve pass, one void and re-run. What is now demonstrated on a real device:
+
+| Dimension | Covered |
+|---|---|
+| Capture paths | handoff, direct AudioRecord, scrcpy, VoIP — **all four** |
+| Transports | wireless debugging **and** loopback |
+| Modes | standalone and Shizuku, **both switch directions verified by a call** |
+| Gates | carrier master, auto-record outgoing, VoIP-off isolation — in **both** modes |
+| Audio source | `voice-call` good; `mic-voice-communication` degraded and loses speaker turns |
+
+**The gap this session did not close: every single call was OUTGOING.** Thirteen recordings made today,
+zero incoming. The incoming path is not a variation on the outgoing one — `CallSessionManager` handles
+direction separately, `PhoneStateReceiver` sees a different state sequence, auto-record incoming is its
+own switch with its own ignore rules, and contact resolution runs against a number the phone did not
+dial. All four fixes made today touch code an incoming call also runs through.
+
+That makes **S13 and Z6 the highest-value remaining rows**, and both need the other phone to originate.
+
+Still outstanding after that: S4 (resilient off + VoIP), S8/S9/S11 and Z2 (the VoIP gates), and S15
+(an ignore rule matching the caller, which means editing a real contact list).
+
 
 **S1 — standalone, resilient on, outgoing cell call. PASS (2026-08-25).**
 
