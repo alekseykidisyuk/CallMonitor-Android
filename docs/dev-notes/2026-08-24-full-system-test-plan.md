@@ -421,6 +421,31 @@ rate, and on a longer call it is worth knowing whether it stays proportional or 
 
 *A carrier call in the same session showed none of this, so it is specific to the VoIP path.*
 
+**S3 — standalone, resilient OFF, outgoing cell call. PASS (2026-08-25).**
+
+The row S1 could not cover: with resilient recording off the call takes the **direct AudioRecord** path
+instead of the handoff, and the log says so in as many words.
+
+| What | Result |
+|---|---|
+| Pipeline | `Recording via DIRECT AudioRecord — source=voice-call codec=opus` |
+| Capture shape | `captureCh=2 encodeCh=1 rate=48000` — two channels captured, encoded to mono |
+| Speaker turns | produced — `Speaker turns came from the daemon capture` |
+| Auto-record | `Auto-record is enabled for this outgoing call` |
+| WD | disabled during setup (`DROP_USB_KEEPS_ADBD`), **0** after |
+| File | 80,376 bytes, mono opus, 23.16 s, mean **-33.7 dB** / max -11.7 dB |
+
+**Speaker attribution works on both capture paths** — S1 logged "came from the handoff capture", this one
+"came from the daemon capture". That answers a question the code alone made easy to get wrong.
+
+Levels so far, all the same phone and the same clip, which is worth keeping in one place:
+
+| Row | Path | mean |
+|---|---|---|
+| S1 | handoff | -42.1 dB |
+| S3 | direct | -33.7 dB |
+| S2 | VoIP | -19.0 dB |
+
 ### Standalone
 
 | # | Configuration | Call | Expect | Verify | |
