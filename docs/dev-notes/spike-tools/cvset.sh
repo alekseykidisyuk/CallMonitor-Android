@@ -77,7 +77,8 @@ where() {
     resilient)    echo "GENERAL|Experimental|Resilient recording" ;;
     offline)      echo "GENERAL|Experimental|Offline recording" ;;
     usbdebug)     echo "GENERAL|Experimental|USB debugging" ;;
-    shizuku)      echo "GENERAL|How CallVault gets permission|Use Shizuku instead" ;;
+    # Now pinned at the top of Settings, above every section and inside none of them.
+    shizuku)      echo "||Use Shizuku instead" ;;
     voip)         echo "GENERAL|Experimental|Record VoIP calls" ;;
     voipauto)     echo "GENERAL|Experimental|Start automatically" ;;
     carrier)      echo "RECORDING|Phone calls|Record phone calls" ;;

@@ -302,6 +302,16 @@ fun SettingsContent(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
+                // Above every section and outside all of them, so it is the first thing on the screen.
+                //
+                // It decides which of two completely different recording engines runs — and therefore
+                // which features exist at all — so burying it three taps down under GENERAL >
+                // Privileges made the single most consequential setting the hardest one to find. It is
+                // also the first thing worth checking when something is not working, which is exactly
+                // when nobody wants to go hunting for it.
+                PrivilegedModeSubSection()
+            }
+            item {
                 RecordingSection(
                     preferences = preferences,
                     updateTrigger = updateTrigger,
@@ -1356,11 +1366,6 @@ private fun GeneralSection(
             expanded = openSub == SUB_UPDATES,
             onToggle = { openSub = if (openSub == SUB_UPDATES) null else SUB_UPDATES },
         ) { UpdatesSubSection(preferences, updateTrigger, actions) }
-        SettingsSubSection(
-            title = stringResource(R.string.settings_subsection_privileges),
-            expanded = openSub == SUB_PRIVILEGES,
-            onToggle = { openSub = if (openSub == SUB_PRIVILEGES) null else SUB_PRIVILEGES },
-        ) { PrivilegedModeSubSection() }
     }
 }
 
