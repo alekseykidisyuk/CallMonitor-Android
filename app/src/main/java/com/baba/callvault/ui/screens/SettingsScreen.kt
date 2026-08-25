@@ -2343,37 +2343,56 @@ internal fun SettingsToggleRow(
     onCheckedChange: (Boolean) -> Unit,
     icon: ImageVector? = null,
     description: String? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    descriptionBelow: Boolean = false,
 ) {
     val contentAlpha = if (enabled) 1f else 0.38f
-    Row(
+
+    @Composable
+    fun descriptionText(modifier: Modifier = Modifier) {
+        if (description == null) return
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
+            modifier = modifier,
+        )
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        if (icon != null) {
-            RowIcon(icon)
-            Spacer(Modifier.width(14.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
-            )
-            if (description != null) {
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha)
-                )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                RowIcon(icon)
+                Spacer(Modifier.width(14.dp))
             }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
+                )
+                if (!descriptionBelow) {
+                    Spacer(Modifier.height(2.dp))
+                    descriptionText()
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
         }
-        Spacer(Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        if (descriptionBelow && description != null) {
+            // Full width, under the switch rather than in the narrow column beside it.
+            //
+            // Sharing the column with the label means wrapping against roughly two thirds of the
+            // screen, so a status line that runs to two lines at full width takes four — and the row
+            // grows tallest exactly when it has the most to say, which is when something is wrong.
+            Spacer(Modifier.height(4.dp))
+            descriptionText(Modifier.fillMaxWidth())
+        }
     }
 }
 

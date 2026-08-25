@@ -73,6 +73,9 @@ fun PrivilegedModeSubSection() {
                 ShizukuStatus.READY -> R.string.settings_shizuku_ready
             }
         ),
+        // The status line is the longest description in Settings and it grows when Shizuku is
+        // unhappy, so it gets the full width instead of the narrow column beside the switch.
+        descriptionBelow = true,
         checked = mode == PrivilegedMode.SHIZUKU,
         enabled = status != ShizukuStatus.NOT_INSTALLED || mode == PrivilegedMode.SHIZUKU,
         onCheckedChange = { wantShizuku ->
