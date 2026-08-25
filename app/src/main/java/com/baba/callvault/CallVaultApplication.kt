@@ -66,6 +66,18 @@ class CallVaultApplication : Application() {
             }
         }
 
+        // Push the diagnostics switch once at start as well as on every fresh binder.
+        //
+        // onDaemonReady only fires when a binder ARRIVES. A daemon that was already alive when the app
+        // started never fires it, so it collected nothing — measured on the OP9, where a report was
+        // exported at 15:00:00 and the host was not told to collect until 15:00:09, when the user
+        // happened to toggle logging. The report said "Recorder host lines: none" for a daemon that had
+        // been running throughout.
+        Thread {
+            runCatching { RecorderBackend.syncDiagnostics(applicationContext) }
+                .onFailure { AppLogger.d(TAG, "Diagnostics sync at start failed: ${it.message}") }
+        }.apply { isDaemon = true; name = "cv-diag-sync" }.start()
+
         // Re-assert the "debug logging is on" reminder if the user left logging enabled across an
         // app restart, so the nudge to turn it back off survives process death.
         runCatching { DebugNotificationHelper.sync(applicationContext) }

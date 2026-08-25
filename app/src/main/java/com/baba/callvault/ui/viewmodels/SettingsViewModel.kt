@@ -570,6 +570,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     override fun setLoggingEnabled(enabled: Boolean) {
         if (enabled) {
             AppLogger.clearLogs()
+            // The host keeps its own copy in memory; deleting only the app's half would let
+            // lines the user thought they erased reappear in the next report.
+            RecorderBackend.clearHostDiagnostics()
         }
         preferences.setLoggingEnabled(enabled)
         // The recorder host has no way to see this preference, so it has to be pushed. Without it,

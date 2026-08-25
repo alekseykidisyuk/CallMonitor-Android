@@ -71,6 +71,7 @@ import com.baba.callvault.system.openKofi
 import com.baba.callvault.ui.common.formatByteSize
 import com.baba.callvault.ui.common.SupportDialog
 import com.baba.callvault.system.shareLogFile
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.utils.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -1572,6 +1573,9 @@ private fun BugReportSection(
                 TextButton(onClick = {
                     confirmClearLog = false
                     AppLogger.clearLogs()
+                    // The host keeps its own copy in memory; deleting only the app's half would let
+                    // lines the user thought they erased reappear in the next report.
+                    RecorderBackend.clearHostDiagnostics()
                     // Logging may still be running, so the file is recreated immediately and empty.
                     // Refreshing re-reads hasLogs/size rather than leaving a stale figure on screen.
                     actions.refreshSettings()

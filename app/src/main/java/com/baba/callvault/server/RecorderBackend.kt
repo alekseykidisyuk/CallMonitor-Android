@@ -83,6 +83,18 @@ object RecorderBackend {
     }
 
     /**
+     * Throws away whatever the recorder host has collected.
+     *
+     * For the user deleting their log: "delete" has to mean the host's copy too, or lines the user
+     * believed they had erased would surface in the next report. Draining and discarding does it
+     * without a second AIDL method, since draining already empties the ring.
+     */
+    fun clearHostDiagnostics() {
+        runCatching { RecorderConnection.service?.drainDiagnostics() }
+            .onFailure { AppLogger.d(TAG, "Could not clear the recorder host's diagnostics: ${it.message}") }
+    }
+
+    /**
      * Performs a whole mode switch and reports it — **the one definition of "the switch is finished".**
      *
      * A live binder is not the finish line. A switch tears things down, and the switch is not done until

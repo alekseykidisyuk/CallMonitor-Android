@@ -117,13 +117,21 @@ object AppLogger {
 
     /**
      * Turns the in-memory ring on or off. Called in the **daemon** process over the binder, mirroring
-     * the user's logging preference; turning it off also drops whatever was collected.
+     * the user's logging preference.
+     *
+     * **Switching it off stops collecting but keeps what was collected**, which looks like a leak and is
+     * the opposite. The flow the Settings screen actually tells people to follow is "enable this,
+     * reproduce the issue, then turn it off and share the logs" — so clearing on disable would throw the
+     * daemon's side away every single time, in exactly the case it exists for. The lines leave on the
+     * next [drainRing], or with [clearRing] when the user deletes the log.
      */
     fun setRingEnabled(enabled: Boolean) {
-        synchronized(ring) {
-            ringEnabled = enabled
-            if (!enabled) ring.clear()
-        }
+        synchronized(ring) { ringEnabled = enabled }
+    }
+
+    /** Drops everything collected. For the user deleting their log, where "gone" must mean gone. */
+    fun clearRing() {
+        synchronized(ring) { ring.clear() }
     }
 
     /** Whether the ring is currently collecting. */
