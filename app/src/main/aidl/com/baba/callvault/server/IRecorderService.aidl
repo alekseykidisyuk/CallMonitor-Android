@@ -200,4 +200,29 @@ interface IRecorderService {
      * never runs under (its process is named <package>:recorder), so this can never kill itself.
      */
     void killStaleRecorders();
+
+    /**
+     * Turns the daemon's in-memory diagnostic ring on or off, mirroring the user's logging preference.
+     *
+     * Appended at the END, like everything else here: the transaction ids are positional.
+     *
+     * The daemon cannot answer this for itself — it runs as shell, in another process, with no access
+     * to the app's preferences — so the app has to tell it. Off by default, so a user who has never
+     * enabled logging has nothing collected anywhere.
+     */
+    void setDiagnosticsEnabled(boolean enabled);
+
+    /**
+     * Returns the daemon's collected log lines and clears them.
+     *
+     * Without this, a debug export contains **nothing at all** from the process that owns the
+     * microphone: the daemon cannot write to the app's private files directory, so its lines go to
+     * logcat and nowhere else. A stuck-microphone report on 2026-08-25 could not be diagnosed for
+     * exactly that reason — whether the daemon released its AudioRecord was the question, and the
+     * export could not show it.
+     *
+     * Each line is already formatted and redacted the same way the app's own lines are, so the two can
+     * simply be merged and sorted by their timestamps.
+     */
+    String[] drainDiagnostics();
 }

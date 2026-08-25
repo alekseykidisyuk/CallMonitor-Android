@@ -319,6 +319,15 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
 
     override fun hostUid(): Int = android.os.Process.myUid()
 
+    override fun setDiagnosticsEnabled(enabled: Boolean) {
+        AppLogger.setRingEnabled(enabled)
+        // Logged after enabling so the very first line in the ring says when collection began — which is
+        // the difference between "the daemon logged nothing" and "the daemon was not collecting".
+        AppLogger.i(TAG, "Diagnostics ring ${if (enabled) "enabled" else "disabled"} in the recorder host")
+    }
+
+    override fun drainDiagnostics(): Array<String> = AppLogger.drainRing().toTypedArray()
+
     override fun killStaleRecorders() {
         // Kills EVERY other CallVault recorder process, of either kind, leaving only this one.
         //

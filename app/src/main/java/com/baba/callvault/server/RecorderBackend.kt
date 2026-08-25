@@ -66,6 +66,23 @@ object RecorderBackend {
     }
 
     /**
+     * Mirrors the user's logging preference into the recorder host.
+     *
+     * The host is another process running as shell: it cannot read the app's preferences, so it cannot
+     * decide this for itself and collects nothing until told. Called on every fresh binder — a daemon
+     * that relaunched mid-session starts from scratch and would otherwise stay silent — and whenever
+     * the user toggles logging.
+     *
+     * Never throws: an older host predating the method, or one that just died, must not take an app
+     * path down with it.
+     */
+    fun syncDiagnostics(context: Context) {
+        val wanted = runCatching { AppPreferences(context).isLoggingEnabled() }.getOrDefault(false)
+        runCatching { RecorderConnection.service?.setDiagnosticsEnabled(wanted) }
+            .onFailure { AppLogger.d(TAG, "Could not set diagnostics on the recorder host: ${it.message}") }
+    }
+
+    /**
      * Performs a whole mode switch and reports it — **the one definition of "the switch is finished".**
      *
      * A live binder is not the finish line. A switch tears things down, and the switch is not done until

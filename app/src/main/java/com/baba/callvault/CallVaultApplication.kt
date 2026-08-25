@@ -55,6 +55,9 @@ class CallVaultApplication : Application() {
         // call starts — there is no arming it once a call is under way. Re-arm on every fresh daemon
         // binder. Off the binder thread: arming is a blocking IPC.
         RecorderConnection.onDaemonReady = {
+            // A fresh host collects nothing until it is told to. Do this first and cheaply, so a daemon
+            // that relaunched mid-session is logging again before anything else happens to it.
+            RecorderBackend.syncDiagnostics(applicationContext)
             if (AppPreferences(applicationContext).isVoipRecordingEnabled()) {
                 Thread {
                     runCatching { VoipCaptureController.sync(applicationContext) }

@@ -16,6 +16,7 @@ import androidx.lifecycle.AndroidViewModel
 import com.baba.callvault.BuildConfig
 import com.baba.callvault.services.debug.DebugNotificationHelper
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.data.SyncScheduleMode
@@ -571,6 +572,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             AppLogger.clearLogs()
         }
         preferences.setLoggingEnabled(enabled)
+        // The recorder host has no way to see this preference, so it has to be pushed. Without it,
+        // turning logging on collects the app's side only and the export stays blind to the process
+        // that owns the microphone.
+        RecorderBackend.syncDiagnostics(appContext)
         DebugNotificationHelper.sync(appContext)
         refresh()
 

@@ -30,6 +30,9 @@ import com.baba.callvault.integrations.scrcpy.ScrcpyConfig
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.server.RecorderConnection
+import com.baba.callvault.integrations.adb.AdbShell
+import com.baba.callvault.server.RecorderBackend
 
 /**
  * A unified, thread-safe, and asynchronous logging utility with built-in log rotation and redaction capabilities.
@@ -87,6 +90,56 @@ object AppLogger {
 
     /** Pointer to the internal application diagnostic log file. */
     private var logFile: File? = null
+
+    // ---------------------------------------------------------------------------------------------
+    // The recorder daemon's own log
+    //
+    // The daemon is a SEPARATE PROCESS running as shell. It cannot read the app's preferences and it
+    // cannot write to the app's private files directory, so [init] never runs there: `prefs` and
+    // `logFile` are both null and every line it logs goes to logcat and nowhere else. That is why a
+    // user's debug export contains no CV:RecorderServer, CV:HandoffSource or CV:DirectCapture lines at
+    // all — and why a stuck-microphone report on 2026-08-25 could not be diagnosed, because whether the
+    // daemon released its AudioRecord is exactly what the export cannot show.
+    //
+    // So the daemon keeps its recent lines in memory and the app pulls them over the binder at export
+    // time. Off by default and switched on explicitly by the app, because the daemon has no way to ask
+    // whether the user wants logging at all.
+    // ---------------------------------------------------------------------------------------------
+
+    /** How many lines the in-memory ring holds. Sized to cover a long call and its teardown. */
+    private const val RING_CAPACITY = 4_000
+
+    /** Set by the app over the binder. Always false in the app process, which uses the file instead. */
+    @Volatile
+    private var ringEnabled = false
+
+    private val ring = ArrayDeque<String>()
+
+    /**
+     * Turns the in-memory ring on or off. Called in the **daemon** process over the binder, mirroring
+     * the user's logging preference; turning it off also drops whatever was collected.
+     */
+    fun setRingEnabled(enabled: Boolean) {
+        synchronized(ring) {
+            ringEnabled = enabled
+            if (!enabled) ring.clear()
+        }
+    }
+
+    /** Whether the ring is currently collecting. */
+    fun isRingEnabled(): Boolean = ringEnabled
+
+    /**
+     * Takes everything collected so far and empties the ring.
+     *
+     * Draining rather than copying, so a second export does not repeat what the first already carried,
+     * and the daemon does not hold the lines any longer than it has to.
+     */
+    fun drainRing(): List<String> = synchronized(ring) {
+        val out = ring.toList()
+        ring.clear()
+        out
+    }
 
     /**
      * Redaction is always on. The shareable diagnostic log must never contain raw phone numbers.
@@ -230,14 +283,43 @@ object AppLogger {
             // Write the header and the log body into ONE output stream. The PrintWriter is flushed
             // (not closed) before copying the body so its text lands ahead of the log bytes; the
             // `use` block closes the underlying stream once both have been written.
+            // Pull the daemon's lines BEFORE taking the file lock: it is a blocking binder call into
+            // another process, and holding the logger's lock across it would stall every thread trying
+            // to log while we wait on a process that may be wedged.
+            val daemonEntries = drainDaemonDiagnostics()
+
             report.outputStream().use { out ->
                 val writer = PrintWriter(OutputStreamWriter(out, Charsets.UTF_8))
                 writeReportHeader(writer, context)
-                writer.flush()
-                // Snapshot the live log under the writer's lock so the copy is consistent.
-                fileMutex.withLock {
-                    if (source.exists()) source.inputStream().use { input -> input.copyTo(out) }
+                if (daemonEntries.isEmpty()) {
+                    writer.println("Recorder host lines: none (see the note at the end of this file)")
+                } else {
+                    writer.println("Recorder host lines: ${daemonEntries.size}, merged in below by timestamp")
                 }
+                writer.println("===========================================")
+                writer.println()
+
+                // Snapshot the live log under the writer's lock so the copy is consistent.
+                val appEntries = fileMutex.withLock {
+                    if (source.exists()) entriesOf(source.readLines()) else emptyList()
+                }
+
+                // Interleaved rather than appended in a block. The whole point is to read one sequence
+                // across two processes — "the app asked the daemon to stop" and "the daemon released
+                // its AudioRecord" are three lines apart in time and were previously in different files,
+                // one of which did not exist.
+                (appEntries + daemonEntries)
+                    .sortedBy { it.take(TIMESTAMP_LENGTH) }
+                    .forEach { writer.println(it) }
+
+                if (daemonEntries.isEmpty()) {
+                    writer.println()
+                    writer.println(
+                        "NOTE: no lines from the recorder host. Either it was not running, or it " +
+                            "predates this app version, or diagnostics were switched on after it started."
+                    )
+                }
+                writer.flush()
                 out.flush()
                 if (writer.checkError()) {
                     e(TAG, "PrintWriter reported an error while building the shareable report")
@@ -251,6 +333,39 @@ object AppLogger {
         }
     }
 
+
+    /** Length of the "yyyy-MM-dd HH:mm:ss.SSS" prefix every entry starts with, used to sort by time. */
+    private const val TIMESTAMP_LENGTH = 23
+
+    private val ENTRY_START = Regex("""^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} """)
+
+    /**
+     * Groups raw lines into log *entries*, so a stack trace stays with the line that produced it.
+     *
+     * Sorting raw lines would scatter the continuation lines of a multi-line entry all over the report,
+     * turning the most useful thing in it — a stack trace — into confetti.
+     */
+    internal fun entriesOf(lines: List<String>): List<String> {
+        val entries = mutableListOf<StringBuilder>()
+        for (line in lines) {
+            if (entries.isEmpty() || ENTRY_START.containsMatchIn(line)) entries.add(StringBuilder(line))
+            else entries.last().append('\n').append(line)
+        }
+        return entries.map { it.toString() }
+    }
+
+    /**
+     * Asks the recorder host for its collected lines, or an empty list when there is nobody to ask.
+     *
+     * Never throws: an export must still be produced when the daemon is dead, wedged, or older than
+     * this app version and therefore missing the method entirely.
+     */
+    private fun drainDaemonDiagnostics(): List<String> = runCatching {
+        RecorderConnection.service?.drainDiagnostics()?.toList().orEmpty()
+    }.onFailure {
+        w(TAG, "Could not read the recorder host's diagnostics: ${it.message}")
+    }.getOrDefault(emptyList())
+
     /** Writes the common report metadata header (app/device/runtime info) to [writer]. */
     private fun writeReportHeader(writer: PrintWriter, context: Context) {
         writer.println("=== CallVault AppLogger Export ===")
@@ -263,9 +378,72 @@ object AppLogger {
         writer.println("Product: ${Build.PRODUCT}")
         writer.println("Android Version: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
         writer.println("Device Country Iso Estimation: ${PhoneNumberManager.getInstance(context).getDeviceCountryIso()}")
+        writeConfiguration(writer, context)
+    }
+
+    /**
+     * The settings and transport state at the moment of export.
+     *
+     * **Every question a bug report starts with is answered here.** Reading a log without knowing
+     * whether resilient recording was on is guesswork: the same call takes a completely different
+     * capture path depending on it, and the first three exchanges of every report were spent asking.
+     * Only the settings that change *behaviour* are listed — codec, bit rate, theme and the rest change
+     * the file or the screen, never the path the audio takes, and padding the header with them makes
+     * the ones that matter harder to see.
+     *
+     * The two privileged modes fail in entirely different ways, so each gets its own block rather than
+     * a shared one full of "n/a": in standalone the interesting facts are the ADB transport and
+     * wireless debugging, and under Shizuku neither of those exists and what matters is whether
+     * Shizuku is installed, running and permitted.
+     */
+    private fun writeConfiguration(writer: PrintWriter, context: Context) {
+        val p = runCatching { AppPreferences(context) }.getOrNull()
+        if (p == null) {
+            writer.println("Configuration: unavailable")
+            writer.println("===========================================")
+            writer.println()
+            return
+        }
+        val mode = runCatching { p.getPrivilegedMode() }.getOrNull()
+
+        writer.println("--- Configuration ---")
+        writer.println("Privileged mode: ${mode?.name ?: "?"}")
+        writer.println("Record phone calls: ${p.yesNo { isCarrierRecordingEnabled() }}")
+        writer.println("Auto-record incoming: ${p.yesNo { isAutoRecordIncomingEnabled() }}")
+        writer.println("Auto-record outgoing: ${p.yesNo { isAutoRecordOutgoingEnabled() }}")
+        writer.println("Resilient recording (handoff): ${p.yesNo { isHandoffPersistEnabled() }}")
+        writer.println("VoIP recording: ${p.yesNo { isVoipRecordingEnabled() }}")
+        writer.println("VoIP auto-start: ${p.yesNo { isVoipAutoStartEnabled() }}")
+        writer.println("Offline recording (loopback): ${p.yesNo { isOfflineRecordingEnabled() }}")
+        writer.println("Audio source: ${runCatching { p.getAudioSource() }.getOrDefault("?")}")
+        writer.println("Ignore anonymous incoming: ${p.yesNo { isIgnoreAnonymousIncomingEnabled() }}")
+        writer.println("Ignore cross-country in/out: " +
+            "${p.yesNo { isIgnoreCrossCountryIncomingEnabled() }}/${p.yesNo { isIgnoreCrossCountryOutgoingEnabled() }}")
+        writer.println("Storage target: ${runCatching { p.getStorageTarget().name }.getOrDefault("?")}")
+
+        writer.println("--- Recorder ---")
+        writer.println("Binder connected: ${runCatching { RecorderConnection.isConnected }.getOrDefault(false)}")
+        writer.println("Host uid: ${runCatching { RecorderConnection.service?.hostUid()?.toString() }.getOrNull() ?: "?"}")
+
+        if (mode?.needsShizuku == true) {
+            writer.println("--- Shizuku ---")
+            writer.println("Status: ${runCatching { RecorderBackend.shizukuStatus(context).name }.getOrDefault("?")}")
+            writer.println("Capture path: scrcpy (a Shizuku-hosted process cannot start an AudioRecord)")
+            writer.println("Not available in this mode: resilient recording, VoIP, offline recording, speaker attribution")
+        } else {
+            writer.println("--- Standalone transport ---")
+            writer.println("Wireless debugging: ${runCatching { AdbShell.isWirelessDebuggingEnabled(context) }.getOrDefault("?")}")
+            writer.println("USB debugging: ${runCatching { AdbShell.isUsbDebuggingEnabled(context) }.getOrDefault("?")}")
+            writer.println("WRITE_SECURE_SETTINGS: ${runCatching { AdbShell.hasWriteSecureSettings(context) }.getOrDefault("?")}")
+            writer.println("WD plan: ${runCatching { AdbShell.wirelessDebuggingPlan(context).name }.getOrDefault("?")}")
+        }
         writer.println("===========================================")
         writer.println()
     }
+
+    /** Reads one boolean setting for the header, never letting a failure abort the whole report. */
+    private inline fun AppPreferences.yesNo(read: AppPreferences.() -> Boolean): String =
+        runCatching { if (read()) "on" else "off" }.getOrDefault("?")
 
     /** Logs a Verbose level message and optionally its throwable trace. */
     fun v(tag: String, message: String, t: Throwable? = null) {
@@ -316,13 +494,24 @@ object AppLogger {
      * **WARNING**: YOU MUST ENSURE THE MESSAGE IS [redact] BEFORE CALLING THIS METHOD TO TRY TO AVOID LEAKING SENSITIVE DATA INTO THE LOG FILE.
      */
     private fun logInternal(level: String, tag: String, message: String, t: Throwable?) {
-        if (prefs?.isLoggingEnabled() != true) return
+        // Two consumers with different gates. The file is the app's and follows the user's preference.
+        // The ring is the daemon's, where there is no preference to read — `prefs` is null there, so
+        // without this every daemon line would be dropped right here and the export would stay blind
+        // to the process that actually owns the microphone.
+        val toFile = prefs?.isLoggingEnabled() == true
+        if (!toFile && !ringEnabled) return
 
         val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())
         val fullMessage = message + (t?.let { "\n${Log.getStackTraceString(it)}" } ?: "")
 
         val formattedLine = "$time [$level] $tag: $fullMessage"
-        channel.trySend(formattedLine)
+        if (toFile) channel.trySend(formattedLine)
+        if (ringEnabled) {
+            synchronized(ring) {
+                while (ring.size >= RING_CAPACITY) ring.removeFirst()
+                ring.addLast(formattedLine)
+            }
+        }
     }
 
     /**
