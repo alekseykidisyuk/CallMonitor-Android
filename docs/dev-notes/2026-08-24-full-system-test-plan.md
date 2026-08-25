@@ -546,6 +546,25 @@ below the threshold and reads as silence. The check now derives its threshold fr
 (12 dB under it, floored at -45 dB). A false "the near side is missing" is worse than no check at all: it
 sends you hunting a capture bug that was never there.
 
+**Gate rows S10, S12, S7 — all PASS (2026-08-25).** Turning one thing off must turn off *only* that thing.
+
+| Row | Configuration | Expected | Result | The log's reason |
+|---|---|---|---|---|
+| S10 | carrier recording **off** | no recording | ✅ 40 → 40 | `Phone-call recording is off — ignoring this OUTGOING call entirely` |
+| S12 | auto-record outgoing **off** | no recording | ✅ 40 → 40 | `Auto-record for outgoing call is disabled` |
+| S7 | VoIP recording **off**, *carrier* call | **must record** | ✅ 40 → 41 | `Sending start INTENT for OUTGOING call` |
+
+S7 is the control and the point of the whole group: switching VoIP off must not take carrier recording
+with it. It did not.
+
+Worth noting the precedence visible in S10: the log says `Auto-record is enabled for this outgoing call`
+and *then* `Phone-call recording is off — ignoring this OUTGOING call entirely`. The master switch is
+evaluated after the per-direction one and correctly overrides it, which is the order the settings screen
+implies but the code was free to get wrong.
+
+Each switch was restored immediately after its row, and the final state matches the starting state plus
+the one recording S7 was supposed to make.
+
 ### Mode switching — the rows that need a call, not just a process check
 
 B1/B2 proved a switch leaves exactly one recorder alive. They did **not** prove the next call goes
