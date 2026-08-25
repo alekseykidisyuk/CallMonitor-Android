@@ -371,6 +371,33 @@ Every row records the same four things:
 
 `A` in the table below = needs real two-sided audio. `Q` = quick, connect and drop.
 
+### Results as rows are run
+
+**S1 — standalone, resilient on, outgoing cell call. PASS (2026-08-25).**
+
+| What | Result |
+|---|---|
+| Pipeline | **handoff** — `AudioHandoff drainToPipe` streaming, `HandoffEncoder finished: 20.952s` |
+| Speaker turns | produced — `Speaker turns came from the handoff capture` → `Stored speaker turns` |
+| Services | `CallSessionManager` saw the state change; `RecordingForegroundService` started and stopped; nothing lingered |
+| WD after | **0** — the lease fix holding under a real call |
+| File | 72,571 bytes, mono opus, 20.94 s, mean -42.1 dB / max -15.5 dB |
+| Audio | **both sides confirmed by ear** |
+
+This is row **D2**, not D1: resilient recording is on, so the call took the handoff path. D1 needs
+resilient off, which is S3.
+
+**It took two attempts, and the first failure is the useful part.** The first run recorded 11 seconds of
+silence exactly where the near-side clip should have been. During a call, media audio is routed to the
+**earpiece**, so the clip played perfectly and the microphone never heard a thing. The harness now
+switches the call to speakerphone before playing, and — at the maintainer's suggestion — switches it
+back off as soon as the clip ends, because a loudspeaker left on replays the far side into this phone's
+own microphone and stops the near side being a clean signal to judge.
+
+Worth remembering for any future audio test: a silent near side has two completely different causes that
+look identical in the file — the app failed to capture it, or nothing was ever transmitted. Only the
+second one is a harness bug, and the way to tell them apart is to ask whether the far end *heard* it.
+
 ### Standalone
 
 | # | Configuration | Call | Expect | Verify | |
