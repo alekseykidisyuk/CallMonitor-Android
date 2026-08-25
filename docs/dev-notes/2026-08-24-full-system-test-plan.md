@@ -391,6 +391,42 @@ sequence, the direction branch in `CallSessionManager`, the separate auto-record
 contact resolution against a number this phone did not dial. All four fixes made on 2026-08-25 sit on
 code this path also runs through, and it behaves identically to the outgoing case.
 
+**Maintainer-run rows — all PASS (2026-08-25), reported from the device.**
+
+| Row | Configuration | Expected | Result |
+|---|---|---|---|
+| S4 | resilient **off**, VoIP call | still records | ✅ |
+| S8 | VoIP recording **off**, VoIP call | no recording | ✅ |
+| S9 | VoIP auto-start **off**, VoIP call | prompt, not auto-record | ✅ |
+| S11 | carrier recording **off**, VoIP call | still records | ✅ |
+| Z2 | Shizuku, VoIP call | no recording | ✅ |
+| S13 | auto-record incoming **off**, incoming call | no recording | ✅ |
+| Z6 | Shizuku, **incoming** call | records via scrcpy | ✅ |
+
+**Z6 confirmed from the log, not just the file**: `ScrcpyClient` packets, `ScrcpyAudioMuxer` finalising,
+and `Sending stop INTENT for INCOMING call` — so incoming × Shizuku genuinely runs the scrcpy path. That
+combination shared no tested code with anything else in this matrix.
+
+That completes every row except S15 (needs a real contact-list edit) and Z5/Z7.
+
+**Two wireless-debugging bugs, found by the maintainer noticing WD blink in Shizuku mode.**
+
+Deleting the debug logs and toggling logging off and on made Wireless debugging switch on — in the one
+mode that is supposed to never touch it. Two separate faults:
+
+1. **`SystemLogCollector` drives the embedded ADB regardless of mode.** The audit already listed
+   "diagnostics needs the ADB shell" as a Shizuku gap, but recorded it as a *degraded feature*. It is
+   worse than that: it silently opens a network port. It now skips the shell entirely in Shizuku mode
+   and says so, losing the ring-size commands there — a much smaller cost.
+2. **The lease leaked.** Every release logged `last=false`, meaning the count never reached zero and
+   `releaseWirelessDebugging` never ran once — `adb_wifi_enabled` sat at **1**. The holder was the
+   *opportunistic* USB-default read, which runs on a bounded worker thread that is deliberately
+   abandoned when the ADB stream wedges. The abandoned thread held a lease nobody could return. That
+   path never connects and so has nothing to release; it no longer takes the lease at all.
+
+The second was a bug in the lease added the same morning, and it is exactly the failure it was meant to
+prevent, arriving by a different door. `last=false` in the log is the tell.
+
 ### Coverage after the 2026-08-25 session
 
 Thirteen rows run, twelve pass, one void and re-run. What is now demonstrated on a real device:

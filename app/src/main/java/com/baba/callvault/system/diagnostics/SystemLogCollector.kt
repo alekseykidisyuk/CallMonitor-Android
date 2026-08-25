@@ -140,8 +140,18 @@ object SystemLogCollector {
      * bit us on the first device test — `logcat -G 8M` took effect and `logcat -g` returned nothing,
      * so the ring grew with no recorded size to restore it to.
      */
-    private fun runShell(context: Context, command: String, expectOutput: Boolean = true): String? =
-        AdbShell.asAdbUser(context, "the log collector") { runShellInner(context, command, expectOutput) }
+    private fun runShell(context: Context, command: String, expectOutput: Boolean = true): String? {
+        // Shizuku mode has no embedded ADB connection, and driving one anyway does real damage: this
+        // collector is the reason toggling the debug-logging setting switched **Wireless debugging on**
+        // on a phone in Shizuku mode, which is a mode that must never touch it. Reported from the
+        // device on 2026-08-25; the ring-size commands are diagnostics, so losing them there is a known
+        // and much smaller cost than opening a network port behind the user's back.
+        if (AppPreferences(context).getPrivilegedMode().needsShizuku) {
+            AppLogger.i(TAG, "Shizuku mode: skipping '$command' — no embedded ADB, and WD must stay untouched")
+            return null
+        }
+        return AdbShell.asAdbUser(context, "the log collector") { runShellInner(context, command, expectOutput) }
+    }
 
     private fun runShellInner(context: Context, command: String, expectOutput: Boolean): String? {
         repeat(SHELL_ATTEMPTS) { attempt ->

@@ -287,7 +287,14 @@ object UsbDefaultConfig {
     private fun runShell(context: Context, cmd: String, ensure: Boolean): String? =
         // Held for the whole retry loop, not per attempt: this probe is what was measured leaving
         // Wireless debugging on indefinitely on the OP9, because nothing after it ever switched it off.
-        AdbShell.asAdbUser(context, "the USB-default probe") { runShellInner(context, cmd, ensure) }
+        // Only the connecting path takes the lease. The opportunistic read (`ensure = false`) never
+        // connects, so it can never turn Wireless debugging on and has nothing to release — and taking
+        // the lease there LEAKED it: that read is run on a bounded worker thread that is deliberately
+        // abandoned when the ADB stream wedges (a documented, observed hang), so the abandoned thread
+        // held a lease nobody could ever return. Measured on the OP9: every subsequent release logged
+        // `last=false`, no release ever ran, and `adb_wifi_enabled` sat at 1 in Shizuku mode.
+        if (!ensure) runShellInner(context, cmd, ensure)
+        else AdbShell.asAdbUser(context, "the USB-default probe") { runShellInner(context, cmd, ensure) }
 
     private fun runShellInner(context: Context, cmd: String, ensure: Boolean): String? {
         val attempts = if (ensure) 2 else 1
