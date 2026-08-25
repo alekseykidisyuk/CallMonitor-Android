@@ -19,6 +19,7 @@ import com.baba.callvault.data.recordings.db.RecordingEntry
 import com.baba.callvault.system.permissions.PermissionChecks
 import com.baba.callvault.utils.AppLogger
 import com.baba.callvault.utils.VoicemailLabel
+import com.baba.callvault.transcription.AudioDecoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -82,7 +83,11 @@ object RecordingsRepository {
         val displayDate: String?,
         /** Call start in epoch millis, parsed from the same filename timestamp as [displayDate]. */
         val startedAtMillis: Long?,
-        /** How long the call lasted, matched from the call log. Null when it cannot be known. */
+        /**
+         * How long the call lasted: from the system call log where it is there, otherwise read
+         * from the recording's own container. Null only when neither knows — a Drive-only copy,
+         * or a file declaring no duration.
+         */
         val durationSeconds: Long? = null,
         val number: String?,
         val source: RecordingSource = RecordingSource.LOCAL,
@@ -142,14 +147,24 @@ object RecordingsRepository {
             val hasContactsPermission = PermissionChecks.hasContactsPermission(context)
             val nameCache = HashMap<String, String>()
 
-            // How long each call lasted, from the system call log — one query for the whole list. A
-            // recording it cannot account for (VoIP, older than the log keeps, no permission) simply
-            // has no duration, and the row shows none rather than inventing one.
+            // How long each call lasted, from the system call log — one query for the whole list. It
+            // cannot account for every recording: an **app call is never in the call log at all**, and
+            // neither is one older than the log keeps.
             val durations = CallDurationLookup.durationsFor(context, items.mapNotNull { it.startedAtMillis })
 
             items.map { item ->
-                val withDuration = item.startedAtMillis?.let { durations[it] }
-                    ?.let { item.copy(durationSeconds = it) } ?: item
+                val fromCallLog = item.startedAtMillis?.let { durations[it] }
+                // Fall back to the recording's own container duration. Reading it is milliseconds of
+                // work — the track format only, no decoding — and it is not a guess: it is the length
+                // of the audio actually captured, which is the more direct answer for a list of
+                // recordings. Without it every WhatsApp row showed a blank where its length should be,
+                // and the transcription length limit had nothing to judge an app call by.
+                //
+                // Only for a device copy: the Drive one would be a network read per row.
+                val seconds = fromCallLog ?: item.localUri?.let { uri ->
+                    AudioDecoder.durationMs(context, uri).takeIf { it > 0 }?.let { (it + 500) / 1000 }
+                }
+                val withDuration = seconds?.let { item.copy(durationSeconds = it) } ?: item
                 val number = withDuration.number
                 if (number.isNullOrBlank()) withDuration
                 else {
