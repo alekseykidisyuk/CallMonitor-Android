@@ -8,7 +8,10 @@
 
 package com.baba.callvault.integrations.adb
 
+import com.baba.callvault.data.PrivilegedMode
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -112,5 +115,20 @@ class UsbDefaultConfigTest {
         // mode we never learned — the exact false reassurance this whole area is about.
         assertEquals(UsbDefaultMode.UNKNOWN, UsbDefaultConfig.parseProperty(""))
         assertEquals(UsbDefaultMode.UNKNOWN, UsbDefaultConfig.parseProperty("   "))
+    }
+
+    // ---- isShellUsable: which modes may drive the embedded ADB shell at all
+
+    @Test
+    fun `never drives the embedded shell in Shizuku mode`() {
+        // Not a nicety: ensureConnected is the app's only writer of adb_wifi_enabled = 1, so a probe
+        // that cannot succeed here still opens a network port. The wizard's reliability step did exactly
+        // that on entry, for a user who had never paired anything.
+        assertFalse(UsbDefaultConfig.isShellUsable(PrivilegedMode.SHIZUKU))
+    }
+
+    @Test
+    fun `drives the embedded shell in standalone mode, where it is ours to drive`() {
+        assertTrue(UsbDefaultConfig.isShellUsable(PrivilegedMode.STANDALONE))
     }
 }

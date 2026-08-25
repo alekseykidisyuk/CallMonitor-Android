@@ -47,6 +47,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,6 +69,7 @@ import com.baba.callvault.system.storage.SafHelper
 import com.baba.callvault.data.AppPreferences
 import androidx.compose.runtime.mutableIntStateOf
 import com.baba.callvault.data.PrivilegedMode
+import com.baba.callvault.server.ModeSwitchResult
 import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.server.ShizukuBackend
 import com.baba.callvault.server.ShizukuStatus
@@ -84,9 +86,13 @@ import com.baba.callvault.ui.common.CvPrimaryButton
 import com.baba.callvault.ui.common.CvSectionHeader
 import com.baba.callvault.ui.common.CvStatusPill
 import com.baba.callvault.ui.common.CvTone
+import com.baba.callvault.ui.common.ModeSwitchDialog
 import com.baba.callvault.ui.theme.CallVaultTheme
 import com.baba.callvault.ui.theme.LocalCvBrand
 import com.baba.callvault.ui.viewmodels.PermissionsViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Stateful wrapper that connects [PermissionsViewModel] to [PermissionsContent].
@@ -218,6 +224,30 @@ fun PermissionsContent(
     val privilegedMode = remember(backendRefresh) { AppPreferences(context).getPrivilegedMode() }
     val shizukuStatus = remember(backendRefresh) { RecorderBackend.shizukuStatus(context) }
 
+    // The Shizuku fork is a question, and a question has to be answerable. Standalone is already the
+    // mode for anyone who has not chosen otherwise, and RecorderBackend.switchTo returns early when the
+    // mode is unchanged — so "Use CallVault" changed nothing at all and the card could never be sent
+    // away. Remembering the answer for this screen is enough: the card exists to ask once.
+    var shizukuOfferDeclined by remember { mutableStateOf(false) }
+
+    // A mode switch is seconds of blocking work — a teardown that polls for the old binder to die, then
+    // a wait for the new one — and it used to run straight off the button's onClick, on the main
+    // thread. Same shape as Settings' PrivilegedModeSubSection now: off the main thread, behind the
+    // uninterruptible dialog, through completeSwitch, which is the one place that decides a switch is
+    // actually finished (a live binder is not the finish line; VoIP arming lands after it).
+    var switching by remember { mutableStateOf<PrivilegedMode?>(null) }
+    var switchResult by remember { mutableStateOf<ModeSwitchResult?>(null) }
+    val scope = rememberCoroutineScope()
+
+    fun startSwitch(target: PrivilegedMode) {
+        switching = target
+        switchResult = null
+        scope.launch {
+            switchResult = withContext(Dispatchers.IO) { RecorderBackend.completeSwitch(context, target) }
+            backendRefresh++
+        }
+    }
+
     var wirelessDebuggingEnabled by remember {
         mutableStateOf(AdbShell.isWirelessDebuggingEnabled(context))
     }
@@ -283,18 +313,18 @@ fun PermissionsContent(
                 // Offered ONLY to someone who already runs Shizuku. For everyone else this card does
                 // not exist and setup is exactly what it always was — CallVault must never read as an
                 // instruction to install a second app.
-                if (shizukuStatus != ShizukuStatus.NOT_INSTALLED) {
+                if (shizukuStatus != ShizukuStatus.NOT_INSTALLED && !shizukuOfferDeclined) {
                     item {
                         ShizukuOfferCard(
                             status = shizukuStatus,
                             mode = privilegedMode,
-                            onUseShizuku = {
-                                RecorderBackend.switchTo(context, PrivilegedMode.SHIZUKU)
-                                backendRefresh++
-                            },
+                            onUseShizuku = { startSwitch(PrivilegedMode.SHIZUKU) },
                             onUseCallVault = {
-                                RecorderBackend.switchTo(context, PrivilegedMode.STANDALONE)
-                                backendRefresh++
+                                // Answering the question retires it either way; only leaving Shizuku is
+                                // an actual switch, and asking for one we are already in would spend the
+                                // whole ensureRunning wait to arrive back where we started.
+                                shizukuOfferDeclined = true
+                                if (privilegedMode.needsShizuku) startSwitch(PrivilegedMode.STANDALONE)
                             },
                             onGrant = {
                                 ShizukuBackend.requestPermission()
@@ -412,6 +442,19 @@ fun PermissionsContent(
                         else                 -> stringResource(R.string.permissions_grant_access)
                     },
                     onClick = adbStepAction ?: onGrantAccessButtonClick
+                )
+            }
+
+            // Owns its own window, so it sits at the end of the layout without taking part in it.
+            switching?.let { target ->
+                ModeSwitchDialog(
+                    target = target,
+                    result = switchResult,
+                    onDismiss = {
+                        switching = null
+                        switchResult = null
+                        backendRefresh++
+                    },
                 )
             }
         }

@@ -10,6 +10,7 @@ package com.baba.callvault.integrations.adb
 
 import android.content.Context
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.utils.AppLogger
 
 /**
@@ -238,6 +239,13 @@ object UsbDefaultConfig {
      */
     fun setViaShell(context: Context, mode: UsbDefaultMode): Boolean {
         if (mode == UsbDefaultMode.UNKNOWN) return false
+        // Refused rather than merely skipped: [runShell] would drop the command anyway, but the cache
+        // write below would still record an intent the device never received — and a wrong cache here
+        // is what the picker shows back to the user. See [isShellUsable] for why nothing runs.
+        if (!isShellUsable(privilegedMode(context))) {
+            AppLogger.i(TAG, "Shizuku mode: not setting the Default USB Configuration — no embedded ADB")
+            return false
+        }
         // `svc` applies the change ON-DEVICE even when its (empty) response stream closes early, so the
         // stream result cannot be trusted either way. Fire it and record the intent.
         runShell(context, "svc usb setScreenUnlockedFunctions ${mode.svcArg}".trimEnd(), ensure = true)
@@ -284,7 +292,14 @@ object UsbDefaultConfig {
      * flaky ("Stream closed"), so retry once with a fresh connection — mirroring the daemon launcher.
      * Returns null if both attempts fail. Call OFF the main thread.
      */
-    private fun runShell(context: Context, cmd: String, ensure: Boolean): String? =
+    private fun runShell(context: Context, cmd: String, ensure: Boolean): String? = when {
+        // No embedded ADB in Shizuku mode, so the command cannot succeed — and reaching for it is not
+        // free. See [isShellUsable]: the wizard's reliability step ran this probe on entry and that was
+        // enough to switch Wireless debugging on for a user who had never paired anything.
+        !isShellUsable(privilegedMode(context)) -> {
+            AppLogger.i(TAG, "Shizuku mode: skipping '$cmd' — no embedded ADB, and WD must stay untouched")
+            null
+        }
         // Held for the whole retry loop, not per attempt: this probe is what was measured leaving
         // Wireless debugging on indefinitely on the OP9, because nothing after it ever switched it off.
         // Only the connecting path takes the lease. The opportunistic read (`ensure = false`) never
@@ -293,8 +308,25 @@ object UsbDefaultConfig {
         // abandoned when the ADB stream wedges (a documented, observed hang), so the abandoned thread
         // held a lease nobody could ever return. Measured on the OP9: every subsequent release logged
         // `last=false`, no release ever ran, and `adb_wifi_enabled` sat at 1 in Shizuku mode.
-        if (!ensure) runShellInner(context, cmd, ensure)
-        else AdbShell.asAdbUser(context, "the USB-default probe") { runShellInner(context, cmd, ensure) }
+        !ensure -> runShellInner(context, cmd, ensure)
+        else -> AdbShell.asAdbUser(context, "the USB-default probe") { runShellInner(context, cmd, ensure) }
+    }
+
+    /**
+     * Whether the embedded ADB shell may be driven at all in [mode].
+     *
+     * Shizuku mode never pairs, so nothing here can succeed there — but `ensureConnected` is the app's
+     * ONLY writer of `adb_wifi_enabled = 1`, so the failing attempt still opens a network port. That is
+     * the same hole the log collector had (fixed 2026-08-25 in `SystemLogCollector.runShell`), and this
+     * is deliberately the same fix: skip the shell entirely rather than trust every caller to check.
+     *
+     * Losing the reading is cheap — [readFromSystemProperty] needs no ADB and still answers on most
+     * ROMs — and the advice it drives is about *our* daemon surviving adbd churn, which is not the
+     * failure mode of a Shizuku-hosted recorder anyway.
+     */
+    internal fun isShellUsable(mode: PrivilegedMode): Boolean = !mode.needsShizuku
+
+    private fun privilegedMode(context: Context): PrivilegedMode = AppPreferences(context).getPrivilegedMode()
 
     private fun runShellInner(context: Context, cmd: String, ensure: Boolean): String? {
         val attempts = if (ensure) 2 else 1

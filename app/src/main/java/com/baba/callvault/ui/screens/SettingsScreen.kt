@@ -1719,8 +1719,12 @@ internal fun unavailableReason(capability: ModeCapability): String? =
     if (capabilityAvailable(capability)) null
     else stringResource(R.string.settings_unavailable_in_shizuku)
 
+/**
+ * @param onEnabledChange Notified whenever the opt-in is persisted. The wizard needs it to tell whether
+ *   *anything* will be recorded once the user finishes; Settings has no such question and ignores it.
+ */
 @Composable
-internal fun VoipRecordingToggle() {
+internal fun VoipRecordingToggle(onEnabledChange: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = remember { AppPreferences(context) }
@@ -1741,6 +1745,7 @@ internal fun VoipRecordingToggle() {
     fun applyPreference(turnOn: Boolean) {
         enabled = turnOn
         prefs.setVoipRecordingEnabled(turnOn)
+        onEnabledChange(turnOn)
         unavailable = false
         scope.launch {
             arming = turnOn
@@ -1900,9 +1905,16 @@ private fun UsbDefaultConfigRow() {
     var mode by remember { mutableStateOf(UsbDefaultConfig.cached(context)) }
     var applying by remember { mutableStateOf(false) }
 
+    // The nudge is pure embedded-ADB machinery — reading it needs our shell, and applying it needs the
+    // shell privilege. Greyed in Shizuku mode for the same reason the offline toggle is: it would look
+    // as if it had worked and change nothing.
+    val supported = capabilityAvailable(ModeCapability.WIRELESS_DEBUGGING_CONTROL)
+
     // Refresh the live value once when shown (readViaShell connects+retries internally); falls back to
-    // the shown cached value on failure.
-    LaunchedEffect(Unit) {
+    // the shown cached value on failure. Not even attempted when unsupported: readViaShell now refuses
+    // it anyway, but a probe nobody can act on has no business spending a coroutine either.
+    LaunchedEffect(supported) {
+        if (!supported) return@LaunchedEffect
         withContext(Dispatchers.IO) { UsbDefaultConfig.readViaShell(context) }?.let { mode = it }
     }
 
@@ -1919,7 +1931,7 @@ private fun UsbDefaultConfigRow() {
             label = stringResource(R.string.settings_usb_default_label),
             selected = selected,
             options = options,
-            enabled = !applying,
+            enabled = supported && !applying,
             onOptionSelected = { opt ->
                 val target = runCatching { UsbDefaultMode.valueOf(opt.key) }.getOrNull() ?: return@M3DropdownField
                 if (target == mode || applying) return@M3DropdownField
@@ -1947,7 +1959,10 @@ private fun UsbDefaultConfigRow() {
                 )
             }
         } else {
-            HintText(stringResource(R.string.settings_usb_default_hint))
+            HintText(
+                unavailableReason(ModeCapability.WIRELESS_DEBUGGING_CONTROL)
+                    ?: stringResource(R.string.settings_usb_default_hint)
+            )
         }
     }
 }
@@ -1969,9 +1984,13 @@ private fun usbModeLabelRes(mode: UsbDefaultMode): Int = when (mode) {
  * (Cancel / Continue anyway) because it arms a local `adb tcpip` debugging port; only on "Continue"
  * do we persist the opt-in, arm the loopback listener, and re-warm the daemon. Turning it OFF clears
  * the opt-in and best-effort closes the port (reverts adbd to USB mode).
+ *
+ * `internal` because the wizard renders this very composable: it used to hand-roll its own offline card,
+ * which drifted out of sync and offered "Enable" in Shizuku mode, where the next mode switch turns it
+ * straight back off again.
  */
 @Composable
-private fun OfflineRecordingToggle() {
+internal fun OfflineRecordingToggle() {
     val context = LocalContext.current
     val prefs = remember { AppPreferences(context) }
     var enabled by remember { mutableStateOf(prefs.isOfflineRecordingEnabled()) }

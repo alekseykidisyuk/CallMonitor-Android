@@ -73,8 +73,6 @@ import com.baba.callvault.ui.common.SyncScheduleLabels
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
 import com.baba.callvault.integrations.adb.UsbDefaultMode
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
-import com.baba.callvault.ui.common.OfflineDialogMode
-import com.baba.callvault.ui.common.OfflineRecordingDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -161,20 +159,10 @@ fun WizardScreen(
 
     val usesDrive = storageTarget == StorageTarget.DRIVE || storageTarget == StorageTarget.BOTH
 
-    // The visible step list. The schedule step is only present when Drive is involved, so steps and
-    // indices stay coherent regardless of storage target.
-    val steps = remember(usesDrive) {
-        buildList {
-            add(WizardStep.STORAGE)
-            if (usesDrive) add(WizardStep.SCHEDULE)
-            add(WizardStep.AUTO_RECORD)
-            add(WizardStep.RELIABILITY)
-            add(WizardStep.EXPERIMENTAL)
-            add(WizardStep.AUDIO)
-            add(WizardStep.FILE_NAME)
-            add(WizardStep.UPDATES)
-        }
-    }
+    // Fixed for the run of the wizard: the mode is chosen during onboarding, before this screen opens.
+    val usesEmbeddedAdb = remember { !viewModel.preferences.getPrivilegedMode().needsShizuku }
+
+    val steps = remember(usesDrive, usesEmbeddedAdb) { wizardSteps(usesDrive, usesEmbeddedAdb) }
 
     var stepIndex by rememberSaveable { mutableIntStateOf(0) }
     // Clamp in case the step list shrank (e.g. user switched away from Drive on step 1).
@@ -283,8 +271,33 @@ fun WizardScreen(
     }
 }
 
-/** The logical steps of the wizard (the schedule step is conditionally included). */
-private enum class WizardStep { STORAGE, SCHEDULE, AUTO_RECORD, RELIABILITY, EXPERIMENTAL, AUDIO, FILE_NAME, UPDATES }
+/** The logical steps of the wizard (two of them are conditionally included — see [wizardSteps]). */
+internal enum class WizardStep { STORAGE, SCHEDULE, AUTO_RECORD, RELIABILITY, EXPERIMENTAL, AUDIO, FILE_NAME, UPDATES }
+
+/**
+ * The visible step list, in order. Kept a pure function so the two exclusions are testable and stay
+ * coherent with the "Step N of M" counter, which is derived from this list.
+ *
+ * @param usesDrive       Drive is a storage target, so there is an upload schedule worth asking about.
+ * @param usesEmbeddedAdb CallVault's own ADB provides the privilege (i.e. not Shizuku mode).
+ *
+ * The reliability step is dropped without it. Nothing on that step exists in Shizuku mode — the USB
+ * default is applied over the embedded shell and offline recording is the loopback opt-in — and merely
+ * *showing* it did harm: entering the step probed the USB default, which ensured an ADB connection,
+ * which switched **Wireless debugging on** for a user who had never paired anything and could never
+ * have benefited. [UsbDefaultConfig.isShellUsable] now refuses that from below as well; this keeps the
+ * user from being asked a question with no answer in the first place.
+ */
+internal fun wizardSteps(usesDrive: Boolean, usesEmbeddedAdb: Boolean): List<WizardStep> = buildList {
+    add(WizardStep.STORAGE)
+    if (usesDrive) add(WizardStep.SCHEDULE)
+    add(WizardStep.AUTO_RECORD)
+    if (usesEmbeddedAdb) add(WizardStep.RELIABILITY)
+    add(WizardStep.EXPERIMENTAL)
+    add(WizardStep.AUDIO)
+    add(WizardStep.FILE_NAME)
+    add(WizardStep.UPDATES)
+}
 
 // ── Shell: header + progress + bottom bar ─────────────────────────────────────────────────────
 
@@ -556,6 +569,27 @@ private fun ToggleCard(
     }
 }
 
+/**
+ * Like [NoteCard], but coral — for a choice that leaves CallVault doing nothing.
+ *
+ * Every colour is stated: the scheme's M3 defaults resolve to coral here, so a card that leant on them
+ * would be indistinguishable from an ordinary note.
+ */
+@Composable
+private fun WarningCard(text: String) {
+    CvCard(
+        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
+        border = false,
+        contentPadding = PaddingValues(14.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
 /** A muted helper/note line set inside a faint surface card — for contextual guidance. */
 @Composable
 private fun NoteCard(text: String) {
@@ -684,6 +718,11 @@ private fun AutoRecordStep(
     onIncomingChange: (Boolean) -> Unit,
     onOutgoingChange: (Boolean) -> Unit
 ) {
+    val context = LocalContext.current
+    // The VoIP switch owns its own persistence (and its consent dialog), so this mirrors it only to
+    // answer the one question this step now has to answer: will anything be recorded at all?
+    var voip by remember { mutableStateOf(AppPreferences(context).isVoipRecordingEnabled()) }
+
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Offered here and not only in Settings because the wizard cannot be re-run, and someone
         // installing CallVault for app calls alone wants this on day one — otherwise their first
@@ -708,29 +747,36 @@ private fun AutoRecordStep(
                 onCheckedChange = onOutgoingChange
             )
         }
+
+        // App calls belong beside phone calls: they are the same decision — what gets recorded — and
+        // splitting them across two steps is exactly how someone reached Finish with both off. The very
+        // switch Settings renders, so the consent confirmation and the Shizuku greying come with it.
+        CvCard { VoipRecordingToggle(onEnabledChange = { voip = it }) }
+
+        // Said, not enforced. Finish stays enabled because in Shizuku mode the app-call switch cannot be
+        // turned on at all, so gating here would strand that user on a step they cannot satisfy. With
+        // both off nothing is ever recorded — a legitimate choice to make, but not one to make silently.
+        if (!carrier && !voip) {
+            WarningCard(stringResource(R.string.wizard_auto_record_nothing_warning))
+        }
     }
 }
 
 /**
- * Onboarding "Reliability" step — two OPTIONAL, one-tap opt-ins that make recording robust:
- *  1. **USB "Charging only"** — on many phones, locking the screen mid-call restarts adbd and kills the
- *     recorder; setting the Default USB Configuration to "Charging only" prevents that. Applied over the
- *     embedded shell in one tap.
- *  2. **Offline recording (no Wi-Fi)** — the warned loopback opt-in (via the shared dialog).
- * Both are skippable (Next always advances) — nothing here gates setup.
- */
-/**
  * The experimental opt-ins, mirroring Settings ▸ General ▸ Experimental so the two group them alike.
  *
- * Both toggles are the very same composables Settings renders — shared rather than reimplemented, so
- * a change to either (VoIP's consent confirmation especially) reaches both screens at once. The
- * wizard cannot be re-run, so a feature it never mentions is one most users never discover.
+ * The toggle is the very same composable Settings renders — shared rather than reimplemented, so a
+ * change to it reaches both screens at once. The wizard cannot be re-run, so a feature it never
+ * mentions is one most users never discover.
+ *
+ * VoIP recording used to sit here too. It moved to the auto-record step: it is not an extra, it is one
+ * of the two answers to "what gets recorded", and being two steps away from the other one is what let
+ * people finish with neither.
  */
 @Composable
 private fun ExperimentalStep() {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CvCard { HandoffPersistToggle() }
-        CvCard { VoipRecordingToggle() }
     }
 }
 
@@ -757,6 +803,17 @@ private fun UpdatesStep() {
     }
 }
 
+/**
+ * Onboarding "Reliability" step — two OPTIONAL opt-ins that make recording robust:
+ *  1. **USB "Charging only"** — on many phones, locking the screen mid-call restarts adbd and kills the
+ *     recorder; setting the Default USB Configuration to "Charging only" prevents that. Applied over the
+ *     embedded shell in one tap.
+ *  2. **Offline recording (no Wi-Fi)** — the warned loopback opt-in, rendered by Settings' own toggle.
+ * Both are skippable (Next always advances) — nothing here gates setup.
+ *
+ * Both are also embedded-ADB machinery, which is why [wizardSteps] drops this step whole in Shizuku
+ * mode rather than showing two controls that cannot act.
+ */
 @Composable
 private fun ReliabilityStep() {
     val context = LocalContext.current
@@ -769,9 +826,6 @@ private fun ReliabilityStep() {
         withContext(Dispatchers.IO) { UsbDefaultConfig.readViaShell(context) }?.let { usbMode = it }
     }
     val chargingOnly = usbMode == UsbDefaultMode.CHARGING
-
-    var showOffline by remember { mutableStateOf(false) }
-    var offlineEnabled by remember { mutableStateOf(AppPreferences(context).isOfflineRecordingEnabled()) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // ── USB "Charging only" ──
@@ -808,38 +862,11 @@ private fun ReliabilityStep() {
         }
 
         // ── Offline recording (no Wi-Fi) ──
-        CvCard {
-            Text(
-                text = stringResource(R.string.settings_offline_recording_label),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = stringResource(R.string.settings_offline_recording_desc),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(12.dp))
-            if (offlineEnabled) {
-                WizardDoneRow(stringResource(R.string.wizard_reliability_offline_done))
-            } else {
-                CvSecondaryButton(
-                    text = stringResource(R.string.wizard_reliability_offline_button),
-                    onClick = { showOffline = true },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-    }
-
-    if (showOffline) {
-        OfflineRecordingDialog(
-            mode = OfflineDialogMode.ENABLE,
-            onResult = { offlineEnabled = it },
-            onClose = { showOffline = false },
-        )
+        // The switch Settings renders, not a copy of it. The hand-rolled card that used to sit here
+        // skipped the ModeCapability gate and offered "Enable" in Shizuku mode, where the opt-in has no
+        // embedded ADB to arm and the next mode switch turns it straight back off. Sharing the
+        // composable is what stops that drift from happening again — as the experimental step already does.
+        CvCard { OfflineRecordingToggle() }
     }
 }
 
