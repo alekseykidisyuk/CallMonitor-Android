@@ -3,16 +3,20 @@
 #
 #   ./callharness.sh state              what mode / recorder / call state is the phone in
 #   ./callharness.sh call [seconds]     place a call to פרוזה, play the near-side clip, hang up
+#                                       (default 20s: ~5s clip, then room for a short reply)
 #   ./callharness.sh collect            pull the newest recording and measure it
 #   ./callharness.sh clip               (re)push the near-side clip and set media volume
 #
-# The near side is a spoken count ("Near side 1, Near side 2 …") played out of the OP9's own
-# speaker so its microphone transmits it. The far side is a human on the OP12. Both are then
+# The near side is a short spoken clip ("Testing, testing. One. Two. Three. This is OP9.") played
+# out of the OP9's own speaker so its microphone transmits it. The far side is a human on the OP12. Both are then
 # identifiable in one file — by ear, and in the transcript CallVault produces itself.
 #
 # Generate the clip on a Mac with:
-#   say -v Daniel -r 165 -o clip.aiff "This is the CallVault near side test. Near side 1. …"
+#   say -v Daniel -r 175 -o clip.aiff "Testing, testing. One. Two. Three. This is O P nine."
 #   ffmpeg -i clip.aiff -ac 1 -ar 44100 -b:a 128k nearside.mp3
+#
+# Keep it SHORT — about 5 s. The clip only has to prove the near side reached the file; a long one
+# just makes every test call take a minute.
 #
 # Reading the numbers:
 #   ~-34 dB mean   a real two-sided carrier call (measured, OP9, 2026-08-24)
@@ -66,7 +70,7 @@ play_clip() { a shell "am start -n $PLAYER -a android.intent.action.VIEW -d file
 stop_clip() { a shell am force-stop com.heytap.browser >/dev/null 2>&1; }
 
 cmd_call() {
-  local secs=${1:-45}
+  local secs=${1:-20}
   echo "== placing a call to $NUM =="
   a logcat -c
   a shell "am start -a android.intent.action.CALL -d tel:$NUM" >/dev/null 2>&1
@@ -88,7 +92,7 @@ cmd_call() {
   echo "== near-side clip starting =="
   play_clip
 
-  echo "   in call for ${secs}s (speak on the OP12 now)"
+  echo "   in call for ${secs}s — the clip runs ~5s, then speak on the OP12 and I will hang up"
   for i in $(seq 1 "$secs"); do
     if [ "$(call_state)" != "2" ]; then echo "   call ended early at ${i}s"; break; fi
     sleep 1
