@@ -403,6 +403,8 @@
     <string name="transcript_loading">Загрузка расшифровки…</string>
     <string name="transcript_no_model_message">Расшифровка выполняется на этом телефоне, поэтому сначала нужно загрузить речевую модель. Выбрать и загрузить её можно в настройках.</string>
     <string name="transcript_no_model_open_settings">Открыть настройки</string>
+    <string name="transcript_too_long_title">Слишком длинная для расшифровки</string>
+    <string name="transcript_too_long_message">Этот звонок длится около %1$d минут. Пока CallVault может расшифровывать на устройстве только записи до %2$d минут — на более длинных посреди процесса закончится память. Сама запись в сохранности.</string>
     <string name="transcript_no_model_title">Речевая модель ещё не загружена</string>
     <string name="transcript_no_speech">В этой записи речь не распознана.</string>
     <string name="transcript_retranscribe">Расшифровать заново</string>

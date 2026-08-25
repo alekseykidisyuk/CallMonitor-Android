@@ -403,6 +403,8 @@
     <string name="transcript_loading">Đang tải bản ghi lời…</string>
     <string name="transcript_no_model_message">Việc chép lời diễn ra ngay trên điện thoại này, nên cần tải một mô hình giọng nói trước. Bạn có thể chọn và tải trong Cài đặt.</string>
     <string name="transcript_no_model_open_settings">Mở cài đặt</string>
+    <string name="transcript_too_long_title">Quá dài để chuyển thành văn bản</string>
+    <string name="transcript_too_long_message">Cuộc gọi này dài khoảng %1$d phút. Hiện tại CallVault chỉ có thể chuyển thành văn bản các bản ghi tối đa %2$d phút trên thiết bị — dài hơn sẽ hết bộ nhớ giữa chừng. Bản ghi vẫn an toàn.</string>
     <string name="transcript_no_model_title">Chưa có mô hình giọng nói</string>
     <string name="transcript_no_speech">Không nhận ra giọng nói nào trong bản ghi âm này.</string>
     <string name="transcript_retranscribe">Chuyển lại</string>

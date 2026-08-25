@@ -403,6 +403,8 @@
     <string name="transcript_loading">Átirat betöltése…</string>
     <string name="transcript_no_model_message">Az átírás ezen a telefonon készül, ezért előbb le kell tölteni egy beszédmodellt. A Beállításokban választhat és tölthet le egyet.</string>
     <string name="transcript_no_model_open_settings">Beállítások megnyitása</string>
+    <string name="transcript_too_long_title">Túl hosszú az átirathoz</string>
+    <string name="transcript_too_long_message">Ez a hívás körülbelül %1$d perc. A CallVault egyelőre csak %2$d percnél nem hosszabb felvételeket tud az eszközön átirattá alakítani — a hosszabbaknál menet közben elfogyna a memória. Maga a felvétel biztonságban van.</string>
     <string name="transcript_no_model_title">Még nincs beszédmodell</string>
     <string name="transcript_no_speech">Ebben a felvételben nem ismerhető fel beszéd.</string>
     <string name="transcript_retranscribe">Átírás újra</string>

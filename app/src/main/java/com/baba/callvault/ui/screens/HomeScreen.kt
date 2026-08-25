@@ -106,6 +106,7 @@ import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.transcription.AudioDecoder
 import com.baba.callvault.transcription.TranscriptionEstimate
+import com.baba.callvault.transcription.TranscriptionLengthLimit
 import com.baba.callvault.ui.common.BidiText
 import com.baba.callvault.ui.common.RecordingLabel
 import com.baba.callvault.ui.common.TranscribeConfirmDialog
@@ -242,6 +243,9 @@ fun HomeScreen(
 
     /** Raised when transcription is asked for but the model it needs is not installed. */
     var showModelMissing by remember { mutableStateOf(false) }
+    // Non-null while refusing to transcribe a recording that is too long; holds its length in minutes
+    // so the dialog can say how long it actually was rather than only quoting the limit.
+    var tooLongMinutes by remember { mutableStateOf<Int?>(null) }
 
     /** The recording awaiting a "this will take N minutes" confirmation, with the language picked for
      *  it (null = use the setting), or null when nothing is waiting. */
@@ -296,7 +300,15 @@ fun HomeScreen(
     val startTranscription: (String) -> Unit = { displayName ->
         val prefs = AppPreferences(context)
         val model = TranscriptionModel.fromId(prefs.getTranscriptionModelId()) ?: TranscriptionModel.DEFAULT
-        if (!ModelRepository.isInstalled(context, model)) {
+        // Refuse a long recording before anything else. Transcription decodes the whole file into
+        // memory first, so a long call ends in a crash or a job that dies silently after a long wait —
+        // saying no immediately, with a reason, is strictly better than trying and failing. A stopgap
+        // until decoding is chunked; see TranscriptionLengthLimit.
+        val recordingSeconds = uiState.recordings
+            .firstOrNull { it.displayName == displayName }?.durationSeconds
+        if (TranscriptionLengthLimit.isTooLong(recordingSeconds)) {
+            tooLongMinutes = ((recordingSeconds ?: 0L) / 60L).toInt()
+        } else if (!ModelRepository.isInstalled(context, model)) {
             showModelMissing = true
         } else if (prefs.getTranscriptionAskLanguage()) {
             askLanguageFor = displayName
@@ -778,6 +790,27 @@ fun HomeScreen(
             onConfirm = { language ->
                 askLanguageFor = null
                 continueTranscription(displayName, language)
+            }
+        )
+    }
+
+    tooLongMinutes?.let { minutes ->
+        AlertDialog(
+            onDismissRequest = { tooLongMinutes = null },
+            title = { Text(stringResource(R.string.transcript_too_long_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.transcript_too_long_message,
+                        minutes,
+                        TranscriptionLengthLimit.MAX_MINUTES,
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { tooLongMinutes = null }) {
+                    Text(stringResource(R.string.general_ok))
+                }
             }
         )
     }

@@ -403,6 +403,8 @@
     <string name="transcript_loading">Transkript wird geladen…</string>
     <string name="transcript_no_model_message">Die Transkription läuft auf diesem Telefon, daher muss zuerst ein Sprachmodell heruntergeladen werden. In den Einstellungen können Sie eines auswählen und laden.</string>
     <string name="transcript_no_model_open_settings">Einstellungen öffnen</string>
+    <string name="transcript_too_long_title">Zu lang zum Transkribieren</string>
+    <string name="transcript_too_long_message">Dieser Anruf dauert etwa %1$d Minuten. CallVault kann vorerst nur Aufnahmen bis zu %2$d Minuten auf dem Gerät transkribieren — bei längeren geht mittendrin der Speicher aus. Die Aufnahme selbst ist sicher.</string>
     <string name="transcript_no_model_title">Noch kein Sprachmodell</string>
     <string name="transcript_no_speech">In dieser Aufnahme wurde keine Sprache erkannt.</string>
     <string name="transcript_retranscribe">Erneut transkribieren</string>

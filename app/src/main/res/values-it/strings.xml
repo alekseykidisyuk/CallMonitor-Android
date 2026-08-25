@@ -403,6 +403,8 @@
     <string name="transcript_loading">Caricamento della trascrizione…</string>
     <string name="transcript_no_model_message">La trascrizione avviene su questo telefono, quindi serve prima scaricare un modello vocale. Puoi sceglierne e scaricarne uno nelle Impostazioni.</string>
     <string name="transcript_no_model_open_settings">Apri impostazioni</string>
+    <string name="transcript_too_long_title">Troppo lunga da trascrivere</string>
+    <string name="transcript_too_long_message">Questa chiamata dura circa %1$d minuti. Per ora CallVault può trascrivere sul dispositivo solo registrazioni fino a %2$d minuti: quelle più lunghe esaurirebbero la memoria a metà. La registrazione in sé è al sicuro.</string>
     <string name="transcript_no_model_title">Nessun modello vocale</string>
     <string name="transcript_no_speech">Nessun parlato riconosciuto in questa registrazione.</string>
     <string name="transcript_retranscribe">Trascrivi di nuovo</string>

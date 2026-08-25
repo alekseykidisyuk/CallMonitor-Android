@@ -403,6 +403,8 @@
     <string name="transcript_loading">Wczytywanie transkrypcji…</string>
     <string name="transcript_no_model_message">Transkrypcja odbywa się na tym telefonie, więc najpierw trzeba pobrać model mowy. Możesz go wybrać i pobrać w Ustawieniach.</string>
     <string name="transcript_no_model_open_settings">Otwórz ustawienia</string>
+    <string name="transcript_too_long_title">Za długie, aby transkrybować</string>
+    <string name="transcript_too_long_message">To połączenie trwa około %1$d minut. Na razie CallVault może transkrybować na urządzeniu tylko nagrania do %2$d minut — dłuższym zabrakłoby pamięci w połowie. Samo nagranie jest bezpieczne.</string>
     <string name="transcript_no_model_title">Brak modelu mowy</string>
     <string name="transcript_no_speech">W tym nagraniu nie rozpoznano mowy.</string>
     <string name="transcript_retranscribe">Transkrybuj ponownie</string>

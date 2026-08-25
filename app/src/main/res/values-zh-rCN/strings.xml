@@ -403,6 +403,8 @@
     <string name="transcript_loading">正在加载转写…</string>
     <string name="transcript_no_model_message">转写在本机进行，因此需要先下载语音模型。你可以在设置中选择并下载。</string>
     <string name="transcript_no_model_open_settings">打开设置</string>
+    <string name="transcript_too_long_title">太长，无法转录</string>
+    <string name="transcript_too_long_message">这通电话约 %1$d 分钟。目前 CallVault 在设备上只能转录不超过 %2$d 分钟的录音，更长的会在中途耗尽内存。录音本身不受影响。</string>
     <string name="transcript_no_model_title">尚无语音模型</string>
     <string name="transcript_no_speech">这段录音中未识别到语音。</string>
     <string name="transcript_retranscribe">重新转写</string>
