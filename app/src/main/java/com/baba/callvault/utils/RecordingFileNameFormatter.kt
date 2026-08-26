@@ -91,8 +91,12 @@ object RecordingFileNameFormatter {
             .replace(FileNamePlaceholder.CONTACT_NAME.tag, contactStr)
             .replace(FileNamePlaceholder.CROSS_COUNTRY.tag, crossCountryStr)
 
-        AppLogger.v(TAG, "Formatted base filename: '$baseName' with template '$template'")
-        return "$baseName${codec.containerExtension}"
+        // Log the FINAL name, not the base one. AppLogger's redaction recognises a recording filename
+        // by its extension, so a base name would have walked past it with the contact still in it —
+        // this was the one place in the app that logged a name with no extension.
+        val fileName = "$baseName${codec.containerExtension}"
+        AppLogger.v(TAG, "Formatted filename: '$fileName' with template '$template'")
+        return fileName
     }
 
     private fun getContactName(context: Context, phoneNumber: String): String? {

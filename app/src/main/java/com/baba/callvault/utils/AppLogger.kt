@@ -167,6 +167,9 @@ object AppLogger {
     fun init(context: Context) {
         prefs = AppPreferences(context)
         logFile = File(context.cacheDir, "app_debug.log")
+        // Read (and on a fresh install, generate) the pseudonym salt here rather than on whichever
+        // thread happens to log first, so the hot path only ever sees the cached value.
+        pseudonymSalt()
 
         // Store the original default uncaught exception handler to ensure we can forward exceptions after flushing
         // logs
@@ -514,7 +517,14 @@ object AppLogger {
         if (!toFile && !ringEnabled) return
 
         val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())
-        val fullMessage = message + (t?.let { "\n${Log.getStackTraceString(it)}" } ?: "")
+        // The trace is redacted HERE, not by the callers. They redact only their own message and hand
+        // the raw throwable down, so until this line an exception message quoting a recording URI or a
+        // number — a SAF FileNotFoundException, a DocumentsContract IllegalArgumentException, a
+        // MediaMetadataRetriever failure — wrote it into the report untouched. Redacting the trace once
+        // it is a string covers every caller, present and future, and costs nothing on the ordinary
+        // path because there is no throwable to stringify there.
+        val trace = t?.let { "\n" + redact(Log.getStackTraceString(it)) }.orEmpty()
+        val fullMessage = message + trace
 
         val formattedLine = "$time [$level] $tag: $fullMessage"
         if (toFile) channel.trySend(formattedLine)
@@ -527,27 +537,50 @@ object AppLogger {
     }
 
     /**
-     * Redacts highly sensitive personal information (e.g. phone numbers) from the given text
-     * before it gets committed to physical storage.
-     */
-    /**
-     * Applies the same phone-number redaction to a line that did not come from us.
+     * Applies the same redaction to a line that did not come from us.
      *
      * System log lines carry numbers too — the telephony stack logs them — and a report built from
      * logcat goes into the same public issue as our own log. One rule for both.
      */
     fun redactForReport(line: String): String = redact(line)
 
-    private fun redact(msg: String): String {
-        val phoneRedactionRegex = Regex(
-            "(?<!\\d)" +              // Negative Lookbehind: Don't start in the middle of another number
-                    "(?:\\+?\\d{1,3}[-.\\s]?)?" + // Optional Country Code (e.g., +1 or 33)
-                    "(?:\\(\\d{1,4}\\)|\\d{1,4})" + // Area code (with or without parentheses)
-                    "[-.\\s]?\\d{3,4}" +      // Prefix
-                    "[-.\\s]?\\d{3,4}" +      // Line number
-                    "(?!\\d)"                 // Negative Lookahead: Don't end in the middle of another number
-        )
-        return msg.replace(phoneRedactionRegex, "[PHONE_REDACTED]")
+    /**
+     * Strips personal data from a line before it is written anywhere. See [LogRedaction] for the rules.
+     *
+     * The rules themselves live in [LogRedaction] so they can be unit tested without Android; all this
+     * has to do is find the salt, which is the one part that needs a process and a preference store.
+     */
+    private fun redact(msg: String): String = LogRedaction.redact(msg, pseudonymSalt())
+
+    /**
+     * The stored per-install salt, cached after the first successful read.
+     *
+     * Cached **only when it came from preferences**. Lines are logged before [init] runs, and in the
+     * daemon process [init] never runs at all, so a naive cache would pin the fallback salt for the
+     * lifetime of the app process and give one contact two different tokens in the same report.
+     */
+    private fun pseudonymSalt(): String {
+        cachedPseudonymSalt?.let { return it }
+        val stored = prefs?.let { runCatching { it.getLogPseudonymSalt() }.getOrNull() }
+        if (stored != null) cachedPseudonymSalt = stored
+        return stored ?: processPseudonymSalt
+    }
+
+    @Volatile
+    private var cachedPseudonymSalt: String? = null
+
+    /**
+     * The salt used where preferences are unreachable: the **daemon process**, which runs as shell and
+     * cannot read the app's private preferences, and the app's own first few lines before [init].
+     *
+     * Random per process, so it still never leaks a name — it only costs correlation *between* the two
+     * processes' lines. That is acceptable because the daemon deliberately logs no names at all (see
+     * `VoipCallerName`, which resolves a caller and logs only that it succeeded). If the daemon ever
+     * starts logging one, push the real salt over the binder alongside `setDiagnosticsEnabled` rather
+     * than leaving it on this fallback.
+     */
+    private val processPseudonymSalt: String by lazy {
+        ByteArray(16).also { java.security.SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
     }
 
     /**

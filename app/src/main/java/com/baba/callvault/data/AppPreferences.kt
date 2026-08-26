@@ -298,6 +298,7 @@ class AppPreferences(context: Context) {
         
         // --- Developer & Debug ---
         LOGGING_ENABLED("logging_enabled"),
+        LOG_PSEUDONYM_SALT("log_pseudonym_salt"),
         LOGCAT_RING_PREVIOUS_KIB("logcat_ring_previous_kib"),
         DEBUG_ENABLED("debug_enabled"),
         DEBUG_CALLER_NUMBER("debug_caller_number"),
@@ -1045,6 +1046,28 @@ class AppPreferences(context: Context) {
 
     /** Sets whether logging features are enabled. */
     fun setLoggingEnabled(enabled: Boolean) = setBoolean(Key.LOGGING_ENABLED, enabled)
+
+    /**
+     * This install's random salt for the contact-name pseudonyms in the diagnostic log
+     * ([com.baba.callvault.utils.LogRedaction.contactToken]). Generated once on first read and
+     * persisted, like [getLoopbackAdbPort].
+     *
+     * It must be per-install and secret. A bare hash of a contact name is not a pseudonym: the space
+     * of names people save in a phone is tiny, so "Mum" or "Dad" falls to a dictionary immediately,
+     * and the debug report is written to be attached to a **public** GitHub issue. Salting makes the
+     * tokens stable for one user — so their own log lines and their own past reports still correlate
+     * — and meaningless to anyone comparing one user's report with another's.
+     *
+     * Losing it (uninstall/clear-data) only means new tokens differ from old ones. That is fine: it
+     * wipes the log those tokens appeared in at the same time.
+     */
+    fun getLogPseudonymSalt(): String {
+        getString(Key.LOG_PSEUDONYM_SALT)?.takeIf { it.isNotBlank() }?.let { return it }
+        val bytes = ByteArray(16).also { java.security.SecureRandom().nextBytes(it) }
+        val salt = bytes.joinToString("") { "%02x".format(it) }
+        setString(Key.LOG_PSEUDONYM_SALT, salt)
+        return salt
+    }
 
     /** Checks if debug features are enabled. */
     fun isDebugEnabled() = getBoolean(Key.DEBUG_ENABLED, DefaultsValue.DEBUG_ENABLED)
