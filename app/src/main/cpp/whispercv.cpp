@@ -13,10 +13,35 @@
 
 #include <jni.h>
 #include <atomic>
+#include <mutex>
+#include <string>
 #include "whisper.h"
+#include "ggml-backend.h"
 
 static inline whisper_context *ctx_of(jlong p) {
     return reinterpret_cast<whisper_context *>(p);
+}
+
+// The CPU backend ships as its own .so, so it has to be dlopen'd before a model will load. Once per
+// process, and not once per transcription. The same code, and the same reasoning, as llamacv.cpp --
+// the two engines share one ggml but not one process-wide registry call.
+//
+// From an explicit directory, because ggml's own default is the executable's directory and the
+// current one -- for an Android app that is /system/bin and /, and neither holds our libraries. It
+// finds nothing there and says nothing about it, and the first symptom is that every model fails to
+// load. [lib_dir] is the app's nativeLibraryDir, handed down from Kotlin.
+//
+// The directory holds one libggml-cpu-android_armv*.so per ARM feature set (see the CPU-variant
+// block in CMakeLists.txt); ggml scores each against HWCAP and keeps the best the phone can run.
+static std::once_flag g_backends_once;
+
+static void ensure_backends(const char *lib_dir) {
+    // Copied, not captured by reference: call_once runs the lambda after this function's argument
+    // is gone in every caller that loses the race.
+    const std::string dir = lib_dir ? lib_dir : "";
+    std::call_once(g_backends_once, [dir] {
+        ggml_backend_load_all_from_path(dir.empty() ? nullptr : dir.c_str());
+    });
 }
 
 // Set from any thread to abort a run in progress.
@@ -82,13 +107,24 @@ static bool abort_requested(void *) {
 
 extern "C" {
 
+// Lists the loaded CPU backend's own features, so this is where the phone says which variant it
+// chose: DOTPROD, MATMUL_INT8 and the rest read 1 only when the .so that won the scoring was built
+// with them. Needs the backends loaded first, hence the directory.
 JNIEXPORT jstring JNICALL
-Java_com_baba_callvault_transcription_WhisperNative_systemInfo(JNIEnv *env, jobject) {
+Java_com_baba_callvault_transcription_WhisperNative_systemInfo(JNIEnv *env, jobject, jstring lib_dir) {
+    const char *d = env->GetStringUTFChars(lib_dir, nullptr);
+    ensure_backends(d);
+    env->ReleaseStringUTFChars(lib_dir, d);
     return env->NewStringUTF(whisper_print_system_info());
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_baba_callvault_transcription_WhisperNative_initContext(JNIEnv *env, jobject, jstring path) {
+Java_com_baba_callvault_transcription_WhisperNative_initContext(JNIEnv *env, jobject, jstring path,
+                                                                jstring lib_dir) {
+    const char *d = env->GetStringUTFChars(lib_dir, nullptr);
+    ensure_backends(d);
+    env->ReleaseStringUTFChars(lib_dir, d);
+
     const char *p = env->GetStringUTFChars(path, nullptr);
     whisper_context_params cp = whisper_context_default_params();
     whisper_context *c = whisper_init_from_file_with_params(p, cp);

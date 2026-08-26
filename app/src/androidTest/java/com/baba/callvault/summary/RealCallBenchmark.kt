@@ -149,7 +149,7 @@ class RealCallBenchmark {
         val chunks = SummaryChunking.chunk(segments)
         lines.appendLine("chunks:     ${chunks.size}")
 
-        val summary = SummaryEngine.withModel(summaryModel.absolutePath) { session ->
+        val summary = SummaryEngine.withModel(context, summaryModel.absolutePath) { session ->
             val runStart = SystemClock.elapsedRealtime()
             val partial = chunks.mapIndexed { index, chunk ->
                 val prompt = if (args.getString("json") != null) {

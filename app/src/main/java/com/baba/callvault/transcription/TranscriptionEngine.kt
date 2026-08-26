@@ -159,7 +159,7 @@ object TranscriptionEngine {
             return@withContext emptyList()
         }
 
-        val ptr = WhisperNative.initContext(modelPath)
+        val ptr = WhisperNative.initContext(modelPath, context.applicationInfo.nativeLibraryDir)
         if (ptr == 0L) error("Could not load whisper model at $modelPath")
         try {
             val threads = preferredThreadCount()

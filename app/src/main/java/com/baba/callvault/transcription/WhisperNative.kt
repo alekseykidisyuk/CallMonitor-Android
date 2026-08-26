@@ -19,15 +19,26 @@ package com.baba.callvault.transcription
  * This runs in the app process. It must never be used from the privileged recorder daemon:
  * transcription needs no privilege, and sharing a process with the capture path would put the most
  * fragile part of the app behind a CPU-saturating job.
+ *
+ * [libDir] on the two entry points below is `context.applicationInfo.nativeLibraryDir`. ggml's CPU
+ * kernels ship as one .so per ARM feature set and are dlopen'd by directory, and ggml's own default
+ * search path — the executable's directory and the current one, i.e. /system/bin and / — holds none
+ * of ours. Getting it wrong is silent: the backends are simply not found, and every model then
+ * fails to load for no stated reason.
  */
 object WhisperNative {
     init { System.loadLibrary("whispercv") }
 
-    /** ggml build/CPU feature string. Used to confirm the native library loaded at all. */
-    external fun systemInfo(): String
+    /**
+     * ggml build/CPU feature string. Used to confirm the native library loaded at all.
+     *
+     * Also the answer to "which CPU variant did this phone pick": the flags it lists are the loaded
+     * backend's own, so DOTPROD or MATMUL_INT8 reading 1 is proof the fast kernels are in use.
+     */
+    external fun systemInfo(libDir: String): String
 
     /** @return an opaque context pointer, or 0 when the model could not be loaded. */
-    external fun initContext(modelPath: String): Long
+    external fun initContext(modelPath: String, libDir: String): Long
 
     /** Releases a context from [initContext]. Safe to call with 0. */
     external fun freeContext(ptr: Long)

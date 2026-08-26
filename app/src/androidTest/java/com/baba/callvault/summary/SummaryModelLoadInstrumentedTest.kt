@@ -50,7 +50,7 @@ class SummaryModelLoadInstrumentedTest {
         Log.i(TAG, "RAM $totalRamMb MB, model wants about $neededMb MB")
 
         val outcome = runCatching {
-            SummaryEngine.withModel(path!!.absolutePath) { session ->
+            SummaryEngine.withModel(context, path!!.absolutePath) { session ->
                 // Tokenising touches the vocabulary without generating, so it proves the context is
                 // real without spending minutes of emulator CPU on a summary nobody will read.
                 session.countTokens("hello")
@@ -93,7 +93,7 @@ class SummaryModelLoadInstrumentedTest {
 
         val started = System.currentTimeMillis()
         val outcome = runCatching {
-            SummaryEngine.withModel(path!!.absolutePath) { session ->
+            SummaryEngine.withModel(context, path!!.absolutePath) { session ->
                 session.generate("Reply with one short word.", maxTokens = TINY_TOKEN_BUDGET)
             }
         }

@@ -8,6 +8,7 @@
 
 package com.baba.callvault.summary
 
+import android.content.Context
 import com.baba.callvault.transcription.TranscriptionEngine
 import com.baba.callvault.utils.AppLogger
 import kotlinx.coroutines.Dispatchers
@@ -68,11 +69,19 @@ object SummaryEngine {
      * The model stays loaded only for the duration of [block] rather than being cached. A 4B model
      * at Q4 is well over a gigabyte of resident memory, and holding that for a screen the user may
      * never open again is not a trade worth making on a phone.
+     *
+     * [context] is needed only to find the app's own library directory, which is where ggml's CPU
+     * backends have to be dlopen'd from — see [LlamaNative]. It leads the parameter list to match
+     * [TranscriptionEngine.transcribe], which takes one for its own reasons.
      */
-    suspend fun <T> withModel(modelPath: String, block: suspend (Session) -> T): T =
+    suspend fun <T> withModel(
+        context: Context,
+        modelPath: String,
+        block: suspend (Session) -> T
+    ): T =
         withContext(Dispatchers.Default) {
             mutex.withLock {
-                val ptr = LlamaNative.initContext(modelPath)
+                val ptr = LlamaNative.initContext(modelPath, context.applicationInfo.nativeLibraryDir)
                 if (ptr == 0L) error("Could not load the summarisation model")
                 isRunning = true
                 try {

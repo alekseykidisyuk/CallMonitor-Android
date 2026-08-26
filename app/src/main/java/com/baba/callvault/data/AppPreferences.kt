@@ -41,6 +41,22 @@ class AppPreferences(context: Context) {
          */
         private const val LOOPBACK_PORT_MIN = 47000
         private const val LOOPBACK_PORT_MAX = 59999
+
+        /**
+         * Marker for the configuration the stored transcription speeds describe
+         * ([getRtfCalibrationThreads]).
+         *
+         * Versioned, because the thread count is not the only part of "this machine" that can move:
+         * so can the arithmetic. `_v2` marks ggml being built with per-CPU kernel variants
+         * (dotprod/i8mm) instead of the plain ARMv8 baseline, which made transcription about 1.2x
+         * faster on the phones that have them. Bump the suffix on any change of that kind. Leaving
+         * it alone would keep every factor measured under the old kernels and quote a pessimistic
+         * estimate on every phone that had ever transcribed anything.
+         *
+         * An old marker needs no migration: it starts with the same prefix as the speeds, so the
+         * sweep in [setRtfCalibrationThreads] removes it along with them.
+         */
+        private const val RTF_CALIBRATION_KEY = "transcription_rtf_threads_v2"
     }
 
     /**
@@ -654,16 +670,16 @@ class AppPreferences(context: Context) {
      * confident description of a configuration that no longer exists — so it is discarded rather than
      * slowly averaged away over the next several runs, each of which would quote a wrong estimate.
      */
-    fun getRtfCalibrationThreads(): Int = prefs.getInt("transcription_rtf_threads", 0)
+    fun getRtfCalibrationThreads(): Int = prefs.getInt(RTF_CALIBRATION_KEY, 0)
 
     /** Records the policy and forgets speeds measured under a different one. */
     fun setRtfCalibrationThreads(threads: Int) {
         if (getRtfCalibrationThreads() == threads) return
         prefs.edit {
             prefs.all.keys
-                .filter { it.startsWith("transcription_rtf_") && it != "transcription_rtf_threads" }
+                .filter { it.startsWith("transcription_rtf_") && it != RTF_CALIBRATION_KEY }
                 .forEach { remove(it) }
-            putInt("transcription_rtf_threads", threads)
+            putInt(RTF_CALIBRATION_KEY, threads)
         }
     }
 

@@ -8,6 +8,7 @@
 
 package com.baba.callvault.summary
 
+import android.content.Context
 import android.os.Debug
 import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -75,7 +76,7 @@ class SummaryBenchmark {
         val report = StringBuilder()
         report.appendLine("CallVault summarisation benchmark")
         report.appendLine("device: ${android.os.Build.MODEL}  android ${android.os.Build.VERSION.SDK_INT}")
-        report.appendLine("llama: ${LlamaNative.systemInfo()}")
+        report.appendLine("llama: ${LlamaNative.systemInfo(context.applicationInfo.nativeLibraryDir)}")
         report.appendLine()
 
         models.forEach { model ->
@@ -83,9 +84,9 @@ class SummaryBenchmark {
                 // Twice per sample: once whole, and once with a small chunk limit so the split and
                 // merge path is exercised too. Merging is where a summary of a long call is made or
                 // lost, and it would otherwise go unmeasured on anything short enough to run here.
-                report.appendLine(runOne(model, sample, chunkChars = SummaryChunking.DEFAULT_MAX_CHARS))
+                report.appendLine(runOne(context, model, sample, chunkChars = SummaryChunking.DEFAULT_MAX_CHARS))
                 report.appendLine()
-                report.appendLine(runOne(model, sample, chunkChars = 400))
+                report.appendLine(runOne(context, model, sample, chunkChars = 400))
                 report.appendLine()
             }
         }
@@ -102,6 +103,7 @@ class SummaryBenchmark {
     }
 
     private suspend fun runOne(
+        context: Context,
         modelFile: File,
         sample: SummarySamples.Sample,
         chunkChars: Int
@@ -120,7 +122,7 @@ class SummaryBenchmark {
         val loadStart = SystemClock.elapsedRealtime()
 
         return runCatching {
-            SummaryEngine.withModel(modelFile.absolutePath) { session ->
+            SummaryEngine.withModel(context, modelFile.absolutePath) { session ->
                 val loadMs = SystemClock.elapsedRealtime() - loadStart
                 lines.appendLine("load:       ${loadMs} ms")
 

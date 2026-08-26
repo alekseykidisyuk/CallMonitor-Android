@@ -38,13 +38,24 @@ static bool abort_requested(void * /* user_data */) {
     return g_abort.load(std::memory_order_relaxed);
 }
 
-// The CPU backend ships as its own .so (the build defines GGML_BACKEND_SHARED), so it has to be
-// dlopen'd before a model will load. Once per process, and not once per generate.
+// The CPU backend ships as its own .so, so it has to be dlopen'd before a model will load. Once per
+// process, and not once per generate.
+//
+// From an explicit directory, because ggml's own default is the executable's directory and the
+// current one -- for an Android app that is /system/bin and /, and neither holds our libraries. It
+// finds nothing there and says nothing about it, and the first symptom is that every model fails to
+// load. [lib_dir] is the app's nativeLibraryDir, handed down from Kotlin.
+//
+// The directory holds one libggml-cpu-android_armv*.so per ARM feature set (see the CPU-variant
+// block in CMakeLists.txt); ggml scores each against HWCAP and keeps the best the phone can run.
 static std::once_flag g_backends_once;
 
-static void ensure_backends() {
-    std::call_once(g_backends_once, [] {
-        ggml_backend_load_all();
+static void ensure_backends(const char *lib_dir) {
+    // Copied, not captured by reference: call_once runs the lambda after this function's argument
+    // is gone in every caller that loses the race.
+    const std::string dir = lib_dir ? lib_dir : "";
+    std::call_once(g_backends_once, [dir] {
+        ggml_backend_load_all_from_path(dir.empty() ? nullptr : dir.c_str());
         llama_log_set([](ggml_log_level level, const char *text, void *) {
             // Upstream chatter only. Prompts and generated text never pass through here.
             if (level >= GGML_LOG_LEVEL_WARN) LOGW("%s", text);
@@ -52,9 +63,13 @@ static void ensure_backends() {
     });
 }
 
+// Reads the backend registry, so it needs the backends loaded first -- with none registered it
+// returns the empty string rather than failing, which is a worse way to find out.
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_baba_callvault_summary_LlamaNative_systemInfo(JNIEnv *env, jobject /* this */) {
-    ensure_backends();
+Java_com_baba_callvault_summary_LlamaNative_systemInfo(JNIEnv *env, jobject /* this */, jstring lib_dir) {
+    const char *c_dir = env->GetStringUTFChars(lib_dir, nullptr);
+    ensure_backends(c_dir);
+    env->ReleaseStringUTFChars(lib_dir, c_dir);
     return env->NewStringUTF(llama_print_system_info());
 }
 
@@ -64,8 +79,11 @@ Java_com_baba_callvault_summary_LlamaNative_requestAbort(JNIEnv * /* env */, job
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_com_baba_callvault_summary_LlamaNative_initContext(JNIEnv *env, jobject /* this */, jstring path) {
-    ensure_backends();
+Java_com_baba_callvault_summary_LlamaNative_initContext(JNIEnv *env, jobject /* this */, jstring path,
+                                                        jstring lib_dir) {
+    const char *c_dir = env->GetStringUTFChars(lib_dir, nullptr);
+    ensure_backends(c_dir);
+    env->ReleaseStringUTFChars(lib_dir, c_dir);
 
     const char *c_path = env->GetStringUTFChars(path, nullptr);
     llama_model_params params = llama_model_default_params();

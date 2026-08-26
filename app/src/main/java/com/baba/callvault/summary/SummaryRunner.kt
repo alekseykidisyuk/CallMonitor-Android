@@ -35,12 +35,17 @@ interface SummaryModelHost {
     suspend fun run(modelPath: String, block: suspend (SummarySession) -> CallSummary?): CallSummary?
 
     companion object {
-        /** The real one. Loads through [SummaryEngine], which owns the mutex and the free. */
-        val Default = object : SummaryModelHost {
+        /**
+         * The real one. Loads through [SummaryEngine], which owns the mutex and the free.
+         *
+         * A factory rather than the object it used to be because loading now needs the app's own
+         * library directory, which only a [Context] can give — see [LlamaNative].
+         */
+        fun default(context: Context) = object : SummaryModelHost {
             override suspend fun run(
                 modelPath: String,
                 block: suspend (SummarySession) -> CallSummary?
-            ): CallSummary? = SummaryEngine.withModel(modelPath) { session ->
+            ): CallSummary? = SummaryEngine.withModel(context, modelPath) { session ->
                 block { prompt, maxTokens, grammar -> session.generate(prompt, maxTokens, grammar) }
             }
         }
@@ -59,7 +64,7 @@ interface SummaryModelHost {
  */
 class SummaryRunner(
     private val context: Context,
-    private val host: SummaryModelHost = SummaryModelHost.Default,
+    private val host: SummaryModelHost = SummaryModelHost.default(context),
     /** Whether the run that just ended was stopped rather than finished. Injected for tests. */
     private val wasAborted: () -> Boolean = { SummaryEngine.wasAborted() }
 ) {

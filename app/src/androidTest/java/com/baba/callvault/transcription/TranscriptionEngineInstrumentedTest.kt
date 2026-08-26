@@ -50,7 +50,12 @@ class TranscriptionEngineInstrumentedTest {
     fun native_library_loads_and_reports_system_info() {
         // Proves libwhispercv.so loaded, was linked against whisper, and that at least one JNI symbol
         // resolves to the name the Kotlin declaration expects.
-        val info = WhisperNative.systemInfo()
+        val info = WhisperNative.systemInfo(context.applicationInfo.nativeLibraryDir)
+        // Logged, not just asserted: the flags in here are those of the CPU backend variant this
+        // particular phone chose from HWCAP, so this line is how "did it pick the fast kernels?"
+        // gets answered on a device. DOTPROD/MATMUL_INT8 reading 0 on a modern phone means the
+        // variants were not packaged, or were not found in nativeLibraryDir.
+        android.util.Log.i("CV:Transcribe", "whisper system info: $info")
         assertTrue("system info was blank", info.isNotBlank())
     }
 

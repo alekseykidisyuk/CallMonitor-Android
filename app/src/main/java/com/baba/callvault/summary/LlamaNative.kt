@@ -19,15 +19,23 @@ package com.baba.callvault.summary
  * Runs in the app process, never in the privileged recorder daemon. Summarising needs no privilege,
  * and putting a CPU-saturating job in the capture process would risk the one thing that must not
  * fail.
+ *
+ * [libDir] on the two entry points below is `context.applicationInfo.nativeLibraryDir` — the same
+ * contract, for the same reason, as [com.baba.callvault.transcription.WhisperNative].
  */
 object LlamaNative {
     init { System.loadLibrary("llamacv") }
 
-    /** ggml build/CPU feature string. Used to confirm the native library loaded at all. */
-    external fun systemInfo(): String
+    /**
+     * ggml build/CPU feature string. Used to confirm the native library loaded at all.
+     *
+     * Built entirely from the backend registry, so it is blank rather than wrong when the CPU
+     * backend was not found — and it names the ARM features the chosen variant was compiled with.
+     */
+    external fun systemInfo(libDir: String): String
 
     /** @return an opaque model pointer, or 0 when the model could not be loaded. */
-    external fun initContext(modelPath: String): Long
+    external fun initContext(modelPath: String, libDir: String): Long
 
     /** Releases a model from [initContext]. Safe to call with 0. */
     external fun freeContext(ptr: Long)
