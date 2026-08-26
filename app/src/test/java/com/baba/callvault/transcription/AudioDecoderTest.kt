@@ -86,6 +86,103 @@ class AudioDecoderTest {
         assertEquals(0, AudioDecoder.resampleTo16k(FloatArray(0), inputRate = 48_000).size)
     }
 
+    // ---- anti-aliasing ----
+    //
+    // 48000/16000 is exactly 3, so the interpolation fraction is identically zero on the production
+    // path and the resampler is pure decimation. Without a low-pass in front of it, everything from
+    // 8-24 kHz folds into 0-8 kHz at full amplitude — the band whisper's mel filterbank reads.
+    // Measured on 13 real recordings from a test device, the folded energy landing in 0-4 kHz sat at
+    // -26 dB relative to the signal there on average and -17.5 dB at worst, so this is not theoretical.
+
+    @Test
+    fun `a 12 kHz tone does not fold back as a 4 kHz tone`() {
+        // The canonical failure. Taking every third sample of a 12 kHz tone at 48 kHz produces a
+        // 4 kHz tone at FULL amplitude — right in the middle of the speech band.
+        val out = AudioDecoder.resampleTo16k(tone(12_000.0, 48_000, seconds = 1.0), inputRate = 48_000)
+        val aliased = magnitudeAt(out, 4_000.0, 16_000)
+        assertTrue(
+            "12 kHz folded back to 4 kHz at amplitude $aliased; it must be attenuated by at least 40 dB",
+            aliased < 0.01f,
+        )
+    }
+
+    @Test
+    fun `a 20 kHz tone does not fold back into the speech band`() {
+        // The other fold: 16-24 kHz maps to 0-8 kHz directly rather than mirrored, so 20 kHz lands
+        // at 4 kHz. A phone microphone genuinely carries content up here.
+        val out = AudioDecoder.resampleTo16k(tone(20_000.0, 48_000, seconds = 1.0), inputRate = 48_000)
+        assertTrue(magnitudeAt(out, 4_000.0, 16_000) < 0.01f)
+    }
+
+    @Test
+    fun `speech-band tones survive the anti-alias filter intact`() {
+        // The filter must not pay for its stopband with the band that carries the words. 1 kHz is
+        // where most telephony energy sits and 3 kHz is near the top of the carrier passband.
+        for (hz in listOf(300.0, 1_000.0, 3_000.0)) {
+            val out = AudioDecoder.resampleTo16k(tone(hz, 48_000, seconds = 1.0), inputRate = 48_000)
+            val kept = magnitudeAt(out, hz, 16_000)
+            // A pure tone's half-amplitude shows up as 0.5 in this measure; allow 5% of loss.
+            assertTrue("$hz Hz came through at $kept, expected ~0.5", kept > 0.475f)
+        }
+    }
+
+    @Test
+    fun `44_1 kHz still resamples, on the one path where interpolation actually runs`() {
+        // 44100/16000 is not an integer, so this is the only rate where the interpolation fraction
+        // is ever non-zero. It must still both filter and land on the right sample count.
+        val out = AudioDecoder.resampleTo16k(tone(1_000.0, 44_100, seconds = 1.0), inputRate = 44_100)
+        assertEquals(16_000, out.size)
+        assertTrue(magnitudeAt(out, 1_000.0, 16_000) > 0.475f)
+    }
+
+    @Test
+    fun `upsampling is left unfiltered because there is nothing above it to fold`() {
+        // 8 kHz input has no content above its own 4 kHz Nyquist, so low-passing would only throw
+        // away signal. The count still has to come out right.
+        val out = AudioDecoder.resampleTo16k(FloatArray(8_000) { 0.25f }, inputRate = 8_000)
+        assertEquals(16_000, out.size)
+        assertTrue(out.all { kotlin.math.abs(it - 0.25f) < 0.001f })
+    }
+
+    @Test
+    fun `the anti-alias kernel has unity gain and an integer group delay`() {
+        for (rate in listOf(48_000, 44_100, 32_000)) {
+            val taps = AudioDecoder.antiAliasKernel(rate)
+            // Odd length keeps the delay a whole number of samples, so timestamps do not skew.
+            assertEquals("kernel for $rate Hz must be odd-length", 1, taps.size % 2)
+            // Unity DC gain, or the filter quietly rescales the whole recording.
+            assertEquals(1f, taps.sum(), 0.001f)
+            // Symmetric, which is what makes the phase response linear.
+            for (k in taps.indices) assertEquals(taps[k], taps[taps.size - 1 - k], 1e-6f)
+        }
+    }
+
+    /** A full-scale sine, the input every aliasing assertion above is built on. */
+    private fun tone(hz: Double, sampleRate: Int, seconds: Double): FloatArray {
+        val n = (sampleRate * seconds).toInt()
+        return FloatArray(n) { kotlin.math.sin(2.0 * Math.PI * hz * it / sampleRate).toFloat() }
+    }
+
+    /**
+     * Amplitude of [hz] in [x], as a fraction of full scale. A single DFT bin rather than a whole
+     * FFT: one frequency is all any of these assertions needs.
+     *
+     * The first and last 10% are skipped — the filter clamps at the edges, and that transient is not
+     * what is under test.
+     */
+    private fun magnitudeAt(x: FloatArray, hz: Double, sampleRate: Int): Float {
+        val from = x.size / 10
+        val to = x.size - x.size / 10
+        var re = 0.0
+        var im = 0.0
+        for (i in from until to) {
+            val phase = 2.0 * Math.PI * hz * i / sampleRate
+            re += x[i] * kotlin.math.cos(phase)
+            im += x[i] * kotlin.math.sin(phase)
+        }
+        return (kotlin.math.sqrt(re * re + im * im) / (to - from)).toFloat()
+    }
+
     // ---- duration plausibility ----
     //
     // These exist because of a real incident on 2026-08-16: a 45-second clip was handed to whisper
