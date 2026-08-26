@@ -146,17 +146,22 @@ enum class TranscriptionModel(
          * 574 MB download and roughly 2.2x real time instead of 1x, which the user accepted — a
          * 30-minute call takes about 65 minutes rather than 30.
          *
-         * **Deliberately still q5_0, and not [LARGE_V3_TURBO_Q8_0], even though q8_0 measured nearly
-         * twice as fast at the same accuracy.** This constant is not only the new-install default:
-         * `AppPreferences.getTranscriptionModelId` falls back to it for anyone who never *changed*
-         * the setting, and accepting the wizard's suggestion does not count as changing it. So every
-         * existing user who simply tapped Download has 574 MB of q5_0 on disk and no stored
-         * preference — moving this would silently re-point them at a model they do not have and ask
-         * for an 874 MB download to get back to working. Promoting q8_0 to the default needs a
-         * migration that first writes the currently-installed tier into the preference; until that
-         * exists, q8_0 is offered and recommended in the UI but never imposed.
+         * **q8_0, because it measured nearly twice as fast at no cost in accuracy.**
+         *
+         * This constant is not only the new-install default: `AppPreferences.getTranscriptionModelId`
+         * falls back to it for anyone who never *changed* the setting, and accepting the wizard's
+         * suggestion does not count as changing it. Moving it therefore re-points every such install
+         * at a model it may not have downloaded — which would normally demand a migration writing the
+         * installed tier into the preference first.
+         *
+         * That migration is not needed here, and the reason is a fact with an expiry date:
+         * **transcription has never been released.** It arrived in 2.0.0, and no 2.x tag exists — so
+         * outside this repository nobody has a q5_0 file on disk or a stored preference to protect.
+         *
+         * Once 2.x ships, that argument is spent. Any future move of this constant is a breaking
+         * change for people who already downloaded a model, and needs the migration.
          */
-        val DEFAULT = LARGE_V3_TURBO_Q5_0
+        val DEFAULT = LARGE_V3_TURBO_Q8_0
 
         fun fromId(id: String?): TranscriptionModel? = entries.firstOrNull { it.id == id }
     }
