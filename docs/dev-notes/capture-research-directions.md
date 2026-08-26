@@ -10,7 +10,22 @@ Companion to `spike-audio-handoff.md` (which proved **Option B** — the app can
 
 ## Track A — Pre-created idle capture track (persistence via a permanently-held handoff)
 
-**Status (2026-07-26): RESEARCHED, ON HOLD. One experiment away from a decision.** The go/no-go
+**Status (2026-08-26): DECLINED by the maintainer. Do not re-propose.** The remaining experiment will
+not be run. The objection is the product, not the engineering: holding a capture track outside a call
+means the microphone is open when the user is not on a call, and a 24/7 mic indicator — attributed to
+"Shell", not even to CallVault — is not something this app is willing to show. That is a fair reading
+of what "held **started**" costs, and it is not worth trading for a debugging switch.
+
+Note for anyone tempted to reopen on a technicality: the **stopped** hold avoids the wakelock and the
+indicator, and the HAL finding below forces a `stop()`/`start()` at call-connect anyway. So a variant
+without the 24/7 indicator does exist on paper. It was still declined, because it buys less than it
+first appeared (it reduces but does not retire the off-Wi-Fi loopback opt-in) and it carries the
+eviction and blind-failure risks below. **Take the decision as made unless the maintainer reopens it.**
+
+The research below is kept because it is expensive knowledge about this device's audio stack — the HAL
+use-case pinning in particular — and it stays true whether or not Track A is ever built.
+
+**Original status (2026-07-26): RESEARCHED, ON HOLD. One experiment away from a decision.** The go/no-go
 question was settled empirically on-device; the blocker then moved somewhere nobody expected. Read
 this before re-opening — most of the original open risks are now closed, and the two that matter are
 not the ones this section originally worried about.
