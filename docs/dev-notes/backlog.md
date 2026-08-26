@@ -144,7 +144,24 @@ Google states it expects most devices to use the CPU backend in future. **Qualco
 outright** — the Maven artifact declares `Qualcomm AI Hub Model License` / `scm:not_public`, and F-Droid
 explicitly rejects the "but it is on Maven Central" defence.
 
-### 🔵 Enable the ARM CPU features in the ggml build — measured 2026-08-26
+### ✅ Enable the ARM CPU features in the ggml build — SHIPPED 2026-08-26 (`2ce45c8`)
+
+**Done.** Measured end to end in the app on the OP9: summarisation 153.2 s → 88.2 s (1.74×),
+transcription 88.0 s → 75.1 s (1.17×). Seven CPU variants ship in the APK and one is chosen from HWCAP
+at load — verified selecting `armv8.2_2` on the OP9 and `armv8.6_1` on the OP12. +2.3 MB packaged.
+
+**Repack was kept ON after measuring it, and the first estimate was wrong.** On a 484 MB model it added
+252 MB and looked like "half the model size again"; on a 2,871 MB model it added 245 MB. The cost is
+**flat, not proportional** — roughly 250 MB whatever the model, about 6.5% of the projected peak with
+the real summariser, for 63% of the speed gain. The CPU variants themselves cost exactly zero: peak was
+identical to the byte with repack off and with the stock build. The one-line lever to disable it is
+documented in `CMakeLists.txt` if a phone ever refuses to load the model. The real 3.46 GB model's peak
+is still unmeasured — it was not on any test phone — so that remains an extrapolation (~3.85 GB
+projected, range 3.7–4.2, on a 7.4 GB phone).
+
+Original entry below, kept for the reasoning.
+
+
 
 The native build compiles whisper.cpp and llama.cpp with **no `-march` flags**, so ggml's dotprod, fp16
 and i8mm kernels are all `#ifdef`'d out and `GGML_CPU_REPACK` is inert — the hot loop runs a
@@ -178,6 +195,42 @@ which is not in the APK — keep the flag off, fix the comment); `GGML_LLAMAFILE
 because whisper's ggml is added first, which happens to match upstream's Android policy but should be
 commented so nobody "fixes" it; and `TranscriptionEngine.kt` carries two contradictory KDoc blocks about
 thread count, one of which is wrong.
+
+### 🅿️ In-app bug report / feature request → GitHub — designed 2026-08-26, PARKED
+
+Asked for, costed, then parked in the same session. Park is deliberate: it depends on the log
+pseudonymisation landing first, because the whole premise is that reports go to a **public** repo.
+
+**Three shapes, and only one is worth building.**
+
+| | Cost | Verdict |
+|---|---|---|
+| **A. Prefilled issue link** — open `github.com/<repo>/issues/new` with an Issue Form template and query parameters filling the fields | ~1 day | **This one.** No auth, no shipped secret, no backend, no new dependency, nothing for F-Droid to object to. |
+| **B. OAuth device flow** — user signs in, issue posted as them; device flow needs only a public `client_id`, so no secret ships | several days | Buys little over A, which already lands them on a filled-in form. Still cannot carry the log — GitHub caps an issue body at 65,536 chars. |
+| **C. Backend proxy holding a token** | highest, ongoing | Only if you want reports from people without GitHub accounts. Needs hosting, rate limiting and real abuse control — an unauthenticated endpoint that creates public issues **will** be found and spammed — and the report would transit our server, undercutting the privacy story. |
+
+**Build two entry points, not one:**
+
+- **Request a feature** — carries no user data at all, just app version and device.
+- **Report a bug** — prefills only the **config header** (mode, app version, Android version, device, and
+  the settings that change the capture path). A few hundred bytes, fits comfortably in a URL, and it is
+  exactly the block that answers the first three questions of any report. The log stays a deliberate,
+  separate attachment that the user chooses.
+
+**Non-negotiables, whichever shape:** never auto-submit; show exactly what will be sent before sending;
+default to *not* including the log. An app that silently uploads diagnostics contradicts its own README,
+which states analytics and crash reports "None exist".
+
+**What already exists** and does not need rebuilding: the report export writes
+`cacheDir/logs/callvault_debug_report.txt` and is shared through the FileProvider, and the app already
+talks to `api.github.com` unauthenticated for release checks.
+
+**The dependency:** phone numbers are redacted, but **contact names were not** — they ride into the log
+inside recording filenames (`<timestamp>_<direction>_<contact name>.ogg`). Pseudonymisation is being
+implemented separately. Do not ship a button that encourages users to attach logs until that has landed.
+
+**Known limitation of option A:** it needs a GitHub account, so some users will file nothing. Ship A
+first and find out whether that is actually a problem before paying for C.
 
 ### 🔵 F-Droid reproducibility traps that already apply — noted 2026-08-26
 
