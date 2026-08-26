@@ -21,8 +21,10 @@ import com.baba.callvault.transcription.model.DownloadableModel
  * roughly twice as slow on identical work and spent a third of its budget thinking out loud.
  *
  * **Never bundled, always downloaded.** Two independent reasons point the same way. It is 3.46 GB,
- * which is not something to put in an APK; and it ships under Google's *Gemma Terms of Use* rather
- * than an OSI-free licence, which sits badly in a GPLv3 app on F-Droid. Downloading keeps the app's
+ * which is not something to put in an APK. (An earlier version of this comment also said it ships
+ * under Google's *Gemma Terms of Use*; that is **wrong** for Gemma 4, which is **Apache-2.0 and
+ * ungated** — checked against the model card on 2026-08-26. The licence was never the objection; the
+ * 3.46 GB was, and still is.) Downloading keeps the app's
  * own licensing clean and leaves the user accepting Google's terms directly, from Google's own
  * distribution.
  */
