@@ -392,9 +392,12 @@ and **gate it on the language pin**, since ivrit's detection head is degraded by
    **30–50% relative worse WER than OpenAI's Python Whisper with the same model**, traced to wrong mel
    padding, missing stage-2 reflective padding, wrong frame count and incorrect symmetric-FFT-bin
    aggregation. A grep against vendored v1.9.3. **If any of it is live, it dwarfs every item below.**
-0b. **Find what annotates a segment with a different language.** whisper detects language *once per
-   context* and structurally cannot emit a per-segment annotation — so the observed `*ערבית*` is our own
-   downstream heuristic or genuinely code-switched output. Locate it before treating it as a whisper bug.
+0b. ~~**Find what annotates a segment with a different language.**~~ **ANSWERED 2026-08-26.** It is
+   neither our code nor code-switching: whisper emits the *string* `*ערבית*` as segment **text** — it
+   transcribes a language tag rather than the speech. It happened only with **VAD and beam-5 together**,
+   at 0 s, 34 s and 64 s of a call that opens with music. VAD packs the music against the first words,
+   beam makes the wrong hypothesis more confident than greedy would, and rolling conditioning re-injects
+   the tag as context for the next window. Beam is now reverted; see §1.3.
 
 ### Free, do now — verified defects
 
