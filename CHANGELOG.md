@@ -3,6 +3,42 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [2.1.1]
+
+Transcription and summaries got faster and less wrong, without a bigger model.
+
+### Changed
+
+- **Transcription is faster than it was, while doing more work.** Silence is now skipped before the
+  model ever sees it, and the decoder considers several candidate transcriptions rather than taking
+  the first word that comes to mind. Measured on a real four-minute call: 362 s before, 358 s after —
+  and the new one recovered a whole sentence the old one had simply dropped.
+
+- **Summaries stop repeating themselves.** The output format allowed a list to go on for ever, and the
+  instruction to keep it to five items was only ever a request. It is now a limit the model cannot
+  exceed, which is what was producing "four decisions, three of them the same sentence".
+
+- **Summaries say more.** Items were capped at five and each one asked to be a single short line; both
+  of those were being obeyed faithfully, against the content. The cap is now eight and the length
+  limit is gone, with the budget raised first so a long answer in Hebrew or Arabic does not run out of
+  room.
+
+### Fixed
+
+- **A long summary is no longer thrown away.** An answer that ran out of room used to be discarded
+  whole, which was most likely in the languages that need the most words. What arrived is now kept.
+
+- **The instructions written for the summariser were not the ones it was being given.** Four of them —
+  that the transcript is imperfect, to write in its own words, to cover the whole text, and to ignore
+  what is clearly mis-transcribed — had been written after real failures and applied to a code path
+  that no longer ran. A transcript arriving as hundreds of fragments is now joined into readable prose
+  first, which is what those failures were about.
+
+- **Recordings were being quietly degraded on the way into the transcriber.** Reducing the audio to the
+  rate the model wants was dropping samples without filtering first, folding high frequencies back
+  into the speech band as noise. Outgoing calls were worst affected, because they carry the most of
+  your own microphone.
+
 ## [2.1.0]
 
 Transcripts learn who was speaking, and CallVault can run on Shizuku instead of its own helper.
