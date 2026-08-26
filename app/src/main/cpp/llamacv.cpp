@@ -20,6 +20,7 @@
 #include <android/log.h>
 
 #include <atomic>
+#include <cstring>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -57,8 +58,22 @@ static void ensure_backends(const char *lib_dir) {
     std::call_once(g_backends_once, [dir] {
         ggml_backend_load_all_from_path(dir.empty() ? nullptr : dir.c_str());
         llama_log_set([](ggml_log_level level, const char *text, void *) {
-            // Upstream chatter only. Prompts and generated text never pass through here.
-            if (level >= GGML_LOG_LEVEL_WARN) LOGW("%s", text);
+            if (level < GGML_LOG_LEVEL_WARN || text == nullptr) return;
+            // Upstream chatter only -- prompts and generated text do not pass through here today.
+            //
+            // Truncated anyway, because "today" is the whole problem: this is an unbounded string
+            // from a dependency that moves under us on every submodule bump, and it lands in the
+            // debug report a user attaches to a public issue. The report redacts names and numbers,
+            // but it cannot redact a fragment of somebody's conversation. A warning that needs more
+            // than this to be useful is not a warning, so the cap costs nothing and means an
+            // upstream change cannot quietly turn a diagnostic into a leak.
+            static constexpr size_t MAX_UPSTREAM_LOG_CHARS = 300;
+            const size_t len = strnlen(text, MAX_UPSTREAM_LOG_CHARS + 1);
+            if (len > MAX_UPSTREAM_LOG_CHARS) {
+                LOGW("%.*s... [truncated]", static_cast<int>(MAX_UPSTREAM_LOG_CHARS), text);
+            } else {
+                LOGW("%.*s", static_cast<int>(len), text);
+            }
         }, nullptr);
     });
 }
