@@ -3,6 +3,20 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [2.1.2]
+
+Fixes a transcription regression introduced in 2.1.1.
+
+### Fixed
+
+- **The opening of a call could be lost.** 2.1.1 changed the transcriber to weigh several candidate
+  readings rather than take the first. On a call that begins with music or a tone, that change
+  combined badly with the new silence-skipping: the first minute and a half of a real call came back
+  as nothing at all, and one word could repeat dozens of times in a single line. Weighing candidates
+  has been switched back off. Silence-skipping stays — on its own it produced the most complete
+  transcript of everything tested, repaired two places where the old version had got stuck repeating
+  itself, and is faster than 2.1.1 was.
+
 ## [2.1.1]
 
 Transcription and summaries got faster and less wrong, without a bigger model.
