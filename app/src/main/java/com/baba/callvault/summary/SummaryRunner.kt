@@ -121,8 +121,10 @@ class SummaryRunner(
             val parsedParts = parts.mapNotNull(CallSummary::parse)
             if (parsedParts.size < parts.size) {
                 // Named precisely, because the two ways to get nothing look identical from outside
-                // and need different fixes. A part that will not parse almost always means the
-                // generation hit its token budget and stopped mid-document.
+                // and need different fixes. A part that will not parse used to mean the generation
+                // had hit its token budget; that case is now closed by hand and kept, so what is
+                // left here is a cut that took the prose with it, or output that was never an
+                // object at all.
                 AppLogger.w(TAG, "${parts.size - parsedParts.size} of ${parts.size} part(s) did not parse")
             }
 
@@ -249,17 +251,30 @@ class SummaryRunner(
         /**
          * Tokens allowed for one chunk's JSON.
          *
-         * Raised from 420 after a real 6:52 Hebrew call produced nothing at all: the grammar keeps
-         * a truncated document from looking plausible, but it still truncates, and a document cut
-         * short is refused on the way out — so the whole run is lost. Six keys of Hebrew cost far
-         * more tokens than the same summary in English, and 420 sat right on the edge.
+         * Raised from 420 to 900 after a real 6:52 Hebrew call produced nothing at all: the grammar
+         * keeps a truncated document from looking plausible, but it still truncates, and a document
+         * cut short was refused on the way out — so the whole run was lost. Six keys of Hebrew cost
+         * far more tokens than the same summary in English, and 420 sat right on the edge.
          *
-         * Raising it is close to free. Generation stops when the model closes the object, so the
-         * cap only binds on a verbose answer — where the alternative was losing everything.
+         * Raised again, to 1,600, because the prompt now asks for up to eight items a list instead
+         * of five and no longer asks for each to be one short line. That is roughly twice the
+         * content, and 900 was itself only about twice the 420 that failed — so leaving it would put
+         * a long Hebrew answer back on the same edge, which is the whole reason 420 is a footnote
+         * here rather than the current value.
+         *
+         * **Raise this before raising the item cap, never after.** The two are one change: more
+         * items against an unchanged budget is the 420 cliff, re-opened.
+         *
+         * Two things make the new figure a cost rather than a gamble. Generation stops when the
+         * model closes the object, so the cap binds only on an answer that genuinely used it; and
+         * [SummaryGrammar] now bounds every list by construction, so the worst case is finite — the
+         * old budget was partly insurance against an unbounded array running away. What it does buy
+         * is a bigger context (`n_ctx` is the prompt plus this) and a longer wait on a verbose
+         * answer, both of which a background job can afford.
          */
-        const val CHUNK_TOKEN_BUDGET = 900
+        const val CHUNK_TOKEN_BUDGET = 1_600
 
         /** The merge carries every part's points forward, so it needs more room than one chunk. */
-        const val MERGE_TOKEN_BUDGET = 1_100
+        const val MERGE_TOKEN_BUDGET = 2_000
     }
 }

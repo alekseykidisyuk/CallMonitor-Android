@@ -30,6 +30,15 @@ package com.baba.callvault.summary
 object SummaryGrammar {
 
     /**
+     * The most items a single list may hold, enforced rather than requested.
+     *
+     * [SummaryPrompt] asks for this same number in words, and takes it from here so the two cannot
+     * disagree — a prompt asking for one figure while the grammar permits another is how the last
+     * round of this drift started.
+     */
+    const val MAX_LIST_ITEMS = 8
+
+    /**
      * GBNF for the summary object.
      *
      * **Every rule is on one line.** GBNF ends a rule at the newline, so a `root` spread over
@@ -40,10 +49,23 @@ object SummaryGrammar {
      *
      * `string` allows the standard JSON escapes, so a Hebrew summary containing a quotation mark
      * cannot produce a document that fails to parse — which is the entire point of being here.
+     *
+     * **The arrays are bounded, and that is what stops the repetition loop.** They used to be `*`,
+     * so "at most N items" was only a request in the prompt while the grammar permitted infinitely
+     * many — which is the textbook setup for the failure we actually saw ("four decisions, three of
+     * them the same sentence"). Holtzman et al. (ICLR 2020, Table 1) measured greedy decoding
+     * falling into a repetition loop in 73.66% of generations, the worst configuration in the paper.
+     * `{0,n}` is real GBNF — `parse_sequence` in the pinned `llama-grammar.cpp` handles `{m,n}` and
+     * rewrites it into n optional rules — so a first item followed by at most
+     * [MAX_LIST_ITEMS] - 1 more terminates by construction.
+     *
+     * Bounding it here rather than in the sampler is deliberate. `repeat_penalty` cannot tell
+     * "looping" from "listing the eighth item"; it would buy termination by making long lists
+     * impossible, which is the opposite of what the lists are for.
      */
     val JSON: String = """
         root ::= "{" ws "\"intent\":" ws string "," ws "\"summary\":" ws string "," ws "\"keyPoints\":" ws array "," ws "\"decisions\":" ws array "," ws "\"actionItems\":" ws array "," ws "\"keyFacts\":" ws array ws "}"
-        array ::= "[" ws (string (ws "," ws string)*)? ws "]"
+        array ::= "[" ws (string (ws "," ws string){0,${MAX_LIST_ITEMS - 1}})? ws "]"
         string ::= "\"" char* "\""
         char ::= [^"\\] | "\\" (["\\/bfnrt] | "u" hex hex hex hex)
         hex ::= [0-9a-fA-F]

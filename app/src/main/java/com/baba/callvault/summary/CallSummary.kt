@@ -63,6 +63,17 @@ data class CallSummary(
         private val REQUIRED = listOf(KEY_INTENT, KEY_SUMMARY, KEY_POINTS, KEY_DECISIONS, KEY_ACTIONS, KEY_FACTS)
 
         /**
+         * What a document must still have after it has been closed by hand.
+         *
+         * The lists are dropped from the requirement because a list the generation never reached is
+         * honestly empty — `[]` is exactly what the prompt asks for when there is nothing, and
+         * [stringsIn] already returns that for a key that is not there. The prose is not dropped:
+         * `intent` and `summary` come first under the grammar's fixed key order, so if they survived
+         * the cut they survived it whole, and if they did not there is nothing worth showing.
+         */
+        private val REQUIRED_WHEN_CLOSED = listOf(KEY_INTENT, KEY_SUMMARY)
+
+        /**
          * Combines already-parsed parts into one summary, without asking the model again.
          *
          * The floor under the merge pass. That pass is a second generation and so a second chance to
@@ -100,10 +111,25 @@ data class CallSummary(
          * Tolerant about everything that isn't the shape: a reasoning block, prose around the
          * object, a code fence, and keys we don't know are all fine. Strict about exactly two
          * things — every expected key present, and prose actually in it.
+         *
+         * **A document that only ran out of tokens is not refused.** `keyFacts` is required and the
+         * fixed key order puts it last, so an answer that hit its budget used to cost the whole
+         * chunk over a missing brace — worst in Hebrew and Arabic, where the same content costs more
+         * tokens. [SummaryText.closeTruncated] closes what was open, dropping the item that was
+         * being written, and the result is judged by [REQUIRED_WHEN_CLOSED] instead. It is still a
+         * refusal, only a later one: a cut that took the prose with it still returns null.
          */
         fun parse(raw: String): CallSummary? {
-            val json = objectIn(SummaryText.stripReasoning(raw)) ?: return null
-            if (REQUIRED.any { !json.has(it) }) return null
+            val text = SummaryText.stripReasoning(raw)
+            objectIn(text)?.let { json -> return from(json, REQUIRED) }
+
+            val closed = SummaryText.closeTruncated(text) ?: return null
+            return objectIn(closed)?.let { json -> from(json, REQUIRED_WHEN_CLOSED) }
+        }
+
+        /** The summary in [json], or null when [required] is not all there or the prose is blank. */
+        private fun from(json: JSONObject, required: List<String>): CallSummary? {
+            if (required.any { !json.has(it) }) return null
 
             val summary = json.optString(KEY_SUMMARY).trim()
             if (summary.isEmpty()) return null

@@ -52,12 +52,47 @@ class CallSummaryTest {
     }
 
     @Test
-    fun `returns null for a truncated document rather than a half-filled summary`() {
-        // Measured: under a token cap a small model drops the closing quote and brace. This is the
-        // exact failure the grammar exists to prevent, and the exact thing that must never be stored.
+    fun `returns null when the cut took the prose with it`() {
+        // Measured: under a token cap a small model drops the closing quote and brace. A sentence
+        // that stops mid-word is not a summary, and a card built from one claims the call was
+        // summarised. Closing the object by hand does not change that — there is nothing to close
+        // back to.
         val truncated = """{"intent": "Chasing an invoice", "summary": "The caller rang about"""
 
         assertNull(CallSummary.parse(truncated))
+    }
+
+    @Test
+    fun `keeps what a truncated answer did finish rather than losing the chunk`() {
+        // keyFacts is required and the fixed key order puts it last, so an answer that hit its token
+        // budget used to cost the entire chunk over a missing brace — worst in Hebrew and Arabic,
+        // where the same content costs more tokens. Everything before the cut was written under the
+        // grammar and is worth keeping; the item being written when the budget ran out is not.
+        val truncated = """
+            {"intent": "Chasing an unpaid invoice",
+             "summary": "The caller rang about invoice 4021.",
+             "keyPoints": ["Invoice 4021 is overdue"], "decisions": [], "actionItems": [],
+             "keyFacts": ["Invoice 4021", "£1,2
+        """.trimIndent()
+
+        val parsed = CallSummary.parse(truncated)!!
+
+        assertEquals("Chasing an unpaid invoice", parsed.intent)
+        assertEquals("The caller rang about invoice 4021.", parsed.summary)
+        assertEquals(listOf("Invoice 4021 is overdue"), parsed.keyPoints)
+        assertEquals("the half-written item must not be shown", listOf("Invoice 4021"), parsed.keyFacts)
+    }
+
+    @Test
+    fun `a list the cut never reached is empty rather than missing`() {
+        // [] is exactly what the prompt asks for when there is nothing, so a list the generation
+        // never got to is honestly empty. Nothing is invented to fill it.
+        val truncated = """{"intent": "A wrong number", "summary": "Someone dialled wrong.", "key"""
+
+        val parsed = CallSummary.parse(truncated)!!
+
+        assertTrue(parsed.keyPoints.isEmpty())
+        assertTrue(parsed.keyFacts.isEmpty())
     }
 
     @Test

@@ -140,6 +140,24 @@ class SummaryRunnerTest {
     }
 
     @Test
+    fun `a chunk that ran out of tokens is kept, not thrown away`() = runBlocking {
+        // The fixed key order puts keyFacts last, so an answer that hit its budget used to lose the
+        // whole chunk over a missing brace — minutes of work the user watched, ending in nothing.
+        giveTranscript(words = listOf("hello there"))
+        val model = FakeModel(
+            """{"intent":"Chasing an invoice","summary":"The caller rang about invoice 4021.",""" +
+                """"keyPoints":["Invoice 4021 is overdue"],"decisions":[],"actionItems":[],""" +
+                """"keyFacts":["Invoice 4021","£1,2"""
+        )
+
+        val summary = runner(model).run(CALL, MODEL_ID, PATH, "en", now = 1L)
+
+        assertEquals("Chasing an invoice", summary?.intent)
+        assertEquals(listOf("Invoice 4021"), summary?.keyFacts)
+        assertEquals(MODEL_ID, TranscriptDatabase.get(context).summaryDao().summary(CALL)?.model)
+    }
+
+    @Test
     fun `every pass is constrained by the grammar`() = runBlocking {
         // The grammar is the only thing making malformed JSON impossible. A pass that forgot it
         // would still usually work, which is exactly why it needs a test rather than vigilance.
