@@ -56,13 +56,31 @@ object LogRedaction {
      * `[PHONE_REDACTED]_[PHONE_REDACTED]+0300`, which is why two log lines about two different calls
      * were previously indistinguishable except by the contact name they leaked.
      */
+    /**
+     * Units we log numbers in. A number followed by one of these is a measurement, not a person.
+     *
+     * Needed because the rule below cannot tell `4685000 frames` from an Israeli mobile written bare
+     * as `0544557278` — both are unbroken digit runs of the same length, and no pattern separates
+     * them. What *does* separate them is the word we ourselves put next to it.
+     *
+     * Found by reading a real log rather than by reasoning: `HandoffEncoder finished:
+     * [PHONE_REDACTED] frames` had been shipping for months. That line exists for no purpose other
+     * than reporting how much audio was captured, and the number was the entire content of it.
+     *
+     * Only 7-digit-and-longer runs ever reached the rule, which is why `48000 Hz` and `(97627 ms)`
+     * were never affected and the damage stayed invisible. Keep this list to units *we* emit; it is
+     * an exception to a privacy rule, so a loose entry here is a leak rather than an inconvenience.
+     */
+    private const val MEASUREMENT_UNITS = "frames|samples|bytes|ms|Hz|kHz|KB|MB|GB"
+
     private val PHONE_REGEX = Regex(
         "(?<!\\d)" +                      // Negative Lookbehind: Don't start in the middle of another number
             "(?:\\+?\\d{1,3}[-.\\s]?)?" + // Optional Country Code (e.g., +1 or 33)
             "(?:\\(\\d{1,4}\\)|\\d{1,4})" + // Area code (with or without parentheses)
             "[-.\\s]?\\d{3,4}" +          // Prefix
             "[-.\\s]?\\d{3,4}" +          // Line number
-            "(?!\\d)"                     // Negative Lookahead: Don't end in the middle of another number
+            "(?!\\d)" +                   // Negative Lookahead: Don't end in the middle of another number
+            "(?!\\s*(?:$MEASUREMENT_UNITS)\\b)" // ...and it is a measurement, not a number to hide
     )
 
     /**

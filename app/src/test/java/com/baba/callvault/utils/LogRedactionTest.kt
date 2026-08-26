@@ -285,4 +285,40 @@ class LogRedactionTest {
     private fun token(name: String) = LogRedaction.contactToken(name, salt)
 
     private fun tokenIn(line: String) = Regex("\\[C:[0-9a-f]+]").find(line)?.value
+
+    // --- Measurements are not people ----------------------------------------------------------
+
+    /**
+     * The regression that prompted these: this line exists only to report how much audio was
+     * captured, and the count was the whole content of it. It had been redacted away for months,
+     * invisibly, because the number is a bare seven-digit run exactly like a mobile number.
+     */
+    @Test
+    fun `a frame count is not a phone number`() {
+        assertEquals(
+            "HandoffEncoder finished: 4685000 frames (97.64s)",
+            redact("HandoffEncoder finished: 4685000 frames (97.64s)")
+        )
+    }
+
+    @Test
+    fun `the other units we log survive too`() {
+        assertEquals("Decoded 4685000 samples", redact("Decoded 4685000 samples"))
+        assertEquals("Wrote 1234567 bytes", redact("Wrote 1234567 bytes"))
+        assertEquals("Elapsed 1234567 ms", redact("Elapsed 1234567 ms"))
+    }
+
+    /** The exception is an exception to a privacy rule, so it must not become a way to leak one. */
+    @Test
+    fun `a real number is still redacted when a unit word merely appears later`() {
+        assertEquals(
+            "Called [PHONE_REDACTED] and it took 97 ms",
+            redact("Called 0544557278 and it took 97 ms")
+        )
+    }
+
+    @Test
+    fun `a bare number with no unit is still redacted`() {
+        assertEquals("Number: [PHONE_REDACTED]", redact("Number: 0544557278"))
+    }
 }
