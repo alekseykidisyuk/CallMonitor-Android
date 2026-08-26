@@ -96,6 +96,7 @@
     <string name="home_status_recovery_stuck_title">录音已中断</string>
     <string name="home_status_update_regrant_suggestion">一次更新清除了 CallVault 重新启动录音所需的一项权限。目前可能仍可使用——点按这里，然后开启一次无线调试即可恢复。无需重新安装。</string>
     <string name="home_status_update_regrant_title">重新连接以继续录音</string>
+    <string name="list_separator">、</string>
     <string name="notif_info_channel">CallVault 通知</string>
     <string name="notif_voip_recording_text">CallVault 正在录制一通应用内通话。</string>
     <string name="notif_voip_recording_title">正在录制 VoIP 通话</string>
@@ -457,6 +458,7 @@
     <string name="transcription_mode_label">转写方式</string>
     <string name="transcription_mode_manual">手动</string>
     <string name="transcription_model_best">最佳质量</string>
+    <string name="transcription_model_best_small_download">最佳质量（下载更小）</string>
     <string name="transcription_model_delete">删除模型</string>
     <string name="transcription_model_download">下载模型</string>
     <string name="transcription_model_download_subtitle">%1$d MB，仅通过 Wi-Fi</string>
@@ -541,6 +543,8 @@
     <string name="wizard_transcription_background_note">两项下载都只通过 Wi-Fi 进行，并且会在后台继续。你现在可以继续完成设置——之后在设置 ▸ 转写与摘要中也能看到同样的进度。</string>
     <string name="wizard_transcription_language_note">已按这部手机的系统语言设定。指明语言比让应用去猜可靠得多，之后你仍然可以为单通电话选择别的语言。</string>
     <string name="wizard_transcription_model_note">转写需要先在手机上准备一个语音模型：%1$s 为 %2$d MB，%3$s 为 %4$d MB。之后转写一通电话所需的时间大致与通话本身一样长，并且会重度占用处理器。</string>
+    <string name="wizard_transcription_model_size">%1$s 为 %2$d MB</string>
+    <string name="wizard_transcription_model_sizes_note">转写需要先在手机上准备一个语音模型：%1$s。之后转写一通电话所需的时间大致与通话本身一样长，并且会重度占用处理器。</string>
     <string name="wizard_transcription_subtitle">CallVault 可以在手机本机上转写录音，并据此写出一段简短摘要，不会把任何内容发送出去。请选择何时进行转写、你的通话使用哪种语言，并下载所需的内容。</string>
     <string name="wizard_transcription_summary_body">通话有了转写之后，CallVault 还可以为它写一段简短摘要——同样在手机本机上完成，就像这里的其他一切。</string>
     <string name="wizard_transcription_summary_heading">摘要</string>

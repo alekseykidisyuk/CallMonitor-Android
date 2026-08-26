@@ -96,6 +96,7 @@
     <string name="home_status_recovery_stuck_title">Запись не работает</string>
     <string name="home_status_update_regrant_suggestion">Обновление сбросило разрешение, необходимое CallVault для перезапуска записи. Пока может работать — нажмите здесь и один раз включите беспроводную отладку, чтобы восстановить его. Переустановка не нужна.</string>
     <string name="home_status_update_regrant_title">Переподключитесь для записи</string>
+    <string name="list_separator">", "</string>
     <string name="notif_info_channel">Уведомления CallVault</string>
     <string name="notif_voip_recording_text">CallVault записывает звонок в приложении.</string>
     <string name="notif_voip_recording_title">Запись звонка VoIP</string>
@@ -457,6 +458,7 @@
     <string name="transcription_mode_label">Расшифровывать</string>
     <string name="transcription_mode_manual">Вручную</string>
     <string name="transcription_model_best">Лучшее качество</string>
+    <string name="transcription_model_best_small_download">Лучшее качество, меньший размер загрузки</string>
     <string name="transcription_model_delete">Удалить модель</string>
     <string name="transcription_model_download">Скачать модель</string>
     <string name="transcription_model_download_subtitle">%1$d МБ, только по Wi-Fi</string>
@@ -541,6 +543,8 @@
     <string name="wizard_transcription_background_note">Обе загрузки идут только по Wi-Fi и продолжаются в фоне. Вы можете продолжить и завершить настройку сейчас — тот же прогресс потом виден в разделе Настройки ▸ Расшифровка и краткое содержание.</string>
     <string name="wizard_transcription_language_note">Выбран язык, на который настроен этот телефон. Указать его гораздо надёжнее, чем позволять приложению угадывать, а позже для отдельного звонка можно выбрать другой.</string>
     <string name="wizard_transcription_model_note">Для расшифровки на телефон сначала нужна речевая модель: %1$s — %2$d МБ, %3$s — %4$d МБ. Расшифровка звонка потом занимает примерно столько же, сколько сам звонок, и сильно нагружает процессор.</string>
+    <string name="wizard_transcription_model_size">%1$s — %2$d МБ</string>
+    <string name="wizard_transcription_model_sizes_note">Для расшифровки на телефон сначала нужна речевая модель: %1$s. Расшифровка звонка потом занимает примерно столько же, сколько сам звонок, и сильно нагружает процессор.</string>
     <string name="wizard_transcription_subtitle">CallVault может расшифровать запись прямо на телефоне и написать по ней краткую сводку — никуда ничего не отправляется. Выберите, когда это происходит и на каком языке ваши звонки, и скачайте то, что для этого нужно.</string>
     <string name="wizard_transcription_summary_body">Когда у звонка есть расшифровка, CallVault может написать по ней и краткую сводку — на телефоне, как и всё остальное здесь.</string>
     <string name="wizard_transcription_summary_heading">Сводки</string>

@@ -96,6 +96,7 @@
     <string name="home_status_recovery_stuck_title">La registrazione non funziona</string>
     <string name="home_status_update_regrant_suggestion">Un aggiornamento ha rimosso un\'autorizzazione necessaria a CallVault per riavviare la registrazione. Per ora potrebbe funzionare ancora: tocca qui e attiva una volta il debug wireless per ripristinarla. Nessuna reinstallazione necessaria.</string>
     <string name="home_status_update_regrant_title">Riconnetti per continuare a registrare</string>
+    <string name="list_separator">", "</string>
     <string name="notif_info_channel">Avvisi di CallVault</string>
     <string name="notif_voip_recording_text">CallVault sta registrando una chiamata di un\'app.</string>
     <string name="notif_voip_recording_title">Registrazione chiamata VoIP</string>
@@ -457,6 +458,7 @@
     <string name="transcription_mode_label">Trascrivi</string>
     <string name="transcription_mode_manual">Manualmente</string>
     <string name="transcription_model_best">Qualità migliore</string>
+    <string name="transcription_model_best_small_download">Qualità migliore, download più piccolo</string>
     <string name="transcription_model_delete">Elimina il modello</string>
     <string name="transcription_model_download">Scarica il modello</string>
     <string name="transcription_model_download_subtitle">%1$d MB, solo via Wi-Fi</string>
@@ -541,6 +543,8 @@
     <string name="wizard_transcription_background_note">Entrambi i download avvengono solo tramite Wi-Fi e proseguono in background. Puoi andare avanti e finire la configurazione adesso: lo stesso avanzamento si trova poi in Impostazioni ▸ Trascrizione e riassunti.</string>
     <string name="wizard_transcription_language_note">È impostata la lingua a cui è impostato questo telefono. Indicarla è molto più affidabile che lasciar indovinare l\'app, e puoi comunque sceglierne un\'altra per la singola chiamata.</string>
     <string name="wizard_transcription_model_note">Per trascrivere serve prima un modello vocale sul telefono: %1$s occupa %2$d MB, %3$s occupa %4$d MB. Trascrivere una chiamata richiede poi all\'incirca la sua stessa durata e impegna molto il processore.</string>
+    <string name="wizard_transcription_model_size">%1$s occupa %2$d MB</string>
+    <string name="wizard_transcription_model_sizes_note">Per trascrivere serve prima un modello vocale sul telefono: %1$s. Trascrivere una chiamata richiede poi all\'incirca la sua stessa durata e impegna molto il processore.</string>
     <string name="wizard_transcription_subtitle">CallVault può trascrivere una registrazione sul telefono stesso e scriverne un breve riepilogo: non viene inviato nulla da nessuna parte. Scegli quando succede e in che lingua sono le tue chiamate, e scarica quello che serve.</string>
     <string name="wizard_transcription_summary_body">Quando una chiamata ha una trascrizione, CallVault può anche scriverne un breve riepilogo: sul telefono, come tutto il resto qui.</string>
     <string name="wizard_transcription_summary_heading">Riepiloghi</string>

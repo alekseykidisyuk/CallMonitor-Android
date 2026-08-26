@@ -96,6 +96,7 @@
     <string name="home_status_recovery_stuck_title">Aufnahme ist ausgefallen</string>
     <string name="home_status_update_regrant_suggestion">Ein Update hat eine Berechtigung entfernt, die CallVault zum Neustarten der Aufnahme braucht. Es funktioniert vielleicht noch – tippe hier und aktiviere das WLAN-Debugging einmal, um sie wiederherzustellen. Keine Neuinstallation nötig.</string>
     <string name="home_status_update_regrant_title">Verbindung für Aufnahme wiederherstellen</string>
+    <string name="list_separator">", "</string>
     <string name="notif_info_channel">CallVault-Hinweise</string>
     <string name="notif_voip_recording_text">CallVault nimmt gerade einen App-Anruf auf.</string>
     <string name="notif_voip_recording_title">Aufnahme eines App-Anrufs</string>
@@ -457,6 +458,7 @@
     <string name="transcription_mode_label">Transkribieren</string>
     <string name="transcription_mode_manual">Manuell</string>
     <string name="transcription_model_best">Beste Qualität</string>
+    <string name="transcription_model_best_small_download">Beste Qualität, kleinerer Download</string>
     <string name="transcription_model_delete">Modell löschen</string>
     <string name="transcription_model_download">Modell herunterladen</string>
     <string name="transcription_model_download_subtitle">%1$d MB, nur über WLAN</string>
@@ -541,6 +543,8 @@
     <string name="wizard_transcription_background_note">Beide Downloads laufen nur über WLAN und werden im Hintergrund fortgesetzt. Sie können jetzt weitermachen und die Einrichtung abschließen — unter Einstellungen ▸ Transkription &amp; Zusammenfassungen wird derselbe Fortschritt danach weiter angezeigt.</string>
     <string name="wizard_transcription_language_note">Eingestellt ist die Sprache, auf die dieses Telefon eingestellt ist. Sie zu benennen ist weit zuverlässiger, als die App raten zu lassen, und Sie können später pro Anruf eine andere wählen.</string>
     <string name="wizard_transcription_model_note">Zum Transkribieren braucht das Telefon zuerst ein Sprachmodell: %1$s hat %2$d MB, %3$s hat %4$d MB. Ein Anruf braucht dann etwa seine eigene Länge und belastet den Prozessor stark.</string>
+    <string name="wizard_transcription_model_size">%1$s hat %2$d MB</string>
+    <string name="wizard_transcription_model_sizes_note">Zum Transkribieren braucht das Telefon zuerst ein Sprachmodell: %1$s. Ein Anruf braucht dann etwa seine eigene Länge und belastet den Prozessor stark.</string>
     <string name="wizard_transcription_subtitle">CallVault kann eine Aufnahme direkt auf dem Telefon transkribieren und daraus eine kurze Zusammenfassung schreiben — nichts wird irgendwohin gesendet. Wählen Sie, wann das geschieht und in welcher Sprache Ihre Anrufe geführt werden, und laden Sie herunter, was dafür nötig ist.</string>
     <string name="wizard_transcription_summary_body">Sobald ein Anruf ein Transkript hat, kann CallVault auch eine kurze Zusammenfassung davon schreiben — auf dem Telefon, wie alles andere hier.</string>
     <string name="wizard_transcription_summary_heading">Zusammenfassungen</string>

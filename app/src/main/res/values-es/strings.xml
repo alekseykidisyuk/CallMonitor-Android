@@ -96,6 +96,7 @@
     <string name="home_status_recovery_stuck_title">La grabación está caída</string>
     <string name="home_status_update_regrant_suggestion">Una actualización eliminó un permiso que CallVault necesita para reiniciar la grabación. Puede que siga funcionando por ahora: toca aquí y activa la depuración inalámbrica una vez para restaurarlo. No hace falta reinstalar.</string>
     <string name="home_status_update_regrant_title">Reconecta para seguir grabando</string>
+    <string name="list_separator">", "</string>
     <string name="notif_info_channel">Avisos de CallVault</string>
     <string name="notif_voip_recording_text">CallVault está grabando una llamada de una app.</string>
     <string name="notif_voip_recording_title">Grabando llamada VoIP</string>
@@ -457,6 +458,7 @@
     <string name="transcription_mode_label">Transcribir</string>
     <string name="transcription_mode_manual">Manualmente</string>
     <string name="transcription_model_best">Mejor calidad</string>
+    <string name="transcription_model_best_small_download">Mejor calidad, descarga más pequeña</string>
     <string name="transcription_model_delete">Eliminar modelo</string>
     <string name="transcription_model_download">Descargar modelo</string>
     <string name="transcription_model_download_subtitle">%1$d MB, solo por Wi-Fi</string>
@@ -541,6 +543,8 @@
     <string name="wizard_transcription_background_note">Las dos descargas solo se hacen por Wi-Fi y continúan en segundo plano. Puedes seguir y terminar la configuración ahora: después, Ajustes ▸ Transcripción y resúmenes muestra el mismo progreso.</string>
     <string name="wizard_transcription_language_note">Está puesto el idioma en el que está este teléfono. Indicarlo es mucho más fiable que dejar que la app lo adivine, y aún puedes elegir otro para una llamada concreta.</string>
     <string name="wizard_transcription_model_note">Para transcribir hace falta antes un modelo de voz en el teléfono: %1$s ocupa %2$d MB y %3$s ocupa %4$d MB. Transcribir una llamada tarda después aproximadamente lo que dura la llamada y exige mucho al procesador.</string>
+    <string name="wizard_transcription_model_size">%1$s ocupa %2$d MB</string>
+    <string name="wizard_transcription_model_sizes_note">Para transcribir hace falta antes un modelo de voz en el teléfono: %1$s. Transcribir una llamada tarda después aproximadamente lo que dura la llamada y exige mucho al procesador.</string>
     <string name="wizard_transcription_subtitle">CallVault puede transcribir una grabación en el propio teléfono y escribir a partir de ella un breve resumen: no se envía nada a ninguna parte. Elige cuándo ocurre, en qué idioma son tus llamadas y descarga lo que hace falta.</string>
     <string name="wizard_transcription_summary_body">Cuando una llamada ya tiene transcripción, CallVault también puede escribir un breve resumen de ella: en el teléfono, como todo lo demás aquí.</string>
     <string name="wizard_transcription_summary_heading">Resúmenes</string>

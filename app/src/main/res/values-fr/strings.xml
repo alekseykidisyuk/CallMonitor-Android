@@ -96,6 +96,7 @@
     <string name="home_status_recovery_stuck_title">L\'enregistrement est hors service</string>
     <string name="home_status_update_regrant_suggestion">Une mise à jour a supprimé une autorisation dont CallVault a besoin pour relancer l\'enregistrement. Ça marche peut-être encore — appuie ici, puis active le débogage sans fil une fois pour la rétablir. Aucune réinstallation nécessaire.</string>
     <string name="home_status_update_regrant_title">Reconnecte-toi pour continuer à enregistrer</string>
+    <string name="list_separator">", "</string>
     <string name="notif_info_channel">Avis de CallVault</string>
     <string name="notif_voip_recording_text">CallVault enregistre un appel dans une appli.</string>
     <string name="notif_voip_recording_title">Enregistrement d\'un appel VoIP</string>
@@ -457,6 +458,7 @@
     <string name="transcription_mode_label">Transcrire</string>
     <string name="transcription_mode_manual">Manuellement</string>
     <string name="transcription_model_best">Meilleure qualité</string>
+    <string name="transcription_model_best_small_download">Meilleure qualité, téléchargement plus léger</string>
     <string name="transcription_model_delete">Supprimer le modèle</string>
     <string name="transcription_model_download">Télécharger le modèle</string>
     <string name="transcription_model_download_subtitle">%1$d Mo, en Wi-Fi uniquement</string>
@@ -541,6 +543,8 @@
     <string name="wizard_transcription_background_note">Les deux téléchargements se font uniquement en Wi-Fi et se poursuivent en arrière-plan. Vous pouvez continuer et terminer la configuration maintenant — Paramètres ▸ Transcription et résumés affiche ensuite la même progression.</string>
     <string name="wizard_transcription_language_note">Réglé sur la langue de ce téléphone. L\'indiquer est bien plus fiable que de laisser l\'application deviner, et vous pourrez toujours en choisir une autre appel par appel.</string>
     <string name="wizard_transcription_model_note">Transcrire demande d\'abord un modèle vocal sur le téléphone : %1$s fait %2$d Mo, %3$s fait %4$d Mo. Transcrire un appel prend ensuite environ la durée de l\'appel et sollicite fortement le processeur.</string>
+    <string name="wizard_transcription_model_size">%1$s fait %2$d Mo</string>
+    <string name="wizard_transcription_model_sizes_note">Transcrire demande d\'abord un modèle vocal sur le téléphone : %1$s. Transcrire un appel prend ensuite environ la durée de l\'appel et sollicite fortement le processeur.</string>
     <string name="wizard_transcription_subtitle">CallVault peut transcrire un enregistrement sur le téléphone lui-même et en écrire un court résumé : rien n\'est envoyé nulle part. Choisissez quand cela se produit et dans quelle langue se passent vos appels, et téléchargez ce qu\'il faut.</string>
     <string name="wizard_transcription_summary_body">Une fois qu\'un appel a une transcription, CallVault peut aussi en écrire un court résumé — sur le téléphone, comme tout le reste ici.</string>
     <string name="wizard_transcription_summary_heading">Résumés</string>

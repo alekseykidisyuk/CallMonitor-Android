@@ -96,6 +96,7 @@
     <string name="home_status_recovery_stuck_title">Nagrywanie nie działa</string>
     <string name="home_status_update_regrant_suggestion">Aktualizacja usunęła uprawnienie potrzebne CallVault do wznowienia nagrywania. Na razie może działać — dotknij tutaj i włącz raz debugowanie bezprzewodowe, aby je przywrócić. Nie trzeba instalować ponownie.</string>
     <string name="home_status_update_regrant_title">Połącz ponownie, aby nagrywać</string>
+    <string name="list_separator">", "</string>
     <string name="notif_info_channel">Powiadomienia CallVault</string>
     <string name="notif_voip_recording_text">CallVault nagrywa rozmowę w aplikacji.</string>
     <string name="notif_voip_recording_title">Nagrywanie połączenia VoIP</string>
@@ -457,6 +458,7 @@
     <string name="transcription_mode_label">Transkrybuj</string>
     <string name="transcription_mode_manual">Ręcznie</string>
     <string name="transcription_model_best">Najlepsza jakość</string>
+    <string name="transcription_model_best_small_download">Najlepsza jakość, mniejsze pobieranie</string>
     <string name="transcription_model_delete">Usuń model</string>
     <string name="transcription_model_download">Pobierz model</string>
     <string name="transcription_model_download_subtitle">%1$d MB, tylko przez Wi-Fi</string>
@@ -541,6 +543,8 @@
     <string name="wizard_transcription_background_note">Oba pobierania działają tylko przez Wi-Fi i trwają dalej w tle. Możesz teraz iść dalej i dokończyć konfigurację — ten sam postęp znajdziesz później w Ustawieniach ▸ Transkrypcja i podsumowania.</string>
     <string name="wizard_transcription_language_note">Ustawiony jest język, na który ustawiony jest ten telefon. Wskazanie go jest znacznie pewniejsze niż zdanie się na zgadywanie aplikacji, a później i tak możesz wybrać inny dla pojedynczej rozmowy.</string>
     <string name="wizard_transcription_model_note">Transkrypcja wymaga najpierw modelu mowy na telefonie: %1$s ma %2$d MB, %3$s ma %4$d MB. Przepisanie rozmowy trwa potem mniej więcej tyle, co sama rozmowa, i mocno obciąża procesor.</string>
+    <string name="wizard_transcription_model_size">%1$s ma %2$d MB</string>
+    <string name="wizard_transcription_model_sizes_note">Transkrypcja wymaga najpierw modelu mowy na telefonie: %1$s. Przepisanie rozmowy trwa potem mniej więcej tyle, co sama rozmowa, i mocno obciąża procesor.</string>
     <string name="wizard_transcription_subtitle">CallVault potrafi przepisać nagranie na samym telefonie i napisać z niego krótkie podsumowanie — nic nigdzie nie jest wysyłane. Wybierz, kiedy się to dzieje i w jakim języku są Twoje rozmowy, oraz pobierz to, czego to wymaga.</string>
     <string name="wizard_transcription_summary_body">Gdy rozmowa ma już transkrypcję, CallVault może też napisać jej krótkie podsumowanie — na telefonie, jak wszystko inne tutaj.</string>
     <string name="wizard_transcription_summary_heading">Podsumowania</string>

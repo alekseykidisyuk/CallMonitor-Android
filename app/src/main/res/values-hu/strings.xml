@@ -96,6 +96,7 @@
     <string name="home_status_recovery_stuck_title">A rögzítés leállt</string>
     <string name="home_status_update_regrant_suggestion">Egy frissítés törölt egy engedélyt, amelyre a CallVaultnak szüksége van a rögzítés újraindításához. Lehet, hogy még működik – koppints ide, majd kapcsold be egyszer a vezeték nélküli hibakeresést a visszaállításához. Nincs szükség újratelepítésre.</string>
     <string name="home_status_update_regrant_title">Csatlakozz újra a rögzítéshez</string>
+    <string name="list_separator">", "</string>
     <string name="notif_info_channel">CallVault értesítések</string>
     <string name="notif_voip_recording_text">A CallVault éppen egy alkalmazáshívást rögzít.</string>
     <string name="notif_voip_recording_title">VoIP-hívás rögzítése</string>
@@ -457,6 +458,7 @@
     <string name="transcription_mode_label">Átírás</string>
     <string name="transcription_mode_manual">Kézzel</string>
     <string name="transcription_model_best">Legjobb minőség</string>
+    <string name="transcription_model_best_small_download">Legjobb minőség, kisebb letöltés</string>
     <string name="transcription_model_delete">Modell törlése</string>
     <string name="transcription_model_download">Modell letöltése</string>
     <string name="transcription_model_download_subtitle">%1$d MB, csak Wi-Fi-n</string>
@@ -541,6 +543,8 @@
     <string name="wizard_transcription_background_note">Mindkét letöltés csak Wi-Fi-n fut, és a háttérben folytatódik. Most nyugodtan továbbléphet, és befejezheti a beállítást — ugyanez az állapot később a Beállítások ▸ Átirat és összefoglalók alatt is látszik.</string>
     <string name="wizard_transcription_language_note">A telefon nyelvére van állítva. Ha megnevezi a nyelvet, az sokkal megbízhatóbb, mintha az alkalmazás találgatna, és később hívásonként is választhat másikat.</string>
     <string name="wizard_transcription_model_note">Az átíráshoz előbb egy beszédmodell kell a telefonra: %1$s: %2$d MB, %3$s: %4$d MB. Egy hívás átírása utána nagyjából annyi ideig tart, mint maga a hívás, és erősen igénybe veszi a processzort.</string>
+    <string name="wizard_transcription_model_size">%1$s – %2$d MB</string>
+    <string name="wizard_transcription_model_sizes_note">Az átíráshoz előbb egy beszédmodell kell a telefonra: %1$s. Egy hívás átírása utána nagyjából annyi ideig tart, mint maga a hívás, és erősen igénybe veszi a processzort.</string>
     <string name="wizard_transcription_subtitle">A CallVault magán a telefonon írja át a felvételt, és rövid összefoglalót is ír belőle — semmi nem megy sehová. Válassza ki, mikor történjen ez, és milyen nyelvűek a hívásai, majd töltse le, amire ehhez szükség van.</string>
     <string name="wizard_transcription_summary_body">Ha egy híváshoz már van átirat, a CallVault rövid összefoglalót is írhat róla — a telefonon, mint itt minden más.</string>
     <string name="wizard_transcription_summary_heading">Összefoglalók</string>

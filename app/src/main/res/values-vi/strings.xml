@@ -96,6 +96,7 @@
     <string name="home_status_recovery_stuck_title">Ghi âm đang hỏng</string>
     <string name="home_status_update_regrant_suggestion">Một bản cập nhật đã xóa quyền mà CallVault cần để khởi động lại việc ghi âm. Hiện tại có thể vẫn hoạt động — nhấn vào đây, rồi bật gỡ lỗi không dây một lần để khôi phục. Không cần cài đặt lại.</string>
     <string name="home_status_update_regrant_title">Kết nối lại để tiếp tục ghi âm</string>
+    <string name="list_separator">", "</string>
     <string name="notif_info_channel">Thông báo của CallVault</string>
     <string name="notif_voip_recording_text">CallVault đang ghi âm một cuộc gọi trong ứng dụng.</string>
     <string name="notif_voip_recording_title">Đang ghi âm cuộc gọi VoIP</string>
@@ -457,6 +458,7 @@
     <string name="transcription_mode_label">Chuyển lời nói thành văn bản</string>
     <string name="transcription_mode_manual">Thủ công</string>
     <string name="transcription_model_best">Chất lượng tốt nhất</string>
+    <string name="transcription_model_best_small_download">Chất lượng tốt nhất, tải về nhẹ hơn</string>
     <string name="transcription_model_delete">Xoá mô hình</string>
     <string name="transcription_model_download">Tải mô hình</string>
     <string name="transcription_model_download_subtitle">%1$d MB, chỉ qua Wi-Fi</string>
@@ -541,6 +543,8 @@
     <string name="wizard_transcription_background_note">Cả hai bản tải xuống đều chỉ chạy qua Wi-Fi và vẫn tiếp tục ở nền. Bạn có thể đi tiếp và hoàn tất thiết lập ngay bây giờ — sau đó Cài đặt ▸ Bản ghi lời và tóm tắt cũng hiện đúng tiến trình này.</string>
     <string name="wizard_transcription_language_note">Đang đặt theo ngôn ngữ của điện thoại này. Nêu rõ ngôn ngữ đáng tin cậy hơn nhiều so với để ứng dụng đoán, và sau này bạn vẫn có thể chọn ngôn ngữ khác cho từng cuộc gọi.</string>
     <string name="wizard_transcription_model_note">Việc chép lời cần có một mô hình giọng nói trên máy trước: %1$s nặng %2$d MB, %3$s nặng %4$d MB. Sau đó, chép lời một cuộc gọi mất khoảng đúng bằng độ dài cuộc gọi và chiếm dụng bộ xử lý rất nặng.</string>
+    <string name="wizard_transcription_model_size">%1$s nặng %2$d MB</string>
+    <string name="wizard_transcription_model_sizes_note">Việc chép lời cần có một mô hình giọng nói trên máy trước: %1$s. Sau đó, chép lời một cuộc gọi mất khoảng đúng bằng độ dài cuộc gọi và chiếm dụng bộ xử lý rất nặng.</string>
     <string name="wizard_transcription_subtitle">CallVault có thể chép lời một bản ghi ngay trên điện thoại và viết một bản tóm tắt ngắn từ đó — không có gì được gửi đi đâu cả. Hãy chọn khi nào việc đó diễn ra, các cuộc gọi của bạn dùng ngôn ngữ nào, và tải về những gì cần thiết.</string>
     <string name="wizard_transcription_summary_body">Khi một cuộc gọi đã có bản chép lời, CallVault còn có thể viết một bản tóm tắt ngắn cho nó — ngay trên điện thoại, như mọi thứ khác ở đây.</string>
     <string name="wizard_transcription_summary_heading">Tóm tắt</string>

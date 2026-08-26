@@ -99,6 +99,7 @@
     <string name="home_status_recovery_stuck_title">A gravação está fora do ar</string>
     <string name="home_status_update_regrant_suggestion">Uma atualização removeu uma permissão de que o CallVault precisa para reiniciar a gravação. Pode ser que ainda funcione por enquanto — toque aqui e ative a Depuração sem fio uma vez para restaurá-la. Não é preciso reinstalar.</string>
     <string name="home_status_update_regrant_title">Reconecte para continuar gravando</string>
+    <string name="list_separator">", "</string>
     <string name="notif_info_channel">Avisos do CallVault</string>
     <string name="notif_voip_recording_text">O CallVault está gravando uma chamada de app.</string>
     <string name="notif_voip_recording_title">Gravando chamada VoIP</string>
@@ -460,6 +461,7 @@
     <string name="transcription_mode_label">Transcrever</string>
     <string name="transcription_mode_manual">Manualmente</string>
     <string name="transcription_model_best">Melhor qualidade</string>
+    <string name="transcription_model_best_small_download">Melhor qualidade, download menor</string>
     <string name="transcription_model_delete">Excluir modelo</string>
     <string name="transcription_model_download">Baixar modelo</string>
     <string name="transcription_model_download_subtitle">%1$d MB, somente por Wi-Fi</string>
@@ -544,6 +546,8 @@
     <string name="wizard_transcription_background_note">Os dois downloads só acontecem por Wi-Fi e continuam em segundo plano. Você pode seguir em frente e terminar a configuração agora — depois, Configurações ▸ Transcrição e resumos mostra o mesmo progresso.</string>
     <string name="wizard_transcription_language_note">Está definido o idioma em que este telefone está. Informar o idioma é bem mais confiável do que deixar o app adivinhar, e você ainda pode escolher outro para uma chamada específica.</string>
     <string name="wizard_transcription_model_note">Transcrever exige antes um modelo de voz no telefone: %1$s tem %2$d MB e %3$s tem %4$d MB. Depois, transcrever uma chamada leva aproximadamente a duração da chamada e exige muito do processador.</string>
+    <string name="wizard_transcription_model_size">%1$s tem %2$d MB</string>
+    <string name="wizard_transcription_model_sizes_note">Transcrever exige antes um modelo de voz no telefone: %1$s. Depois, transcrever uma chamada leva aproximadamente a duração da chamada e exige muito do processador.</string>
     <string name="wizard_transcription_subtitle">O CallVault pode transcrever uma gravação no próprio telefone e escrever um resumo curto a partir dela — nada é enviado para lugar nenhum. Escolha quando isso acontece e em que idioma são as suas chamadas, e baixe o que for preciso.</string>
     <string name="wizard_transcription_summary_body">Quando uma chamada já tem transcrição, o CallVault também pode escrever um resumo curto dela — no telefone, como tudo o mais aqui.</string>
     <string name="wizard_transcription_summary_heading">Resumos</string>
