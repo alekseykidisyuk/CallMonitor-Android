@@ -101,6 +101,97 @@ automatic runs inherit it too. Those two previously walked straight into the OOM
 prevent — and a too-long recording also held the oldest slots of the nightly batch for ever, starving
 every call behind it. See the entry below for the one part still missing.
 
+### 🔵 Transcribing long calls — the blow-up is our decoder, not whisper — researched 2026-08-26
+
+The 15-minute refusal exists because `AudioDecoder` builds the **entire** file in memory, four times over,
+before whisper sees a single sample (`AudioDecoder.kt`, `decodePcm`):
+
+```
+sink.write(chunk)               // whole file accumulates in a ByteArrayOutputStream
+val bytes = sink.toByteArray()  // full copy #1 — both alive at once
+val shorts = ShortArray(...)    // full copy #2
+pcm16ToMonoFloat  → FloatArray  // full copy #3
+resampleTo16k     → FloatArray  // full copy #4
+```
+
+A 60-minute call at 48 kHz mono 16-bit is ~346 MB of raw PCM, and `ByteArrayOutputStream` doubles its
+buffer as it grows, so the peak is ~700 MB before the copies begin; the float array is another ~690 MB.
+At 15 minutes it is already ~170 MB with copies, which is exactly why the limit sits there.
+
+**Whisper is not the constraint.** It works on 30-second windows natively and never needs the whole
+file. We hand it everything because our decoder produces everything.
+
+**The fix (Option A): stream the decode and call whisper per window.** No runtime change, no model
+change, no re-download, and speaker labels survive — they are built on our own two-channel capture and
+would not survive a runtime move. Care needed on window boundaries so words are not cut in half;
+overlap or VAD-aligned cuts are the usual answer.
+
+**Rejected: switching to sherpa-onnx / ONNX Runtime.** Investigated properly because a user pointed at
+[anti-vocale](https://github.com/RisorseArtificiali/anti-vocale), which advertises selectable NNAPI and
+long-audio support. Both claims dissolve on inspection:
+
+- **It caps at 10 minutes** (`AudioPreprocessor.kt:49-50`) — tighter than ours. It has not solved this.
+- **Hebrew is the killer.** sherpa's Whisper path has an unfixed preprocessing bug (#2900), and its
+  non-Whisper models do not speak Hebrew. Already settled in
+  `docs/dev-notes/2026-08-16-on-device-transcription-design.md:76-81`.
+- It would cost every user a 326–988 MB re-download and add a second runtime beside llama.cpp.
+
+**On NNAPI specifically, so nobody re-litigates it:** it *is* reachable through ORT, and ORT on F-Droid
+is a solved problem — `dev.davidv.translator` builds it from source and reproduces bit-for-bit on the
+buildserver. But ORT's own docs warn the NNAPI provider falls back to `nnapi-reference` for unsupported
+ops, which is **slower** than ORT's optimised CPU kernels; NNAPI was deprecated in Android 15; and
+Google states it expects most devices to use the CPU backend in future. **Qualcomm QNN is closed to us
+outright** — the Maven artifact declares `Qualcomm AI Hub Model License` / `scm:not_public`, and F-Droid
+explicitly rejects the "but it is on Maven Central" defence.
+
+### 🔵 Enable the ARM CPU features in the ggml build — measured 2026-08-26
+
+The native build compiles whisper.cpp and llama.cpp with **no `-march` flags**, so ggml's dotprod, fp16
+and i8mm kernels are all `#ifdef`'d out and `GGML_CPU_REPACK` is inert — the hot loop runs a
+six-instruction emulation of a single `SDOT`. Verified from the generated CMake cache, not inferred.
+
+Measured on the OP12 at the app's production thread count:
+
+| | today | with ARM flags |
+|---|---|---|
+| Summarisation prefill | 97.5 t/s | **309.7 t/s** |
+| Summarisation generation | 69.2 t/s | 84.1 t/s |
+| Transcription encode | 4848 ms | 4073 ms |
+
+Transcription gains less because Q5_0/Q5_1 have no i8mm path; the summariser's Q4_K does.
+
+**Ship it as one APK** with `-DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON`: seven Android CPU
+variants, selected from HWCAP at load. Verified picking `armv8.6_1` on the OP12 and `armv8.2_2` on the
+OP9 (which correctly declined i8mm). No ABI floor raise, no SIGILL on older phones, ~4.5 MB.
+
+Wiring: `llamacv.cpp` must call `ggml_backend_load_all_from_path(nativeLibraryDir)` rather than
+`ggml_backend_load_all()`, and `whispercv.cpp` needs the call added. `useLegacyPackaging = true` is
+already set, which this depends on. Invalidates the stored RTF calibration.
+
+**GPU is not worth it on this SoC:** Qualcomm's own Adreno 750 numbers are 1.27× prefill and **2.1×
+slower** generation than CPU, and whisper.cpp on OpenCL currently asserts and dies on Adreno. Generation
+is memory-bandwidth-bound and the 8 Gen 3's ~77 GB/s is shared by CPU, GPU and NPU alike.
+
+**Three incidental findings while measuring:** the comment at `CMakeLists.txt:17` claiming the NDK ships
+no OpenMP runtime is factually wrong (it does; the real trap is that it resolves the *shared* libomp,
+which is not in the APK — keep the flag off, fix the comment); `GGML_LLAMAFILE` lands off by accident
+because whisper's ggml is added first, which happens to match upstream's Android policy but should be
+commented so nobody "fixes" it; and `TranscriptionEngine.kt` carries two contradictory KDoc blocks about
+thread count, one of which is wrong.
+
+### 🔵 F-Droid reproducibility traps that already apply — noted 2026-08-26
+
+These bite any app shipping native code, and CallVault already does:
+
+- **`.so` files are stripped by Gradle by default**, which breaks reproducible builds — needs
+  `packagingOptions { doNotStrip '**/*.so' }`.
+- **Pin the NDK exactly.** The same NDK version on different host platforms still produces differing
+  binaries.
+- **16 KB page alignment** — `zipalign --page-size 16 --pad-like-apksigner`.
+
+The existing CMake/submodule setup is otherwise already on the right side of F-Droid's scanner, because
+anything compiled in the `build:` phase runs after the scan and never needs a `scanignore`.
+
 ### 🔵 A call skipped for being too long says so only in the log — found 2026-08-25
 
 The 15-minute transcription limit is now enforced in `TranscriptionRunner.runOne` and
