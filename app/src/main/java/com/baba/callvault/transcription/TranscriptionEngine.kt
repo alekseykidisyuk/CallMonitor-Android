@@ -146,7 +146,12 @@ object TranscriptionEngine {
         modelPath: String,
         language: String?,
         /** Words to expect — see [TranscriptionPrompt]. Null for none. */
-        prompt: String? = null
+        prompt: String? = null,
+        /**
+         * How to decode. Overridden only by the instrumented benchmark, which measures variants of
+         * it against each other — see [DecodeSettings] for what each field costs and buys.
+         */
+        settings: DecodeSettings = DecodeSettings.DEFAULT
     ): List<TranscriptSegment> = withContext(dispatcher) {
         abortRequested.set(false)
         // Set before the decode, not after: decoding the audio is itself minutes of CPU on a long
@@ -163,14 +168,28 @@ object TranscriptionEngine {
         if (ptr == 0L) error("Could not load whisper model at $modelPath")
         try {
             val threads = preferredThreadCount()
-            AppLogger.i(TAG, "Transcribing ${audio.size / AudioDecoder.TARGET_SAMPLE_RATE}s with $threads threads, lang=${language ?: "auto"}")
+            // Extracted here rather than at startup: it costs a file copy once in the app's
+            // lifetime, and this is the only place that needs it. Null when it could not be
+            // unpacked, which decodes exactly as the app did before VAD existed.
+            val vadModelPath = if (settings.useVad) VadModel.ensureExtracted(context) else null
+            AppLogger.i(TAG, "Transcribing ${audio.size / AudioDecoder.TARGET_SAMPLE_RATE}s with $threads threads, lang=${language ?: "auto"}, $settings")
             // Bracketed as tightly as possible around the native call: outside it, the counter
             // still holds whatever the previous run left behind.
             whisperActive = true
             try {
-                WhisperNative.transcribe(ptr, audio, threads, language, prompt)
+                WhisperNative.transcribe(
+                    ptr, audio, threads, language, prompt,
+                    vadModelPath, settings.beamSize, settings.maxTextCtx,
+                )
             } finally {
                 whisperActive = false
+            }
+
+            // Logged because a missing VAD model is not an error to whisper.cpp — it decodes
+            // everything instead — so zero here on a run that asked for VAD is the only signal that
+            // the trimming did not happen.
+            if (vadModelPath != null) {
+                AppLogger.i(TAG, "VAD kept ${WhisperNative.vadSegmentCount(ptr)} speech stretches")
             }
 
             val count = WhisperNative.segmentCount(ptr)

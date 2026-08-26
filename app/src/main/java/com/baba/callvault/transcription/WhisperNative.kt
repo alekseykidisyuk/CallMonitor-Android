@@ -51,14 +51,32 @@ object WhisperNative {
      *   not a soft failure: decoding Hebrew as English yields confident nonsense.
      * @param prompt   words to expect — names, places, jargon — biasing how they are spelled.
      *   Null or empty for none. A bias, never a rule, and a long one makes whisper repeat it back.
+     * @param vadModelPath path to the Silero model from [VadModel], or null to decode every sample.
+     *   Present, the non-speech is trimmed and what remains is concatenated — it does **not**
+     *   re-segment, and must never be turned into something that does.
+     * @param beamSize beam width, or 1 for greedy. See [DecodeSettings.beamSize].
+     * @param maxTextCtx cap on rolling text conditioning, 0 to disable, or -1 to leave whisper's own
+     *   default alone. See [DecodeSettings.maxTextCtx].
      */
     external fun transcribe(
         ptr: Long,
         audio: FloatArray,
         threads: Int,
         language: String?,
-        prompt: String?
+        prompt: String?,
+        vadModelPath: String?,
+        beamSize: Int,
+        maxTextCtx: Int
     )
+
+    /**
+     * How many stretches of speech the VAD kept in the run that just finished; 0 when it was off.
+     *
+     * The only way to tell VAD working from VAD silently absent. whisper.cpp does not fail a run
+     * whose VAD model is missing or unreadable — it processes everything instead — so a transcript
+     * produced with no VAD at all is indistinguishable from one produced with it, except for this.
+     */
+    external fun vadSegmentCount(ptr: Long): Int
 
     /**
      * Asks a run in progress to stop, from any thread.

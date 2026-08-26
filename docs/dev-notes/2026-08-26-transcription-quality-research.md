@@ -42,7 +42,7 @@ Each of these is a bug or an unintended divergence, not a tuning preference.
 > *"Measured on a real Hebrew call: handed 176 separate lines, Gemma returned the **first four, copied
 > word for word**, and ignored the rest."*
 
-`forChunk` is **called only from `SummaryPromptTest`**. The live path is `SummaryRunner` →
+`forChunk` is **not called by the production path**. (An earlier version of this note said it was called only from `SummaryPromptTest` — that was wrong: `SummaryBenchmark` and `RealCallBenchmark` in androidTest call it too, which makes it the *unconstrained arm* of the on-device A/B the Constraint Tax finding asks for. It was kept for that reason, not deleted.) The live path is `SummaryRunner` →
 `forChunkJson`, which joins with `\n` and stamps every line. A real 8:40 call produced **370 segments**
 — more than twice the input already measured to break it.
 
@@ -56,9 +56,19 @@ produced labels, line breaks carry turn-taking and must survive. **Never merge a
 ### 1.2 `no_context = true` does not disable rolling conditioning
 
 It clears carry-over from a *previous* call, once, on entry to `whisper_full`. Within a run,
-`prompt_past` is rebuilt after every 30-second window and re-injected, **gated on `n_max_text_ctx`,
-which we leave at its default 16384**. So every long call runs with full rolling text conditioning —
-the documented mechanism behind repetition loops. The real off-switch is `n_max_text_ctx = 0`.
+`prompt_past` is rebuilt after every 30-second window and re-injected, gated on `n_max_text_ctx`.
+
+**CORRECTED 2026-08-26 after measuring:** an earlier version of this section said the default is 16384
+and therefore "full rolling conditioning". That overstates it — whisper.cpp clamps with
+`min(n_max_text_ctx, n_text_ctx/2)` and `n_text_ctx` is 448 on every large model, so the effective
+default has always been **224 tokens**.
+
+**MEASURED on a real 4:05 Hebrew call, and the conclusion is to leave it alone.** `n_max_text_ctx = 0`
+is disqualified badly: **79 segments** against 47, most of them 1–2 seconds, terminal punctuation gone
+almost everywhere, and the least text of any variant — exactly the predicted cost of losing rolling
+conditioning. `= 64` is faster (310 s vs 358 s) and tidier, but it was **the only variant to drop two
+utterances that all four others captured** — invisible in the segment count, which is why segment count
+alone is not a quality measure. **Ship the default.**
 
 **This is a trade, not a free win:** losing rolling context costs proper-noun consistency, punctuation
 and casing across windows, and may worsen fragmentation. Middle ground `n_max_text_ctx = 64` is
@@ -77,9 +87,14 @@ COUNTER-EVIDENCE (arXiv:2501.11378, 8,272 non-speech files): higher beam sizes p
 hallucination on non-speech, lowest at beam 1. Calls are full of hold music, ringback and line noise.
 **So VAD must land before or with beam search, never after.**
 
-Speed: no trustworthy whisper.cpp CPU beam-1-vs-5 timing exists. Architectural argument: turbo has
-**32 encoder layers and only 4 decoder layers**, and beam multiplies decoder work only, batched into one
-call. Beam-5 on turbo should be far cheaper than the folklore 3–5×. **Measure on device.**
+**MEASURED 2026-08-26, and the architectural argument held: beam-5 cost +5.0% wall-clock, not 3–5×.**
+Turbo has 32 encoder layers and only 4 decoder layers, and beam multiplies decoder work only. It also
+allocates **no extra decoders** — `n_decoders = max(greedy.best_of, beam_search.beam_size)` and greedy's
+`best_of` is already 5, so memory is unchanged.
+
+On the same call it repaired an inverted phrase (`את לא הגדרנו` → `עוד לא הגדרנו`), recovered a spoken
+figure VAD had mangled, and produced a coherent sign-off, at the cost of two minor word corruptions.
+**Shipped, behind VAD.**
 
 ### 1.4 VAD is vendored and unused
 
@@ -111,6 +126,38 @@ low-pass**. We don't.
 
 **Measure before fixing:** FFT one captured buffer from each of the three capture paths and look above
 8 kHz. If only VoIP is dirty, fix only that path.
+
+#### ✅ MEASURED 2026-08-26 — and the guess above was backwards
+
+13 real OP9 recordings, decoded at 48 kHz, speech-active frames only. Reported as the energy that folds
+into **0–4 kHz** relative to the genuine signal already there — the exact quantity decimate-by-3
+produces, since 12–16 kHz mirrors down and 16–20 kHz maps down directly.
+
+| path | files | mean | worst |
+|---|---|---|---|
+| VoIP (`voip-`) | 5 | **−28.9 dB** | −23.6 dB |
+| carrier incoming (`_in_`) | 5 | **−27.3 dB** | −26.2 dB |
+| carrier **outgoing** (`_out_`) | 3 | **−19.2 dB** | **−17.5 dB** |
+
+**All three paths are dirty, and VoIP is the *cleanest*.** The reason the guess inverted: `VOICE_CALL`
+carries the **uplink** — the local microphone, which the network never band-limits — alongside the
+band-limited downlink. Outgoing calls are worst simply because the local speaker dominates them. The
+"no energy above 3.4 kHz" measurement was true, but it was taken on the PCM *before* encoding; it was
+never true of the files the transcriber opens.
+
+Ruled out as explanations: it is not an Opus artifact (a synthetic source brick-walled at 3.4 kHz comes
+back from a 28 kbps round-trip at −74 dB, i.e. nothing), and not a decoder artifact (ffmpeg's native
+Opus decoder and libopus agree to within 0.02 pp on the same file). Demo recordings under
+`/sdcard/CallVaultDemo` are synthetic and were excluded — they are full-band TTS and skew the result.
+
+**Fixed** in `AudioDecoder.resampleTo16k`: Hamming-windowed sinc low-pass at 0.9 × the 8 kHz output
+Nyquist, evaluated only at output positions (53 taps at 48 kHz, tap count derived from the input rate).
+Residual contamination **−94 dB mean / −85 dB worst**, against −45 dB for miniaudio's 4th-order
+reference, costing 0.01 dB below 3.4 kHz and 0.24 dB from 3.4–7 kHz.
+
+Expect the WER effect to be **small** — the ceiling was ~18 dB of added in-band noise on the worst path
+only, and §1's own citations warn that resampler quality is a minor term. This was worth doing because
+it is cheap and provably correct, not because it will move a number.
 
 ### 1.6 The initial prompt may be in the harmful regime
 

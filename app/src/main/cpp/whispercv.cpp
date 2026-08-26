@@ -152,8 +152,19 @@ Java_com_baba_callvault_transcription_WhisperNative_requestAbort(JNIEnv *, jobje
 JNIEXPORT void JNICALL
 Java_com_baba_callvault_transcription_WhisperNative_transcribe(
         JNIEnv *env, jobject, jlong ptr, jfloatArray audio, jint threads, jstring language,
-        jstring prompt) {
-    whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
+        jstring prompt, jstring vad_model_path, jint beam_size, jint max_text_ctx) {
+    // Greedy below beam-2, beam search at or above it. Both strategies are reachable because the
+    // right answer is not the same everywhere: the Whisper paper (arXiv:2212.04356, Appendix D)
+    // measures beam-5 improving twelve of fourteen sets on `large-v2` -- CallHome 17.6 -> 16.4 WER,
+    // CORAAL 16.2 -> 14.2 -- but making the two noisiest far-field sets WORSE (AMI-SDM1 36.4 ->
+    // 39.9). A phone call is telephone-domain, which is the case that gains.
+    //
+    // whisper-cli's own default is beam 5; this file used to hardcode greedy, which was an
+    // unintended divergence rather than a decision.
+    const bool use_beam = beam_size >= 2;
+    whisper_full_params params = whisper_full_default_params(
+            use_beam ? WHISPER_SAMPLING_BEAM_SEARCH : WHISPER_SAMPLING_GREEDY);
+    if (use_beam) params.beam_search.beam_size = beam_size;
     params.print_realtime   = false;  // upstream sets this true; it floods logcat on a long call
     params.print_progress   = false;
     params.print_timestamps = false;
@@ -163,6 +174,74 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
     params.offset_ms        = 0;
     params.no_context       = true;
     params.single_segment   = false;
+
+    // How much of the PREVIOUS windows' text is fed back as conditioning for the next one.
+    //
+    // `no_context` above does not control this, despite the name: it clears carry-over from a
+    // previous *call*, once, on entry to whisper_full. Within one run `prompt_past` is rebuilt after
+    // every 30-second window and re-injected, gated here and nowhere else:
+    //
+    //     if (params.n_max_text_ctx > 0 && ...)   // whisper.cpp, whisper_full_with_state
+    //
+    // Rolling conditioning is the documented mechanism behind repetition loops, and it is a genuine
+    // trade rather than a free win -- it is also what keeps proper nouns, punctuation and casing
+    // consistent across a window boundary. The caller decides; see DecodeSettings for which value
+    // won on a real call and why.
+    //
+    // Note the real ceiling is NOT the 16384 default: whisper.cpp clamps with
+    // `min(n_max_text_ctx, whisper_n_text_ctx(ctx)/2)`, and n_text_ctx is 448 on every large model,
+    // so the effective default is 224 tokens. 16384 never applied.
+    if (max_text_ctx >= 0) params.n_max_text_ctx = max_text_ctx;
+
+    // Voice activity detection, from the bundled Silero model. Null path = off.
+    //
+    // MEASURED for: Whisper paper Table 7, 10.6 -> 10.2 avg WER (-3.8% rel) helping all seven
+    // datasets; WhisperX (arXiv:2303.00747) TED-LIUM 10.5 -> 9.7 with 5-gram repetitions
+    // 131 -> 75 (-43%); arXiv:2501.11378 measures a 40.3% non-speech hallucination rate without it.
+    // It also removes audio rather than adding work (~25% in upstream's example), so it partly pays
+    // for itself -- and it is what makes beam search safe here, since the same paper finds higher
+    // beam sizes hallucinate MORE on non-speech, and a call is full of ringback, hold music and line
+    // noise for beam search to invent words over.
+    //
+    // Used to trim dead air and nothing else. whisper.cpp's VAD removes the silence and concatenates
+    // what is left; it does NOT re-segment, and that distinction is the whole reason this is safe.
+    // Meetily measured VAD-*fragmented* input producing 17 hallucinated segments and 14 spurious
+    // "thank you"s against 11 and 0 for contiguous 30-second windows, and below ~1 s of speech 81%
+    // of outputs were a single memorised word. Nothing here may be changed into something that feeds
+    // whisper short pieces.
+    const char *vad_path =
+            (vad_model_path != nullptr) ? env->GetStringUTFChars(vad_model_path, nullptr) : nullptr;
+    if (vad_path != nullptr && vad_path[0] != '\0') {
+        params.vad            = true;
+        params.vad_model_path = vad_path;
+        params.vad_params     = whisper_vad_default_params();
+
+        // The four defaults below are tuned for clean single-speaker audio and are wrong for a
+        // two-party phone call. Every override errs towards keeping audio: the worst case of
+        // keeping too much is today's behaviour, and the worst case of dropping too much is deleted
+        // speech that no later stage can recover.
+
+        // 250 ms (default) deletes backchannels -- "mm", "yeah", "ok", "כן" -- which are a large
+        // share of turns on a call and carry the agreement the summariser is looking for. Silero v5
+        // scores in 32 ms frames, so 100 ms is still three frames of sustained voicing: long enough
+        // to reject a click or a line pop, short enough to keep a one-syllable reply.
+        params.vad_params.min_speech_duration_ms = 100;
+
+        // 30 ms (default) is thin enough to clip the onset of the first word and the release of the
+        // last; whisper needs the co-articulation around a word to recognise it. faster-whisper uses
+        // 400 ms and is the most-deployed VAD-plus-Whisper pipeline there is, so this follows it.
+        params.vad_params.speech_pad_ms = 400;
+
+        // 100 ms (default) ends a speech run at every within-turn breath, which then gets trimmed.
+        // Half a second is the pause a speaker takes mid-sentence, and cutting it splices two
+        // unrelated moments together at a 30-second window boundary. Keep pauses shorter than this.
+        params.vad_params.min_silence_duration_ms = 500;
+
+        // 0.5 (default) is calibrated on full-band audio. Telephony carries almost no energy above
+        // ~3.4 kHz, so Silero's speech probability sits lower on the same speech, and quiet or
+        // distant talkers fall under the bar. 0.4 buys that margin back in the safe direction.
+        params.vad_params.threshold = 0.4f;
+    }
 
     // "auto" => let whisper detect the language. Anything else is an ISO code such as "he".
     //
@@ -220,6 +299,20 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
 
     if (lang != nullptr) env->ReleaseStringUTFChars(language, lang);
     if (hint != nullptr) env->ReleaseStringUTFChars(prompt, hint);
+    // Released only after whisper_full returns: params.vad_model_path is a borrowed pointer, and
+    // whisper reads it during the run rather than copying it at assignment.
+    if (vad_path != nullptr) env->ReleaseStringUTFChars(vad_model_path, vad_path);
+}
+
+// How many stretches of speech the VAD kept, for the run that just finished. 0 when VAD was off.
+//
+// Exists to make the VAD falsifiable from Kotlin. A missing or unreadable VAD model does not fail
+// the run -- whisper.cpp falls back to processing everything -- so without this the difference
+// between "VAD trimmed the dead air" and "VAD silently did nothing" is invisible, and both look
+// like a normal transcript.
+JNIEXPORT jint JNICALL
+Java_com_baba_callvault_transcription_WhisperNative_vadSegmentCount(JNIEnv *, jobject, jlong ptr) {
+    return whisper_full_n_vad_segments(ctx_of(ptr));
 }
 
 JNIEXPORT jint JNICALL
