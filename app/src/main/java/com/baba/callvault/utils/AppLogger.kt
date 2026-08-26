@@ -369,7 +369,11 @@ object AppLogger {
      * this app version and therefore missing the method entirely.
      */
     private fun drainDaemonDiagnostics(): List<String> = runCatching {
-        RecorderConnection.service?.drainDiagnostics()?.toList().orEmpty()
+        // Redacted here, not at the far end. Our own lines are redacted on the way to disk, and the
+        // system lines are redacted by SystemLogCollector -- but these arrive raw over the binder from
+        // a process that does its own logging, and they land in the same report that gets attached to
+        // a public issue. One rule for all three sources, applied where they enter the report.
+        RecorderConnection.service?.drainDiagnostics()?.map { redactForReport(it) }.orEmpty()
     }.onFailure {
         w(TAG, "Could not read the recorder host's diagnostics: ${it.message}")
     }.getOrDefault(emptyList())
