@@ -131,7 +131,7 @@ internal fun TranscriptionModelRows(
 /**
  * A download in flight, with the one action that makes sense while it runs.
  *
- * Shared by both models' rows: the summariser is 3.46 GB and the speech model 190-574 MB, but a bar
+ * Shared by both models' rows: the summariser is 3.46 GB and the speech model 190-874 MB, but a bar
  * and a Cancel is the whole of what either needs, and two of them would drift on the colour trap
  * below.
  */

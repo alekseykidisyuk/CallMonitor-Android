@@ -1050,7 +1050,7 @@ private fun TranscriptionStep(
             )
 
             // Offered here because the download row below fetches whatever this says. Told to pick a
-            // model without being told which one is coming, the difference between 190 MB and 574 MB
+            // model without being told which one is coming, the difference between 190 MB and 874 MB
             // would arrive as a surprise on a metered month.
             TranscriptionModelField(
                 modelId = modelId,
@@ -1077,13 +1077,28 @@ private fun TranscriptionStep(
             NoteCard(stringResource(R.string.wizard_transcription_language_note))
         }
 
+        // Built from the catalogue, not written out. This note used to name SMALL_Q5_1 and
+        // LARGE_V3_TURBO_Q5_0 by hand into a four-argument format string, which meant adding a third
+        // tier compiled cleanly and left the wizard quietly describing two of three models forever —
+        // the one place in the transcription UI with no `when` to fail on. The dropdown right above
+        // it already offered the model this note did not mention.
+        //
+        // `map` rather than `joinToString`, because only the inline one lets `stringResource` be
+        // called per entry; the join then runs over plain strings.
+        val modelSizes = TranscriptionModel.entries.map { model ->
+            stringResource(
+                R.string.wizard_transcription_model_size,
+                stringResource(TranscriptionLabels.titleOf(model)),
+                model.sizeBytes / BYTES_PER_MB
+            )
+        }
+        // A new key rather than the old one narrowed to one argument: the ten values-* files still
+        // hold a four-placeholder translation of `wizard_transcription_model_note`, and feeding a
+        // one-argument call to a locale's %2$d throws rather than degrading.
         NoteCard(
             stringResource(
-                R.string.wizard_transcription_model_note,
-                stringResource(TranscriptionLabels.titleOf(TranscriptionModel.SMALL_Q5_1)),
-                TranscriptionModel.SMALL_Q5_1.sizeBytes / BYTES_PER_MB,
-                stringResource(TranscriptionLabels.titleOf(TranscriptionModel.LARGE_V3_TURBO_Q5_0)),
-                TranscriptionModel.LARGE_V3_TURBO_Q5_0.sizeBytes / BYTES_PER_MB
+                R.string.wizard_transcription_model_sizes_note,
+                modelSizes.joinToString(stringResource(R.string.list_separator))
             )
         )
 

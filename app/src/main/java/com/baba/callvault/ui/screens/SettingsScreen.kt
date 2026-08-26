@@ -934,16 +934,16 @@ private fun TranscriptionSection(
 internal const val BYTES_PER_MB = 1_000_000L
 
 /**
- * The "Model: Fast / Best quality" dropdown.
+ * The speech-model dropdown, listing every tier in the catalogue.
  *
  * Extracted for the setup wizard, which offers the download and therefore has to let the user say
- * *which* model is being fetched — 190 MB against 574 MB is the difference between a minute and
+ * *which* model is being fetched — 190 MB against 874 MB is the difference between a minute and
  * several on a slow connection, and between gist Hebrew and clean Hebrew afterwards. Shared rather
  * than copied for the same reason as [TranscriptionModeField]: the row that starts the download
  * reads this setting, so two dropdowns writing it would be two chances to disagree about what is
  * being downloaded.
  *
- * @param modelId The stored id; anything unrecognised falls back to the first offered tier.
+ * @param modelId The stored id; anything unrecognised falls back to [TranscriptionModel.DEFAULT].
  */
 @Composable
 internal fun TranscriptionModelField(modelId: String, onModelChange: (String) -> Unit) {
@@ -953,7 +953,15 @@ internal fun TranscriptionModelField(modelId: String, onModelChange: (String) ->
     DropdownRow {
         M3DropdownField(
             label = stringResource(R.string.transcription_model_label),
-            selected = modelOptions.find { it.key == modelId } ?: modelOptions.first(),
+            // DEFAULT, not `modelOptions.first()`. Every other reader of this preference —
+            // TranscriptionWorker, HomeScreen, the wizard, the progress estimate — resolves an
+            // unrecognised id to DEFAULT, and this one resolving it to whichever tier happens to be
+            // declared first meant the dropdown could name a different model from the one that would
+            // actually run. Harmless while nothing writes a bad id, and a silent trap the moment
+            // something does; it also stopped being merely theoretical once the enum's first entry
+            // and its DEFAULT were no longer one tier apart.
+            selected = modelOptions.find { it.key == modelId }
+                ?: modelOptions.first { it.key == TranscriptionModel.DEFAULT.id },
             options = modelOptions,
             onOptionSelected = { onModelChange(it.key) }
         )

@@ -89,8 +89,15 @@ clean: MIT/ISC/Apache-2.0 all move one-way into our GPLv3.
 | tier | model | download | notes |
 |---|---|---|---|
 | Light | `ggml-small-q5_1` | **190 MB** | gist-only Hebrew; visible word errors |
-| **Best (default)** | `ggml-large-v3-turbo-q5_0` | **574 MB** | clean Hebrew; the recommended tier |
-| Max | `ggml-large-v3-turbo-q8_0` | 874 MB | marginal gain over q5_0 |
+| Best, smaller download | `ggml-large-v3-turbo-q5_0` | **574 MB** | clean Hebrew; still the stored default |
+| **Best** | `ggml-large-v3-turbo-q8_0` | **874 MB** | clean Hebrew, and **~2x faster than q5_0** |
+
+> The q8_0 row said "marginal gain over q5_0" until 2026-08-26, when it was measured rather than
+> assumed and turned out to be backwards. q8_0 is roughly **twice as fast** on the same audio, not
+> marginally better, because ggml's ARM backend gives Q8_0 a repacked GEMM kernel and gives Q5_0 and
+> Q5_1 nothing — see the KDoc on `TranscriptionModel.LARGE_V3_TURBO_Q8_0` for the measurements and
+> the ggml source that explains them. It costs ~240 MB more RAM while running.
+> Ranking a tier by its file size is what produced the wrong note; nothing here was benchmarked.
 
 `tiny` and `base` are **not offered** — the spike proved they emit garbage for Hebrew, and shipping
 them would only generate bad transcripts and support load.

@@ -89,10 +89,23 @@ object TranscriptionLabels {
         TranscriptionMode.AUTOMATIC -> R.string.transcription_mode_automatic
     }
 
+    /**
+     * The tier's name in the picker.
+     *
+     * Exhaustive on purpose and worth keeping that way: this `when` is the only thing in the app
+     * that fails to compile when a model is added to the catalogue, and it is what forced the
+     * wizard's hand-written two-model note to be found and fixed.
+     *
+     * The wording ranks the two large tiers by what they cost rather than by quality, because they
+     * are the *same model* at different precision and q8_0 measured both faster and no less
+     * accurate — calling q5_0 "Best quality" and q8_0 something better would be describing a
+     * difference that is not there. What separates them is the download.
+     */
     @StringRes
     fun titleOf(model: TranscriptionModel): Int = when (model) {
         TranscriptionModel.SMALL_Q5_1 -> R.string.transcription_model_small
-        TranscriptionModel.LARGE_V3_TURBO_Q5_0 -> R.string.transcription_model_best
+        TranscriptionModel.LARGE_V3_TURBO_Q5_0 -> R.string.transcription_model_best_small_download
+        TranscriptionModel.LARGE_V3_TURBO_Q8_0 -> R.string.transcription_model_best
     }
 
     /** Maps a language code (or null for auto-detect) to its label. */

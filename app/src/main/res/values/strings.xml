@@ -457,7 +457,25 @@
     -->
     <string name="wizard_transcription_subtitle">CallVault can turn a recording into text on the phone itself, and write a short summary from it — nothing is sent anywhere. Choose when that happens, which language your calls are in, and download what it needs.</string>
     <string name="wizard_transcription_language_note">Set to the language this phone is set to. Naming it is far more reliable than letting the app guess, and you can still pick a different one per call later.</string>
+    <!--
+      Dead as of the third model tier, and kept only until the translation pass retires it. It is NOT
+      edited in place, and the arity of a live string must never be: ten values-* files still carry
+      their own four-argument translation of this key, and Android hands a German phone the German
+      one. Narrowing this to a single %1$s while they still say %2$d would not have degraded to
+      English — `getString` would have thrown MissingFormatArgumentException and taken the whole
+      wizard step down for every non-English user. Superseded by the key below.
+    -->
     <string name="wizard_transcription_model_note">Transcribing needs a speech model on the phone first: %1$s is %2$d MB, %3$s is %4$d MB. Transcribing a call then takes roughly the length of the call and works the processor hard.</string>
+    <!--
+      Its replacement: one %1$s holding a list built from the catalogue, so a fourth tier needs no
+      new placeholder and no second person to notice. Untranslated on purpose — a locale falls back
+      to this English sentence until the translation pass, which says less rather than something
+      wrong, and is the same trade the subtitle above already made.
+    -->
+    <string name="wizard_transcription_model_sizes_note">Transcribing needs a speech model on the phone first: %1$s. Transcribing a call then takes roughly the length of the call and works the processor hard.</string>
+    <string name="wizard_transcription_model_size">%1$s is %2$d MB</string>
+    <!-- Joins the list above. A resource because the comma is not the right separator everywhere. -->
+    <string name="list_separator">", "</string>
     <string name="wizard_transcription_summary_heading">Summaries</string>
     <string name="wizard_transcription_summary_body">Once a call has a transcript, CallVault can also write a short summary of it — on the phone, like everything else here.</string>
     <string name="wizard_transcription_background_note">Both downloads only run over Wi-Fi, and they keep going in the background. You can carry on and finish setup now — Settings ▸ Transcription &amp; summaries shows the same progress afterwards.</string>
@@ -555,7 +573,15 @@
     <string name="transcription_charging_subtitle">Transcribing uses the processor heavily and will drain the battery.</string>
     <string name="transcription_model_label">Model</string>
     <string name="transcription_model_small">Fast</string>
+    <!--
+      "Best quality" deliberately keeps its key and moves to the q8_0 tier, rather than a new key
+      being minted for it. q8_0 is the tier this sentence has always been describing — the best one
+      offered — so every locale that already translated it stays correct on the day q8_0 ships. The
+      new, untranslated key is the one below, which lands on the tier that is now the second choice:
+      the worst case is one fallback-to-English entry in the picker, on the entry that matters less.
+    -->
     <string name="transcription_model_best">Best quality</string>
+    <string name="transcription_model_best_small_download">Best quality, smaller download</string>
     <string name="transcription_model_download">Download model</string>
     <string name="transcription_model_download_subtitle">%1$d MB, over Wi-Fi only</string>
     <string name="transcription_model_delete">Delete model</string>

@@ -20,7 +20,7 @@ import java.security.MessageDigest
  * summaries. Only [installedModels] is still whisper-specific, because it enumerates a catalogue
  * rather than acting on a model it was handed.
  *
- * Models are large — 190 MB and 574 MB for whisper, and about 3.5 GB for the summariser — and are
+ * Models are large — 190 MB to 874 MB for whisper, and about 3.5 GB for the summariser — and are
  * deliberately kept in the app's private files directory, never in the recordings folders: they must
  * not be swept by retention, synced to Drive, or shown to the user as if they were a recording.
  *

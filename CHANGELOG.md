@@ -9,6 +9,17 @@ Transcripts learn who was speaking, and CallVault can run on Shizuku instead of 
 
 ### Added
 
+- **A speech model that is both better and about twice as fast.** The Best quality tier is now an
+  874 MB model rather than a 574 MB one — and, despite being the larger download, it transcribes a
+  call in roughly half the time. The reason is not the model but the maths library underneath it,
+  which has a fast path for this model's number format and none at all for the old one. A ten-minute
+  call that took about twenty-two minutes takes about eleven.
+
+  The old model has not gone anywhere. It is still offered, as **Best quality, smaller download**,
+  and stays the one CallVault starts with, so nothing you have already downloaded stops working or
+  needs fetching again. Switching is a choice, in Settings ▸ Transcription &amp; summaries: 300 MB more
+  to download and a little more memory while it runs, against half the waiting, every call.
+
 - **Run on Shizuku instead, if you already have it.** CallVault has always started its own
   shell-level helper over ADB, which is why it needs nothing else installed — but it also means
   leaving a debugging switch on. If you already run [Shizuku](https://shizuku.rikka.app/) for other
@@ -113,7 +124,7 @@ search across everything that was ever said — and now a summary of what was sa
 
 - **Transcription, entirely on this phone.** Recordings can be turned into text by a speech model
   that runs locally — nothing is uploaded, and it works with no network at all. Choose a model in
-  Settings by the trade you want: faster, or more accurate. Fourteen languages, including Hebrew,
+  Settings by the trade you want: a small download, or the best transcript. Fourteen languages, including Hebrew,
   Arabic, Chinese and Vietnamese, plus **Detect automatically**, which leads the list and is the
   default.
 
