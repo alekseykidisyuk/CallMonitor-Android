@@ -422,3 +422,122 @@ arXiv:2202.04774 · Coupé et al. *Science Advances* 2019 + data · EMNLP Findin
 arXiv:2608.09941 · arXiv:2412.05589, arXiv:2409.09543 (overlapped speech) · whisper.cpp #1035, #1017,
 #3744, #2286, PR #3065, PR #3592 · openai/whisper #223, #1260, #2363 · Meetily PR #679, #592, #602 ·
 Hyprnote/Anarlog docs · dsnote #311 · anti-vocale #49, #60 · BCR #264 · ShizuCallRecorder #73
+
+---
+
+# Appendix — the summariser, researched the same day
+
+Four hypotheses were **disproven by direct code inspection**, and they are recorded here so nobody
+re-investigates them:
+
+| Hypothesis | Status |
+|---|---|
+| The GBNF grammar blocks non-Latin scripts | **Disproven.** `char ::= [^"\\]` is a *negated* class; Hebrew, Arabic and CJK pass. (Hyprnote ships the broken `[A-Z]` form. We do not.) |
+| Missing BOS / wrong Gemma chat template | **Disproven.** Both tokenize calls pass `add_special=true`, and we correctly send one `user` message — Gemma has no system role. |
+| A Latin-calibrated token estimate overflowing `n_ctx` | **Disproven.** `n_ctx` comes from the real tokeniser, not `chars/4`. |
+| The chunker silently dropping text | **Disproven.** It accumulates whole segments; no emit/advance desync. |
+
+## The five actual causes
+
+**1. Greedy decoding with unbounded arrays is the textbook repetition setup.** Holtzman et al.
+(ICLR 2020, Table 1) measured **greedy producing a repetition loop in 73.66% of generations** — the
+worst configuration in the paper, against 28.94% for beam and 0.28% for humans. The mechanism is
+self-reinforcing: each repetition makes the next more likely.
+
+`SummaryGrammar`'s arrays are **unbounded** — `array ::= "[" ws (string (ws "," ws string)*)? ws "]"`.
+"At most 5 items" is a prompt *request*; the grammar permits infinitely many. That is precisely the
+documented trap, and it matches our own recorded symptom: *"four decisions, three of them the same
+sentence."*
+
+**2. Hard schema constraint costs accuracy below 3B.** *The Constraint Tax* (arXiv:2605.26128; 15,000
+generations across Qwen2.5-0.5B/1.5B/3B, SmolLM2, Phi-2) measured hard schema decoding taking validity
+61.5% → 100% while answer accuracy fell **19.7% → 11.0%** and wrong-but-schema-valid outputs rose
+**49.5% → 88.9%**. Their words: *"the error is semantic, not structural"*, and their prescription is
+**"reason free, constrain late."** Scale-dependent — JSONSchemaBench found constrained decoding *helps*
+by 3–4 points at 8B. We are on the wrong side of that line.
+
+**3. The thinness is largely self-inflicted.** Zero-Shot Length-Controllable Summarization (NAACL 2025)
+found models show *"near-perfect compliance for structural measures"* such as item counts while failing
+word-count targets — so *"at most 5 items, one short line each"* is being obeyed faithfully, against real
+content. Chain of Density (2023, 100 articles, expert annotators): the entity-sparsest summary won
+**8.3% of first-place votes, dead last**; 61% went to summaries with ≥3 densification steps.
+
+**4. The map-reduce merge is where specifics die.** Pratapa & Mitamura (NAACL 2025): *"the best
+intermediate recall is significantly higher than the final summary recall, even outperforming
+full-context"*, and hierarchical merging *"often skips details such as entities and numerals."*
+Enlarging chunks gave *"minimal improvements"* — so it is the merge, not the chunk size. We cap each
+chunk at 5 items and then cap the merge at 5 again.
+
+**5. The model is below the multilingual competence floor.** Gemma 4 E2B is *effective 2B*, and 2B is
+where multilingual generation collapses. Same family, same recipe: Gemma 3 1B scores **24.9 on
+Global-MMLU-Lite — at chance** — while sitting 13.8 points above chance on English MMLU. On the Hebrew
+LLM leaderboard, **gemma-4-E2B 50.0 vs gemma-4-E4B 60.7**. On SEA-HELM Vietnamese, E2B 49.85 vs Gemma 4
+31B 77.09.
+
+## Free fixes — hours, no download
+
+1. **Bound the arrays in the grammar.** GBNF supports `{m,n}` (verified in the pinned tree). `{0,7}`
+   guarantees termination and kills the unbounded-array loop **without touching the sampler**.
+2. **Delete "keep each item to one short line"; raise the cap 5 → 8.** Keep the anti-repetition line.
+3. **Put a free-text field first in the schema.** Reason-free-then-constrain; field order is
+   load-bearing (one reported case lost 15 points to reordering alone).
+4. **Stop re-capping at the merge.** `CallSummary.concatenate` already exists — A/B it against the LLM
+   merge.
+5. **Make truncation non-fatal.** `keyFacts` is REQUIRED and our fixed key order puts it **last**, so a
+   Hebrew answer that hits the 900-token cap loses the **entire chunk**. Close the object
+   programmatically instead.
+6. **Keep greedy; do NOT enable `repeat_penalty`.** A token-count penalty cannot distinguish "looping"
+   from "listing the eighth item" and produces schema-valid-but-empty output. Use DRY, or an external
+   n-gram detector plus regenerate. Do **not** raise temperature globally — measured word-level language
+   pass rate falls to 72.0% (Japanese) / 69.5% (Chinese) at T=1.
+
+## Worth a spike
+
+7. **Gemma 4 E4B QAT** — `unsloth/gemma-4-E4B-it-qat-GGUF` UD-Q4_K_XL is **4.22 GB**, Apache-2.0 and
+   ungated, +0.76 GB over the current file. Ship as a RAM-gated tier, as PocketPal does.
+8. **Draft-then-constrain.** Unconstrained prose pass, then constrained re-serialisation. DCCD measured
+   1B GSM8K **15.24% → 39.0%**, gains largest for the smallest models. **`SummaryPrompt.forChunk`
+   already exists and is unused — this is mostly wiring.**
+9. **One few-shot example in the target language.** 5-shot took a model 86.2 → 99.0 language pass rate.
+   **Trap:** cross-language demos regressed an instruct model **98.6 → 68.3**, so it needs 13 example
+   sets — real work.
+
+## Not worth it — measured
+
+- **LLM transcript repair.** MEDSAGE: *"denoising consistently harmed summarization performance across
+  all experiments"*; sub-8B denoisers both ineffective and prone to injecting entities. Below 7B,
+  CoVoGER measured it *"noticeably degrades performance."*
+- **Self-refine.** Vicuna-13B failed *with oracle feedback*, and failed **by repeating its own output**.
+  Llama-2-70B went 62.0% → 36.5% on GSM8K after two rounds.
+- **A 7–9B model.** ~5 GB of weights lands near 6 GB peak against a measured ~3.85 GB projection today,
+  on a 7.4 GB phone.
+- **Beam search** (cross-lingual language pass rate 73.9 → 65.6) and **language-specialist summarisers**
+  (specialisation buys +3–8 points; a size tier buys 10–25, and no specialist covers 13 languages).
+
+## The ceiling — what to promise
+
+**A phone-sized model cannot produce actionable minutes in mid-resource languages and should not be sold
+as doing so.** The best on-device-class datapoint available is gemma-3-**12b** winning 39.48% of Hebrew
+summarisation comparisons against a frontier reference — and that is a 12B on a desktop. For calibration,
+GPT-4 zero-shot scores ROUGE-1 **13.59** on Hebrew news summarisation; the task is hard for everything.
+
+Defensible scope: **intent, a 2–4 sentence gist, and verified timestamp anchors.** Not reliable:
+action-item *ownership*, exact figures, and decisions in he/hu/vi/ar/pl. Expect a visible split between
+en/es/fr/de/pt/it and the rest — that is the shape of the technology, not a bug.
+
+**The property that must never regress is faithfulness.** The existing selection bar — Gemma invented
+nothing in 4 of 4 runs — is the right one.
+
+## Caveats on all of the above
+
+- **The model choice rests on 4 runs, 2 invented ~500-character transcripts, 2 languages, clean text.**
+  Noisy real ASR — the actual input distribution — was never in the selection, and Hungarian,
+  Vietnamese, Arabic and Polish were never tested at all.
+- **Nobody has measured whether JSON constraining hurts non-English more than English.** The mechanism is
+  coherent; the joint claim is inference.
+- **Do not build the eval on ROUGE** — it *anti-correlates* with human judgement in Hebrew
+  (r ≈ −0.16, p < 2.4e-5). Global PIQA covers all 13 languages. A per-response Unicode-block ratio
+  (script leakage) is trivial to compute and is the real production metric.
+- **`SummaryModel.kt`'s licence comment was wrong and is now fixed:** Gemma 4 is **Apache-2.0 and
+  ungated**, not the Gemma Terms of Use. The licensing objection to the model never existed; the 3.46 GB
+  objection to *bundling* stands. That error had already propagated into the README's credits.
