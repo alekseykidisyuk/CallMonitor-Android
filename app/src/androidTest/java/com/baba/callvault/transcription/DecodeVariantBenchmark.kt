@@ -58,13 +58,30 @@ import java.io.File
  * | `vad_beam_ctx64` | **310 s** | 42 | 2662 |
  * | `vad_beam_ctx0`  | 332 s | **79** | 2475 |
  *
- * The headline is the first and third rows: **what ships is 358 s against the old 362 s.** VAD
- * removes more audio than beam search adds work, so the two changes together are free — the speed
- * question that was supposed to gate beam search turned out not to have a cost to weigh.
- *
  * Read the transcripts, not the table: `vad_beam_ctx0`'s 79 segments are the same words cut into
  * one-to-two-second pieces, and its 2475 characters are the same call with content missing. The
  * per-field KDoc on [DecodeSettings] quotes the specific lines each variant gained and lost.
+ *
+ * **A SECOND CALL OVERTURNED THE BEAM VERDICT, AND THIS IS WHY THE SWEEP EXISTS.** Same device and
+ * model, a real 8:46 Hebrew support escalation that opens with music on the line — the full 2×2,
+ * including the `beam` cell the first sweep deliberately skipped:
+ *
+ * | variant | wall | segments | chars | chars in first 94 s |
+ * |---|---|---|---|---|
+ * | `baseline` | 725 s | 297 | 4692 | 1008 |
+ * | `vad`      | 763 s | 207 | **5970** | **1117** |
+ * | `beam`     | 852 s | 276 | 5448 | 1017 |
+ * | `vad_beam` | 846 s | 117 | 5022 | **21** |
+ *
+ * `vad_beam` — what shipped as 2.1.1 — emitted the language tag `*ערבית*` at 0 s, 34 s and 64 s and
+ * **lost the first 94 seconds of the call**. Neither knob does that alone. The cell that proves it
+ * is `beam`, which is exactly the cell skipped the first time on the grounds that it was "a variant
+ * we have reason to believe is bad and no reason to spend twenty minutes confirming". Twenty
+ * minutes would have been cheap: without it, the sweep cannot tell a VAD regression from a beam
+ * regression, and the interaction that actually bit is invisible.
+ *
+ * Two lessons, both cheap to honour: **run the whole 2×2, including cells you expect to lose**, and
+ * **one call cannot clear a decoding change** — the 4:05 call would have shipped beam-5 unopposed.
  */
 @RunWith(AndroidJUnit4::class)
 class DecodeVariantBenchmark {
@@ -74,15 +91,21 @@ class DecodeVariantBenchmark {
     /**
      * The sweep, in the order the changes have to land in.
      *
-     * Beam search never appears without VAD: arXiv:2501.11378 measures higher beam widths
-     * hallucinating **more** on non-speech, and a call is largely non-speech, so beam-before-VAD is
-     * a variant we have reason to believe is bad and no reason to spend twenty minutes confirming.
+     * Beam search appears both with and without VAD. It originally did not — the argument was that
+     * arXiv:2501.11378 measures higher beam widths hallucinating more on non-speech, so beam without
+     * VAD was believed bad and not worth twenty minutes to confirm. That reasoning cost the project
+     * a bad release: `beam` turned out to be *fine* and `vad_beam` catastrophic, which is the one
+     * conclusion the incomplete sweep could not reach. Keep the full 2×2.
      */
     private val variants = linkedMapOf(
         // What shipped before any of this: greedy, no VAD, whisper's own conditioning cap.
         "baseline" to DecodeSettings(beamSize = 1, maxTextCtx = -1, useVad = false),
         // Change 1 alone.
         "vad" to DecodeSettings(beamSize = 1, maxTextCtx = -1, useVad = true),
+        // Change 2 alone, without change 1. Believed bad on paper (arXiv:2501.11378), which is why
+        // it was skipped the first time — but "believed bad" is not a measurement, and without this
+        // cell the sweep cannot tell a VAD regression from a beam regression.
+        "beam" to DecodeSettings(beamSize = 5, maxTextCtx = -1, useVad = false),
         // Change 2, on top of change 1.
         "vad_beam" to DecodeSettings(beamSize = 5, maxTextCtx = -1, useVad = true),
         // Change 3, both directions, on top of both.

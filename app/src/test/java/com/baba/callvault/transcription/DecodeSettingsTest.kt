@@ -23,13 +23,17 @@ import org.junit.Test
 class DecodeSettingsTest {
 
     @Test
-    fun `ships with vad on, beam five and whisper's own rolling context`() {
+    fun `ships with vad on, greedy decoding and whisper's own rolling context`() {
         // Arrange / Act
         val shipped = DecodeSettings.DEFAULT
 
-        // Assert — these three are the whole point of the change; a silent revert to greedy or to
-        // VAD-off is exactly the regression this catches.
-        assertEquals(5, shipped.beamSize)
+        // Assert — VAD-off is a silent revert of a measured win, so that stays pinned.
+        //
+        // Greedy, NOT beam-5: on a real 8:46 Hebrew call beam-5 *with VAD on* locked whisper into
+        // emitting "*ערבית*" for three consecutive 30-second windows and swallowed the first 94
+        // seconds of the call whole — 1117 characters of real speech in the VAD-only run reduced to
+        // 21. Beam-5 without VAD did no such thing, so this pin is specifically about the pair.
+        assertEquals(1, shipped.beamSize)
         assertEquals(true, shipped.useVad)
 
         // -1, not 0 and not 64. Measured on a real call: 0 fragmented it into 79 one-to-two-second
