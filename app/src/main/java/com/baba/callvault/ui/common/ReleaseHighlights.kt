@@ -36,6 +36,14 @@ object ReleaseHighlights {
 
     private val ALL = listOf(
         ReleaseHighlight(
+            version = "2.1.1",
+            title = R.string.whatsnew_211_title,
+            body = R.string.whatsnew_211_body,
+            // Nothing to switch on and nowhere to go — the improvement applies to every transcription
+            // and summary from here on. Pointing at a screen would be pointing at nothing.
+            whereToFind = null,
+        ),
+        ReleaseHighlight(
             version = "2.1.0",
             title = R.string.whatsnew_210_title,
             body = R.string.whatsnew_210_body,
