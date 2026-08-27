@@ -31,22 +31,33 @@ object SafHelper {
     private const val STAGING_TEMP_PREFIX = "rec_stage_"
     private const val STAGING_TEMP_SUFFIX = ".tmp"
 
+    /** Sub-directory of `filesDir` holding recordings that are still being made. */
+    private const val STAGING_DIR_NAME = "staging"
+
     /**
      * Holds the result of a successful [createAudioFile] call.
      *
-     * @param uri         The content URI of the final destination file in the user's SAF folder.
-     * @param descriptor  An open read-write [ParcelFileDescriptor] the muxer writes into. When
-     *                    [stagingFile] is null this is the SAF file itself; when non-null it is the
-     *                    seekable temp file (the SAF provider refused `"rw"`). Must be closed after use.
+     * @param uri         The destination document, or **null until the recording is published**. A
+     *                    recording in progress deliberately has no file in the user's folder — see
+     *                    [createAudioFile] — so anything that needs a URI must wait for
+     *                    [publishStagedRecording].
+     * @param descriptor  An open read-write [ParcelFileDescriptor] the muxer writes into: always the
+     *                    seekable staging file. Must be closed after use.
      * @param displayName A human-readable path for logging (e.g. "Recordings/call_incoming_….webm").
-     * @param stagingFile Non-null when recording is staged to this internal temp file; the caller must
-     *                    copy it into [uri] via [writeStagedFileToUri] once the container is finalised.
+     * @param stagingFile Where the recording is being written. The caller publishes it with
+     *                    [publishStagedRecording] once the container is finalised.
+     * @param folderUri   The chosen folder, carried so the destination can be created at the end.
+     * @param fileName    The name the published file will take.
+     * @param mimeType    The MIME type the published file will take.
      */
     data class SafResult(
-        val uri: Uri,
+        val uri: Uri?,
         val descriptor: ParcelFileDescriptor,
         val displayName: String,
-        val stagingFile: File? = null
+        val stagingFile: File? = null,
+        val folderUri: Uri? = null,
+        val fileName: String? = null,
+        val mimeType: String? = null,
     )
 
     /**
@@ -70,21 +81,22 @@ object SafHelper {
      */
     fun createAudioFile(context: Context, folderUri: Uri, fileName: String, mimeType: String): SafResult? {
         val directory = DocumentFile.fromTreeUri(context, folderUri) ?: return null
+        // Checked here rather than discovered at finalize: a folder the user has revoked or unmounted
+        // must fail the recording immediately, while there is still someone to tell.
         if (!directory.canWrite()) return null
 
-        val newFile = directory.createFile(mimeType, fileName) ?: return null
-        val displayName = "${directory.name}/$fileName"
-
-        // Preferred path: the provider gives a seekable rw fd directly (no staging, no copy).
-        val directFd = runCatching { context.contentResolver.openFileDescriptor(newFile.uri, "rw") }
-            .getOrElse { e ->
-                AppLogger.w(TAG, "Provider refused \"rw\" for ${newFile.uri} (${e.message}); staging to internal temp")
-                null
-            }
-        if (directFd != null) return SafResult(newFile.uri, directFd, displayName)
-
-        // Fallback: record into an app-private seekable temp file, copy into the SAF file at finalize.
-        val tempFile = runCatching { File.createTempFile(STAGING_TEMP_PREFIX, STAGING_TEMP_SUFFIX, context.cacheDir) }
+        // ALWAYS staged, and the destination file is NOT created yet. Both halves matter:
+        //
+        //  - Muxing straight into the SAF file meant the user's folder held a **growing** file for the
+        //    whole call. Syncthing, FolderSync and Nextcloud upload what they find, so they captured
+        //    truncated recordings; upstream diagnosed exactly this.
+        //  - Creating the file up front and filling it at finalize is no better on its own: the folder
+        //    then holds a **0-byte** file for the whole call, and a sync tool that uploads once takes
+        //    the empty one.
+        //
+        // So nothing appears in the user's folder until there is a complete recording to put there.
+        // The cost is one extra copy of a few megabytes, which is nothing beside losing the call.
+        val tempFile = runCatching { File.createTempFile(STAGING_TEMP_PREFIX, STAGING_TEMP_SUFFIX, stagingDir(context)) }
             .getOrElse { e -> AppLogger.e(TAG, "Failed to create staging temp file", e); return null }
         val tempFd = runCatching {
             ParcelFileDescriptor.open(tempFile, ParcelFileDescriptor.MODE_READ_WRITE or ParcelFileDescriptor.MODE_TRUNCATE)
@@ -93,8 +105,61 @@ object SafHelper {
             runCatching { tempFile.delete() }
             return null
         }
-        AppLogger.i(TAG, "Staging recording to ${tempFile.name} → will copy into ${newFile.uri} at finalize")
-        return SafResult(newFile.uri, tempFd, displayName, stagingFile = tempFile)
+        AppLogger.i(TAG, "Staging recording to ${tempFile.name} → will publish into $folderUri at finalize")
+        return SafResult(
+            uri = null,
+            descriptor = tempFd,
+            displayName = "${directory.name}/$fileName",
+            stagingFile = tempFile,
+            folderUri = folderUri,
+            fileName = fileName,
+            mimeType = mimeType,
+        )
+    }
+
+    /**
+     * Where a recording lives while it is being made.
+     *
+     * `filesDir`, deliberately, **not** `cacheDir`. Android is free to delete a cache directory when
+     * storage runs low, and doing that to a call in progress would destroy the recording — the one
+     * failure this whole staging arrangement exists to prevent. A directory the system will not touch
+     * costs nothing extra, and the file is deleted as soon as it has been published.
+     */
+    private fun stagingDir(context: Context): File =
+        File(context.filesDir, STAGING_DIR_NAME).apply { mkdirs() }
+
+    /**
+     * Creates the destination file and writes [srcFile] into it, once there is a finished recording.
+     *
+     * Deliberately the *last* step. Until this runs, the user's folder contains nothing at all for this
+     * call — which is what makes a half-uploaded or empty recording impossible rather than unlikely.
+     *
+     * @return the new document's URI, or null if the file could not be created or written. On failure
+     *   the caller keeps the staged file rather than deleting it: an unpublished recording on internal
+     *   storage is recoverable, and a deleted one is not.
+     */
+    fun publishStagedRecording(
+        context: Context,
+        folderUri: Uri,
+        fileName: String,
+        mimeType: String,
+        srcFile: File,
+    ): Uri? {
+        val directory = DocumentFile.fromTreeUri(context, folderUri) ?: run {
+            AppLogger.e(TAG, "Cannot resolve $folderUri to publish $fileName")
+            return null
+        }
+        val newFile = directory.createFile(mimeType, fileName) ?: run {
+            AppLogger.e(TAG, "Could not create $fileName in $folderUri")
+            return null
+        }
+        if (!writeStagedFileToUri(context, srcFile, newFile.uri)) {
+            // Remove the empty document we just made, or the folder is left holding exactly the 0-byte
+            // file this change exists to prevent.
+            runCatching { newFile.delete() }
+            return null
+        }
+        return newFile.uri
     }
 
     /**

@@ -9,6 +9,7 @@
 package com.baba.callvault.services.recording
 
 import android.content.Context
+import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
@@ -115,7 +116,9 @@ object VoipRecordingCoordinator {
             reportMissed(context, R.string.voip_missed_not_ready, null)
             AppLogger.e(TAG, "VoIP recording refused by the daemon; discarding the empty file")
             runCatching { saf.descriptor.close() }
-            runCatching { DocumentFile.fromSingleUri(context, saf.uri)?.delete() }
+            // Nothing to delete in the user's folder: the destination is not created until a recording
+            // has actually been made. Only the staging file exists, and it holds nothing.
+            runCatching { saf.stagingFile?.delete() }
             return
         }
 
@@ -203,27 +206,45 @@ object VoipRecordingCoordinator {
             }.onFailure { AppLogger.w(TAG, "Could not warn about the one-sided recording: ${it.message}") }
         }
 
-        // Providers that cannot hand out a seekable rw fd (Downloads, SD card, some cloud/OEM
-        // providers) get a private staging file instead; without this copy the SAF entry stays empty.
-        val staging = saf?.stagingFile
-        if (staging != null) {
-            val copied = runCatching { SafHelper.writeStagedFileToUri(context, staging, saf.uri) }
-                .onFailure { AppLogger.e(TAG, "Staged VoIP copy failed: ${it.message}", it) }
-                .getOrDefault(false)
-            AppLogger.i(TAG, "VoIP staged copy ${if (copied) "ok" else "FAILED"} -> ${saf.uri}")
-            if (!runCatching { staging.delete() }.getOrDefault(false)) {
-                AppLogger.w(TAG, "The VoIP staging file ${staging.name} could not be deleted; it stays in the cache")
+        // Publish now, and only now. The recording was written to app-private storage for the whole
+        // call, so nothing has been visible in the user's folder until this moment — which is what
+        // stops a sync tool uploading a growing or an empty file. See SafHelper.createAudioFile.
+        val published: Uri? = saf?.let { result ->
+            val staging = result.stagingFile
+            val folder = result.folderUri
+            val outName = result.fileName
+            val mime = result.mimeType
+            if (staging == null || folder == null || outName == null || mime == null) {
+                AppLogger.e(TAG, "VoIP recording cannot be published: staging details are missing")
+                return@let null
             }
+            if (!staging.exists() || staging.length() == 0L) {
+                AppLogger.w(TAG, "VoIP capture produced no audio; nothing to publish")
+                runCatching { staging.delete() }
+                return@let null
+            }
+            val uri = SafHelper.publishStagedRecording(context, folder, outName, mime, staging)
+            if (uri != null) {
+                AppLogger.i(TAG, "Published VoIP recording (${staging.length()} bytes) -> $uri")
+                runCatching { staging.delete() }
+            } else {
+                // Kept, not deleted: an unpublished recording on internal storage is recoverable and a
+                // deleted one is not.
+                AppLogger.e(TAG, "Could not publish the VoIP recording; it stays at ${staging.path}")
+            }
+            uri
         }
+
         // The Home list reads CallVault's own catalog, not the folder — a file that is never recorded
         // here exists on disk but is invisible in the app. The carrier path does this from
         // RecordingForegroundService, which the VoIP path deliberately does not go through.
-        if (saf != null) {
+        if (saf != null && published != null) {
+            val safUri = published
             val name = saf.displayName.substringAfterLast('/')
             CoroutineScope(Dispatchers.IO).launch {
                 runCatching {
-                    val size = SafHelper.fileSize(context, saf.uri)
-                    RecordingCatalog.recordLocal(context, name, saf.uri, size, System.currentTimeMillis())
+                    val size = SafHelper.fileSize(context, safUri)
+                    RecordingCatalog.recordLocal(context, name, safUri, size, System.currentTimeMillis())
                     // Collect the speaker turns the capture just measured, before transcription is
                     // queued — the runner reads them from the database when it labels segments, so
                     // arriving afterwards would mean an unlabelled transcript.
@@ -240,7 +261,7 @@ object VoipRecordingCoordinator {
                     TranscriptionScheduler.transcribeAfterCallIfEnabled(context, name)
                     // Draw it now rather than when the user opens it: this phone has just come
                     // off a call, and they have not asked to wait for anything yet.
-                    RecordingExtrasRepository.precomputeWaveform(context, name, saf.uri)
+                    RecordingExtrasRepository.precomputeWaveform(context, name, safUri)
                     // SafHelper.fileSize() returns -1 specifically for "unknown" (a provider that can't
                     // report a length right now), never for "empty" — that's 0. CallOutcomes.of() cannot
                     // tell the two apart and would judge a negative size as EMPTY_FILE, so an unknowable
@@ -269,7 +290,7 @@ object VoipRecordingCoordinator {
                         }.onFailure { AppLogger.w(TAG, "Could not record setup health for '$name': ${it.message}") }
                     }
                     AppLogger.i(TAG, "VoIP recording catalogued: $name ($size bytes)")
-                    StorageRouter.route(context, saf.uri, name, codecMime)
+                    StorageRouter.route(context, safUri, name, codecMime)
                 }.onFailure { AppLogger.e(TAG, "Cataloguing the VoIP recording failed: ${it.message}", it) }
             }
         }

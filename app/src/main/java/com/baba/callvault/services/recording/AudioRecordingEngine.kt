@@ -115,6 +115,17 @@ class AudioRecordingEngine {
     private var stagingFile: File? = null
 
     /**
+     * Where the staged recording will be published when the container is finalised.
+     *
+     * Held rather than derived because the destination document does not exist yet: nothing is created
+     * in the user's folder until there is a complete recording to put there. See
+     * [SafHelper.createAudioFile].
+     */
+    private var pendingFolderUri: Uri? = null
+    private var pendingFileName: String? = null
+    private var pendingMimeType: String? = null
+
+    /**
      * The exact number of audio bytes captured this session, when known reliably — set only after a
      * STAGED recording is successfully copied to its destination (we measured the internal temp before
      * copying). Null on the direct-to-SAF path (there the destination file's own length is authoritative).
@@ -263,6 +274,9 @@ class AudioRecordingEngine {
         currentRecordingUri = safResult.uri
         outputPfd = safResult.descriptor
         stagingFile = safResult.stagingFile
+        pendingFolderUri = safResult.folderUri
+        pendingFileName = safResult.fileName
+        pendingMimeType = safResult.mimeType
 
         // Resilient recording (Option B) opt-in: when ENABLED and the source can be captured via a Java
         // AudioRecord (voice-call/mic/voice-communication/…), use the handoff pipeline — the daemon hands
@@ -596,25 +610,38 @@ class AudioRecordingEngine {
         val temp = stagingFile ?: return
         stagingFile = null
         val ctx = appContext
-        val dest = currentRecordingUri
-        if (ctx == null || dest == null) {
-            AppLogger.e(TAG, "Cannot finalise staged recording (context/uri missing); temp left at ${temp.path}")
+        val folder = pendingFolderUri
+        val name = pendingFileName
+        val mime = pendingMimeType
+        pendingFolderUri = null
+        pendingFileName = null
+        pendingMimeType = null
+
+        if (ctx == null || folder == null || name == null || mime == null) {
+            AppLogger.e(TAG, "Cannot publish staged recording (destination details missing); temp left at ${temp.path}")
             return
         }
         if (!temp.exists() || temp.length() == 0L) {
-            AppLogger.w(TAG, "Staged recording is empty — skipping copy (capture never produced audio)")
+            // Nothing is created in the user's folder in this case, which is the point: a capture that
+            // produced no audio leaves no misleading file behind.
+            AppLogger.w(TAG, "Staged recording is empty — publishing nothing (capture never produced audio)")
             runCatching { temp.delete() }
             return
         }
+
         val bytes = temp.length()
-        if (SafHelper.writeStagedFileToUri(ctx, temp, dest)) {
+        val published = SafHelper.publishStagedRecording(ctx, folder, name, mime, temp)
+        if (published != null) {
+            currentRecordingUri = published
             // Trust this measured count downstream — the destination (e.g. Google Drive) may report
             // length 0 right after the write, which would trip the empty-recording guard.
             lastCapturedByteCount = bytes
-            AppLogger.i(TAG, "Finalised staged recording → $dest ($bytes bytes)")
+            AppLogger.i(TAG, "Published recording → $published ($bytes bytes)")
             runCatching { temp.delete() }
         } else {
-            AppLogger.e(TAG, "Failed to copy staged recording into $dest; keeping temp at ${temp.path}")
+            // Kept, not deleted: an unpublished recording on internal storage can still be recovered,
+            // and a deleted one cannot.
+            AppLogger.e(TAG, "Failed to publish staged recording into $folder; keeping temp at ${temp.path}")
         }
     }
 
@@ -625,12 +652,16 @@ class AudioRecordingEngine {
     fun cancel(context: Context) {
         release()
         try {
+            // Usually there is nothing here: the destination is not created until a recording has been
+            // made, so a failed start leaves the user's folder untouched. Kept for the case where
+            // release() managed to publish before the cancel arrived.
             currentRecordingUri?.let { uri ->
                 DocumentFile.fromSingleUri(context, uri)?.delete()
             }
-            AppLogger.d(TAG, "Cleaned up empty file after start failure")
+            currentRecordingUri = null
+            AppLogger.d(TAG, "Cleaned up after start failure")
         } catch (e: Exception) {
-            AppLogger.w(TAG, "Failed to cleanup empty file", e)
+            AppLogger.w(TAG, "Failed to cleanup after start failure", e)
         }
     }
 }

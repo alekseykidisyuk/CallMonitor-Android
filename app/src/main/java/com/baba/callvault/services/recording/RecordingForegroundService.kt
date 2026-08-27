@@ -403,12 +403,17 @@ class RecordingForegroundService : Service() {
 
         // Capture metadata before releasing resources, in case we need to query call logs for the final file name if phone number is empty.
         val originalMetadata = activeSession.initializationMetadata
-        val uriToRename = activeSession.currentRecordingUri
         // Capture mimeType before release (currentCodecEnum is not cleared by release()).
         val mimeType = activeSession.currentCodecEnum.mimeType
 
         // Release all resources held by the recording session, stopping the ADB transport and finalizing the recording file.
         activeSession.release()
+
+        // Read the URI AFTER release, never before. The destination document does not exist while the
+        // call is in progress — the recording is staged to app-private storage and published by
+        // release() — so reading it earlier yields null and silently skips everything downstream,
+        // including the call-log rename fallback below.
+        val uriToRename = activeSession.currentRecordingUri
 
         // If the initialization metadata do not contain a phone number, we attempt to query the call log as a fallback.
         // TODO: Remove this fallback logic once we have a more reliable way to get phone number (using a privileged shell and hidden api)
