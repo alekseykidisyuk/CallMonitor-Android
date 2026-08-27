@@ -15,7 +15,6 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.net.Uri
 import com.baba.callvault.utils.AppLogger
-import java.io.ByteArrayOutputStream
 import java.nio.ByteOrder
 import kotlin.math.PI
 import kotlin.math.cos
@@ -27,10 +26,17 @@ import kotlin.math.sin
  * CallVault writes 48 kHz mono Opus, but stereo is handled too — recordings made before the mandatory
  * mono downmix (v1.4.4) are stereo and the back-catalogue still contains them.
  *
- * **Known limit, deliberately not solved here.** [decodeToMono16k] decodes the whole file into memory:
- * roughly 210 MB of transient buffers for a 10-minute call, and proportionally more beyond that. That
- * is fine for typical calls but not for very long ones, especially alongside a ~1 GB model. The fix is
- * chunked, VAD-segmented decoding, which the pipeline needs anyway for resumability.
+ * **Known limit, deliberately not solved here.** The whole file is still decoded into memory, so cost
+ * remains proportional to call length — but it is now one buffer of PCM plus the 16 kHz output, rather
+ * than the four overlapping full-length buffers this used to build. For fifteen minutes at 48 kHz that
+ * is roughly 144 MB where it was about 259 MB, which is what
+ * [TranscriptionLengthLimit.MAX_MINUTES] was really measuring. See [pcm16ToMono16k] and [PcmShortSink]
+ * for the two allocations that were removed.
+ *
+ * The remaining fix is chunked, VAD-segmented decoding, which the pipeline wants anyway for
+ * resumability. Note that whisper's own `offset_ms`/`duration_ms` are **not** a route to it: the mel is
+ * built for the whole file before those parameters are read, so looping over them costs full memory
+ * every pass and recomputes the mel each time.
  */
 object AudioDecoder {
 
@@ -47,8 +53,20 @@ object AudioDecoder {
      */
     private const val DURATION_TOLERANCE = 2.0
 
-    /** PCM plus the format it is *actually* in, which is the decoder's output, not the file's input. */
-    private data class DecodedPcm(val pcm: ShortArray, val sampleRate: Int, val channels: Int)
+    /**
+     * Decoded PCM-16, interleaved, plus the format it is *actually* in — the decoder's output, not
+     * the file's input.
+     *
+     * [pcm] is the accumulator's live buffer and is usually **longer than the audio** — read exactly
+     * [length] samples. Returning a trimmed array instead would mean allocating a second full-length
+     * buffer while the first is still alive, at the precise moment memory is tightest.
+     */
+    private data class DecodedPcm(
+        val pcm: ShortArray,
+        val length: Int,
+        val sampleRate: Int,
+        val channels: Int,
+    )
 
     /**
      * Interleaved PCM-16 to mono float. Extra channels are averaged in rather than dropped, so a
@@ -90,9 +108,16 @@ object AudioDecoder {
      * per-tap cost of converting a sample on demand instead of once up front is real but small against
      * whisper's own runtime, and it buys back a hundred megabytes.
      */
-    fun pcm16ToMono16k(pcm: ShortArray, channels: Int, inputRate: Int): FloatArray {
+    fun pcm16ToMono16k(
+        pcm: ShortArray,
+        channels: Int,
+        inputRate: Int,
+        /** Samples of [pcm] that are real audio; the decoder's buffer is normally longer. */
+        length: Int = pcm.size,
+    ): FloatArray {
         require(channels >= 1) { "channels must be >= 1, was $channels" }
-        val frames = pcm.size / channels
+        require(length in 0..pcm.size) { "length $length outside 0..${pcm.size}" }
+        val frames = length / channels
         if (frames == 0) return FloatArray(0)
 
         // Already at the target rate: widen to float and stop. Matches resampleTo16k returning its
@@ -346,7 +371,7 @@ object AudioDecoder {
             val decoded = decodePcm(extractor, inputFormat, mime, shouldStop)
             // Frame count from arithmetic rather than from a widened copy: the copy is exactly what
             // this path no longer makes. See pcm16ToMono16k.
-            val frames = decoded.pcm.size / decoded.channels.coerceAtLeast(1)
+            val frames = decoded.length / decoded.channels.coerceAtLeast(1)
 
             check(isPlausibleDuration(frames, decoded.sampleRate, expectedDurationUs)) {
                 "Decoded $frames frames at ${decoded.sampleRate} Hz " +
@@ -359,7 +384,7 @@ object AudioDecoder {
                 "Decoded $uri: $frames frames @ ${decoded.sampleRate} Hz, ${decoded.channels} ch " +
                     "(${frames * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms)",
             )
-            return pcm16ToMono16k(decoded.pcm, decoded.channels, decoded.sampleRate)
+            return pcm16ToMono16k(decoded.pcm, decoded.channels, decoded.sampleRate, decoded.length)
         } finally {
             extractor.release()
         }
@@ -383,10 +408,16 @@ object AudioDecoder {
         shouldStop: () -> Boolean
     ): DecodedPcm {
         val codec = MediaCodec.createDecoderByType(mime)
-        val sink = ByteArrayOutputStream()
 
         var sampleRate = inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
         var channels = inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+
+        // Sized from the declared duration so a whole call normally fits without ever growing. A
+        // container that lies only costs a reallocation; the capacity is capped so it cannot cost an
+        // OutOfMemoryError.
+        val declaredUs =
+            if (inputFormat.containsKey(MediaFormat.KEY_DURATION)) inputFormat.getLong(MediaFormat.KEY_DURATION) else 0L
+        val sink = PcmShortSink(PcmShortSink.capacityFor(declaredUs, sampleRate, channels))
 
         try {
             codec.configure(inputFormat, null, null, 0)
@@ -438,10 +469,11 @@ object AudioDecoder {
                     else -> if (outIndex >= 0) {
                         val buf = codec.getOutputBuffer(outIndex)!!
                         if (info.size > 0) {
-                            val chunk = ByteArray(info.size)
+                            // A view over the codec's own memory, sliced to exactly what it reported.
+                            // slice() does not inherit byte order, so it is set on the view.
                             buf.position(info.offset)
-                            buf.get(chunk, 0, info.size)
-                            sink.write(chunk)
+                            buf.limit(info.offset + info.size)
+                            sink.append(buf.slice().order(ByteOrder.LITTLE_ENDIAN), info.size)
                         }
                         codec.releaseOutputBuffer(outIndex, false)
                         if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) sawOutputEnd = true
@@ -453,9 +485,8 @@ object AudioDecoder {
             codec.release()
         }
 
-        val bytes = sink.toByteArray()
-        val shorts = ShortArray(bytes.size / 2)
-        java.nio.ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shorts)
-        return DecodedPcm(shorts, sampleRate, channels)
+        // The sink's buffer, not a trimmed copy: trimming would allocate a second full-length array
+        // at the one moment the first is still alive, which is what this rewrite removes.
+        return DecodedPcm(sink.array, sink.size, sampleRate, channels)
     }
 }
