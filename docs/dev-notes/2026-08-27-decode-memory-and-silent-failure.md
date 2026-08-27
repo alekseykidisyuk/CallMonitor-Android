@@ -92,3 +92,27 @@ feedback. Pre-existing, and it lands squarely on the silent-failure theme — lo
   these branches meet.**
 - 🚨 `offset_ms`/`duration_ms` are **not** a route to chunked decoding — confirmed twice at the source.
   `whisper_full` builds the mel for the whole file before those parameters are read.
+
+---
+
+## ✅ VERIFIED 2026-08-27 — Batch 1 (A2, A5, A6, A8)
+
+Confirmed by the maintainer on the OP12: an ordinary carrier call was fine, transcription showed the
+new foreground notification, and a VoIP call produced speaker labels for the first time.
+
+| Commit | Change | Status |
+|---|---|---|
+| `1590acc` | A6 — a call with no number no longer throws through the ignore check | ⚠️ ships unverified |
+| `5c09077` | A5 — `IntentCompat` for the Android 13 parcelable bug | ⚠️ **untestable here** |
+| `2288d59` | A2 — transcription and summarisation run in the foreground | ✅ VERIFIED 2026-08-27 |
+| `a475f17` | A8 — VoIP keeps the speaker separation it already had | ✅ VERIFIED 2026-08-27 |
+
+**Two are honestly unverified and must not be described otherwise.** A5 fixes a platform bug that only
+exists on Android 13; both test devices are newer, so no test on this hardware can exercise it — it
+ships on code review. A6 needs a call that arrives with no number (Teams, a withheld number, a short
+code), which cannot be summoned on demand; it may stay unverified indefinitely.
+
+**A8 was larger than the research described.** Feeding the detector was only half: nothing *collected*
+the turns for VoIP, because `SpeakerTurnsRepository.collectAfterCall` is called only from
+`RecordingForegroundService`, which the VoIP path deliberately bypasses. Both halves were needed, and
+either alone would have looked correct while producing nothing.
