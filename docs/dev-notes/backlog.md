@@ -1132,3 +1132,33 @@ It was the agreed next priority before VoIP took over.
 - **No instrumentation tests at all** (`app/src/androidTest` does not exist). 16 unit-test files cover
   parsing, version comparison and policy decisions; everything device-shaped is verified by hand on a
   real call. That is the honest state, and it is why regressions here are found by making phone calls.
+
+## A VoIP recording ends with no confirmation at all
+
+**Found 2026-08-27**, while checking whether the decode-memory fixes had broken something. They had not
+— this is pre-existing and has always been the case.
+
+The end-of-recording toast and vibration come from `RecordingNotificationHelper.handleStateChangeToasts`,
+which is called from exactly one place: `RecordingForegroundService`. `VoipRecordingCoordinator` carries
+an explicit comment that the VoIP path **deliberately does not go through** that service, so it never
+drives the state machine those toasts hang off. VoIP can raise an *error* notification and nothing else.
+
+So a VoIP call records successfully and tells the user nothing. The maintainer noticed the absence
+himself and assumed he had misremembered.
+
+This matters more than a missing toast normally would, because it sits on the failure mode the
+2026-08-27 research found users punish hardest: **a recording that silently does not happen looks
+exactly like one that silently does.** With no positive confirmation, the only way to learn a VoIP call
+was not captured is to go looking for it later.
+
+Options, cheapest first:
+
+1. Post a success notification from `VoipRecordingCoordinator` where it already posts errors, and
+   vibrate through the same helper (which already honours the user's vibration preference). Smallest
+   change; keeps the deliberate architectural split intact.
+2. Give the VoIP path its own lightweight state notion and reuse `handleStateChangeToasts`. More
+   consistent, more surface area.
+3. Fold VoIP into `RecordingForegroundService`. Largest, and undoes a split that exists for reasons.
+
+Related: the live input-level meter (`10-product-ux.md` D1) attacks the same problem from the other end
+— confirmation *during* the call rather than after it.

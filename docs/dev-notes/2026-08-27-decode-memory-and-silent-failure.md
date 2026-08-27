@@ -1,15 +1,14 @@
-# 🧪 VERIFYING — decode peak memory, and silent-failure reporting
+# ✅ VERIFIED 2026-08-27 — decode peak memory, and silent-failure reporting
 
-Three fixes on branch `fix/decode-peak-memory`. **None of them is verified.** Unit tests pass, the
-translation gate passes, the build installs — and none of that is the same as a real call on a real
-phone. This file stays at 🧪 VERIFYING until the maintainer reports back, at which point it becomes
-`✅ VERIFIED <date>` or `❌ NOT WORKING <date>` with what actually happened.
+Three fixes on branch `fix/decode-peak-memory`. **Confirmed by the maintainer on the OP12,
+2026-08-27**, on a real carrier call, a real 14:41 transcription and a real VoIP call. What was
+actually observed is recorded below — including the one thing that remains untested.
 
 | Commit | Change | Status |
 |---|---|---|
-| `cca1ee5` | Stop widening the whole call to float32 at 48 kHz | 🧪 VERIFYING |
-| `6836aff` | Decode straight into shorts instead of staging bytes | 🧪 VERIFYING |
-| `892509e` | A header-only file is no longer reported as a successful call | 🧪 VERIFYING |
+| `cca1ee5` | Stop widening the whole call to float32 at 48 kHz | ✅ VERIFIED 2026-08-27 |
+| `6836aff` | Decode straight into shorts instead of staging bytes | ✅ VERIFIED 2026-08-27 |
+| `892509e` | A header-only file is no longer reported as a successful call | ✅ VERIFIED 2026-08-27 (no regression) |
 
 ## What is claimed, and how strongly
 
@@ -39,20 +38,30 @@ same follow-on that would let carrier capture answer `farPartyHeard` instead of 
 this limit was *already* set once on an empirical wall nobody understood, and setting it again on a
 calculation would repeat the mistake. It moves only after a long call is measured on a device.
 
-## What settles it
+## What the maintainer observed, 2026-08-27
 
-1. **An ordinary two-sided call**, carrier. Confirm it records, both sides are audible, and the Home
-   status card says the setup is verified — i.e. the new floor has not started rejecting real
-   recordings. This is the regression risk of `892509e`.
-2. **Transcribe a call of roughly 10–15 minutes.** Previously this was at or over the wall. Confirm it
-   completes rather than dying, and that the transcript is not garbled — garbling would mean the
-   single-pass resampler is not equivalent after all, which the unit tests say it is.
-3. **A VoIP call**, since `VoipRecordingCoordinator` is the other caller of the outcome classifier.
-4. If a recording *does* come out empty or header-only, confirm the card now says the call contains no
-   audio rather than claiming success.
+1. **Ordinary carrier call — fine.** This was the real regression risk: the new 1 KiB floor could have
+   started rejecting genuine recordings. It did not. `892509e` is clear.
+2. **A 14:41 recording transcribed fine.** Hebrew quality is unchanged and still poor, which is the
+   known ceiling rather than anything these commits touch — see the transcription-quality research. What
+   matters here is that a long real call decoded and transcribed with no garbling, which is the
+   behavioural proof that the single-pass resampler is equivalent to the two-step path it replaced.
+3. **VoIP call recorded fine.** The other caller of the outcome classifier, also clear.
 
-Anything above 15 minutes still refuses before it starts, by design — that is the untouched limit, not
-a failure of these fixes.
+### Still untested, and honestly so
+
+**The extra headroom itself.** 14:41 sits *below* the untouched `MAX_MINUTES = 15`, so nothing has yet
+exercised the memory that was freed. The ~144 MB figure stays 📐 CALCULATED. Raising the limit needs a
+recording longer than fifteen minutes decoded on a device — until then the limit stays where it is.
+
+### Found while checking, not caused by these commits
+
+**A VoIP recording ends with no confirmation of any kind.** The maintainer noticed the end-of-recording
+toast and vibration were missing after a VoIP call and asked whether these changes broke it. They did
+not: `handleStateChangeToasts` is called from exactly one place, `RecordingForegroundService`, and
+`VoipRecordingCoordinator` carries an explicit comment that the VoIP path *deliberately* does not go
+through it. VoIP can raise an error notification and nothing else, so it has never produced that
+feedback. Pre-existing, and it lands squarely on the silent-failure theme — logged in the backlog.
 
 ## Related
 
