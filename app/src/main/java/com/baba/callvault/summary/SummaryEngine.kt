@@ -117,10 +117,38 @@ object SummaryEngine {
          */
         fun generate(prompt: String, maxTokens: Int, grammar: String? = null): String {
             aborted.set(false)
+            warnIfGrammarWouldBeIgnored(grammar)
             val raw = LlamaNative.generate(ptr, prompt, maxTokens, threads, grammar)
             if (aborted.get()) AppLogger.i(TAG, "A summary run was stopped before it finished")
             // Reasoning models think out loud first. That is theirs, not the user's.
             return SummaryText.stripReasoning(raw)
+        }
+
+        /**
+         * Says so, in the app's own log, when the grammar will be ignored.
+         *
+         * The native side already falls back to unconstrained generation and logs it — but to logcat,
+         * which rotates within minutes and is off by default, so in practice the app produced
+         * plausible-looking output with no constraint behind it and nothing to show for it afterwards.
+         * That is the shape of failure this project keeps being bitten by: not wrong, but silent.
+         *
+         * Checked per generate rather than once at load, because it costs a grammar parse against an
+         * already-loaded vocabulary — negligible beside the generation that follows — and because the
+         * alternative is a cached answer that could be wrong for the grammar actually passed.
+         *
+         * Only warns. Refusing to generate would turn a degraded summary into no summary, which is the
+         * worse of the two.
+         */
+        private fun warnIfGrammarWouldBeIgnored(grammar: String?) {
+            if (grammar.isNullOrEmpty()) return
+            val accepted = runCatching { LlamaNative.grammarAccepted(ptr, grammar) }.getOrDefault(true)
+            if (!accepted) {
+                AppLogger.w(
+                    TAG,
+                    "The summary grammar failed to parse — this run is UNCONSTRAINED, so the output " +
+                        "may not be valid JSON. This is a bug in SummaryGrammar, not in the model."
+                )
+            }
         }
     }
 }
