@@ -224,7 +224,27 @@ Java_com_baba_callvault_summary_LlamaNative_generate(
     ctx_params.abort_callback      = abort_requested;
     ctx_params.abort_callback_data = nullptr;
 
+    // Keep the attention cache at 8 bits instead of 16.
+    //
+    // The KV cache holds what the model has read so far, and its size grows with the context — on a
+    // long transcript it is a large fraction of what the summary run costs. Q8_0 halves it for a few
+    // percent of throughput, which is a good trade on a phone that is also holding a ~2.6 GB model.
+    //
+    // llama enables flash attention by itself when V is quantised (flash_attn_type defaults to AUTO),
+    // so this needs no separate switch. What it does need is the fallback below: quantised K and V
+    // both require the head dimension to divide by the block size, and a model where it does not
+    // makes llama_init_from_model return null — which here would mean every summary silently produces
+    // nothing at all. A memory optimisation must never be able to disable the feature.
+    ctx_params.type_k = GGML_TYPE_Q8_0;
+    ctx_params.type_v = GGML_TYPE_Q8_0;
+
     llama_context *ctx = llama_init_from_model(model, ctx_params);
+    if (ctx == nullptr) {
+        LOGW("context creation failed with a quantised KV cache; retrying at full precision");
+        ctx_params.type_k = GGML_TYPE_F16;
+        ctx_params.type_v = GGML_TYPE_F16;
+        ctx = llama_init_from_model(model, ctx_params);
+    }
     if (ctx == nullptr) {
         LOGW("could not create a context");
         return env->NewStringUTF("");
