@@ -7,6 +7,7 @@
     <string name="home_health_call_not_recorded_unnamed">Một cuộc gọi đã không được ghi âm — %1$s.</string>
     <string name="home_health_failed_daemon">Trình ghi âm đã dừng trong cuộc gọi gần nhất của bạn.</string>
     <string name="home_health_failed_empty">Cuộc gọi gần nhất của bạn tạo ra một bản ghi rỗng (0 byte).</string>
+    <string name="home_health_failed_no_audio">Cuộc gọi gần nhất đã được lưu nhưng không có âm thanh.</string>
     <string name="home_health_failed_one_sided">Chỉ có phía bạn được ghi trong cuộc gọi ứng dụng gần nhất.</string>
     <string name="home_health_missed_adb_pairing">Một cuộc gọi đã không được ghi âm — lúc đó phần thiết lập chưa hoàn tất, %1$s.</string>
     <string name="home_health_missed_adb_pairing_unnamed">Một cuộc gọi đã không được ghi âm — lúc đó phần thiết lập chưa hoàn tất.</string>

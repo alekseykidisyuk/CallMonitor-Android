@@ -7,6 +7,7 @@
     <string name="home_health_call_not_recorded_unnamed">Una llamada no se grabó: %1$s.</string>
     <string name="home_health_failed_daemon">La grabación se detuvo durante tu última llamada.</string>
     <string name="home_health_failed_empty">Tu última llamada produjo una grabación vacía (0 bytes).</string>
+    <string name="home_health_failed_no_audio">Tu última llamada se guardó, pero no contiene audio.</string>
     <string name="home_health_failed_one_sided">En tu última llamada de app solo se grabó tu lado.</string>
     <string name="home_health_missed_adb_pairing">Una llamada no se grabó: la configuración no estaba terminada en ese momento, %1$s.</string>
     <string name="home_health_missed_adb_pairing_unnamed">Una llamada no se grabó: la configuración no estaba terminada en ese momento.</string>

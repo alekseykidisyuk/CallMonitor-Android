@@ -1244,6 +1244,7 @@ private fun healthMessage(health: SetupHealth): String {
         is SetupHealth.LastCallFailed -> stringResource(
             when (health.reason) {
                 FailureReason.EMPTY_FILE -> R.string.home_health_failed_empty
+                FailureReason.NO_AUDIO -> R.string.home_health_failed_no_audio
                 FailureReason.DAEMON_DIED -> R.string.home_health_failed_daemon
                 FailureReason.ONE_SIDED -> R.string.home_health_failed_one_sided
             }

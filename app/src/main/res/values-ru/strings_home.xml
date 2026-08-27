@@ -7,6 +7,7 @@
     <string name="home_health_call_not_recorded_unnamed">Вызов не был записан — %1$s.</string>
     <string name="home_health_failed_daemon">Запись остановилась во время вашего последнего вызова.</string>
     <string name="home_health_failed_empty">Ваш последний вызов дал пустую запись (0 байт).</string>
+    <string name="home_health_failed_no_audio">Последний звонок сохранён, но не содержит звука.</string>
     <string name="home_health_failed_one_sided">В вашем последнем звонке в приложении записана только ваша сторона.</string>
     <string name="home_health_missed_adb_pairing">Вызов не был записан — настройка на тот момент не была завершена, %1$s.</string>
     <string name="home_health_missed_adb_pairing_unnamed">Вызов не был записан — настройка на тот момент не была завершена.</string>

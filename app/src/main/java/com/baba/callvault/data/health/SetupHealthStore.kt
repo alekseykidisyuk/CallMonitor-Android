@@ -12,7 +12,14 @@ import android.content.Context
 import androidx.core.content.edit
 
 /** Why a call failed to produce a usable recording. Persisted by name; unknown names read as null. */
-enum class FailureReason { EMPTY_FILE, DAEMON_DIED, ONE_SIDED }
+/**
+ * Why a call failed to produce a usable recording.
+ *
+ * [EMPTY_FILE] and [NO_AUDIO] are deliberately separate. Zero bytes means nothing was ever written;
+ * a header-only file means the recorder started, produced a container, and captured no samples. They
+ * have different causes and the status card should not blur them.
+ */
+enum class FailureReason { EMPTY_FILE, NO_AUDIO, DAEMON_DIED, ONE_SIDED }
 
 /**
  * Everything the status card knows about whether recording actually works. All timestamps are epoch

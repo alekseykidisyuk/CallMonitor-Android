@@ -29,9 +29,33 @@ object CallOutcomes {
     fun of(sizeBytes: Long, daemonDied: Boolean, farPartyHeard: Boolean?): CallOutcome = when {
         daemonDied -> CallOutcome.Failed(FailureReason.DAEMON_DIED)
         sizeBytes <= 0L -> CallOutcome.Failed(FailureReason.EMPTY_FILE)
+        // Before "was the far party heard", because a file with no audio in it at all is a bigger
+        // problem than which side is on it — and "only your side was recorded" would send the user
+        // to entirely the wrong fix.
+        sizeBytes < MIN_PLAUSIBLE_BYTES -> CallOutcome.Failed(FailureReason.NO_AUDIO)
         farPartyHeard == false -> CallOutcome.Failed(FailureReason.ONE_SIDED)
         else -> CallOutcome.Verified
     }
+
+    /**
+     * Below this, a file is a container header and not a recording.
+     *
+     * `sizeBytes > 0` was the entire test, and it let seven files of **exactly 98 bytes** through as
+     * successful recordings on the maintainer's phone in August 2026 — a bare header with no audio
+     * samples. Reporting success there is worse than reporting nothing: the user only finds out when
+     * they go looking for a call that mattered, and the research pass of 2026-08-27 found ~86 accounts
+     * of exactly that, including court evidence and medical calls.
+     *
+     * 1 KiB is chosen to sit *below* the smallest real recording rather than near the failures: one
+     * second at 8 kbps, the lowest bitrate CallVault offers, is about 1000 bytes of audio before the
+     * container is counted. A sub-second call could in principle land under it, but such a file holds
+     * nothing usable either, so the label is still honest.
+     *
+     * This catches a file with no samples. It does **not** catch a full-length file of silence — that
+     * needs a PCM peak check on the capture path, which is the same follow-on that would let carrier
+     * capture answer `farPartyHeard` instead of passing null.
+     */
+    private const val MIN_PLAUSIBLE_BYTES = 1_024L
 }
 
 /** Persists [outcome] and remembers that this call was observed at all. */
