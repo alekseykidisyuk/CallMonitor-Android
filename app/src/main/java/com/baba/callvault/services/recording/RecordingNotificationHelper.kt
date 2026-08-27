@@ -35,6 +35,20 @@ class RecordingNotificationHelper(private val context: Context) {
 
         const val SERVICE_NOTIFICATION_ID = 1
         const val ERROR_NOTIFICATION_ID = 2
+
+        /**
+         * The two-pulse buzz every recording state change uses: started, paused, resumed, ended.
+         *
+         * One definition rather than the same four literals repeated, so "the recording changed
+         * state" always feels the same — including on the VoIP path, which previously felt like
+         * nothing at all.
+         */
+        private val STATE_CHANGE_VIBRATION: VibrationEffect
+            get() = VibrationEffect.createWaveform(
+                longArrayOf(0, 300, 150, 300),
+                intArrayOf(0, 64, 0, 128),
+                -1,
+            )
     }
 
     /**
@@ -164,8 +178,7 @@ class RecordingNotificationHelper(private val context: Context) {
         when (newState) {
             is RecordingServiceState.Standby -> {
                 if (newState.metadata == null) {
-                    showToast(context.getString(R.string.recording_toast_ended))
-                    vibrate(VibrationEffect.createWaveform(longArrayOf(0, 300, 150, 300), intArrayOf(0, 64, 0, 128), -1))
+                    showRecordingEnded()
                 } else if (oldState !is RecordingServiceState.Standby) {
                     val dirLabel = newState.metadata.direction.labelResId.let { context.getString(it) }
                     showToast(context.getString(R.string.recording_toast_standby, dirLabel))
@@ -178,15 +191,15 @@ class RecordingNotificationHelper(private val context: Context) {
                 if (newState.isPaused && (!wasActive || !wasPaused)) {
                     // Recording was paused
                     showToast(context.getString(R.string.recording_toast_paused))
-                    vibrate(VibrationEffect.createWaveform(longArrayOf(0, 300, 150, 300), intArrayOf(0, 64, 0, 128), -1))
+                    vibrate(STATE_CHANGE_VIBRATION)
                 } else if (!newState.isPaused && wasPaused) {
                     // Recording was resumed
                     showToast(context.getString(R.string.recording_toast_resumed))
-                    vibrate(VibrationEffect.createWaveform(longArrayOf(0, 300, 150, 300), intArrayOf(0, 64, 0, 128), -1))
+                    vibrate(STATE_CHANGE_VIBRATION)
                 } else if (!newState.isPaused && !wasActive) {
                     // Recording was started
                     showToast(context.getString(R.string.recording_started))
-                    vibrate(VibrationEffect.createWaveform(longArrayOf(0, 300, 150, 300), intArrayOf(0, 64, 0, 128), -1))
+                    vibrate(STATE_CHANGE_VIBRATION)
                 }
             }
             else -> {}
@@ -196,6 +209,26 @@ class RecordingNotificationHelper(private val context: Context) {
     /**
      * Shows a short Toast message on the UI thread.
      */
+    /**
+     * Tells the user a recording just finished: the toast they know, and the same vibration.
+     *
+     * Extracted so the **VoIP path can say it too**. It could not before — this feedback hung off
+     * [RecordingServiceState] transitions, which only [RecordingForegroundService] drives, and
+     * `VoipRecordingCoordinator` deliberately does not go through that service. So an app call
+     * recorded successfully and told the user nothing at all.
+     *
+     * That is worse than a missing nicety. With no confirmation, a VoIP call that silently *failed*
+     * looks exactly like one that silently succeeded, and the only way to find out is to go looking
+     * for the recording later — which is the failure users report most bitterly.
+     *
+     * Both halves stay opt-out: [showToast] honours the toast preference and [vibrate] the vibration
+     * one, so this adds no new way to be noisy.
+     */
+    fun showRecordingEnded() {
+        showToast(context.getString(R.string.recording_toast_ended))
+        vibrate(STATE_CHANGE_VIBRATION)
+    }
+
     fun showToast(message: String) {
         if (!AppPreferences(context).isShowToastsEnabled()) return
 

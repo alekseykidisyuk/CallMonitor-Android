@@ -12,6 +12,7 @@ import android.content.Context
 import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.health.CallOutcome
 import com.baba.callvault.data.health.CallOutcomes
 import com.baba.callvault.data.health.Prerequisite
 import com.baba.callvault.data.health.SetupFingerprint
@@ -239,6 +240,19 @@ object VoipRecordingCoordinator {
                             SetupHealthStore(context).record(
                                 outcome, System.currentTimeMillis(), name, SetupFingerprint.of(AppPreferences(context))
                             )
+                            // Tell the user the app call was recorded, the same way a carrier call
+                            // does. Until now this path said nothing at all: the toast and vibration
+                            // hang off RecordingServiceState, which only RecordingForegroundService
+                            // drives, and this path deliberately does not go through it. A silent
+                            // success is indistinguishable from a silent failure, and the only way to
+                            // tell them apart was to go looking for the file days later.
+                            //
+                            // Only on Verified. Confirming a recording that is empty or one-sided
+                            // would be worse than saying nothing — those already raise their own
+                            // error notification, and two contradictory signals is not a fix.
+                            if (outcome is CallOutcome.Verified) {
+                                RecordingNotificationHelper(context).showRecordingEnded()
+                            }
                         }.onFailure { AppLogger.w(TAG, "Could not record setup health for '$name': ${it.message}") }
                     }
                     AppLogger.i(TAG, "VoIP recording catalogued: $name ($size bytes)")
