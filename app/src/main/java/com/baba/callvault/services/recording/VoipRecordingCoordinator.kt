@@ -17,6 +17,7 @@ import com.baba.callvault.data.health.CallOutcomes
 import com.baba.callvault.data.health.Prerequisite
 import com.baba.callvault.data.health.SetupFingerprint
 import com.baba.callvault.data.health.SetupHealthStore
+import com.baba.callvault.data.transcripts.SpeakerTurnsRepository
 import com.baba.callvault.data.health.record
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
 import com.baba.callvault.server.IRecorderService
@@ -223,6 +224,18 @@ object VoipRecordingCoordinator {
                 runCatching {
                     val size = SafHelper.fileSize(context, saf.uri)
                     RecordingCatalog.recordLocal(context, name, saf.uri, size, System.currentTimeMillis())
+                    // Collect the speaker turns the capture just measured, before transcription is
+                    // queued — the runner reads them from the database when it labels segments, so
+                    // arriving afterwards would mean an unlabelled transcript.
+                    //
+                    // The capture interleaves L=near, R=far and had that separation all along; it was
+                    // simply thrown away at the downmix, so app calls came out with no speaker labels
+                    // while carrier calls had them. `outgoing = false`: an app call has no reliable
+                    // direction here, and guessing wrong would teach the You/Them mapping the wrong
+                    // side, which is worse than leaving the sides neutral.
+                    runCatching {
+                        SpeakerTurnsRepository.collectAfterCall(context, name, outgoing = false)
+                    }.onFailure { AppLogger.w(TAG, "Could not collect VoIP speaker turns: ${it.message}") }
                     // Same order as the carrier path: catalog first, then queue.
                     TranscriptionScheduler.transcribeAfterCallIfEnabled(context, name)
                     // Draw it now rather than when the user opens it: this phone has just come

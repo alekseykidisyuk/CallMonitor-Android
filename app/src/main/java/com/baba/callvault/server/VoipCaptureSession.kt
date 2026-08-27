@@ -17,6 +17,8 @@ import android.media.MediaMuxer
 import android.media.MediaRecorder
 import android.os.ParcelFileDescriptor
 import com.baba.callvault.integrations.scrcpy.ScrcpyAudioCodec
+import com.baba.callvault.server.speakers.SpeakerTurnCodec
+import com.baba.callvault.server.speakers.SpeakerTurnDetector
 import com.baba.callvault.utils.AppLogger
 import com.baba.callvault.utils.PcmDownmix
 import java.util.concurrent.ArrayBlockingQueue
@@ -70,6 +72,12 @@ internal class VoipCaptureSession(
      */
     @Volatile var farPartyHeard: Boolean = false
         private set
+
+    /** Speaker turns for this capture, encoded; empty until the loop finishes. */
+    @Volatile private var speakerTurnsEncoded: String = ""
+
+    override fun speakerTurns(): String = speakerTurnsEncoded
+
     @Volatile private var farRecord: AudioRecord? = null
     @Volatile private var nearRecord: AudioRecord? = null
     @Volatile private var encoder: MediaCodec? = null
@@ -148,6 +156,11 @@ internal class VoipCaptureSession(
 
         val silence = ByteArray(CHUNK_BYTES)
         val stereo = ByteArray(CHUNK_BYTES * 2)
+        // Speaker turns, from the same interleaved buffer the encoder's downmix is about to flatten.
+        // This path built L=near/R=far all along and then threw the separation away — so app calls
+        // arrived with no speaker labels at all, while carrier calls had them, for no reason anyone
+        // had decided. Here the two sides are known exactly rather than inferred: near is the user.
+        val speakers = SpeakerTurnDetector(SAMPLE_RATE)
         val mono = ByteArray(CHUNK_BYTES)
         val info = MediaCodec.BufferInfo()
         var muxerStarted = false
@@ -173,6 +186,12 @@ internal class VoipCaptureSession(
                 if (!farPartyHeard && farPeak > FAR_SILENCE_THRESHOLD) farPartyHeard = true
                 // Mono for the encoder, so the whole bitrate goes to one channel — the same reasoning
                 // as the carrier path, where encoding stereo starved the far party.
+                // Before the downmix, which is the only moment the two directions still exist
+                // separately. Never allowed to break the recording: a diagnostic that costs a call
+                // would be a bad trade.
+                runCatching { speakers.accept(stereo, stereo.size) }
+                    .onFailure { AppLogger.w(TAG, "Speaker turn detection failed: ${it.message}") }
+
                 val len = PcmDownmix.stereoToMono(stereo, stereo.size, mono)
 
                 var inIdx = enc.dequeueInputBuffer(DEQUEUE_TIMEOUT_US)
@@ -196,6 +215,9 @@ internal class VoipCaptureSession(
             }
         } finally {
             readers.forEach { it.interrupt() }
+            // In the finally, so a capture that ends by exception still yields whatever turns it saw.
+            runCatching { speakerTurnsEncoded = SpeakerTurnCodec.encode(speakers.finish()) }
+                .onFailure { AppLogger.w(TAG, "Could not encode VoIP speaker turns: ${it.message}") }
         }
     }
 
