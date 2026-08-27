@@ -175,6 +175,27 @@ Java_com_baba_callvault_transcription_WhisperNative_transcribe(
     params.no_context       = true;
     params.single_segment   = false;
 
+    // How much gibberish counts as gibberish.
+    //
+    // When a decoded window looks degenerate, whisper throws it away and retries at a higher
+    // temperature. `entropy_thold` is the line between "dense but real speech" and "the model has
+    // started looping", measured as the gzip compression ratio of the text — a run of repeated words
+    // compresses far better than a sentence does.
+    //
+    // whisper.cpp's default is 2.4, inherited from OpenAI's reference implementation and never chosen
+    // for our audio. Two upstream reports arrived at 2.8 independently, and telephone speech is
+    // exactly the low-SNR case where the repetition loops this catches actually happen.
+    //
+    // Direction, checked at the source rather than assumed — the guard is
+    // `result_len > 32 && sequence.entropy < entropy_thold` → discard and retry. So **raising** this
+    // makes the test STRICTER: more sequences are judged degenerate and re-decoded.
+    //
+    // 📐 NOT MEASURED HERE, and the cost is real: stricter means more retries, so more wall-clock, and
+    // in principle a dense but genuine passage could be thrown away and re-decoded at a temperature
+    // that transcribes it worse. That is the risk to watch, and it is why this is one number that can
+    // be put back with one number.
+    params.entropy_thold    = 2.8f;
+
     // How much of the PREVIOUS windows' text is fed back as conditioning for the next one.
     //
     // `no_context` above does not control this, despite the name: it clears carry-over from a
