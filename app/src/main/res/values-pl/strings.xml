@@ -426,6 +426,10 @@
     <string name="transcription_batch_label">Połączenia na przebieg</string>
     <string name="transcription_batch_no_limit">Bez limitu</string>
     <string name="transcription_charging_subtitle">Transkrypcja mocno obciąża procesor i rozładuje baterię.</string>
+    <string name="heavy_work_channel_name">Przetwarzanie w tle</string>
+    <string name="heavy_work_notification_text">Telefon może się nagrzewać podczas tej operacji.</string>
+    <string name="heavy_work_transcribing">Trwa transkrypcja nagrania</string>
+    <string name="heavy_work_summarising">Trwa podsumowywanie nagrania</string>
     <string name="transcription_charging_title">Tylko podczas ładowania</string>
     <string name="transcription_confirm_subtitle">Pokazuje, ile to potrwa, i pozwala anulować.</string>
     <string name="transcribe_language_title">Jaki język?</string>

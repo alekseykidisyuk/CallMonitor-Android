@@ -10,10 +10,13 @@ package com.baba.callvault.summary
 
 import android.content.Context
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.transcripts.db.TranscriptDatabase
+import com.baba.callvault.transcription.HeavyWorkNotification
 import com.baba.callvault.transcription.TranscriptionEngine
 import com.baba.callvault.transcription.TranscriptionProgress
 import com.baba.callvault.transcription.model.ModelRepository
@@ -41,7 +44,21 @@ class SummaryWorker(
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
+    /**
+     * Asked for by WorkManager when this runs as expedited work, and used by [doWork] otherwise.
+     * See [HeavyWorkNotification]: this job holds a multi-gigabyte model for around ninety seconds,
+     * which is exactly the shape Android reclaims first at cached-process priority.
+     */
+    override suspend fun getForegroundInfo(): ForegroundInfo =
+        HeavyWorkNotification.forWork(applicationContext, R.string.heavy_work_summarising)
+
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        // Promote out of cached-process priority before the model is loaded. Best-effort: a phone
+        // that refuses the foreground service should still summarise, just more vulnerable to being
+        // killed — failing outright here would be worse than the risk it guards against.
+        runCatching { setForeground(getForegroundInfo()) }
+            .onFailure { AppLogger.w(TAG, "Could not run summarisation in the foreground: ${it.message}") }
+
         val displayName = inputData.getString(KEY_DISPLAY_NAME)
             ?: run {
                 // Should be impossible — WorkManager always carries the name — but a summary that

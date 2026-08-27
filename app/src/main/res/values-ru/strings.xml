@@ -426,6 +426,10 @@
     <string name="transcription_batch_label">Звонков за запуск</string>
     <string name="transcription_batch_no_limit">Без ограничения</string>
     <string name="transcription_charging_subtitle">Расшифровка сильно нагружает процессор и разряжает батарею.</string>
+    <string name="heavy_work_channel_name">Фоновая обработка</string>
+    <string name="heavy_work_notification_text">Телефон может нагреваться во время работы.</string>
+    <string name="heavy_work_transcribing">Расшифровка записи</string>
+    <string name="heavy_work_summarising">Создание краткого пересказа</string>
     <string name="transcription_charging_title">Только при зарядке</string>
     <string name="transcription_confirm_subtitle">Показывает, сколько это займёт, и позволяет отменить.</string>
     <string name="transcribe_language_title">Какой язык?</string>

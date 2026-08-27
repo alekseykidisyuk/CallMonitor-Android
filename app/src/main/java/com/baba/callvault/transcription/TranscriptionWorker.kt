@@ -10,8 +10,10 @@ package com.baba.callvault.transcription
 
 import android.content.Context
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.transcription.model.ModelRepository
 import com.baba.callvault.transcription.model.TranscriptionModel
@@ -34,7 +36,20 @@ class TranscriptionWorker(
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
+    /**
+     * Asked for by WorkManager when this runs as expedited work, and used by [doWork] otherwise.
+     * See [HeavyWorkNotification] for why a job this heavy must not run at cached-process priority.
+     */
+    override suspend fun getForegroundInfo(): ForegroundInfo =
+        HeavyWorkNotification.forWork(applicationContext, R.string.heavy_work_transcribing)
+
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        // Promote out of cached-process priority before allocating anything. Best-effort: a phone that
+        // refuses the foreground service should still transcribe, just more vulnerable to being killed
+        // — failing the whole job here would be a worse outcome than the risk it guards against.
+        runCatching { setForeground(getForegroundInfo()) }
+            .onFailure { AppLogger.w(TAG, "Could not run transcription in the foreground: ${it.message}") }
+
         val prefs = AppPreferences(applicationContext)
 
         val model = TranscriptionModel.fromId(prefs.getTranscriptionModelId())
