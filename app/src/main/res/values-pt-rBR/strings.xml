@@ -363,7 +363,7 @@
     <string name="summary_model_failed_space">Espaço insuficiente. Libere um pouco e tente de novo.</string>
     <string name="summary_model_failed_verify">O download estava corrompido e foi descartado. Tente de novo.</string>
     <string name="summary_model_installed">Baixado e pronto</string>
-    <string name="summary_model_licence">O resumidor é o Gemma, do Google, usado sob os Gemma Terms of Use. Ele é baixado do Google e não vem incluído no CallVault.</string>
+    <string name="summary_model_licence">O resumidor é o Gemma 4 do Google, usado sob a licença Apache 2.0. Ele é baixado separadamente em vez de vir incluído no CallVault.</string>
     <string name="summary_model_resume">Retomar o download</string>
     <string name="summary_model_resume_subtitle">%1$.1f GB de %2$.1f GB já baixados</string>
     <string name="summary_model_waiting">Aguardando o Wi-Fi</string>

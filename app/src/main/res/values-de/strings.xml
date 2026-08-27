@@ -360,7 +360,7 @@
     <string name="summary_model_failed_space">Nicht genug freier Speicher. Schaffen Sie Platz und versuchen Sie es erneut.</string>
     <string name="summary_model_failed_verify">Der Download war beschädigt und wurde verworfen. Bitte erneut versuchen.</string>
     <string name="summary_model_installed">Heruntergeladen und bereit</string>
-    <string name="summary_model_licence">Der Zusammenfasser ist Googles Gemma, genutzt unter den Gemma Terms of Use. Er wird von Google heruntergeladen und ist nicht Teil von CallVault.</string>
+    <string name="summary_model_licence">Der Zusammenfasser ist Googles Gemma 4, verwendet unter der Apache-2.0-Lizenz. Er wird separat heruntergeladen und ist nicht in CallVault enthalten.</string>
     <string name="summary_model_resume">Download fortsetzen</string>
     <string name="summary_model_resume_subtitle">%1$.1f GB von %2$.1f GB bereits heruntergeladen</string>
     <string name="summary_model_waiting">Warten auf WLAN</string>

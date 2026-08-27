@@ -360,7 +360,7 @@
     <string name="summary_model_failed_space">Nincs elég szabad hely. Szabadítson fel valamennyit, és próbálja újra.</string>
     <string name="summary_model_failed_verify">A letöltés sérült volt, ezért eldobtuk. Próbálja újra.</string>
     <string name="summary_model_installed">Letöltve és kész</string>
-    <string name="summary_model_licence">Az összefoglalót a Google Gemma modellje készíti, a Gemma Terms of Use feltételei szerint. A Google-tól töltődik le, és nem része a CallVaultnak.</string>
+    <string name="summary_model_licence">Az összefoglaló a Google Gemma 4 modellje, az Apache 2.0 licenc alatt. Külön töltődik le, nem a CallVault része.</string>
     <string name="summary_model_resume">Letöltés folytatása</string>
     <string name="summary_model_resume_subtitle">%1$.1f GB letöltve a %2$.1f GB-ból</string>
     <string name="summary_model_waiting">Várakozás Wi-Fire</string>

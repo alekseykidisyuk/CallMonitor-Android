@@ -607,8 +607,10 @@
 
     <!--
       Call summaries. The numbers here are measured on the OP12, not estimated, and the copy is
-      deliberately plain about the cost: 3.5 GB to fetch and 3.5 GB of memory to run rules the
+      deliberately plain about the cost: about 2.7 GB to fetch and 3.5 GB of memory to run rules the
       feature out on smaller phones, and someone deserves to know that before starting, not after.
+      Every size shown to the user is a placeholder filled from SummaryModel, so these numbers move
+      when the model does — do not hardcode one into a string.
     -->
     <string name="summary_model_download">Download the summariser</string>
     <string name="summary_model_download_subtitle">%1$.1f GB, over Wi-Fi only</string>
@@ -626,7 +628,7 @@
     <string name="summary_model_failed">The download did not finish. Try again.</string>
     <string name="summary_requirements_title">What this needs</string>
     <string name="summary_requirements_body">Summaries are written on your phone — nothing is sent anywhere. That costs a %1$.1f GB download and about %2$.1f GB of memory while it runs, so it needs a recent phone with room to spare. A short call takes a minute or two.</string>
-    <string name="summary_model_licence">The summariser is Google\'s Gemma, used under the Gemma Terms of Use. It is downloaded from Google\'s distribution rather than included in CallVault.</string>
+    <string name="summary_model_licence">The summariser is Google\'s Gemma 4, used under the Apache 2.0 licence. It is downloaded separately rather than included in CallVault.</string>
 
     <!--
       The summary card on the playback screen. "Generated from the transcript" is not decoration:

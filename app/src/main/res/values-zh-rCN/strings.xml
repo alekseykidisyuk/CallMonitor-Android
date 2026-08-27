@@ -360,7 +360,7 @@
     <string name="summary_model_failed_space">存储空间不足。请清理后重试。</string>
     <string name="summary_model_failed_verify">下载的文件已损坏并已丢弃。请重试。</string>
     <string name="summary_model_installed">已下载，可以使用</string>
-    <string name="summary_model_licence">摘要模型是 Google 的 Gemma，依据 Gemma Terms of Use 使用。它从 Google 下载，并不包含在 CallVault 中。</string>
+    <string name="summary_model_licence">摘要功能使用 Google 的 Gemma 4，遵循 Apache 2.0 许可。它单独下载，并不包含在 CallVault 中。</string>
     <string name="summary_model_resume">继续下载</string>
     <string name="summary_model_resume_subtitle">已下载 %1$.1f GB，共 %2$.1f GB</string>
     <string name="summary_model_waiting">等待 Wi-Fi</string>

@@ -360,7 +360,7 @@
     <string name="summary_model_failed_space">Недостаточно места. Освободите его и попробуйте снова.</string>
     <string name="summary_model_failed_verify">Загрузка повреждена и удалена. Попробуйте снова.</string>
     <string name="summary_model_installed">Скачан и готов</string>
-    <string name="summary_model_licence">Модуль сводок — это Gemma от Google, используемая по Gemma Terms of Use. Она скачивается у Google и не входит в состав CallVault.</string>
+    <string name="summary_model_licence">Краткие пересказы создаёт Gemma 4 от Google по лицензии Apache 2.0. Модель загружается отдельно и не входит в состав CallVault.</string>
     <string name="summary_model_resume">Продолжить скачивание</string>
     <string name="summary_model_resume_subtitle">Скачано %1$.1f ГБ из %2$.1f ГБ</string>
     <string name="summary_model_waiting">Ожидание Wi-Fi</string>

@@ -360,7 +360,7 @@
     <string name="summary_model_failed_space">Spazio insufficiente. Liberane un po\' e riprova.</string>
     <string name="summary_model_failed_verify">Il download era danneggiato ed è stato eliminato. Riprova.</string>
     <string name="summary_model_installed">Scaricato e pronto</string>
-    <string name="summary_model_licence">Il riassuntore è Gemma di Google, usato secondo i Gemma Terms of Use. Viene scaricato da Google e non è incluso in CallVault.</string>
+    <string name="summary_model_licence">Il generatore di riepiloghi è Gemma 4 di Google, usato con licenza Apache 2.0. Viene scaricato separatamente anziché incluso in CallVault.</string>
     <string name="summary_model_resume">Riprendi il download</string>
     <string name="summary_model_resume_subtitle">%1$.1f GB di %2$.1f GB già scaricati</string>
     <string name="summary_model_waiting">In attesa del Wi-Fi</string>

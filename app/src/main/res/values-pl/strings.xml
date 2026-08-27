@@ -360,7 +360,7 @@
     <string name="summary_model_failed_space">Za mało wolnego miejsca. Zwolnij trochę i spróbuj ponownie.</string>
     <string name="summary_model_failed_verify">Pobrany plik był uszkodzony i został odrzucony. Spróbuj ponownie.</string>
     <string name="summary_model_installed">Pobrany i gotowy</string>
-    <string name="summary_model_licence">Moduł podsumowań to Gemma od Google, używana na warunkach Gemma Terms of Use. Jest pobierana od Google i nie wchodzi w skład CallVault.</string>
+    <string name="summary_model_licence">Podsumowania tworzy Gemma 4 od Google, na licencji Apache 2.0. Model pobierany jest osobno, nie jest częścią CallVault.</string>
     <string name="summary_model_resume">Wznów pobieranie</string>
     <string name="summary_model_resume_subtitle">Pobrano %1$.1f GB z %2$.1f GB</string>
     <string name="summary_model_waiting">Czekanie na Wi-Fi</string>

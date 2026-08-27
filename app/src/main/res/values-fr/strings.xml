@@ -360,7 +360,7 @@
     <string name="summary_model_failed_space">Espace insuffisant. Libérez de la place et réessayez.</string>
     <string name="summary_model_failed_verify">Le téléchargement était corrompu et a été supprimé. Réessayez.</string>
     <string name="summary_model_installed">Téléchargé et prêt</string>
-    <string name="summary_model_licence">Le résumeur est Gemma, de Google, utilisé selon les Gemma Terms of Use. Il est téléchargé depuis Google et n\'est pas inclus dans CallVault.</string>
+    <string name="summary_model_licence">Le générateur de résumés est Gemma 4 de Google, utilisé sous licence Apache 2.0. Il est téléchargé séparément plutôt qu\'inclus dans CallVault.</string>
     <string name="summary_model_resume">Reprendre le téléchargement</string>
     <string name="summary_model_resume_subtitle">%1$.1f Go sur %2$.1f Go déjà téléchargés</string>
     <string name="summary_model_waiting">En attente du Wi-Fi</string>

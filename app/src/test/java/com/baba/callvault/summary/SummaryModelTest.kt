@@ -23,7 +23,7 @@ import org.junit.Test
  */
 class SummaryModelTest {
 
-    private val gemma = SummaryModel.GEMMA_4_E2B_Q4_K_M
+    private val gemma = SummaryModel.GEMMA_4_E2B_QAT_Q4_K_XL
 
     @Test
     fun `the download url ends with the file it is meant to fetch`() {
@@ -43,14 +43,15 @@ class SummaryModelTest {
     fun `the published length matches what was measured`() {
         // Verified twice: against the local copy used for every benchmark, and against the
         // content-length HuggingFace serves for this exact URL.
-        assertEquals(3_462_680_032L, gemma.sizeBytes)
+        // Verified 2026-08-27 against the Hugging Face tree API for this exact file.
+        assertEquals(2_620_370_976L, gemma.sizeBytes)
     }
 
     @Test
     fun `ids are stable and unique`() {
         // Stored beside a summary so a redo with a different model is distinguishable.
         assertEquals(SummaryModel.entries.size, SummaryModel.entries.map { it.id }.toSet().size)
-        assertEquals(gemma, SummaryModel.fromId("gemma-4-e2b-it-q4_k_m"))
+        assertEquals(gemma, SummaryModel.fromId("gemma-4-e2b-it-qat-q4_k_xl"))
     }
 
     @Test
@@ -63,9 +64,12 @@ class SummaryModelTest {
 
     @Test
     fun `the model is far too big to be shipped in the apk`() {
-        // Guards the decision rather than the number: anything of this size is downloaded, and the
-        // requirements modal has to say so before a user starts it on mobile data.
-        assertTrue("Bundling this would be a 3 GB APK", gemma.sizeBytes > 3_000_000_000L)
+        // Guards the decision rather than the number — which the old threshold did not: it was pinned
+        // at 3 GB, the previous model's size, so swapping to a smaller build failed a test whose stated
+        // purpose the smaller build still satisfies completely. A gigabyte is the honest line: anything
+        // above it is downloaded rather than bundled, and the requirements modal has to say so before a
+        // user starts it on mobile data.
+        assertTrue("A model this size must be downloaded, not bundled", gemma.sizeBytes > 1_000_000_000L)
     }
 
     @Test

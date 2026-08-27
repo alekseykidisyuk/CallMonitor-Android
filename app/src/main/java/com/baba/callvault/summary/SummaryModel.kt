@@ -38,25 +38,37 @@ enum class SummaryModel(
 ) : DownloadableModel {
 
     /**
-     * Gemma 4 E2B instruction-tuned, Q4_K_M.
+     * Gemma 4 E2B instruction-tuned, quantisation-**aware**-trained, Q4_K_XL.
      *
-     * Quantisation-aware trained for phones, which is why an effective-2B model holds up at int4
-     * where a post-hoc quantised one would not.
+     * The same model as before, quantised a better way. The previous build was post-hoc Q4_K_M: train
+     * at full precision, then squash. This one is Google's QAT release — the squashing is part of
+     * training, so the weights are chosen knowing they will end up at int4 rather than being rounded
+     * into it afterwards. Same architecture, same licence, **2.62 GB against 3.46 GB**: 842 MB less to
+     * download and to keep, on a feature whose single biggest cost to the user is the download.
+     *
+     * Still Q4_K, deliberately. That family has the repacked ARM GEMM kernels with an i8mm path; the
+     * Q5_0/Q5_1 family does not, so a nominally finer quantisation would run slower on the phones this
+     * is for. Verified 2026-08-27 from the Hugging Face API: ungated, `license:apache-2.0`,
+     * 2,620,370,976 bytes, sha256 `e5310072…`.
+     *
+     * `peakMemoryBytes` is NOT reduced by the same amount and is deliberately left where it is: llama
+     * repacks weights into anonymous memory at load, so the resident cost is not simply the file size.
+     * Lowering this on arithmetic would risk admitting the model onto a phone that cannot hold it.
      */
-    GEMMA_4_E2B_Q4_K_M(
-        id = "gemma-4-e2b-it-q4_k_m",
-        fileName = "google_gemma-4-E2B-it-Q4_K_M.gguf",
-        url = "https://huggingface.co/bartowski/google_gemma-4-E2B-it-GGUF/resolve/main/" +
-            "google_gemma-4-E2B-it-Q4_K_M.gguf",
-        sha256 = "923c4c86177d2ee173a7f5b4fa3d0ac65f5962ab15e6d6a5bc250aec4fd7bf7e",
-        sizeBytes = 3_462_680_032L,
+    GEMMA_4_E2B_QAT_Q4_K_XL(
+        id = "gemma-4-e2b-it-qat-q4_k_xl",
+        fileName = "gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf",
+        url = "https://huggingface.co/unsloth/gemma-4-E2B-it-qat-GGUF/resolve/main/" +
+            "gemma-4-E2B-it-qat-UD-Q4_K_XL.gguf",
+        sha256 = "e531007218dfab990486a5de7676a6932d6ea8dea233d1f698d7c21cf8a16889",
+        sizeBytes = 2_620_370_976L,
         peakMemoryBytes = 3_500_000_000L
     );
 
     companion object {
 
         /** The model used when the user has expressed no preference. There is only one. */
-        val DEFAULT = GEMMA_4_E2B_Q4_K_M
+        val DEFAULT = GEMMA_4_E2B_QAT_Q4_K_XL
 
         fun fromId(id: String?): SummaryModel? = entries.firstOrNull { it.id == id }
     }

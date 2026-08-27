@@ -360,7 +360,7 @@
     <string name="summary_model_failed_space">Không đủ dung lượng trống. Hãy giải phóng bớt rồi thử lại.</string>
     <string name="summary_model_failed_verify">Bản tải xuống bị hỏng và đã bị bỏ. Hãy thử lại.</string>
     <string name="summary_model_installed">Đã tải và sẵn sàng</string>
-    <string name="summary_model_licence">Trình tóm tắt là Gemma của Google, dùng theo Gemma Terms of Use. Nó được tải từ Google chứ không đi kèm CallVault.</string>
+    <string name="summary_model_licence">Trình tóm tắt là Gemma 4 của Google, dùng theo giấy phép Apache 2.0. Nó được tải riêng chứ không đi kèm CallVault.</string>
     <string name="summary_model_resume">Tiếp tục tải xuống</string>
     <string name="summary_model_resume_subtitle">Đã tải %1$.1f GB trong %2$.1f GB</string>
     <string name="summary_model_waiting">Đang chờ Wi-Fi</string>

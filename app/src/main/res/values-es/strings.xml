@@ -360,7 +360,7 @@
     <string name="summary_model_failed_space">No hay espacio suficiente. Libera algo e inténtalo de nuevo.</string>
     <string name="summary_model_failed_verify">La descarga estaba dañada y se ha descartado. Inténtalo de nuevo.</string>
     <string name="summary_model_installed">Descargado y listo</string>
-    <string name="summary_model_licence">El resumidor es Gemma, de Google, usado bajo los Gemma Terms of Use. Se descarga desde Google y no se incluye en CallVault.</string>
+    <string name="summary_model_licence">El resumidor es Gemma 4 de Google, utilizado bajo la licencia Apache 2.0. Se descarga por separado en lugar de incluirse en CallVault.</string>
     <string name="summary_model_resume">Reanudar la descarga</string>
     <string name="summary_model_resume_subtitle">%1$.1f GB de %2$.1f GB ya descargados</string>
     <string name="summary_model_waiting">Esperando al Wi-Fi</string>
