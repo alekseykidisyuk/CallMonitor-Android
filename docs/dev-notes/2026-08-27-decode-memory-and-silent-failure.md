@@ -48,7 +48,7 @@ calculation would repeat the mistake. It moves only after a long call is measure
    behavioural proof that the single-pass resampler is equivalent to the two-step path it replaced.
 3. **VoIP call recorded fine.** The other caller of the outcome classifier, also clear.
 
-### 🧪 VERIFYING — the limit was raised to 20 minutes on the strength of the arithmetic
+### ✅ VERIFIED 2026-08-27 — the 20-minute limit holds, and now it is measured
 
 14:41 sat *below* the old 15-minute guard, so nothing had exercised the freed memory — and the guard
 was the only thing preventing the test. The maintainer chose to raise it rather than add a test-only
@@ -58,8 +58,18 @@ override, on the grounds that a real long call is the only way to find the hones
 output. 20 minutes is 192 MB against a 256 MB heap; 25 would be 240 MB and leave nothing for the app,
 which is why it is 20 and not higher.
 
-**This is the one part still unproven.** If a call between 15 and 20 minutes dies rather than being
-refused, `MAX_MINUTES` is the number to lower — and that failure is worth more than the calculation.
+**MEASURED on the OP12, an 18:58 call transcribed successfully.** Java heap sampled every 30 s
+through the run: a peak of **132 MB observed**, settling to 95–111 MB while whisper worked, then
+released to ~9 MB on completion. Against a 256 MB ceiling that is comfortable, and the decode spike
+that precedes it got through unobserved but evidently survived. The arithmetic predicted ~182 MB for
+this length and reality came in below it, so the estimate is conservative in the safe direction.
+
+**The heap ceiling is the ROM's, not ours.** `dalvik.vm.heapgrowthlimit` is **256m on the OP12** and
+**384m on the OP9 Pro** — the weaker phone has the larger ceiling, because the limit is an OEM policy
+value and has nothing to do with installed RAM. For heap-cap questions the **OP12 is the stricter
+device**. `dalvik.vm.heapsize` is 512m on both, which is what `android:largeHeap="true"` would buy;
+we deliberately do not set it, because a larger heap makes the app a fatter target for the low-memory
+killer at exactly the moment a call is being recorded.
 
 ### Fixed after this round — VoIP now confirms a recording (`031079e`)
 
