@@ -12,6 +12,7 @@ import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.IntentCompat
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
@@ -203,15 +204,19 @@ class RecordingForegroundService : Service() {
 
         // Parse metadata if present in the intent (START/STANDBY)
         if (intent != null) {
-            val newMetadata = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(
-                    RecordingMetadata.EXTRA_METADATA,
-                    RecordingMetadata::class.java
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(RecordingMetadata.EXTRA_METADATA)
-            }
+            // IntentCompat, not the typed platform call. The typed `getParcelableExtra(name, Class)`
+            // has a platform bug on Android 13 (T) where it returns null for a custom Parcelable
+            // even though the extra is present, because the extras are unparcelled with the wrong
+            // class loader. Here that meant the metadata silently fell back to the previous value:
+            // a recording could carry the wrong call's details, or fail to stop when the call ended.
+            //
+            // The androidx shim picks the working path per API level, so this is the one call that
+            // is correct on every version. Fixed upstream in ShizuCallRecorder for the same reason.
+            val newMetadata = IntentCompat.getParcelableExtra(
+                intent,
+                RecordingMetadata.EXTRA_METADATA,
+                RecordingMetadata::class.java,
+            )
             if (newMetadata != null) {
                 currentMeta = newMetadata
             }
