@@ -20,6 +20,11 @@ package com.baba.callvault.transcription
  * once — streaming or chunked decode — at which point the limit can go. Agreed 2026-08-25: ship the
  * refusal now, do the decode work later.
  *
+ * 🚨 When that chunked decode is written: whisper's own `offset_ms`/`duration_ms` are **not** the route
+ * to it. `whisper_full` builds the mel for the whole file *before* those parameters are read, so a loop
+ * over them costs full memory on every pass and recomputes the mel each time. Slice the PCM before
+ * calling whisper instead. Confirmed twice, independently, at the source.
+ *
  * The threshold is a duration rather than a file size because size depends on codec and bit rate, while
  * the decoded buffer — the thing that actually exhausts the heap — depends only on length.
  *
@@ -32,8 +37,23 @@ package com.baba.callvault.transcription
  */
 object TranscriptionLengthLimit {
 
-    /** Recordings longer than this are refused. */
-    const val MAX_MINUTES: Int = 15
+    /**
+     * Recordings longer than this are refused.
+     *
+     * **15 → 20 on 2026-08-27**, after the decode path stopped making two full-length copies of every
+     * call. The old 15 was not chosen — it was found, empirically, at the point transcription started
+     * failing, and what it was really measuring was `AudioDecoder` widening the whole call to float32
+     * while still at 48 kHz. That allocation is gone, and so is the byte staging in `decodePcm`.
+     *
+     * 📐 The new number is **arithmetic, not a measurement**: peak is now about **9.6 MB per minute**
+     * — 5.76 MB of interleaved PCM plus 3.84 MB of 16 kHz float output — so 15 minutes costs 144 MB
+     * and 20 costs 192 MB against a 256 MB heap. 25 would be 240 MB, which leaves nothing for the app
+     * itself and is why this is 20 and not higher.
+     *
+     * **If a long call ever dies rather than being refused, this is the number to lower**, and that
+     * failure is worth more than the calculation: the honest ceiling can only be found by a real call.
+     */
+    const val MAX_MINUTES: Int = 20
 
     private const val MAX_MS: Long = MAX_MINUTES * 60L * 1000L
 

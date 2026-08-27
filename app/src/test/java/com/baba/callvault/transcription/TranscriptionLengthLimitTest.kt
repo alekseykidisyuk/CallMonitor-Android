@@ -22,7 +22,15 @@ import org.junit.Test
  */
 class TranscriptionLengthLimitTest {
 
-    private val fifteenMinutesMs = 15L * 60 * 1000
+    /**
+     * Derived from the constant, never a literal.
+     *
+     * These tests hardcoded 15 and broke the day the limit moved to 20 — which is backwards: the
+     * limit is explicitly a stopgap meant to change as the decode path improves, so a test that
+     * pins the *number* fails for the one reason that is not a bug. What is under test is the
+     * boundary behaviour, not the value.
+     */
+    private val limitMs = TranscriptionLengthLimit.MAX_MINUTES * 60L * 1000
 
     @Test
     fun `a short recording is fine`() {
@@ -32,12 +40,12 @@ class TranscriptionLengthLimitTest {
     @Test
     fun `exactly the limit is still allowed`() {
         // The limit is the longest length that works, not the shortest that fails.
-        assertFalse(TranscriptionLengthLimit.isTooLong(fifteenMinutesMs))
+        assertFalse(TranscriptionLengthLimit.isTooLong(limitMs))
     }
 
     @Test
     fun `a millisecond over the limit is refused`() {
-        assertTrue(TranscriptionLengthLimit.isTooLong(fifteenMinutesMs + 1))
+        assertTrue(TranscriptionLengthLimit.isTooLong(limitMs + 1))
     }
 
     @Test
@@ -50,8 +58,8 @@ class TranscriptionLengthLimitTest {
 
     @Test
     fun `the call-log duration in seconds is judged the same way`() {
-        assertFalse(TranscriptionLengthLimit.isTooLong(durationSeconds = 15L * 60))
-        assertTrue(TranscriptionLengthLimit.isTooLong(durationSeconds = 15L * 60 + 1))
+        assertFalse(TranscriptionLengthLimit.isTooLong(durationSeconds = TranscriptionLengthLimit.MAX_MINUTES * 60L))
+        assertTrue(TranscriptionLengthLimit.isTooLong(durationSeconds = TranscriptionLengthLimit.MAX_MINUTES * 60L + 1))
     }
 
     @Test
