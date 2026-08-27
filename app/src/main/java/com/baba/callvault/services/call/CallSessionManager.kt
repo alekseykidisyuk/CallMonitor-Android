@@ -456,32 +456,30 @@ class CallSessionManager private constructor(context: Context) {
     /**
      * Determines whether a call from/to a specific phone number should be ignored based on the user's contact filtering preferences.
      */
-    private fun shouldIgnoreContact(normalisedNumber: String, mode: AppPreferences.IgnoreContactsMode, ignoredNumbers: Set<String>): Boolean {
-        val shouldIgnore = when (mode) {
-            AppPreferences.IgnoreContactsMode.NONE  -> false
-            AppPreferences.IgnoreContactsMode.ALL   -> {
-                if (!PermissionChecks.hasContactsPermission(appContext)) {
-                    false
-                } else {
-                    val lookupUri = Uri.withAppendedPath(
-                        ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
-                        Uri.encode(normalisedNumber)
-                    )
-
-                    // Perform the query
-                    val cursor = appContext.contentResolver.query(lookupUri, arrayOf(ContactsContract.PhoneLookup._ID), null, null, null)
-
-                    // Check if we got any results
-                    cursor?.use {
-                        // Basically, if we can find a contact, we return the object, so it's not null/false, else it's false.
-                        it.moveToFirst()
-                    } ?: false
-                }
-            }
-            AppPreferences.IgnoreContactsMode.SELECTED ->
-                ignoredNumbers.any { normalisePhoneNumber(it) == normalisedNumber }
+    private fun shouldIgnoreContact(normalisedNumber: String, mode: AppPreferences.IgnoreContactsMode, ignoredNumbers: Set<String>): Boolean =
+        ContactIgnoreRule.shouldIgnore(normalisedNumber, mode, ignoredNumbers) {
+            isSavedContact(normalisedNumber)
         }
 
-        return shouldIgnore
+    /**
+     * Whether [normalisedNumber] belongs to a saved contact.
+     *
+     * Only reached in [AppPreferences.IgnoreContactsMode.ALL], and only for a non-blank number —
+     * [ContactIgnoreRule] guarantees both. It is allowed to throw; the rule catches it and records the
+     * call, because failing to record is the worse of the two mistakes.
+     */
+    private fun isSavedContact(normalisedNumber: String): Boolean {
+        if (!PermissionChecks.hasContactsPermission(appContext)) return false
+
+        val lookupUri = Uri.withAppendedPath(
+            ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+            Uri.encode(normalisedNumber)
+        )
+        val cursor = appContext.contentResolver.query(
+            lookupUri, arrayOf(ContactsContract.PhoneLookup._ID), null, null, null
+        )
+        // A contact was found if the cursor has a first row; a null cursor means the provider gave us
+        // nothing, which is not a match either.
+        return cursor?.use { it.moveToFirst() } ?: false
     }
 }
