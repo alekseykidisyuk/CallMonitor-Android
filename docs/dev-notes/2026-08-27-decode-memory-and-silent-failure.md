@@ -48,11 +48,23 @@ calculation would repeat the mistake. It moves only after a long call is measure
    behavioural proof that the single-pass resampler is equivalent to the two-step path it replaced.
 3. **VoIP call recorded fine.** The other caller of the outcome classifier, also clear.
 
-### Still untested, and honestly so
+### 🧪 VERIFYING — the limit was raised to 20 minutes on the strength of the arithmetic
 
-**The extra headroom itself.** 14:41 sits *below* the untouched `MAX_MINUTES = 15`, so nothing has yet
-exercised the memory that was freed. The ~144 MB figure stays 📐 CALCULATED. Raising the limit needs a
-recording longer than fifteen minutes decoded on a device — until then the limit stays where it is.
+14:41 sat *below* the old 15-minute guard, so nothing had exercised the freed memory — and the guard
+was the only thing preventing the test. The maintainer chose to raise it rather than add a test-only
+override, on the grounds that a real long call is the only way to find the honest ceiling.
+
+📐 Peak is about **9.6 MB per minute** — 5.76 MB of interleaved PCM plus 3.84 MB of 16 kHz float
+output. 20 minutes is 192 MB against a 256 MB heap; 25 would be 240 MB and leave nothing for the app,
+which is why it is 20 and not higher.
+
+**This is the one part still unproven.** If a call between 15 and 20 minutes dies rather than being
+refused, `MAX_MINUTES` is the number to lower — and that failure is worth more than the calculation.
+
+### Fixed after this round — VoIP now confirms a recording (`031079e`)
+
+The gap below was real and is closed: `showRecordingEnded()` is now shared, and the VoIP path calls it
+on a Verified outcome only. 🧪 VERIFYING — needs one app call to confirm the toast and vibration land.
 
 ### Found while checking, not caused by these commits
 
