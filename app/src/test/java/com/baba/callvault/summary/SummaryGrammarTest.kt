@@ -72,4 +72,59 @@ class SummaryGrammarTest {
 
         assertTrue(string.contains("[^"))
     }
+
+    // ---- what the grammar must never permit ----
+    //
+    // Three defects found on 2026-08-27, all the same shape: a rule describing the *shape* of JSON
+    // but not its *limits*, leaving the model free to do the one thing the grammar exists to stop.
+
+    @Test
+    fun `a raw control character cannot appear inside a string`() {
+        // Excluding only the quote and the backslash permitted a literal newline, tab or NUL inside a
+        // JSON string. That is invalid JSON by the spec, and produces a document that fails to parse
+        // for a reason no amount of prompt wording can prevent.
+        val charRule = SummaryGrammar.JSON.lineSequence().first { it.trimStart().startsWith("char ::=") }
+
+        assertTrue(
+            "char must exclude the C0 control range: $charRule",
+            charRule.contains("x00-") && charRule.contains("x1F")
+        )
+    }
+
+    @Test
+    fun `no rule uses unbounded repetition`() {
+        // A `*` anywhere in a rule that can carry content is a licence to generate for ever. The
+        // arrays were bounded in an earlier pass; the strings and the whitespace were not.
+        val offenders = SummaryGrammar.JSON.lineSequence()
+            .filter { it.contains("::=") }
+            .filter { Regex("""(char|item|summary|\])\*""").containsMatchIn(it) }
+            .toList()
+
+        assertTrue("these rules are unbounded: $offenders", offenders.isEmpty())
+    }
+
+    @Test
+    fun `every repetition bound stays under the threshold llama silently ignores`() {
+        // The trap that makes this worth a test of its own: llama-grammar.cpp rewrites a max_times
+        // ABOVE 2000 to UINT64_MAX, so an over-generous bound does not mean "large", it means
+        // "unlimited" — the original defect, restored invisibly. A future edit that raises a bound
+        // past 2000 to be helpful must fail here rather than in production.
+        val bounds = Regex("""\{0,(\d+)}""").findAll(SummaryGrammar.JSON)
+            .map { it.groupValues[1].toInt() }
+            .toList()
+
+        assertTrue("no bounds found at all", bounds.isNotEmpty())
+        bounds.forEach { assertTrue("$it is at or above llama's 2000 threshold and would be ignored", it < 2_000) }
+    }
+
+    @Test
+    fun `the summary bound is generous enough for a real answer`() {
+        // The bound exists to stop a runaway, not to truncate an honest answer: a language that needs
+        // more words must not be clipped for being itself.
+        val summaryRule = SummaryGrammar.JSON.lineSequence().first { it.trimStart().startsWith("summary ::=") }
+        val bound = Regex("""\{0,(\d+)}""").find(summaryRule)?.groupValues?.get(1)?.toInt()
+
+        assertTrue("the summary field must be bounded", bound != null)
+        assertTrue("a summary capped at $bound characters is too tight", bound!! >= 1_000)
+    }
 }
