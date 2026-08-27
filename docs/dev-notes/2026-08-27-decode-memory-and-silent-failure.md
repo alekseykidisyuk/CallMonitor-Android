@@ -116,3 +116,18 @@ code), which cannot be summoned on demand; it may stay unverified indefinitely.
 the turns for VoIP, because `SpeakerTurnsRepository.collectAfterCall` is called only from
 `RecordingForegroundService`, which the VoIP path deliberately bypasses. Both halves were needed, and
 either alone would have looked correct while producing nothing.
+
+## ✅ VERIFIED 2026-08-27 — Batch 2 (A3, A4)
+
+| Commit | Change | Status |
+|---|---|---|
+| `9227f80` | A3 — bound the strings and whitespace the grammar left open | ✅ VERIFIED 2026-08-27 |
+| `3453e30` | A4 — say so when the grammar is being ignored | ✅ VERIFIED 2026-08-27 (no regression) |
+
+**The trap worth carrying out of this one:** `llama-grammar.cpp` silently rewrites a repetition bound
+**above 2000** to `UINT64_MAX` — unbounded. A future edit that raises a limit to be generous would
+therefore restore the original defect invisibly. There is now a test that fails if any bound reaches
+2000, because this is not something anyone would catch by reading.
+
+A4's value is not that it changes output — it should not — but that a grammar which stops applying can
+no longer do so in silence.
