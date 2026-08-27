@@ -170,3 +170,24 @@ Two things this pass taught that the research description did not contain:
 A5 and A6 stay unverified rather than being rounded up. A5 fixes a platform bug that exists only on
 Android 13 and both test devices are newer; A6 needs a call that arrives with no number, which cannot be
 summoned on demand.
+
+---
+
+## 🚦 A Hebrew test cannot clear a quality change — open items
+
+Stated by the maintainer on 2026-08-27: *"in Hebrew this test isn't good enough, I will have to wait for
+feedbacks from people."*
+
+Hebrew sits at the bottom of what the model does well and is explicitly **not** the product target. A
+Hebrew transcript that "looks ok" says only that nothing exploded — real quality movement is invisible
+there, in either direction. So a Hebrew result can **falsify** a change (which is exactly how the
+beam-search regression was caught) but can never **confirm** one.
+
+**Quality changes therefore have two gates**: the maintainer confirms nothing broke, and then a native
+speaker of a target language reports. Do not close on the first, and do not let an item drift into
+"verified" because time passed. If feedback never arrives, it stays open — that is the honest state.
+
+| Change | Shipped | Still needs judging |
+|---|---|---|
+| **B3 — `entropy_thold` 2.4 → 2.8** (`3148337`) | 2026-08-27 | Whether the stricter repetition test helps or hurts. It discards and re-decodes more often; the risk is a dense but genuine passage thrown away and re-decoded worse. Hebrew showed "ok", which settles nothing. **One number to revert.** |
+| **B1 — QAT summariser** (`42f9f10`) | 2026-08-27 | Same model, better quantisation, 842 MB smaller. Should be equal or better; nobody has judged output in a target language. |
