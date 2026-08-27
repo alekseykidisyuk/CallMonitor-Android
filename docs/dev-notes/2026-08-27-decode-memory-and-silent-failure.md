@@ -131,3 +131,42 @@ therefore restore the original defect invisibly. There is now a test that fails 
 
 A4's value is not that it changes output — it should not — but that a grammar which stops applying can
 no longer do so in silence.
+
+## ✅ VERIFIED 2026-08-27 — Batch 3 (A7)
+
+| Commit | Change | Status |
+|---|---|---|
+| `f5d5063` | A7 — nothing appears in the user's folder until the recording is complete | ✅ VERIFIED 2026-08-27 |
+
+Confirmed on the OP12 across both capture paths: a carrier call and a VoIP call each recorded, landed
+in the folder, and **appeared only after the call ended** — which is the behaviour the change exists to
+produce, not merely a sign that nothing broke. Google Drive upload still works.
+
+Two things this pass taught that the research description did not contain:
+
+- **"Record private, publish complete" was not enough on its own.** Creating the destination up front
+  and filling it at the end still leaves a **0-byte file** in the folder for the whole call, and a sync
+  tool that uploads once takes the empty one. The destination had to not exist at all until there was a
+  finished recording. Truncated and empty are the same bug wearing different clothes.
+- **The dangerous part compiled cleanly.** `RecordingForegroundService` read `currentRecordingUri`
+  *before* `release()`, and publishing now happens inside release. Every test passed and it would have
+  silently skipped the call-log rename fallback. Isolating A7 into its own cycle is what made it
+  findable.
+
+## Where A0–A8 finished
+
+| | Change | Status |
+|---|---|---|
+| A0 | A header-only file is not a successful call | ✅ VERIFIED |
+| A1 | Decode peak memory 259 MB → 144 MB, limit 15 → 20 min | ✅ VERIFIED (measured: 132 MB peak on an 18:58 call) |
+| A2 | Workers run in the foreground | ✅ VERIFIED |
+| A3 | Grammar strings and whitespace bounded | ✅ VERIFIED |
+| A4 | An ignored grammar says so | ✅ VERIFIED |
+| A5 | `IntentCompat` for the Android 13 parcelable bug | ⚠️ **UNVERIFIED — untestable on this hardware** |
+| A6 | A call with no number does not throw | ⚠️ **UNVERIFIED — needs a no-number call** |
+| A7 | Nothing appears in the folder until complete | ✅ VERIFIED |
+| A8 | VoIP keeps its speaker separation | ✅ VERIFIED |
+
+A5 and A6 stay unverified rather than being rounded up. A5 fixes a platform bug that exists only on
+Android 13 and both test devices are newer; A6 needs a call that arrives with no number, which cannot be
+summoned on demand.
