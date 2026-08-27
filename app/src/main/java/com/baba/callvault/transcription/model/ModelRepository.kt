@@ -161,6 +161,46 @@ object ModelRepository {
         return renamed
     }
 
+    /**
+     * Deletes model files that no known model claims, returning the bytes freed.
+     *
+     * **Why this has to exist.** [delete] only ever removes a file whose name matches a model that is
+     * still in the code. So the moment a model entry changes its filename — a better quantisation, a
+     * newer build — the old file becomes invisible to the app and impossible to remove from inside it.
+     * Swapping the summariser on 2026-08-27 stranded **3.46 GB** on a real phone exactly this way.
+     *
+     * **The risk is entirely one-sided, and the design follows from that.** Failing to delete an orphan
+     * wastes space; deleting the wrong file destroys a multi-gigabyte download the user made over
+     * Wi-Fi. So [keep] is a **whitelist**: a file survives unless the caller has positively accounted
+     * for it, an empty whitelist deletes nothing at all rather than everything, and directories are
+     * never touched.
+     *
+     * A `.part` file is matched by its base name, so a download **in progress** — which is always for a
+     * model that is by definition known — is kept.
+     *
+     * @param dir  the models directory; a missing one is not an error.
+     * @param keep every filename any known model may occupy, from *all* model families sharing [dir].
+     */
+    fun pruneOrphans(dir: File, keep: Set<String>): Long {
+        // An empty whitelist means the caller could not build its list, never "delete everything".
+        if (keep.isEmpty() || !dir.isDirectory) return 0L
+
+        var freed = 0L
+        dir.listFiles().orEmpty()
+            .filter { it.isFile }
+            .filter { it.name.removeSuffix(PART_SUFFIX) !in keep }
+            .forEach { file ->
+                val size = file.length()
+                if (file.delete()) {
+                    freed += size
+                    AppLogger.i(TAG, "Removed the orphaned model file ${file.name} ($size bytes)")
+                } else {
+                    AppLogger.w(TAG, "Could not remove the orphaned model file ${file.name}")
+                }
+            }
+        return freed
+    }
+
     /** Deletes [model] and any partial download of it. Safe to call when nothing is installed. */
     fun delete(context: Context, model: DownloadableModel) {
         val dir = modelsDir(context)

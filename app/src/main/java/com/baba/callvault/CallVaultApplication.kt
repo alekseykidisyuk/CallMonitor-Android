@@ -16,7 +16,10 @@ import com.baba.callvault.services.recording.DaemonKeepAliveService
 import com.baba.callvault.services.debug.DebugNotificationHelper
 import com.baba.callvault.system.storage.RetentionScheduler
 import com.baba.callvault.system.storage.SyncScheduler
+import com.baba.callvault.summary.SummaryModel
 import com.baba.callvault.transcription.TranscriptionQueue
+import com.baba.callvault.transcription.model.ModelRepository
+import com.baba.callvault.transcription.model.TranscriptionModel
 import com.baba.callvault.system.updates.UpdateScheduler
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.services.recording.VoipCaptureController
@@ -40,6 +43,25 @@ class CallVaultApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         AppLogger.init(applicationContext)
+
+        // Reclaim model files no version of the app will ever use again.
+        //
+        // Model entries name the exact file they fetch, and `ModelRepository.delete` only removes a
+        // file some *current* entry claims. So changing a model's filename — a better quantisation, a
+        // newer build — leaves the old one behind, invisible to the app and impossible to remove from
+        // inside it. Swapping the summariser on 2026-08-27 stranded 3.46 GB on a real phone this way.
+        //
+        // The whitelist is built here rather than inside the repository because this is the only place
+        // that can see BOTH model families; the two share a directory, and a sweep that knew about only
+        // one would delete the other. Off the main thread: this touches the filesystem.
+        Thread {
+            runCatching {
+                val keep = TranscriptionModel.entries.map { it.fileName }.toSet() +
+                    SummaryModel.entries.map { it.fileName }.toSet()
+                val freed = ModelRepository.pruneOrphans(ModelRepository.modelsDir(applicationContext), keep)
+                if (freed > 0L) AppLogger.i(TAG, "Reclaimed $freed bytes of superseded model files")
+            }.onFailure { AppLogger.w(TAG, "Could not prune orphaned model files: ${it.message}") }
+        }.apply { isDaemon = true; start() }
 
         // Migration: pre-consolidation builds showed readiness from THREE sources (the transient launch
         // notifier id 4715 + the post-boot CallMonitorService id 4714), duplicating the single permanent
