@@ -70,6 +70,84 @@ object AudioDecoder {
     }
 
     /**
+     * Downmix to mono **and** resample to [TARGET_SAMPLE_RATE] in one pass, reading the 16-bit PCM
+     * directly.
+     *
+     * This exists for one reason: peak memory. [pcm16ToMonoFloat] followed by [resampleTo16k] holds a
+     * float32 copy of the entire call *at the input rate*, alongside the PCM it was widened from. At
+     * 48 kHz that is 4 bytes per sample where the source had 2, so fifteen minutes costs 86.4 MB of
+     * `ShortArray` plus 172.8 MB of `FloatArray` — **259 MB against a 256 MB heap**.
+     *
+     * That is where [TranscriptionLengthLimit.MAX_MINUTES] came from. The limit was set empirically at
+     * the point transcription started failing, and this allocation is what it was measuring; nobody
+     * realised the number had a cause. Reading the shorts directly and only ever materialising the
+     * 16 kHz output takes the peak to roughly 144 MB, because the resampled array is a third the
+     * length and the wide intermediate never exists.
+     *
+     * **Identical output to the two-step path, deliberately.** The anti-alias filter was tuned against
+     * thirteen real recordings from this device and must not shift, so this reproduces the same
+     * arithmetic in the same order rather than reimplementing it — see the equivalence tests. The
+     * per-tap cost of converting a sample on demand instead of once up front is real but small against
+     * whisper's own runtime, and it buys back a hundred megabytes.
+     */
+    fun pcm16ToMono16k(pcm: ShortArray, channels: Int, inputRate: Int): FloatArray {
+        require(channels >= 1) { "channels must be >= 1, was $channels" }
+        val frames = pcm.size / channels
+        if (frames == 0) return FloatArray(0)
+
+        // Already at the target rate: widen to float and stop. Matches resampleTo16k returning its
+        // input untouched, which is the branch this replaces.
+        if (inputRate == TARGET_SAMPLE_RATE) return FloatArray(frames) { monoAt(pcm, channels, it) }
+
+        val ratio = inputRate.toDouble() / TARGET_SAMPLE_RATE
+        val outLen = (frames / ratio).toInt()
+        val out = FloatArray(outLen)
+        val taps = if (ratio > 1.0) antiAliasKernel(inputRate) else null
+        for (i in 0 until outLen) {
+            val src = i * ratio
+            val a = src.toInt()
+            val frac = (src - a).toFloat()
+            val sa = filteredMonoAt(pcm, channels, frames, a, taps)
+            out[i] =
+                if (frac == 0f) sa
+                else sa * (1 - frac) + filteredMonoAt(pcm, channels, frames, a + 1, taps) * frac
+        }
+        return out
+    }
+
+    /**
+     * One frame of [pcm] as a mono sample, with exactly the arithmetic [pcm16ToMonoFloat] uses.
+     *
+     * The `coerceIn` is not redundant: `-32768 / 32767f` is `-1.00003`, and whisper is handed a range
+     * it is entitled to assume.
+     */
+    private fun monoAt(pcm: ShortArray, channels: Int, frame: Int): Float {
+        val base = frame * channels
+        var acc = 0f
+        for (c in 0 until channels) acc += pcm[base + c] / 32767f
+        return (acc / channels).coerceIn(-1f, 1f)
+    }
+
+    /** [filteredSampleAt], reading frames of [pcm] on demand instead of a pre-widened array. */
+    private fun filteredMonoAt(
+        pcm: ShortArray,
+        channels: Int,
+        frames: Int,
+        center: Int,
+        taps: FloatArray?,
+    ): Float {
+        if (taps == null) return monoAt(pcm, channels, center.coerceIn(0, frames - 1))
+        val start = center - taps.size / 2
+        var acc = 0f
+        if (start >= 0 && start + taps.size <= frames) {
+            for (k in taps.indices) acc += taps[k] * monoAt(pcm, channels, start + k)
+        } else {
+            for (k in taps.indices) acc += taps[k] * monoAt(pcm, channels, (start + k).coerceIn(0, frames - 1))
+        }
+        return acc
+    }
+
+    /**
      * Low-pass cutoff as a fraction of the 8 kHz Nyquist limit of [TARGET_SAMPLE_RATE]. 0.9 puts the
      * −3 dB knee near 6.8 kHz and −40 dB by 8.6 kHz: telephony speech loses nothing measurable (0.01 dB
      * below 3.4 kHz, 0.24 dB from 3.4–7 kHz on the recordings this was tuned against) while the
@@ -266,20 +344,22 @@ object AudioDecoder {
                 if (inputFormat.containsKey(MediaFormat.KEY_DURATION)) inputFormat.getLong(MediaFormat.KEY_DURATION) else 0L
 
             val decoded = decodePcm(extractor, inputFormat, mime, shouldStop)
-            val mono = pcm16ToMonoFloat(decoded.pcm, decoded.channels)
+            // Frame count from arithmetic rather than from a widened copy: the copy is exactly what
+            // this path no longer makes. See pcm16ToMono16k.
+            val frames = decoded.pcm.size / decoded.channels.coerceAtLeast(1)
 
-            check(isPlausibleDuration(mono.size, decoded.sampleRate, expectedDurationUs)) {
-                "Decoded ${mono.size} frames at ${decoded.sampleRate} Hz " +
-                    "(${mono.size * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms) but the container " +
+            check(isPlausibleDuration(frames, decoded.sampleRate, expectedDurationUs)) {
+                "Decoded $frames frames at ${decoded.sampleRate} Hz " +
+                    "(${frames * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms) but the container " +
                     "declares ${expectedDurationUs / 1000} ms — refusing to transcribe a malformed decode"
             }
 
             AppLogger.i(
                 TAG,
-                "Decoded $uri: ${mono.size} frames @ ${decoded.sampleRate} Hz, ${decoded.channels} ch " +
-                    "(${mono.size * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms)",
+                "Decoded $uri: $frames frames @ ${decoded.sampleRate} Hz, ${decoded.channels} ch " +
+                    "(${frames * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms)",
             )
-            return resampleTo16k(mono, decoded.sampleRate)
+            return pcm16ToMono16k(decoded.pcm, decoded.channels, decoded.sampleRate)
         } finally {
             extractor.release()
         }

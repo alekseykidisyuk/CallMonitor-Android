@@ -157,6 +157,83 @@ class AudioDecoderTest {
         }
     }
 
+    // ---- single-pass decode: the same audio, without the 48 kHz float array in the middle ----
+    //
+    // `pcm16ToMonoFloat` followed by `resampleTo16k` held a float32 copy of the whole call *at the
+    // input rate* — 172.8 MB for fifteen minutes at 48 kHz, alongside the 86.4 MB of PCM it was
+    // widened from. 259 MB against a 256 MB heap is where TranscriptionLengthLimit.MAX_MINUTES=15
+    // came from: the limit was measuring this allocation without anyone realising it.
+    //
+    // These tests pin the replacement to the pipeline it replaces. Equivalence is the whole point —
+    // the resampler's anti-alias filter was tuned against real recordings and must not shift.
+
+    @Test
+    fun `single pass matches the two-step pipeline it replaces, for mono 48k`() {
+        val pcm = ShortArray(4_800) { (kotlin.math.sin(it / 7.0) * 12_000).toInt().toShort() }
+
+        val twoStep = AudioDecoder.resampleTo16k(AudioDecoder.pcm16ToMonoFloat(pcm, 1), 48_000)
+        val singlePass = AudioDecoder.pcm16ToMono16k(pcm, 1, 48_000)
+
+        assertArrayEquals(twoStep, singlePass, 1e-6f)
+    }
+
+    @Test
+    fun `single pass matches the two-step pipeline for stereo, where the downmix also happens`() {
+        // Deliberately different content per channel, so an averaging mistake cannot cancel out.
+        val pcm = ShortArray(9_600) {
+            if (it % 2 == 0) (kotlin.math.sin(it / 5.0) * 9_000).toInt().toShort()
+            else (kotlin.math.cos(it / 11.0) * 4_000).toInt().toShort()
+        }
+
+        val twoStep = AudioDecoder.resampleTo16k(AudioDecoder.pcm16ToMonoFloat(pcm, 2), 48_000)
+        val singlePass = AudioDecoder.pcm16ToMono16k(pcm, 2, 48_000)
+
+        assertArrayEquals(twoStep, singlePass, 1e-6f)
+    }
+
+    @Test
+    fun `single pass matches on 44_1 kHz, the one rate where interpolation actually runs`() {
+        val pcm = ShortArray(4_410) { (kotlin.math.sin(it / 3.0) * 15_000).toInt().toShort() }
+
+        val twoStep = AudioDecoder.resampleTo16k(AudioDecoder.pcm16ToMonoFloat(pcm, 1), 44_100)
+        val singlePass = AudioDecoder.pcm16ToMono16k(pcm, 1, 44_100)
+
+        assertArrayEquals(twoStep, singlePass, 1e-6f)
+    }
+
+    @Test
+    fun `audio already at the target rate is converted but not resampled`() {
+        val pcm = ShortArray(1_600) { (it % 200 - 100).toShort() }
+
+        val twoStep = AudioDecoder.resampleTo16k(AudioDecoder.pcm16ToMonoFloat(pcm, 1), 16_000)
+        val singlePass = AudioDecoder.pcm16ToMono16k(pcm, 1, 16_000)
+
+        assertArrayEquals(twoStep, singlePass, 1e-6f)
+        assertEquals("no resampling should happen at the target rate", 1_600, singlePass.size)
+    }
+
+    @Test
+    fun `a 12 kHz tone still does not fold back through the single-pass path`() {
+        // The aliasing guarantee is the reason the filter exists; it has to survive the rewrite.
+        val loud = tone(12_000.0, 48_000, 0.5)
+        val pcm = ShortArray(loud.size) { (loud[it] * 20_000).toInt().toShort() }
+
+        val out = AudioDecoder.pcm16ToMono16k(pcm, 1, 48_000)
+
+        assertTrue("12 kHz must not reappear at 4 kHz", magnitudeAt(out, 4_000.0, 16_000) < 0.02f)
+    }
+
+    @Test
+    fun `single pass tolerates empty input and a trailing partial frame`() {
+        assertEquals(0, AudioDecoder.pcm16ToMono16k(ShortArray(0), 1, 48_000).size)
+        // Five shorts across two channels is two whole frames plus a stray one; the stray is dropped.
+        val odd = ShortArray(5) { 1_000 }
+        assertEquals(
+            AudioDecoder.resampleTo16k(AudioDecoder.pcm16ToMonoFloat(odd, 2), 48_000).size,
+            AudioDecoder.pcm16ToMono16k(odd, 2, 48_000).size,
+        )
+    }
+
     /** A full-scale sine, the input every aliasing assertion above is built on. */
     private fun tone(hz: Double, sampleRate: Int, seconds: Double): FloatArray {
         val n = (sampleRate * seconds).toInt()
