@@ -71,17 +71,87 @@ class TranscriptSchemaMigrationTest {
         val migrated = (
             TranscriptDatabase.MIGRATION_1_2_SQL +
                 TranscriptDatabase.MIGRATION_2_3_SQL +
-                TranscriptDatabase.MIGRATION_3_4_SQL
+                TranscriptDatabase.MIGRATION_3_4_SQL +
+                TranscriptDatabase.MIGRATION_4_5_SQL
             ).map(::sqlIn)
         val original = tablesAt(version = 1)
 
         tablesAt(version = LATEST_VERSION).forEach { table ->
             if (table in original) return@forEach
+            // Compared at the version the table was *introduced*, not at the latest one. A table can
+            // legitimately differ from its original `CREATE` later on, because a subsequent migration
+            // altered it — `call_summaries` gained `searchText` at v5 — and asserting against the
+            // newest shape would report that as a missing migration. What actually matters is that
+            // every table is created by some migration at the point it first exists; the ALTERs that
+            // follow are covered by the tests for the migrations that make them.
+            val introduced = firstVersionWith(table)
             assertTrue(
                 "No migration creates `$table`, so anyone upgrading never gets it",
-                migrated.any { createSqlFor(LATEST_VERSION, table) == it }
+                migrated.any { createSqlFor(introduced, table) == it }
             )
         }
+    }
+
+    /** The earliest exported version whose schema contains [table]. */
+    private fun firstVersionWith(table: String): Int =
+        (1..LATEST_VERSION).firstOrNull { table in tablesAt(it) }
+            ?: error("`$table` is in no exported schema at all")
+
+    @Test
+    fun `the search migration creates exactly the FTS tables Room expects at v5`() {
+        val statements = TranscriptDatabase.MIGRATION_4_5_SQL.map(::sqlIn)
+
+        assertTrue(createSqlFor(version = 5, table = "call_summaries_fts") in statements)
+        assertTrue(createSqlFor(version = 5, table = "recording_notes_fts") in statements)
+    }
+
+    @Test
+    fun `the search migration creates every FTS sync trigger Room expects`() {
+        // The triggers are the half of an external-content FTS table that `createSql` does not cover,
+        // and the half that fails quietly: without them the index is created, the schema validates,
+        // and the table simply never learns about anything written afterwards. Search would keep
+        // working for whatever was backfilled and silently miss every summary written from then on.
+        val statements = TranscriptDatabase.MIGRATION_4_5_SQL.map(::sqlIn)
+
+        listOf("call_summaries_fts", "recording_notes_fts").forEach { table ->
+            triggersFor(version = 5, table = table).forEach { trigger ->
+                assertTrue("Migration is missing: $trigger", trigger in statements)
+            }
+        }
+    }
+
+    @Test
+    fun `the search migration adds the summary column the FTS index reads`() {
+        // The FTS table is declared over `searchText`, so creating the index without the column is a
+        // crash on open rather than a missing feature.
+        assertTrue(
+            TranscriptDatabase.MIGRATION_4_5_SQL.any {
+                "ADD COLUMN `searchText`" in it && "call_summaries" in it
+            }
+        )
+    }
+
+    @Test
+    fun `existing notes are backfilled into the search index`() {
+        // A note written before v5 is a note the user typed themselves. The FTS triggers only fire on
+        // writes *after* they exist, so without an explicit backfill every note already on the phone
+        // would stay unsearchable for ever — the exact failure this feature exists to remove.
+        assertTrue(
+            TranscriptDatabase.MIGRATION_4_5_SQL.any {
+                "INSERT INTO `recording_notes_fts`" in it && "SELECT" in it
+            }
+        )
+    }
+
+    /** Room's own content-sync triggers for an external-content FTS [table] at [version]. */
+    private fun triggersFor(version: Int, table: String): List<String> {
+        val entities = schema(version).getJSONObject("database").getJSONArray("entities")
+        val entity = (0 until entities.length())
+            .map { entities.getJSONObject(it) }
+            .firstOrNull { it.getString("tableName") == table }
+            ?: error("v$version has no table `$table`")
+        val triggers = entity.getJSONArray("contentSyncTriggers")
+        return (0 until triggers.length()).map { sqlIn(triggers.getString(it)) }
     }
 
     /** Room's own `CREATE TABLE` for [table] at [version], with its table-name placeholder resolved. */
@@ -111,7 +181,7 @@ class TranscriptSchemaMigrationTest {
     private fun sqlIn(sql: String): String = sql.replace(Regex("\\s+"), " ").trim()
 
     private companion object {
-        const val LATEST_VERSION = 4
+        const val LATEST_VERSION = 5
         const val SCHEMA_DIR = "schemas/com.baba.callvault.data.transcripts.db.TranscriptDatabase"
     }
 }

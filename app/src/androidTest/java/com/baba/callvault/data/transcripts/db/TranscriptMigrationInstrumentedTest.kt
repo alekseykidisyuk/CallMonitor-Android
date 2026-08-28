@@ -44,7 +44,7 @@ class TranscriptMigrationInstrumentedTest {
     )
 
     @Test
-    fun migrates_v1_to_v4_without_losing_a_transcript() {
+    fun migrates_v1_to_v5_without_losing_a_transcript() {
         // A user who transcribed a call two versions ago and has not opened the app since.
         helper.createDatabase(DB_NAME, 1).use { db ->
             db.execSQL(
@@ -57,7 +57,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS)
 
         // Room validated the schema on open, which is most of the point. The rest is the data.
         db.query("SELECT state, language FROM transcripts WHERE displayName = 'old-call.ogg'").use {
@@ -87,7 +87,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query("SELECT text FROM recording_notes WHERE displayName = 'call.ogg'").use {
             assertTrue("the user's note did not survive the upgrade", it.moveToFirst())
@@ -106,7 +106,7 @@ class TranscriptMigrationInstrumentedTest {
         // time this table is ever touched.
         helper.createDatabase(DB_NAME, 2).close()
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS)
 
         db.execSQL(
             "INSERT INTO call_summaries (displayName, document, model, createdAt) " +
@@ -130,7 +130,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query("SELECT document FROM call_summaries WHERE displayName = 'call.ogg'").use {
             assertTrue("the summary did not survive the upgrade", it.moveToFirst())
@@ -144,7 +144,7 @@ class TranscriptMigrationInstrumentedTest {
         // table has to work the first time it is written to, which is the end of a real call.
         helper.createDatabase(DB_NAME, 3).close()
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS)
 
         db.execSQL(
             "INSERT INTO speaker_turns (displayName, turns, outgoing, observedMap, updatedAt) " +
@@ -165,13 +165,81 @@ class TranscriptMigrationInstrumentedTest {
         // Migrations use CREATE TABLE IF NOT EXISTS, and this is what says so. An upgrade that ran
         // half-way and was interrupted comes back through the same path.
         helper.createDatabase(DB_NAME, 2).close()
-        helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS).close()
+        helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS).close()
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query("SELECT count(*) FROM call_summaries").use {
             assertTrue(it.moveToFirst())
             assertEquals(0, it.getInt(0))
+        }
+    }
+
+    @Test
+    fun notes_written_before_v5_become_searchable() {
+        // The half of the search feature the migration is responsible for. FTS sync triggers only
+        // fire on writes made *after* they exist, so without the explicit backfill every note already
+        // on the phone would stay invisible to search for ever — silently, since the index would be
+        // present, correct, and simply empty.
+        helper.createDatabase(DB_NAME, 4).use { db ->
+            db.execSQL(
+                "INSERT INTO recording_notes (displayName, text, updatedAt) " +
+                    "VALUES ('call.ogg', 'remember to send the contract', 100)"
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS)
+
+        db.query(
+            "SELECT n.displayName FROM recording_notes AS n " +
+                "JOIN recording_notes_fts AS f ON f.docid = n.rowid " +
+                "WHERE recording_notes_fts MATCH 'contract'"
+        ).use {
+            assertTrue("a note written before the upgrade is not searchable after it", it.moveToFirst())
+            assertEquals("call.ogg", it.getString(0))
+        }
+    }
+
+    @Test
+    fun a_note_written_after_v5_is_indexed_by_the_triggers() {
+        // The other half: the triggers themselves. A backfill that worked while the triggers were
+        // missing would pass the test above and then never index anything again.
+        helper.createDatabase(DB_NAME, 4).close()
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS)
+
+        db.execSQL(
+            "INSERT INTO recording_notes (displayName, text, updatedAt) " +
+                "VALUES ('later.ogg', 'he mentioned a refund', 200)"
+        )
+
+        db.query(
+            "SELECT n.displayName FROM recording_notes AS n " +
+                "JOIN recording_notes_fts AS f ON f.docid = n.rowid " +
+                "WHERE recording_notes_fts MATCH 'refund'"
+        ).use {
+            assertTrue("the FTS sync triggers are not indexing new notes", it.moveToFirst())
+            assertEquals("later.ogg", it.getString(0))
+        }
+    }
+
+    @Test
+    fun a_summary_written_before_v5_keeps_its_document_and_gains_an_empty_search_column() {
+        // The summary text cannot be backfilled here — it lives inside a JSON document whose only
+        // parser is in Kotlin — so the migration's job is narrower: keep the document, add the column
+        // empty. Empty is what the repository later looks for to know what still needs indexing.
+        helper.createDatabase(DB_NAME, 4).use { db ->
+            db.execSQL(
+                "INSERT INTO call_summaries (displayName, document, model, createdAt) " +
+                    "VALUES ('call.ogg', '{\"intent\":\"chasing an invoice\"}', 'gemma', 100)"
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, *TranscriptDatabase.MIGRATIONS)
+
+        db.query("SELECT document, searchText FROM call_summaries WHERE displayName = 'call.ogg'").use {
+            assertTrue("the summary did not survive the upgrade", it.moveToFirst())
+            assertTrue("the stored document was altered", "chasing an invoice" in it.getString(0))
+            assertEquals("", it.getString(1))
         }
     }
 

@@ -51,6 +51,23 @@ data class CallSummary(
         .put(KEY_FACTS, JSONArray(keyFacts))
         .toString()
 
+    /**
+     * Every word a person wrote or the model said, and none of the scaffolding, for the search index.
+     *
+     * **Why this exists rather than indexing [toJson] directly.** The stored document is JSON, so its
+     * text contains the six key names and `org.json`'s escapes. Indexing it would make *summary* and
+     * *decisions* match every call that has a summary at all — a search box that returns everything is
+     * worse than one that returns nothing, because the user cannot tell it is broken.
+     *
+     * Fields are joined on newlines rather than spaces so that no phrase spans two of them: FTS
+     * tokenises on non-alphanumerics either way, but a phrase query (`"..."`) would otherwise match
+     * across a boundary that does not exist in the text anyone read.
+     */
+    fun searchableText(): String =
+        (listOf(intent, summary) + keyPoints + decisions + actionItems + keyFacts)
+            .filter { it.isNotBlank() }
+            .joinToString("\n")
+
     companion object {
 
         private const val KEY_INTENT = "intent"

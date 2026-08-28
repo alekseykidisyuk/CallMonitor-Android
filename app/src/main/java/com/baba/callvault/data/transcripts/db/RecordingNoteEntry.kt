@@ -9,6 +9,8 @@
 package com.baba.callvault.data.transcripts.db
 
 import androidx.room.Entity
+import androidx.room.Fts4
+import androidx.room.FtsOptions
 import androidx.room.PrimaryKey
 
 /**
@@ -43,3 +45,16 @@ data class RecordingWaveformEntry(
     val peaks: String,
     val updatedAt: Long = 0L
 )
+
+/**
+ * Full-text mirror of [RecordingNoteEntry.text].
+ *
+ * A note is the only text in this database a *person* wrote, which makes it the most deliberate thing
+ * in it: nobody types a note about a call they did not care about. Leaving it out of search while
+ * indexing every automatically-produced word around it had the priority exactly backwards.
+ *
+ * Indexed directly, with no companion column — unlike a summary, a note is already plain text.
+ */
+@Fts4(contentEntity = RecordingNoteEntry::class, tokenizer = FtsOptions.TOKENIZER_UNICODE61)
+@Entity(tableName = "recording_notes_fts")
+data class RecordingNoteFts(val text: String)

@@ -40,11 +40,13 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         TranscriptSegmentEntry::class,
         TranscriptSegmentFts::class,
         RecordingNoteEntry::class,
+        RecordingNoteFts::class,
         RecordingWaveformEntry::class,
         CallSummaryEntry::class,
+        CallSummaryFts::class,
         SpeakerTurnsEntry::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(TranscriptStateConverter::class)
@@ -132,13 +134,77 @@ abstract class TranscriptDatabase : RoomDatabase() {
         }
 
         /**
+         * v4 → v5: summaries and notes join the search index.
+         *
+         * Until now only transcript segments were searchable, which put the two most *deliberate*
+         * pieces of text in the database out of reach: the summary, where a call's outcome is
+         * written in words that were often never spoken aloud, and the note, the only text here a
+         * person typed themselves.
+         *
+         * **The summary is indexed through a new `searchText` column, never through `document`.**
+         * `document` is JSON, so indexing it would match on the key names — a search for *decisions*
+         * would return every call that has a summary at all. The column is added empty and
+         * backfilled from the parsed document by
+         * [com.baba.callvault.data.transcripts.TranscriptRepository]; existing rows therefore need no
+         * FTS insert here, because writing that column fires the AFTER_UPDATE trigger below.
+         *
+         * Notes are backfilled directly, since a note is already plain text and is in its final form
+         * the moment it is written.
+         *
+         * The `CREATE` statements and the four sync triggers per table are byte-for-byte what Room
+         * generates for these entities — copied from the exported schema rather than composed by
+         * hand, because Room validates the schema on open and a difference of one backtick is a
+         * crash on every upgrading device.
+         */
+        internal val MIGRATION_4_5_SQL = listOf(
+            "ALTER TABLE `call_summaries` ADD COLUMN `searchText` TEXT NOT NULL DEFAULT ''",
+
+            "CREATE VIRTUAL TABLE IF NOT EXISTS `call_summaries_fts` USING FTS4(" +
+                "`searchText` TEXT NOT NULL, tokenize=unicode61, content=`call_summaries`)",
+            "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_call_summaries_fts_BEFORE_UPDATE " +
+                "BEFORE UPDATE ON `call_summaries` BEGIN DELETE FROM `call_summaries_fts` " +
+                "WHERE `docid`=OLD.`rowid`; END",
+            "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_call_summaries_fts_BEFORE_DELETE " +
+                "BEFORE DELETE ON `call_summaries` BEGIN DELETE FROM `call_summaries_fts` " +
+                "WHERE `docid`=OLD.`rowid`; END",
+            "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_call_summaries_fts_AFTER_UPDATE " +
+                "AFTER UPDATE ON `call_summaries` BEGIN INSERT INTO `call_summaries_fts`" +
+                "(`docid`, `searchText`) VALUES (NEW.`rowid`, NEW.`searchText`); END",
+            "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_call_summaries_fts_AFTER_INSERT " +
+                "AFTER INSERT ON `call_summaries` BEGIN INSERT INTO `call_summaries_fts`" +
+                "(`docid`, `searchText`) VALUES (NEW.`rowid`, NEW.`searchText`); END",
+
+            "CREATE VIRTUAL TABLE IF NOT EXISTS `recording_notes_fts` USING FTS4(" +
+                "`text` TEXT NOT NULL, tokenize=unicode61, content=`recording_notes`)",
+            "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_recording_notes_fts_BEFORE_UPDATE " +
+                "BEFORE UPDATE ON `recording_notes` BEGIN DELETE FROM `recording_notes_fts` " +
+                "WHERE `docid`=OLD.`rowid`; END",
+            "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_recording_notes_fts_BEFORE_DELETE " +
+                "BEFORE DELETE ON `recording_notes` BEGIN DELETE FROM `recording_notes_fts` " +
+                "WHERE `docid`=OLD.`rowid`; END",
+            "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_recording_notes_fts_AFTER_UPDATE " +
+                "AFTER UPDATE ON `recording_notes` BEGIN INSERT INTO `recording_notes_fts`" +
+                "(`docid`, `text`) VALUES (NEW.`rowid`, NEW.`text`); END",
+            "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_recording_notes_fts_AFTER_INSERT " +
+                "AFTER INSERT ON `recording_notes` BEGIN INSERT INTO `recording_notes_fts`" +
+                "(`docid`, `text`) VALUES (NEW.`rowid`, NEW.`text`); END",
+
+            "INSERT INTO `recording_notes_fts`(`docid`, `text`) " +
+                "SELECT `rowid`, `text` FROM `recording_notes`"
+        )
+
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) = MIGRATION_4_5_SQL.forEach(db::execSQL)
+        }
+
+        /**
          * Every migration, in one place, used by both [get] and the migration test.
          *
          * One list rather than two so a migration that is written but never registered cannot
          * happen — that mistake would look exactly like a correct build until an upgrading user
          * opened the app, and this database has no destructive fallback to catch them.
          */
-        internal val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        internal val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 
         @Volatile
         private var INSTANCE: TranscriptDatabase? = null

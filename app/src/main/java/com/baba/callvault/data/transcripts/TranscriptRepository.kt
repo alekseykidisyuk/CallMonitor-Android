@@ -14,6 +14,7 @@ import com.baba.callvault.data.transcripts.db.TranscriptEntry
 import com.baba.callvault.data.transcripts.db.TranscriptSearchHit
 import com.baba.callvault.data.transcripts.db.TranscriptState
 import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
+import com.baba.callvault.summary.CallSummary
 import com.baba.callvault.transcription.TranscriptionScheduler
 import com.baba.callvault.utils.AppLogger
 import kotlinx.coroutines.flow.Flow
@@ -127,23 +128,89 @@ object TranscriptRepository {
     }
 
     /**
-     * Full-text search across every transcript.
+     * Full-text search across every transcript, **summary and note**.
      *
      * [query] is whatever the user typed, and is quoted before it reaches SQLite: `MATCH` takes an
      * expression, so an apostrophe or asterisk typed naturally would otherwise be a syntax error —
      * surfacing as a crash rather than as "no results".
+     *
+     * **One hit per recording, and a segment hit always wins.** The three indexes routinely match the
+     * same call — a word said aloud usually also reaches the summary — and only the segment hit knows
+     * *where* in the audio it was, so it is the one worth keeping. [mergeHits] does that ranking here
+     * rather than in the UI, which collapses by display name and would otherwise keep whichever hit
+     * happened to arrive last.
+     *
+     * Each index is queried in its own `runCatching`: a summary index that fails must not take the
+     * transcript results down with it, since transcripts are what search has always returned.
      */
     suspend fun search(context: Context, query: String): List<TranscriptSearchHit> {
         val prepared = quoteForFts(query)
         if (prepared.isEmpty()) return emptyList()
         if (!TranscriptDatabase.exists(context)) return emptyList()
 
-        return runCatching { dao(context).search(prepared) }
-            .getOrElse {
-                // Never let a search term take the screen down; report nothing found.
-                AppLogger.w(TAG, "Search failed: ${it.message}")
-                emptyList()
+        backfillSummarySearchText(context)
+
+        val db = TranscriptDatabase.get(context)
+        val segments = attempt("transcripts") { db.transcriptDao().search(prepared) }
+        val summaries = attempt("summaries") { db.summaryDao().search(prepared) }
+        val notes = attempt("notes") { db.noteDao().searchNotes(prepared) }
+        return mergeHits(segments, summaries, notes)
+    }
+
+    /**
+     * The three result sets as one, preferring the hit that can be acted on.
+     *
+     * Pure and internal so the preference is testable without a database — the interesting failure is
+     * a result that renders perfectly and seeks to the wrong place, which no crash would reveal.
+     */
+    internal fun mergeHits(
+        segments: List<TranscriptSearchHit>,
+        summaries: List<TranscriptSearchHit>,
+        notes: List<TranscriptSearchHit>
+    ): List<TranscriptSearchHit> {
+        val byName = LinkedHashMap<String, TranscriptSearchHit>()
+        (segments + summaries + notes).forEach { byName.putIfAbsent(it.displayName, it) }
+        return byName.values.toList()
+    }
+
+    /**
+     * Gives summaries written before v5 their `searchText`, once.
+     *
+     * The column cannot be filled by the migration itself: the text lives inside a JSON document and
+     * the only parser for it is `CallSummary.parse`, in Kotlin. So it is done on the first search
+     * instead — the moment it first matters, already off the main thread, and bounded by however many
+     * summaries the user has.
+     *
+     * A summary that no longer parses is left with an empty `searchText` and skipped rather than
+     * retried for ever. It stays unsearchable, which is the same position it was in before, and it is
+     * still readable on its own screen: the parse failure belongs to the stored document, and a search
+     * is not the place to discover it.
+     */
+    private suspend fun backfillSummarySearchText(context: Context) {
+        runCatching {
+            val dao = TranscriptDatabase.get(context).summaryDao()
+            val pending = dao.needingSearchText()
+            if (pending.isEmpty()) return
+
+            var filled = 0
+            pending.forEach { entry ->
+                val text = CallSummary.parse(entry.document)?.searchableText().orEmpty()
+                if (text.isNotBlank()) {
+                    dao.setSearchText(entry.displayName, text)
+                    filled++
+                }
             }
+            AppLogger.i(TAG, "Indexed $filled of ${pending.size} summary/summaries for search")
+        }.onFailure { AppLogger.w(TAG, "Summary search backfill failed: ${it.message}") }
+    }
+
+    private inline fun attempt(
+        what: String,
+        block: () -> List<TranscriptSearchHit>
+    ): List<TranscriptSearchHit> = runCatching(block).getOrElse {
+        // Never let a search term take the screen down; report nothing found for this index.
+        AppLogger.w(TAG, "Search over $what failed: ${it.message}")
+        emptyList()
     }
 
     /**

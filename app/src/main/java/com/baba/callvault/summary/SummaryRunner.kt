@@ -185,6 +185,7 @@ class SummaryRunner(
             CallSummaryEntry(
                 displayName = displayName,
                 document = summary.toJson(),
+                searchText = summary.searchableText(),
                 model = modelId,
                 createdAt = now
             )

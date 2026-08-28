@@ -33,6 +33,22 @@ interface RecordingNoteDao {
     @Query("DELETE FROM recording_notes WHERE displayName = :displayName")
     suspend fun deleteNote(displayName: String)
 
+    /**
+     * Notes whose text matches [query], as search hits with no timestamp.
+     *
+     * `startMs` is 0 for the same reason as a summary hit: a note is about the call, not about a
+     * moment in it.
+     */
+    @Query(
+        """
+        SELECT n.displayName AS displayName, 0 AS startMs, n.text AS snippet
+        FROM recording_notes AS n
+        JOIN recording_notes_fts AS f ON f.docid = n.rowid
+        WHERE recording_notes_fts MATCH :query
+        """
+    )
+    suspend fun searchNotes(query: String): List<TranscriptSearchHit>
+
     @Query("SELECT peaks FROM recording_waveforms WHERE displayName = :displayName")
     suspend fun waveform(displayName: String): String?
 
