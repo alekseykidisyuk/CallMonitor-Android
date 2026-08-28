@@ -262,3 +262,49 @@ hypothesis 3 (cold-start hallucination, predicting repetition clustered near sea
 it first, or every run silently reports OK while skipping on an assumption:
 
     adb shell appops set --uid com.baba.callvault.instrtest.test MANAGE_EXTERNAL_STORAGE allow
+
+### ✅ 2026-08-28 — the desktop A/B clears the chunking algorithm, and finds a shipping crash instead
+
+Run on the Mac against the maintainer's real 26:41 Hebrew call, using **whisper-cli built from our own
+vendored submodule** (ggml `371b5a75`, the commit the app ships) so the decoder is the same code.
+Whole-file arm: **73 seconds**. The same work on the phone had taken over thirty minutes and been
+killed twice.
+
+| | segments | chars | repeated lines |
+|---|---|---|---|
+| whole-file | 402 | 17 924 | 4 distinct, 5 extra |
+| chunked (6 passes, 5 min + 10 s run-up) | 398 | 17 815 | 4 distinct, 5 extra |
+
+Characters per five-minute bucket differ by −141 to +111 out of ~3 500, i.e. within ±4%, with **no
+bucket losing content**. Duplicate lines are *not* clustered at seams (1 near, 8 away) and are the same
+duplicates the whole-file arm produces.
+
+**Hypotheses 3 and 4 are both dead.** Cold starts do not hallucinate at the seams here, and the seams
+do not cost meaningful text. Combined with the seek probe, **all four original hypotheses are now
+eliminated and the algorithm itself is sound** — plan, run-up, stitch and drop-rule all behave.
+
+**So what broke on the phone was the Android implementation, not the design.** And the strongest
+candidate is no longer speculative: the same run uncovered a **hard crash on the normal transcription
+path** — `NewStringUTF` aborting the process on malformed UTF-8 from whisper (fixed in `3f1222e`). A
+run that dies mid-transcription is a perfectly good explanation for a transcript that does not match
+the audio, and Hebrew is exactly where that crash bites, because nearly every character is multi-byte.
+
+**Next step for B5, when it is picked up again:** re-land the chunked path and retest on the phone *with
+the UTF-8 fix in place*. If it is clean, the feature was only ever blocked by a bug in a different part
+of the code.
+
+### 🛠 Use the desktop harness for decoding questions
+
+`whisper-cli` builds from `third_party/whisper.cpp` with the Android SDK's own cmake
+(`~/Library/Android/sdk/cmake/3.22.1/bin/cmake`, since Homebrew cmake is not installed) and runs a
+26-minute call in **73 seconds** against **thirty-plus minutes on the phone**, with no ColorOS
+foreground trap, no instrumentation, and no risk to a daily driver. The maintainer suggested it after
+two failed device runs; it should have been the first move.
+
+It answers anything about *decoding* — chunking, thresholds, prompts, models. It cannot answer anything
+about Android: JNI, memory limits, the capture paths, or the crash above. Use the phone for those and
+only those.
+
+    ffmpeg -i call.ogg -ar 16000 -ac 1 -c:a pcm_s16le call.wav
+    whisper-cli -m <model> -f call.wav -l he -bs 1 --entropy-thold 2.8 \
+      --vad --vad-model app/src/main/assets/ggml-silero-v5.1.2.bin -oj -of out
