@@ -140,6 +140,49 @@ object TranscriptionEngine {
      *   as "no speech detected" rather than as a successful empty transcript; reporting only what was
      *   actually observed is the same rule the VoIP capture path follows.
      */
+    /**
+     * Transcribes one buffer of 16 kHz mono float, on an already-loaded model.
+     *
+     * **Only the chunking benchmark uses this.** Production transcribes a whole recording through
+     * [transcribe]; the orchestration that would cut a call into passes deliberately does not live in
+     * this class, because the first attempt at it shipped and made real transcripts worse — timestamps
+     * that did not match the audio, and repeated lines. It is back only where it can be measured
+     * against the whole-file result on the same recording, which is what should have settled it before
+     * it ever reached a phone.
+     *
+     * Exposed rather than duplicated: a benchmark that re-implemented the native call would be
+     * measuring its own copy of the pipeline, and the two would drift apart.
+     *
+     * @param audio 16 kHz mono, in [-1, 1].
+     * @return segments with times relative to **this buffer**, not to any larger recording.
+     */
+    fun transcribeBuffer(
+        ptr: Long,
+        audio: FloatArray,
+        language: String?,
+        prompt: String?,
+        vadModelPath: String?,
+        settings: DecodeSettings,
+    ): List<TranscriptSegment> {
+        whisperActive = true
+        try {
+            WhisperNative.transcribe(
+                ptr, audio, preferredThreadCount(), language, prompt,
+                vadModelPath, settings.beamSize, settings.maxTextCtx,
+            )
+        } finally {
+            whisperActive = false
+        }
+        val count = WhisperNative.segmentCount(ptr)
+        return (0 until count).map { i ->
+            TranscriptSegment(
+                startMs = WhisperNative.segmentStartMs(ptr, i),
+                endMs = WhisperNative.segmentEndMs(ptr, i),
+                text = WhisperNative.segmentText(ptr, i).trim(),
+            )
+        }.filter { it.text.isNotEmpty() }
+    }
+
     suspend fun transcribe(
         context: Context,
         uri: Uri,
