@@ -50,10 +50,15 @@ object TranscriptionLengthLimit {
      * and 20 costs 192 MB against a 256 MB heap. 25 would be 240 MB, which leaves nothing for the app
      * itself and is why this is 20 and not higher.
      *
+     * **20 → 60 on 2026-08-28, once transcription stopped decoding the whole call at once.** With
+     * chunked passes the peak no longer depends on call length at all — it is bounded by one chunk,
+     * about six minutes — so the old arithmetic that produced 20 no longer applies. Sixty is chosen as
+     * a length beyond which a *transcript* stops being the useful artefact, not as a memory ceiling.
+     *
      * **If a long call ever dies rather than being refused, this is the number to lower**, and that
      * failure is worth more than the calculation: the honest ceiling can only be found by a real call.
      */
-    const val MAX_MINUTES: Int = 20
+    const val MAX_MINUTES: Int = 60
 
     private const val MAX_MS: Long = MAX_MINUTES * 60L * 1000L
 

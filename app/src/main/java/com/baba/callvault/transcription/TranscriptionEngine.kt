@@ -111,7 +111,20 @@ object TranscriptionEngine {
      * opened at the last run's percentage rather than at nothing, which reads as a job already
      * nearly done. The doc above promised zero; only this keeps the promise.
      */
-    fun progressPercent(): Int = if (whisperActive) WhisperNative.progressPercent() else 0
+    fun progressPercent(): Int {
+        if (!whisperActive) return 0
+        // Scaled across the whole call, not the current chunk. whisper only knows about the slice it
+        // was handed, so on a long call an unscaled reading would climb to 100% and start again at
+        // every seam — which reads as a stall, or worse, as a finished job that then keeps running.
+        val total = chunkCount
+        if (total <= 1) return WhisperNative.progressPercent()
+        val done = chunkIndex * 100
+        return ((done + WhisperNative.progressPercent()) / total).coerceIn(0, 100)
+    }
+
+    /** How many passes this run takes, and which one is under way. Both 0 when nothing is running. */
+    @Volatile private var chunkCount: Int = 0
+    @Volatile private var chunkIndex: Int = 0
 
     /** True only while native decoding is actually under way — see [progressPercent]. */
     @Volatile
@@ -201,10 +214,16 @@ object TranscriptionEngine {
         // call, and that is exactly when other background work must stand aside.
         isRunning = true
         try {
-        val audio = AudioDecoder.decodeToMono16k(context, uri) { abortRequested.get() }
-        if (audio.isEmpty()) {
-            AppLogger.w(TAG, "Decoded no audio from $uri")
-            return@withContext emptyList()
+        // Cut the call into passes so peak memory stops depending on its length: one slice is decoded
+        // and held at a time. A call short enough to fit in a single pass produces exactly one chunk
+        // covering the whole file, which is byte-for-byte the behaviour that existed before — the
+        // common case pays none of this.
+        val durationMs = runCatching { AudioDecoder.durationMs(context, uri) }.getOrDefault(0L)
+        val plan = ChunkPlan.plan(durationMs)
+        chunkCount = plan.size
+        chunkIndex = 0
+        if (plan.size > 1) {
+            AppLogger.i(TAG, "Transcribing ${durationMs / 1000}s in ${plan.size} passes of up to ${ChunkPlan.TARGET_CHUNK_MS / 1000}s")
         }
 
         val ptr = WhisperNative.initContext(modelPath, context.applicationInfo.nativeLibraryDir)
@@ -215,42 +234,88 @@ object TranscriptionEngine {
             // lifetime, and this is the only place that needs it. Null when it could not be
             // unpacked, which decodes exactly as the app did before VAD existed.
             val vadModelPath = if (settings.useVad) VadModel.ensureExtracted(context) else null
-            AppLogger.i(TAG, "Transcribing ${audio.size / AudioDecoder.TARGET_SAMPLE_RATE}s with $threads threads, lang=${language ?: "auto"}, $settings")
-            // Bracketed as tightly as possible around the native call: outside it, the counter
-            // still holds whatever the previous run left behind.
-            whisperActive = true
-            try {
-                WhisperNative.transcribe(
-                    ptr, audio, threads, language, prompt,
-                    vadModelPath, settings.beamSize, settings.maxTextCtx,
-                )
-            } finally {
-                whisperActive = false
-            }
+            AppLogger.i(TAG, "Transcribing with $threads threads, lang=${language ?: "auto"}, $settings")
 
-            // Logged because a missing VAD model is not an error to whisper.cpp — it decodes
-            // everything instead — so zero here on a run that asked for VAD is the only signal that
-            // the trimming did not happen.
-            if (vadModelPath != null) {
-                AppLogger.i(TAG, "VAD kept ${WhisperNative.vadSegmentCount(ptr)} speech stretches")
-            }
+            val all = mutableListOf<TranscriptSegment>()
+            plan.forEachIndexed { index, chunk ->
+                chunkIndex = index
+                if (abortRequested.get()) return@forEachIndexed
 
-            val count = WhisperNative.segmentCount(ptr)
-            (0 until count)
-                .map { i ->
+                // Decoded here, inside the loop, and released at the end of it. This is the whole
+                // point: only one slice is ever on the heap.
+                // A single-pass plan asks for the WHOLE file explicitly, rather than for a range that
+                // happens to cover it. The difference is not cosmetic: a range decode cannot check the
+                // decoded length against the container's declared duration — a chunk is *meant* to be
+                // shorter — so naming a range here would quietly disable the guard that exists because
+                // a 45-second clip once transcribed for over eleven minutes.
+                val singlePass = plan.size == 1
+                val slice = AudioDecoder.decodeRange(
+                    context, uri,
+                    fromMs = if (singlePass) 0L else chunk.decodeFromMs,
+                    toMs = if (singlePass || chunk.endMs <= 0L) Long.MAX_VALUE else chunk.endMs,
+                ) { abortRequested.get() }
+
+                // The number that would have caught the first failure without a benchmark: where the
+                // slice was asked to begin, and where it says it really began. A chunk whose audio
+                // does not start where its timestamps claim shifts every line inside it, which reads
+                // exactly like "the transcript does not match the voice". Logged per pass so a bad
+                // run can be diagnosed from a debug report instead of from a description.
+                if (!singlePass) {
+                    AppLogger.i(
+                        TAG,
+                        "Pass ${index + 1}/${plan.size}: asked ${chunk.decodeFromMs} ms, decoded from " +
+                            "${slice.startMs} ms (drift ${slice.startMs - chunk.decodeFromMs} ms), " +
+                            "${slice.audio.size / AudioDecoder.TARGET_SAMPLE_RATE}s of audio",
+                    )
+                }
+
+                if (slice.audio.isEmpty()) {
+                    AppLogger.w(TAG, "Pass ${index + 1}/${plan.size} decoded no audio")
+                    return@forEachIndexed
+                }
+
+                // Bracketed as tightly as possible around the native call: outside it, the counter
+                // still holds whatever the previous run left behind.
+                whisperActive = true
+                try {
+                    WhisperNative.transcribe(
+                        ptr, slice.audio, threads, language, prompt,
+                        vadModelPath, settings.beamSize, settings.maxTextCtx,
+                    )
+                } finally {
+                    whisperActive = false
+                }
+
+                // Logged because a missing VAD model is not an error to whisper.cpp — it decodes
+                // everything instead — so zero here on a run that asked for VAD is the only signal
+                // that the trimming did not happen.
+                if (vadModelPath != null) {
+                    AppLogger.i(TAG, "VAD kept ${WhisperNative.vadSegmentCount(ptr)} speech stretches")
+                }
+
+                val count = WhisperNative.segmentCount(ptr)
+                val raw = (0 until count).map { i ->
                     TranscriptSegment(
                         startMs = WhisperNative.segmentStartMs(ptr, i),
                         endMs = WhisperNative.segmentEndMs(ptr, i),
                         text = WhisperNative.segmentText(ptr, i).trim(),
                     )
-                }
-                .filter { it.text.isNotEmpty() }
-                .also { AppLogger.i(TAG, "Produced ${it.size} segments from $count raw") }
+                }.filter { it.text.isNotEmpty() }
+
+                // Stitched against where the audio REALLY started, which a seek may have moved earlier
+                // than the plan asked for. Using the planned offset instead would skew every timestamp
+                // in the chunk by up to one sync interval.
+                all += ChunkPlan.stitch(raw, chunk.copy(decodeFromMs = slice.startMs))
+            }
+
+            all.also { AppLogger.i(TAG, "Produced ${it.size} segments across ${plan.size} pass(es)") }
         } finally {
             WhisperNative.freeContext(ptr)
         }
         } finally {
             isRunning = false
+            chunkCount = 0
+            chunkIndex = 0
         }
     }
 }

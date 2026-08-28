@@ -190,8 +190,14 @@ class TranscriptionQueueTest {
     }
 
     private companion object {
-        /** Comfortably past [TranscriptionLengthLimit.MAX_MINUTES], so the test does not track it. */
-        const val OVER_THE_LIMIT_MS = 50L * 60 * 1000
+        /**
+         * Comfortably past [TranscriptionLengthLimit.MAX_MINUTES], **derived from it**.
+         *
+         * This was a literal 50 minutes and broke the day the limit moved past it — the second time a
+         * test pinned this number instead of the behaviour. The limit is documented as a stopgap meant
+         * to change; a test that fails when it changes fails for the one reason that is not a bug.
+         */
+        val OVER_THE_LIMIT_MS = (TranscriptionLengthLimit.MAX_MINUTES + 5L) * 60 * 1000
 
         /** What a container that declares no duration reports. */
         const val UNKNOWN_LENGTH_MS = 0L
