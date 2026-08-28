@@ -64,6 +64,65 @@ class ChunkSeamBenchmark {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
+    /**
+     * Seek accuracy alone — no model, no transcription, seconds rather than an hour.
+     *
+     * Two of the four hypotheses behind the chunking failure are about the **decoder**, not about
+     * whisper, and both are answered by one number per chunk: the gap between where a slice was asked
+     * to start and where the decoder says it actually started.
+     *
+     *  - **drift ≈ 0** → the seek reports an absolute timestamp. The stitching design holds, and the
+     *    damage came from whisper, not from the offsets. Go read the transcripts.
+     *  - **drift ≈ −(requested)** → the timestamp is rebased to the seek point, so it is ~0 for every
+     *    chunk and every offset after the first is wrong. That is the bug, on its own, and no
+     *    transcript needs reading.
+     *  - **drift small and consistently negative** (tens of ms) → codec priming after a seek.
+     *
+     * Run this FIRST. An hour of transcription to learn something a decode answers in seconds is the
+     * same mistake as shipping the feature on unit tests that never touched audio.
+     *
+     *     adb shell am instrument -w \
+     *       -e class com.baba.callvault.transcription.ChunkSeamBenchmark#seekDrift \
+     *       -e recording /sdcard/Download/cv-bench.ogg \
+     *       com.baba.callvault.instrtest.test/androidx.test.runner.AndroidJUnitRunner
+     */
+    @Test
+    fun seekDrift() {
+        val args = InstrumentationRegistry.getArguments()
+        val recordingPath = args.getString("recording")
+        assumeTrue("pass -e recording <path to an audio file>", recordingPath != null)
+        val recording = File(recordingPath!!)
+        assumeTrue("no such recording: $recordingPath", recording.isFile)
+
+        val uri = Uri.fromFile(recording)
+        val durationMs = AudioDecoder.durationMs(context, uri)
+        val plan = ChunkPlan.plan(durationMs)
+
+        val report = StringBuilder()
+        report.appendLine("CallVault seek-drift probe")
+        report.appendLine("recording: ${recording.name}, ${durationMs / 1000}s, ${plan.size} chunk(s)")
+        report.appendLine()
+        report.appendLine("chunk  requested-from  decoded-from  drift-ms  samples  seconds-of-audio")
+
+        plan.forEachIndexed { index, chunk ->
+            val slice = AudioDecoder.decodeRange(context, uri, fromMs = chunk.decodeFromMs, toMs = chunk.endMs)
+            val seconds = slice.audio.size.toLong() / AudioDecoder.TARGET_SAMPLE_RATE
+            report.appendLine(
+                "%5d  %14d  %12d  %8d  %7d  %16d".format(
+                    index, chunk.decodeFromMs, slice.startMs,
+                    slice.startMs - chunk.decodeFromMs, slice.audio.size, seconds,
+                )
+            )
+        }
+
+        report.appendLine()
+        report.appendLine("drift ~0 => seek is absolute, stitching design is sound, blame whisper")
+        report.appendLine("drift ~ -(requested) => timestamp is rebased; THIS is the bug")
+
+        File(outputDir(), "chunkseam-drift.txt").writeText(report.toString())
+        android.util.Log.i("CV:Bench", report.toString())
+    }
+
     @Test
     fun wholeFileVersusChunked() = runBlocking {
         val args = InstrumentationRegistry.getArguments()
