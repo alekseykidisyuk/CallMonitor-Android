@@ -191,3 +191,44 @@ speaker of a target language reports. Do not close on the first, and do not let 
 |---|---|---|
 | **B3 — `entropy_thold` 2.4 → 2.8** (`3148337`) | 2026-08-27 | Whether the stricter repetition test helps or hurts. It discards and re-decodes more often; the risk is a dense but genuine passage thrown away and re-decoded worse. Hebrew showed "ok", which settles nothing. **One number to revert.** |
 | **B1 — QAT summariser** (`42f9f10`) | 2026-08-27 | Same model, better quantisation, 842 MB smaller. Should be equal or better; nobody has judged output in a target language. |
+
+---
+
+## ❌ NOT WORKING 2026-08-28 — B5, chunked transcription (`67f177f`, reverted in `4801144`)
+
+Shipped, tested on a real call, and **made the transcript worse**: lines that did not match the audio,
+and repeated lines. Reverted immediately and the working build reinstalled.
+
+**Do not retry this by tweaking the offsets.** Three cheap explanations were checked and are all dead:
+
+- whisper does **not** accumulate results across calls — `result_all.clear()` runs at the top of
+  `whisper_full` (`whisper.cpp:6838`), so chunk *n* cannot inherit chunk *n−1*'s segments.
+- whisper **does** map VAD timestamps back to the original timeline (`vad_mapping_table`), so silence
+  trimming is not what shifted them.
+- our own `segmentCount` reads `whisper_full_n_segments(ctx)` live and caches nothing.
+
+**Live candidates, none yet distinguished:**
+
+1. **`presentationTimeUs` may not be absolute after `seekTo`.** The design reports the decoder's true
+   start and stitches from it; if that value is rebased to the seek point it is 0 for every chunk, and
+   every timestamp after the first chunk is wrong. This alone explains "lines don't match voice".
+2. **Codec priming after a seek.** Opus pre-skip and AAC priming samples are emitted after a seek and
+   are not real audio, so each chunk may start a few tens of milliseconds off.
+3. **Cold starts hallucinate.** Each chunk runs with `no_context = true`, so whisper begins the 10 s
+   run-up with nothing to condition on — exactly the situation that produces repetition loops. A
+   looping segment that extends past `keepFromMs` survives the overlap filter, which would explain
+   "repetitive lines" while the drop rule is working as designed.
+4. **The seams may simply cost more than predicted.** Our own `n_max_text_ctx = 0` result already
+   showed that removing rolling conditioning fragments a call badly. Four seams may be four too many
+   for conversational speech, in which case the whole approach needs prompt-token carry before it is
+   worth anything.
+
+**What would settle it, and what should happen before any further attempt:** an A/B on *one* recording
+— whole-file versus chunked, same file, same settings, transcripts diffed. Every hypothesis above
+predicts a different signature, and guessing between them from a description of the damage is how this
+went wrong in the first place. `DecodeVariantBenchmark` already exists for exactly this shape of
+question.
+
+**Also note what this does NOT block.** The memory work in A1 stands on its own and is verified; B5 was
+about removing the length limit entirely, not about fixing the OOM. `MAX_MINUTES` stays at 20, which is
+measured.
