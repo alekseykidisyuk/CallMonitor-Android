@@ -54,21 +54,6 @@ object AudioDecoder {
     private const val DURATION_TOLERANCE = 2.0
 
     /**
-     * Audio for part of a recording, and where that part really starts.
-     *
-     * [startMs] is not the caller's request: seeking lands on the container's previous sync point, so
-     * the audio may begin slightly earlier. Reporting the true start rather than trimming to the
-     * request keeps every downstream timestamp exact without threading a sample offset through the
-     * resampler — see [decodeRange].
-     */
-    data class DecodedRange(val audio: FloatArray, val startMs: Long) {
-        // Kotlin generates array identity for equals/hashCode on a data class, which is a trap for a
-        // value that looks comparable. These are never compared; the overrides state that plainly.
-        override fun equals(other: Any?): Boolean = this === other
-        override fun hashCode(): Int = System.identityHashCode(this)
-    }
-
-    /**
      * Decoded PCM-16, interleaved, plus the format it is *actually* in — the decoder's output, not
      * the file's input.
      *
@@ -81,8 +66,6 @@ object AudioDecoder {
         val length: Int,
         val sampleRate: Int,
         val channels: Int,
-        /** Where this audio really begins in the recording, which a seek may move earlier. */
-        val startMs: Long = 0L,
     )
 
     /**
@@ -368,32 +351,7 @@ object AudioDecoder {
         context: Context,
         uri: Uri,
         shouldStop: () -> Boolean = { false }
-    ): FloatArray = decodeRange(context, uri, shouldStop = shouldStop).audio
-
-    /**
-     * 16 kHz mono float for part of [uri], and where that audio really starts.
-     *
-     * The point of the range: peak memory stops depending on call length. Decoding a five-minute slice
-     * costs the same whether the call is five minutes or two hours, so
-     * [TranscriptionLengthLimit.MAX_MINUTES] stops being a memory limit and can eventually go. See
-     * [ChunkPlan] for how the slices are chosen.
-     *
-     * **[DecodedRange.startMs] is the honest answer, not the request.** Seeking lands on the container's
-     * previous sync point, at or before what was asked for, so the audio returned may begin slightly
-     * early. Reporting that instead of trimming to the exact request keeps timestamps exact with no
-     * offset arithmetic threaded through the resampler — and the extra frames are run-up, which is
-     * useful rather than wasted.
-     *
-     * @param fromMs where to start; 0 for the beginning.
-     * @param toMs where to stop, or [Long.MAX_VALUE] for the end of the recording.
-     */
-    fun decodeRange(
-        context: Context,
-        uri: Uri,
-        fromMs: Long = 0L,
-        toMs: Long = Long.MAX_VALUE,
-        shouldStop: () -> Boolean = { false },
-    ): DecodedRange {
+    ): FloatArray {
         val extractor = MediaExtractor()
         try {
             context.contentResolver.openFileDescriptor(uri, "r").use { pfd ->
@@ -410,20 +368,12 @@ object AudioDecoder {
             val expectedDurationUs =
                 if (inputFormat.containsKey(MediaFormat.KEY_DURATION)) inputFormat.getLong(MediaFormat.KEY_DURATION) else 0L
 
-            val wholeFile = fromMs <= 0L && toMs == Long.MAX_VALUE
-            val decoded = decodePcm(
-                extractor, inputFormat, mime, shouldStop,
-                fromUs = if (fromMs > 0L) fromMs * 1000L else 0L,
-                toUs = if (toMs == Long.MAX_VALUE) Long.MAX_VALUE else toMs * 1000L,
-            )
+            val decoded = decodePcm(extractor, inputFormat, mime, shouldStop)
             // Frame count from arithmetic rather than from a widened copy: the copy is exactly what
             // this path no longer makes. See pcm16ToMono16k.
             val frames = decoded.length / decoded.channels.coerceAtLeast(1)
 
-            // Only meaningful for a whole-file decode. A range is *expected* to produce less audio
-            // than the container declares, so applying this to a chunk would reject every one of them
-            // — turning the guard that catches a malformed decode into one that blocks the feature.
-            check(!wholeFile || isPlausibleDuration(frames, decoded.sampleRate, expectedDurationUs)) {
+            check(isPlausibleDuration(frames, decoded.sampleRate, expectedDurationUs)) {
                 "Decoded $frames frames at ${decoded.sampleRate} Hz " +
                     "(${frames * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms) but the container " +
                     "declares ${expectedDurationUs / 1000} ms — refusing to transcribe a malformed decode"
@@ -432,13 +382,9 @@ object AudioDecoder {
             AppLogger.i(
                 TAG,
                 "Decoded $uri: $frames frames @ ${decoded.sampleRate} Hz, ${decoded.channels} ch " +
-                    "(${frames * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms)" +
-                    if (wholeFile) "" else " from ${decoded.startMs} ms",
+                    "(${frames * 1000L / decoded.sampleRate.coerceAtLeast(1)} ms)",
             )
-            return DecodedRange(
-                audio = pcm16ToMono16k(decoded.pcm, decoded.channels, decoded.sampleRate, decoded.length),
-                startMs = decoded.startMs,
-            )
+            return pcm16ToMono16k(decoded.pcm, decoded.channels, decoded.sampleRate, decoded.length)
         } finally {
             extractor.release()
         }
@@ -459,19 +405,9 @@ object AudioDecoder {
         extractor: MediaExtractor,
         inputFormat: MediaFormat,
         mime: String,
-        shouldStop: () -> Boolean,
-        fromUs: Long = 0L,
-        toUs: Long = Long.MAX_VALUE,
+        shouldStop: () -> Boolean
     ): DecodedPcm {
         val codec = MediaCodec.createDecoderByType(mime)
-
-        // Seeking lands on the previous sync point, which is at or before what was asked for. Rather
-        // than trimming to the exact request — which would mean tracking a sample offset through every
-        // later stage — the decoder REPORTS where its audio really starts, and the caller stitches
-        // from that. Exact timestamps, no offset arithmetic, and a few extra frames of run-up that
-        // whisper is glad of anyway.
-        if (fromUs > 0L) extractor.seekTo(fromUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
-        var firstOutUs = -1L
 
         var sampleRate = inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
         var channels = inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
@@ -502,10 +438,7 @@ object AudioDecoder {
                     if (inIndex >= 0) {
                         val buf = codec.getInputBuffer(inIndex)!!
                         val size = extractor.readSampleData(buf, 0)
-                        // Past the requested end is the same as end-of-file for this pass. Without
-                        // this the decoder would run to the end of the recording for every chunk,
-                        // which is the cost chunking exists to avoid.
-                        if (size < 0 || extractor.sampleTime > toUs) {
+                        if (size < 0) {
                             codec.queueInputBuffer(inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                             sawInputEnd = true
                         } else {
@@ -536,7 +469,6 @@ object AudioDecoder {
                     else -> if (outIndex >= 0) {
                         val buf = codec.getOutputBuffer(outIndex)!!
                         if (info.size > 0) {
-                            if (firstOutUs < 0L) firstOutUs = info.presentationTimeUs
                             // A view over the codec's own memory, sliced to exactly what it reported.
                             // slice() does not inherit byte order, so it is set on the view.
                             buf.position(info.offset)
@@ -555,6 +487,6 @@ object AudioDecoder {
 
         // The sink's buffer, not a trimmed copy: trimming would allocate a second full-length array
         // at the one moment the first is still alive, which is what this rewrite removes.
-        return DecodedPcm(sink.array, sink.size, sampleRate, channels, maxOf(0L, firstOutUs) / 1000L)
+        return DecodedPcm(sink.array, sink.size, sampleRate, channels)
     }
 }
