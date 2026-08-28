@@ -25,6 +25,8 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 | R11 | **Transcription limit is 60 minutes**, not 15 and no longer 20. Chunked passes bound peak memory by one ≈ 6-minute chunk, so length stopped driving the heap. | Any stated limit must match. Write **60**. The earlier 20 in this row was correct on 2026-08-27 and was superseded the next day — noted so nobody trusts a stale row. | 🧪 60 is 📐 CALCULATED, not measured — hold until a real long call completes |
 | R5 | **Bluetooth headsets work** — field-proven by the maintainer's daily AirPods use. LE Audio/LC3 is untested. | Worth stating, since "does it work with my headphones" is an obvious pre-install question. Do not claim LE Audio. | ✅ VERIFIED by daily use / LE Audio 🧪 untested |
 
+| R14 | **Search covers summaries and notes**, not just the spoken transcript. A call is findable by the words its summary used for the outcome — which are often not words anyone said aloud — and by the note the user typed themselves. | If the README describes search, it must not say "search your transcripts"; it searches transcripts, summaries and notes. Worth stating, because the summary is where a decision is recorded in plain language. | 🧪 VERIFYING — migration proven on real SQLite (9 instrumented tests, emulator), not yet used on the maintainer's own library |
+
 | R12 | **CallVault says when a recording contains no audio.** | Safe to state, but state it *narrowly*: it catches a file with no audio samples, **not** a full-length recording of silence. An over-broad claim here would manufacture exactly the false confidence the fix exists to remove. | ✅ VERIFIED 2026-08-27 |
 
 ## Blocked on verification — do not write these into the README yet
