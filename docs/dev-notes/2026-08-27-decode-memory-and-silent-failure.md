@@ -196,6 +196,10 @@ speaker of a target language reports. Do not close on the first, and do not let 
 
 ## ❌ NOT WORKING 2026-08-28 — B5, chunked transcription (`67f177f`, reverted in `4801144`)
 
+> **Superseded — see the 2026-08-28 entry at the end of this section.** The entry stays because the
+> failure was real and the reasoning below is what eliminated four wrong explanations. What it got
+> wrong is recorded there.
+
 Shipped, tested on a real call, and **made the transcript worse**: lines that did not match the audio,
 and repeated lines. Reverted immediately and the working build reinstalled.
 
@@ -232,6 +236,10 @@ question.
 **Also note what this does NOT block.** The memory work in A1 stands on its own and is verified; B5 was
 about removing the length limit entirely, not about fixing the OOM. `MAX_MINUTES` stays at 20, which is
 measured.
+
+> ⚠️ **That last sentence was true when written and is now wrong.** `MAX_MINUTES` is **60** as of
+> `bf989c3`, because chunking bounds peak memory by one chunk rather than by call length. Left in place
+> rather than edited away, so the arithmetic that produced 20 stays legible.
 
 ### ✅ 2026-08-28 — the seek probe eliminates two of the four hypotheses
 
@@ -292,6 +300,46 @@ the audio, and Hebrew is exactly where that crash bites, because nearly every ch
 **Next step for B5, when it is picked up again:** re-land the chunked path and retest on the phone *with
 the UTF-8 fix in place*. If it is clean, the feature was only ever blocked by a bug in a different part
 of the code.
+
+### ✅ VERIFIED 2026-08-28 — the B5 regression is gone · 🧪 the feature is NOT settled
+
+`bf989c3` on the OP12. The maintainer transcribed **the same 26:41 Hebrew call** the desktop A/B was run
+against and reported the transcript **good** — none of the damage that killed `67f177f`: no lines that
+failed to match the audio, no repeated lines.
+
+**What is verified is narrow and worth stating precisely: the structural regression is gone.** That is
+the one thing a single Hebrew read can establish, because the old failure was gross enough to be
+visible without judging wording. It is *not* a verdict on transcription quality.
+
+**🚦 HOLD — do not close B5, and do not write it into the README, on one test.** Decided with the
+maintainer 2026-08-28: **one user, one call, one language is not enough**, and the whole point of the
+marker convention is that a green result from a single observer is still a sample of one. B5 stays open
+until several users have used it on real calls across more than one language. Specifically wanted:
+
+- the **French tester** (2.1.2's audience) on a call long enough to cross a chunk seam — over five
+  minutes, ideally over ten, since seams are the only thing chunking changes;
+- at least one **long** call, over the old 20-minute ceiling, which nobody outside the maintainer has
+  been able to attempt until now;
+- a second Hebrew opinion, ideally a native speaker, per [[hebrew-cannot-clear-a-quality-change]].
+
+**If a report comes back bad, ask for the per-pass drift log lines, not a description.** `bf989c3`
+emits asked-vs-actual start, drift, and audio length for every pass. Four lines of numbers identify a
+stitching fault immediately; a description of the damage is what sent the first investigation down four
+dead ends.
+
+**Compare any report against desktop ground truth for that same 26:41 call** — whole-file 675 segments
+/ 17 876 chars / 25 repeated lines, chunked 534 / 17 644 / 14. Chunked is *cleaner* there, so a device
+result markedly worse than that is an Android problem, not a chunking one.
+
+**Consequences that are now live rather than pending:**
+
+- `MAX_MINUTES` is **60**, up from 20. Peak memory no longer depends on call length — it is bounded by
+  one ≈ 6-minute chunk — so the ceiling is now about when a *transcript* stops being the useful
+  artefact, not about the heap. 📐 That 60 is a judgement, not a measurement: **if a long call ever
+  dies rather than being refused, this is the number to lower**, and that failure would be worth more
+  than the calculation.
+- The guard that stopped the maintainer testing long calls at all is gone, which is what makes the
+  long-call feedback above possible for the first time.
 
 ### 🛠 Use the desktop harness for decoding questions
 

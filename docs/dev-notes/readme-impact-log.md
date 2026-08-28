@@ -22,7 +22,7 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 | R4 | **Off-Wi-Fi recording shipped in v1.4.0**, not parked. | If the README describes Wi-Fi as a requirement anywhere, that is wrong. Note the real limit instead: tcpip clears on reboot and re-arming needs Wi-Fi once. | ✅ verified in source and in the v1.5.8 tag |
 | R9 | **Works with self-hosted sync** — recordings are staged privately and only appear in the folder once complete, so Syncthing, FolderSync and Nextcloud can never pick up a truncated or 0-byte file. | Worth stating plainly: this is a concrete, checkable advantage over recorders that mux straight into the destination, and it needs no network code of ours. | ✅ VERIFIED 2026-08-27 |
 | R10 | **App calls now carry speaker labels**, not just carrier calls. | If the README describes speaker attribution, it should not imply carrier-only. | ✅ VERIFIED 2026-08-27 |
-| R11 | **Transcription limit is 20 minutes**, not 15. | Any stated limit must match. | ✅ VERIFIED 2026-08-27 (measured) |
+| R11 | **Transcription limit is 60 minutes**, not 15 and no longer 20. Chunked passes bound peak memory by one ≈ 6-minute chunk, so length stopped driving the heap. | Any stated limit must match. Write **60**. The earlier 20 in this row was correct on 2026-08-27 and was superseded the next day — noted so nobody trusts a stale row. | 🧪 60 is 📐 CALCULATED, not measured — hold until a real long call completes |
 | R5 | **Bluetooth headsets work** — field-proven by the maintainer's daily AirPods use. LE Audio/LC3 is untested. | Worth stating, since "does it work with my headphones" is an obvious pre-install question. Do not claim LE Audio. | ✅ VERIFIED by daily use / LE Audio 🧪 untested |
 
 | R12 | **CallVault says when a recording contains no audio.** | Safe to state, but state it *narrowly*: it catches a file with no audio samples, **not** a full-length recording of silence. An over-broad claim here would manufacture exactly the false confidence the fix exists to remove. | ✅ VERIFIED 2026-08-27 |
@@ -31,7 +31,8 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | # | Change | Why it is held |
 |---|---|---|
-| — | *(nothing currently held)* | The two entries that lived here — the longer transcription limit and the no-audio warning — were both verified on device on 2026-08-27 and moved up. |
+| R13 | **Long calls can be transcribed** — chunked passes removed the length ceiling that used to refuse anything over 15 minutes. | The regression that killed the first attempt is confirmed gone, but on **one** call, by **one** user, in **one** language (Hebrew, 26:41, 2026-08-28). Agreed with the maintainer that this is not enough to publish a claim on. Needs the French tester on a call that crosses a chunk seam, plus one call over 20 minutes from someone other than the maintainer. See `2026-08-27-decode-memory-and-silent-failure.md`. |
+| R11 | The **60-minute** figure itself. | Same hold as R13, and additionally the number is arithmetic rather than a measurement — no call anywhere near 60 minutes has been transcribed. Publishing a limit we have never reached invites exactly the bug report it would cause. |
 
 ## Explicitly NOT going in the README
 
