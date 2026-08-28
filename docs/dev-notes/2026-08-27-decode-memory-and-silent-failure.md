@@ -232,3 +232,33 @@ question.
 **Also note what this does NOT block.** The memory work in A1 stands on its own and is verified; B5 was
 about removing the length limit entirely, not about fixing the OOM. `MAX_MINUTES` stays at 20, which is
 measured.
+
+### ✅ 2026-08-28 — the seek probe eliminates two of the four hypotheses
+
+`ChunkSeamBenchmark#seekDrift`, OP12, a synthetic 20-minute Opus file (the question is about container
+seeking, so real speech is not needed and the maintainer's recordings are not touched). 163 seconds.
+
+| chunk | requested from | decoded from | drift |
+|---|---|---|---|
+| 0 | 0 | 0 | 0 ms |
+| 1 | 290 000 | 289 993 | −7 ms |
+| 2 | 590 000 | 590 993 | +993 ms |
+| 3 | 890 000 | 888 993 | −1007 ms |
+
+**Hypothesis 1 (rebased timestamp) is dead** — the seek reports an absolute position. **Hypothesis 2
+(codec priming) is dead as a cause**, and the interesting part is that the drift is up to ±1 second,
+which is Ogg page granularity and far larger than priming — yet harmless, because the design stitches
+from the *reported* start rather than the requested one. That was the right call and it held.
+
+Sample counts confirm the ranges: chunk 0 is 300.0 s, chunks 1–3 are ~310 s, i.e. the target plus the
+10-second run-up.
+
+**So the decode and stitch layers are sound, and the damage came from whisper.** What remains is
+hypothesis 3 (cold-start hallucination, predicting repetition clustered near seams) versus hypothesis 4
+(the seams simply cost more than predicted). Telling those apart needs the full
+`wholeFileVersusChunked` arm, which needs **real speech** — a synthetic tone transcribes to nothing.
+
+**Setup note for the next run:** the instrumented app cannot read `/sdcard` under scoped storage. Grant
+it first, or every run silently reports OK while skipping on an assumption:
+
+    adb shell appops set --uid com.baba.callvault.instrtest.test MANAGE_EXTERNAL_STORAGE allow

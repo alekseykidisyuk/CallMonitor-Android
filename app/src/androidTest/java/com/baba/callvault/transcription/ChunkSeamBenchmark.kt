@@ -124,7 +124,9 @@ class ChunkSeamBenchmark {
     }
 
     @Test
-    fun wholeFileVersusChunked() = runBlocking {
+    // Explicit Unit: JUnit4 rejects a test method with a return value, and runBlocking returns
+    // whatever its block's last expression evaluates to.
+    fun wholeFileVersusChunked(): Unit = runBlocking {
         val args = InstrumentationRegistry.getArguments()
         val recordingPath = args.getString("recording")
         assumeTrue("pass -e recording <path to an audio file>", recordingPath != null)
