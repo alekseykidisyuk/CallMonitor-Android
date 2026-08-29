@@ -29,6 +29,8 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | R15 | **Transcripts export as TXT, Markdown, SRT, VTT or JSON.** Subtitle formats mean a recording and its transcript can be opened together in a player or editor; Markdown carries the summary and the note with it. | If the README lists what you can do with a transcript, it currently implies copy and share only. Worth stating the subtitle formats specifically — no other FOSS recorder in the survey exports them. | ✅ VERIFIED 2026-08-29 — SRT exported and opened successfully. Markdown, VTT and JSON are still only unit-tested; SRT is the strictest of the five, so this is good evidence rather than proof for the rest |
 
+| R16 | **Optional app lock.** The device's own unlock is required before recordings and transcripts are shown, and the content is kept out of screenshots and the app switcher. Off by default; refuses to turn on when the phone has no screen lock. | Worth a line in whatever the README says about privacy, and it should say the lock is a **door, not encryption** — the audio stays readable by a file manager and by whatever syncs it. Overstating this would be the worst kind of README error. | 🧪 VERIFYING — status-code guard unit-tested, not yet used on device |
+
 | R12 | **CallVault says when a recording contains no audio.** | Safe to state, but state it *narrowly*: it catches a file with no audio samples, **not** a full-length recording of silence. An over-broad claim here would manufacture exactly the false confidence the fix exists to remove. | ✅ VERIFIED 2026-08-27 |
 
 ## Blocked on verification — do not write these into the README yet
