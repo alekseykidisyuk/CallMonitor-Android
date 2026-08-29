@@ -33,6 +33,8 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | R17 | **Tags.** Recordings can be labelled and the list filtered by a label. | Worth stating, and worth stating *why*: a contact name cannot find a call with a number that is in no address book, which is a large share of the calls people most want to find again. The comparison table should note it — `bcr-gui` has an open request for exactly this. | ✅ VERIFIED 2026-08-29 — tagging and filtering used on the maintainer's own library. 🧪 Rename-everywhere and delete-everywhere added the same day, unconfirmed. Tags also travel in Markdown and JSON exports |
 
+| R18 | **Deleting a recording is reversible for 30 days**, and the transcript now has one Share button with a long-press-to-copy-a-line. | The README should say the trash is a **recycle bin, not a shredder**: a trashed file stays in the storage folder under a renamed form, so a file manager and any sync tool can still see it. Overstating this would be a privacy claim we cannot keep. | 🧪 VERIFYING — 11 unit tests on the naming and expiry rules, not yet used on device |
+
 | R12 | **CallVault says when a recording contains no audio.** | Safe to state, but state it *narrowly*: it catches a file with no audio samples, **not** a full-length recording of silence. An over-broad claim here would manufacture exactly the false confidence the fix exists to remove. | ✅ VERIFIED 2026-08-27 |
 
 ## Blocked on verification — do not write these into the README yet
