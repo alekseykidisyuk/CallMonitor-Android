@@ -127,6 +127,53 @@ into "turn Wi-Fi on, you need not connect to anything". Evidence against: the ma
 real life, and most people leave Wi-Fi enabled — which suggests radio-on alone is not enough. **Not
 proof. Worth one deliberate check next time the phone is genuinely away from any known network.**
 
+## Third pass, 2026-08-29 — the spoofing angles, and the one useful thing they turned up
+
+Maintainer confirmed by hand that **Wi-Fi radio on but unassociated is still refused**, closing the
+condition the second pass could not reach. Then: can the association be *faked*, or the USB transport?
+
+**The gate, in the system's own words** — caught in logcat at the moment of refusal:
+
+    AdbDebuggingManager: Not connected to any wireless network. Not enabling adbwifi.
+
+That is `system_server` reading `WifiManager`'s own connection state. Nothing an app or a shell can
+influence; there is no setting in between to lie to.
+
+**Why "we already have shell" does not help, precisely.** The kernel's denial, verbatim:
+
+    avc: denied { set } for property=persist.adb.tcp.port pid=… uid=2000 gid=2000
+         scontext=u:r:shell:s0 tcontext=u:object_r:default_prop:s0
+         tclass=property_service permissive=0
+
+And the reason it is not an inconsistency that adbd *can* set these: **adbd runs as uid `shell` too**,
+but in the `adbd` SELinux **domain**, while our shells run in the `shell` domain. Same uid, different
+domain, different rights. `service.adb.tcp.port` sits in `adbd_config_prop`; `persist.adb.tcp.port` is
+plain `default_prop` — and `shell` may set neither. `adb root` is refused outright (`ro.debuggable=0`,
+`ro.build.type=user`).
+
+**USB cannot be faked either.** `sys.usb.config` is already `midi,adb`, so adb is *configured* — but a
+USB device needs a host to enumerate it, and there is no transport without a computer on the other
+end. Forcing the functions from shell just restarts the gadget and kills the session.
+
+## 🔑 The useful finding: it needs an ASSOCIATION, not INTERNET
+
+"Not connected to any wireless network" means no station association. It does **not** mean no working
+internet. **Any** access point satisfies it, for a few seconds, with no login and no connectivity:
+
+- **a second phone's hotspot** — the maintainer carries two;
+- a car's Wi-Fi, a hotel or café AP nobody logs into, any open network.
+
+That changes the advice from *"wait until you get home"* to **"associate with any AP for ten seconds,
+including your other phone's hotspot"** — which is very often available when a real network is not.
+Worth saying in the README and in the recovery prompt, because it is a materially smaller ask.
+
+## Mitigations that are now clearly the right answer
+
+1. **Warn before the reboot.** `ACTION_SHUTDOWN` arrives while the bridge is still up. If offline mode
+   is on and Wi-Fi is not associated, say so *then* — the one moment the user can still act.
+2. **Notify after the boot**, when the listener is down, rather than letting a missed call be the
+   notification.
+
 ## The one idea that sidesteps the bridge entirely — needs a product decision, not research
 
 Record from the **app's own uid with plain `MIC`**, when the privileged bridge is down. No ADB, no
