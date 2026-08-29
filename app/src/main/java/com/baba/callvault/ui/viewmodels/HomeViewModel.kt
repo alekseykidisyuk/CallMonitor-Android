@@ -34,6 +34,8 @@ import com.baba.callvault.data.recordings.RecordingDirection
 import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.utils.AppLogger
+import com.baba.callvault.data.recordings.DeleteScope
+import com.baba.callvault.data.recordings.RecordingSelection
 import com.baba.callvault.data.recordings.RecordingsRepository
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingSource
@@ -786,6 +788,42 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * The whole set is marked as deleting up front so every affected row shows its spinner together;
      * refreshing per file would make the list jump under the user's finger while the rest run.
      */
+    /**
+     * Bulk delete from a multi-selection, routed like the single-recording delete.
+     *
+     * **Scope decides whether the trash is involved, and it has to.** Deleting *both* copies is the
+     * end of the recording, so it goes to the trash exactly as the per-row delete does — a
+     * multi-selection is the easiest place of all to destroy more than was meant. Deleting only the
+     * Device or only the Drive copy is not losing the recording; the other copy survives, so the file
+     * is removed outright rather than leaving a trashed duplicate of something the user still has.
+     *
+     * This was missed when the trash was first wired up: only the per-row delete went through it, so
+     * the highest-volume mis-tap path in the app stayed irreversible.
+     */
+    fun deleteSelection(items: List<RecordingItem>, scope: DeleteScope) {
+        if (items.isEmpty()) return
+        if (scope != DeleteScope.BOTH) {
+            deleteUris(RecordingSelection.urisToDelete(items, scope))
+            return
+        }
+
+        val uris = RecordingSelection.urisToDelete(items, scope)
+        if (playback.value.activeUri in uris) playbackController.stop()
+        _uiState.update { it.copy(deletingUris = it.deletingUris + uris) }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                items.forEach { item ->
+                    // Same fallback as the single delete: if the rename cannot happen, do the delete
+                    // the user asked for rather than leaving a tap that did nothing.
+                    val trashed = RecordingTrashRepository.trash(appContext, item.displayName)
+                    if (!trashed) RecordingsRepository.deleteRecording(appContext, item)
+                }
+            }
+            refresh()
+            _uiState.update { it.copy(deletingUris = it.deletingUris - uris.toSet()) }
+        }
+    }
+
     fun deleteUris(uris: List<Uri>) {
         if (uris.isEmpty()) return
         if (playback.value.activeUri in uris) playbackController.stop()

@@ -590,4 +590,5 @@
     <string name="home_deleted_days_left">Faltam %1$d dias</string>
     <string name="home_purge_confirm_title">Excluir definitivamente?</string>
     <string name="home_purge_confirm_message">A gravação é removida, com sua transcrição, resumo e notas. Isso não pode ser desfeito.</string>
+    <string name="settings_trash_vs_retention">Isso é separado da Retenção. A retenção exclui gravações antigas em definitivo e não as coloca aqui.</string>
 </resources>

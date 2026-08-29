@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.system.storage.RecordingTrashRepository
+import com.baba.callvault.system.storage.RetentionScheduler
 import com.baba.callvault.ui.common.M3DropdownField
 import com.baba.callvault.ui.common.OptionItem
 import kotlinx.coroutines.launch
@@ -80,6 +81,10 @@ fun TrashSettings(preferences: AppPreferences, updateTrigger: Int) {
                 val chosen = option.key.toIntOrNull() ?: 0
                 days = chosen
                 preferences.setTrashRetentionDays(chosen)
+                // The daily sweep is what empties the trash, and it is cancelled when nothing needs
+                // it. Turning the trash on with retention off has to bring the sweep back, or the
+                // thirty days would elapse with nothing there to act on them.
+                RetentionScheduler.apply(context)
             }
         )
     }
@@ -88,7 +93,7 @@ fun TrashSettings(preferences: AppPreferences, updateTrigger: Int) {
         text = stringResource(
             if (days <= 0) R.string.settings_trash_keep_off_explain
             else R.string.settings_trash_keep_explain
-        ),
+        ) + "\n\n" + stringResource(R.string.settings_trash_vs_retention),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)

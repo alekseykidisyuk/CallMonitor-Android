@@ -587,4 +587,5 @@
     <string name="home_deleted_days_left">剩余 %1$d 天</string>
     <string name="home_purge_confirm_title">永久删除？</string>
     <string name="home_purge_confirm_message">该录音及其转录文本、摘要和笔记都会被删除，此操作无法撤销。</string>
+    <string name="settings_trash_vs_retention">这与“保留期”无关。保留期会永久删除旧录音，不会将它们放到这里。</string>
 </resources>

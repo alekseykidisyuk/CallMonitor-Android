@@ -587,4 +587,5 @@
     <string name="home_deleted_days_left">Còn %1$d ngày</string>
     <string name="home_purge_confirm_title">Xóa vĩnh viễn?</string>
     <string name="home_purge_confirm_message">Bản ghi sẽ bị xóa cùng bản chép lời, tóm tắt và ghi chú. Không thể hoàn tác.</string>
+    <string name="settings_trash_vs_retention">Điều này tách biệt với Thời gian lưu. Thời gian lưu xóa vĩnh viễn các bản ghi cũ và không đưa chúng vào đây.</string>
 </resources>

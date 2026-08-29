@@ -587,4 +587,5 @@
     <string name="home_deleted_days_left">%1$d nap maradt</string>
     <string name="home_purge_confirm_title">Végleges törlés?</string>
     <string name="home_purge_confirm_message">A felvétel törlődik az átiratával, összefoglalójával és jegyzeteivel együtt. Ez nem vonható vissza.</string>
+    <string name="settings_trash_vs_retention">Ez független a Megőrzéstől. A megőrzés véglegesen törli a régi felvételeket, és nem ide helyezi őket.</string>
 </resources>

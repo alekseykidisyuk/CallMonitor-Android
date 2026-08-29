@@ -518,7 +518,7 @@ fun HomeScreen(
                 needsScopeChoice = RecordingSelection.needsScopeChoice(selectedItems),
                 onConfirm = { scope ->
                     showBulkDelete = false
-                    viewModel.deleteUris(RecordingSelection.urisToDelete(selectedItems, scope))
+                    viewModel.deleteSelection(selectedItems, scope)
                     clearSelection()
                 },
                 onDismiss = { showBulkDelete = false },

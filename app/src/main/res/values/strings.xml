@@ -792,4 +792,5 @@
     <string name="home_deleted_days_left">%1$d days left</string>
     <string name="home_purge_confirm_title">Delete forever?</string>
     <string name="home_purge_confirm_message">The recording goes, with its transcript, summary and notes. This cannot be undone.</string>
+    <string name="settings_trash_vs_retention">This is separate from Retention. Retention deletes old recordings permanently and does not put them here.</string>
 </resources>

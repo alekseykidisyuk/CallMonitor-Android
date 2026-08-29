@@ -587,4 +587,5 @@
     <string name="home_deleted_days_left">Noch %1$d Tage</string>
     <string name="home_purge_confirm_title">Endgültig löschen?</string>
     <string name="home_purge_confirm_message">Die Aufnahme wird entfernt, samt Transkript, Zusammenfassung und Notizen. Das lässt sich nicht rückgängig machen.</string>
+    <string name="settings_trash_vs_retention">Das ist unabhängig von der Aufbewahrung. Die Aufbewahrung löscht alte Aufnahmen endgültig und legt sie nicht hier ab.</string>
 </resources>

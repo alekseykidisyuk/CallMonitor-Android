@@ -39,9 +39,16 @@ object RetentionScheduler {
         val maxDays = maxOf(prefs.getRetentionLocalDays(), prefs.getRetentionDriveDays())
         val workManager = WorkManager.getInstance(context)
 
-        if (maxDays <= 0) {
+        // 🚨 The sweep also empties the trash, so it must run when retention is OFF but the trash is
+        // on — which is the default combination. Cancelling on retention alone meant a trashed
+        // recording was never purged for the great majority of users: the thirty days would elapse
+        // and nothing would come to remove it, so deleted calls accumulated in the storage folder for
+        // ever. Found by the maintainer asking how the two features interact.
+        val trashDays = prefs.getTrashRetentionDays()
+
+        if (maxDays <= 0 && trashDays <= 0) {
             workManager.cancelUniqueWork(WORK_NAME)
-            AppLogger.i(TAG, "Retention sweep cancelled (retention off).")
+            AppLogger.i(TAG, "Retention sweep cancelled (retention off, trash off).")
             return
         }
 
@@ -67,7 +74,7 @@ object RetentionScheduler {
         workManager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE, request)
         AppLogger.i(
             TAG,
-            "Retention sweep scheduled at $hour:$minute local (localDays=${prefs.getRetentionLocalDays()} driveDays=${prefs.getRetentionDriveDays()})."
+            "Retention sweep scheduled at $hour:$minute local (localDays=${prefs.getRetentionLocalDays()} driveDays=${prefs.getRetentionDriveDays()} trashDays=$trashDays)."
         )
     }
 

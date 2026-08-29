@@ -587,4 +587,5 @@
     <string name="home_deleted_days_left">%1$d giorni rimasti</string>
     <string name="home_purge_confirm_title">Eliminare definitivamente?</string>
     <string name="home_purge_confirm_message">La registrazione viene rimossa, con trascrizione, riepilogo e note. Non è reversibile.</string>
+    <string name="settings_trash_vs_retention">È indipendente dalla Conservazione. La conservazione elimina definitivamente le registrazioni vecchie e non le mette qui.</string>
 </resources>

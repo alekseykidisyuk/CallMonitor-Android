@@ -587,4 +587,5 @@
     <string name="home_deleted_days_left">Pozostało %1$d dni</string>
     <string name="home_purge_confirm_title">Usunąć trwale?</string>
     <string name="home_purge_confirm_message">Nagranie zniknie wraz z transkrypcją, podsumowaniem i notatkami. Tego nie można cofnąć.</string>
+    <string name="settings_trash_vs_retention">To niezależne od Przechowywania. Przechowywanie trwale usuwa stare nagrania i nie umieszcza ich tutaj.</string>
 </resources>
