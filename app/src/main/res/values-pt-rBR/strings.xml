@@ -586,4 +586,8 @@
     <string name="settings_trash_empty_now">Esvaziar agora (%1$d)</string>
     <string name="settings_trash_empty_confirm_title">Esvaziar as gravações excluídas?</string>
     <string name="settings_trash_empty_confirm_message">%1$d gravações serão removidas de vez, com suas transcrições e notas. Isso não pode ser desfeito.</string>
+    <string name="home_filter_deleted_chip">Excluídos (%1$d)</string>
+    <string name="home_deleted_days_left">Faltam %1$d dias</string>
+    <string name="home_purge_confirm_title">Excluir definitivamente?</string>
+    <string name="home_purge_confirm_message">A gravação é removida, com sua transcrição, resumo e notas. Isso não pode ser desfeito.</string>
 </resources>

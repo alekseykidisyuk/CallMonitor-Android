@@ -583,4 +583,8 @@
     <string name="settings_trash_empty_now">Opróżnij teraz (%1$d)</string>
     <string name="settings_trash_empty_confirm_title">Opróżnić usunięte nagrania?</string>
     <string name="settings_trash_empty_confirm_message">%1$d nagrań zostanie trwale usuniętych wraz z transkrypcjami i notatkami. Tego nie można cofnąć.</string>
+    <string name="home_filter_deleted_chip">Usunięte (%1$d)</string>
+    <string name="home_deleted_days_left">Pozostało %1$d dni</string>
+    <string name="home_purge_confirm_title">Usunąć trwale?</string>
+    <string name="home_purge_confirm_message">Nagranie zniknie wraz z transkrypcją, podsumowaniem i notatkami. Tego nie można cofnąć.</string>
 </resources>

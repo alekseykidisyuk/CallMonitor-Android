@@ -583,4 +583,8 @@
     <string name="settings_trash_empty_now">Jetzt leeren (%1$d)</string>
     <string name="settings_trash_empty_confirm_title">Gelöschte Aufnahmen leeren?</string>
     <string name="settings_trash_empty_confirm_message">%1$d Aufnahmen werden endgültig entfernt, samt Transkripten und Notizen. Das lässt sich nicht rückgängig machen.</string>
+    <string name="home_filter_deleted_chip">Gelöscht (%1$d)</string>
+    <string name="home_deleted_days_left">Noch %1$d Tage</string>
+    <string name="home_purge_confirm_title">Endgültig löschen?</string>
+    <string name="home_purge_confirm_message">Die Aufnahme wird entfernt, samt Transkript, Zusammenfassung und Notizen. Das lässt sich nicht rückgängig machen.</string>
 </resources>

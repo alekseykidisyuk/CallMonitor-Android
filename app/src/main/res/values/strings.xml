@@ -788,4 +788,8 @@
     <string name="settings_trash_empty_now">Empty now (%1$d)</string>
     <string name="settings_trash_empty_confirm_title">Empty deleted recordings?</string>
     <string name="settings_trash_empty_confirm_message">%1$d recordings will be removed for good, with their transcripts and notes. This cannot be undone.</string>
+    <string name="home_filter_deleted_chip">Deleted (%1$d)</string>
+    <string name="home_deleted_days_left">%1$d days left</string>
+    <string name="home_purge_confirm_title">Delete forever?</string>
+    <string name="home_purge_confirm_message">The recording goes, with its transcript, summary and notes. This cannot be undone.</string>
 </resources>

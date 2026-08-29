@@ -583,4 +583,8 @@
     <string name="settings_trash_empty_now">立即清空 (%1$d)</string>
     <string name="settings_trash_empty_confirm_title">清空已删除的录音？</string>
     <string name="settings_trash_empty_confirm_message">%1$d 条录音及其转录文本和笔记将被永久删除，此操作无法撤销。</string>
+    <string name="home_filter_deleted_chip">已删除 (%1$d)</string>
+    <string name="home_deleted_days_left">剩余 %1$d 天</string>
+    <string name="home_purge_confirm_title">永久删除？</string>
+    <string name="home_purge_confirm_message">该录音及其转录文本、摘要和笔记都会被删除，此操作无法撤销。</string>
 </resources>

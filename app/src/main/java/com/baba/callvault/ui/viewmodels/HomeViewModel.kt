@@ -18,6 +18,7 @@ import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.transcripts.TagRepository
 import com.baba.callvault.system.storage.RecordingTrashRepository
+import com.baba.callvault.system.storage.TrashedRecording
 import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.data.health.CallGapDetector
 import com.baba.callvault.data.health.CallLogReader
@@ -154,6 +155,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val dateFilter: String? = null,
         /** The selected tag, or null for "all tags". */
         val tagFilter: String? = null,
+        /** True while the list is showing deleted recordings instead of live ones. */
+        val showingTrash: Boolean = false,
+        /** What is in the trash. Read on refresh, because it is a walk of the storage folders. */
+        val trashed: List<TrashedRecording> = emptyList(),
         /**
          * Which tags each recording carries.
          *
@@ -434,6 +439,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 usbScreenLockRisk = UsbDefaultConfig.isScreenLockRisk(appContext)
             )
         }
+        // Off the main thread: this walks both storage folders, and on the Drive folder that is a
+        // network round trip. Leaving the chip out until it arrives is right — a chip that appears a
+        // moment later is better than a list that waits for one.
+        viewModelScope.launch {
+            val trashed = withContext(Dispatchers.IO) {
+                runCatching { RecordingTrashRepository.list(appContext) }.getOrDefault(emptyList())
+            }
+            _uiState.update { state ->
+                state.copy(
+                    trashed = trashed,
+                    // Nothing left to show means nothing to stay looking at. Without this, emptying
+                    // the trash leaves the list in a mode with no rows and no chip to leave by.
+                    showingTrash = state.showingTrash && trashed.isNotEmpty()
+                )
+            }
+        }
         // An install-over can drop WRITE_SECURE_SETTINGS while the daemon stays warm (recording still
         // works). Whenever the grant is missing, silently try to restore it over any transport that's
         // already up (WD still on / loopback armed) — no user action, no adbd churn — so a later daemon
@@ -568,6 +589,37 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /** Updates the active call-direction facet; the derived list re-computes on the next read. */
     fun setDirectionFilter(filter: DirectionFilter) {
         _uiState.update { it.copy(directionFilter = filter) }
+    }
+
+    /**
+     * Switches the list between live recordings and deleted ones.
+     *
+     * A mode rather than another facet: the other four narrow the same set, while this one changes
+     * which set is being shown, and the rows themselves offer different actions. Sharing the chip row
+     * is a presentation choice — it is where the user already looks to change what the list contains.
+     */
+    fun setShowingTrash(showing: Boolean) {
+        _uiState.update { it.copy(showingTrash = showing) }
+    }
+
+    /** Puts a deleted recording back, then reloads so it reappears in the live list. */
+    fun restoreTrashed(trashedName: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                RecordingTrashRepository.restore(appContext, trashedName)
+            }
+            refresh()
+        }
+    }
+
+    /** Removes a deleted recording for good, with its transcript, summary, note and tags. */
+    fun deleteTrashedForever(trashedName: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                RecordingTrashRepository.deleteForever(appContext, trashedName)
+            }
+            refresh()
+        }
     }
 
     /** Selects a tag to filter to, or null for "all tags". */
