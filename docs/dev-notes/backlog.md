@@ -72,6 +72,25 @@ deletes **permanently** and does not fill the bin, so a 7-day retention is 7 day
 right — retention exists to bound storage — but nothing in the UI said so, and it is the first thing
 anyone asks.
 
+### 🅿️ Capture fallback ladder with RMS audibility check — PARKED 2026-08-29, before any work
+
+`cally`'s design, and the competitive research called it "the single most valuable idea in the
+landscape for CallVault": try capture strategies in order — `DualUplinkDownlink → DualMicDownlink →
+SingleVoiceCallStereo → SingleVoiceCallMono → SingleMic` — measuring RMS against an adaptive noise
+floor on each stream, dropping a rung when a stream is silent, and caching the winner per device
+fingerprint.
+
+**Parked without starting, on the maintainer's call, and the reasoning is worth keeping:** the ladder
+is insurance against silent recordings, and *we do not have a silent-recording problem*. Carrier and
+VoIP capture are both reliable in daily use, with no user reports in a long time; the one incident it
+was argued from has been downgraded above as self-inflicted. It is a large change to the most
+safety-critical code in the app, bought to fix something that is not broken.
+
+**What we do have, if this is ever revisited:** `VoipCaptureSession.farPartyHeard` is a peak-threshold
+audibility check on the VoIP path only. The carrier paths judge the *file* (`CallOutcome`, under 1 KB
+→ `NO_AUDIO`), which catches an empty file and not a full-length recording of silence. Nothing
+anywhere retries with a different strategy, and nothing caches per device.
+
 ### 🅿️ E1 — non-UI `InCallService` — spike done, PARKED 2026-08-29
 
 **Parked after the spike answered the question, not before.** The mechanism works; the reason it was
@@ -189,7 +208,19 @@ the row shows FAILED, drop it where the transcript is DONE.
 
 Agreed with the maintainer on 2026-08-29: "it won't be necessary once we release the version."
 
-### 🔴 Seven calls recorded zero audio on the OP12 — found 2026-08-25, WATCHING FOR A RECURRENCE
+### 🟢 Seven calls recorded zero audio on the OP12 — DOWNGRADED 2026-08-29, likely self-inflicted
+
+**The maintainer's assessment, 2026-08-29:** these almost certainly came from a period of active
+experimentation with capture code, not from a defect in a shipped build. *"Except for cases where we
+have been playing around with features and code, the app is really stable — it records both cell and
+VoIP reliably and I haven't gotten any issues about that in a long time."*
+
+Kept rather than deleted, because the log evidence below is real and would matter if it recurred on a
+build nobody was changing. But it should **not** be cited as an open field defect, and it was — the
+capture fallback ladder was argued for partly on its strength.
+
+### 🔵 Original report — kept for the evidence
+
 
 Found while verifying the 2.1.0 install on the maintainer's daily driver. Seven consecutive **carrier**
 calls, 11:43 → 13:16 on 2026-08-25, each produced a file of **exactly 98 bytes**:
