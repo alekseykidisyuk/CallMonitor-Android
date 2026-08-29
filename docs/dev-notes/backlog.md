@@ -72,7 +72,18 @@ deletes **permanently** and does not fill the bin, so a 7-day retention is 7 day
 right — retention exists to bound storage — but nothing in the UI said so, and it is the first thing
 anyone asks.
 
-### 🟡 E1 — non-UI `InCallService` — ✅ SPIKE SUCCEEDED on the OP12, 2026-08-29
+### 🅿️ E1 — non-UI `InCallService` — spike done, PARKED 2026-08-29
+
+**Parked after the spike answered the question, not before.** The mechanism works; the reason it was
+top of the list does not. Carrier calls would gain an authoritative number, direction and state at the
+earliest moment, plus a foreground lift — a solid improvement, no longer a structural one, because the
+VoIP half is impossible (see below). Spike reverted; the design and every measurement are kept here so
+picking it up again costs nothing.
+
+**To resume:** re-apply `da035bf`, re-grant the companion role, and start from
+`CallSessionManager` — the InCallService becomes the authoritative source for carrier calls with the
+broadcast path as fallback, and the two must not race. Also: any grant step **must read the value
+back**, because `appops set` returns exit 0 while doing nothing on both OnePlus ROMs.
 
 Telecom binds our app at `onCallAdded` — the earliest moment a call exists — giving the number,
 direction, state and the VoIP/carrier distinction **by construction** rather than by inference. The
