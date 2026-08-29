@@ -101,6 +101,44 @@ find; it is the shape of the problem.
 down until the phone next reaches one. Nothing in the app can change that, and no amount of further
 searching will: this is a platform property, verified on AOSP as well as on two OEM ROMs.
 
+## Second pass, 2026-08-29 — harder look, four more doors, still shut
+
+Re-opened deliberately: the VoIP "impossible" verdict was overturned once by exactly this kind of
+push, so the first spike was treated as suspect rather than final.
+
+- ✅ **The premise is now measured, not assumed.** The OP9 was actually rebooted:
+  `service.adb.tcp.port` comes back **empty**. The deadlock is real on this hardware.
+- 🔎 **The first spike's negative was stronger than it claimed.** During that test the OP9 had a SIM
+  and live mobile data (`rmnet_data1` holding a global IPv6). So Wireless Debugging refused **with a
+  working network present** — it wants *Wi-Fi specifically*. That kills the whole family of ideas
+  built on "give it some other interface": USB tethering, a VPN `tun`, mobile data, Ethernet.
+- ❌ **`android.debug.IAdbManager` / `cmd adb`** — a binder service the first pass never looked at. Its
+  shell surface is queries only (`is-wifi-supported`, `is-wifi-qr-supported`); the interesting methods
+  (`enablePairingByPairingCode`, `allowWirelessDebugging`) are `signature|privileged` and unreachable
+  from our uid.
+- ❌ **`/dev/socket/adbd`** — adbd holds a **listening unix socket**, present on a fresh boot with no
+  Wi-Fi and no TCP port. Exactly the shape of a door: no network needed at all. But **even shell gets
+  `Permission denied` stat-ing it**, so an ordinary app is nowhere near it.
+
+**The one condition that could not be reproduced:** Wi-Fi radio *on* but not associated with any
+network. `cmd wifi disconnect` refuses uid 2000 and the phone cannot be moved out of range on demand.
+It matters because if WD only needs the radio rather than an association, the whole problem collapses
+into "turn Wi-Fi on, you need not connect to anything". Evidence against: the maintainer meets this in
+real life, and most people leave Wi-Fi enabled — which suggests radio-on alone is not enough. **Not
+proof. Worth one deliberate check next time the phone is genuinely away from any known network.**
+
+## The one idea that sidesteps the bridge entirely — needs a product decision, not research
+
+Record from the **app's own uid with plain `MIC`**, when the privileged bridge is down. No ADB, no
+shell, no Wi-Fi. It captures the near party always and the far party only on speakerphone — the
+behaviour of every pre-ADB call recorder.
+
+🚨 **The cost is not technical, it is what CallVault currently is.** The app declares **no
+`RECORD_AUDIO` at all** — every capture happens in the shell-uid daemon, and the app process never
+touches the microphone. That is a real privacy property and arguably a selling point. Adding a MIC
+fallback trades it for degraded recording in a rare state. **Do not do this without deciding that
+trade explicitly.**
+
 ## What is still worth doing, and it is small
 
 We cannot fix it. We can stop it being **silent**, which the demand research says is what users punish
