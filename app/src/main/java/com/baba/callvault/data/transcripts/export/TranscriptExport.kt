@@ -28,15 +28,23 @@ import java.util.Locale
  * @param summary the stored summary, if one exists. Only [TranscriptFormat.MARKDOWN] and
  *   [TranscriptFormat.JSON] carry it; a subtitle file has nowhere to put it.
  * @param note the user's own note, on the same terms.
+ *
+ * 🚨 **No field here has a default, deliberately.** `note` was added with one, rendered, and unit
+ * tested — and then never passed at the single production call site, so the Markdown note section was
+ * unreachable for a release while its test passed happily. A test that builds this object cannot
+ * notice that nobody builds it that way in the app. Requiring every field makes the compiler ask the
+ * question instead, which is the only thing here that catches an omission rather than a mistake.
  */
 data class ExportDocument(
     val title: String,
     val segments: List<TranscriptSegmentEntry>,
-    val speakerNames: SpeakerNames? = null,
-    val summary: CallSummary? = null,
-    val note: String? = null,
-    val language: String? = null,
-    val model: String? = null
+    val speakerNames: SpeakerNames?,
+    val summary: CallSummary?,
+    val note: String?,
+    /** The user's own labels for this call. Carried by the formats that have somewhere to put them. */
+    val tags: List<String>,
+    val language: String?,
+    val model: String?
 )
 
 /**
@@ -111,6 +119,14 @@ object TranscriptExport {
      */
     private fun renderMarkdown(doc: ExportDocument): String = buildString {
         appendLine("# ${doc.title}")
+
+        val tags = doc.tags.filter { it.isNotBlank() }
+        if (tags.isNotEmpty()) {
+            appendLine()
+            // Directly under the title, where a reader looks for what a document is about. These are
+            // the user's own words for the call and are worth more to them than the provenance line.
+            appendLine(tags.joinToString(" ") { "`$it`" })
+        }
 
         val provenance = listOfNotNull(
             doc.language?.takeIf { it.isNotBlank() }?.let { "Language: $it" },
@@ -256,6 +272,7 @@ object TranscriptExport {
 
         val root = JSONObject()
             .put("title", doc.title)
+            .put("tags", JSONArray(doc.tags.filter { it.isNotBlank() }))
             .put("language", doc.language ?: JSONObject.NULL)
             .put("model", doc.model ?: JSONObject.NULL)
             .put("segments", segments)

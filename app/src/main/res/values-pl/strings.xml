@@ -569,4 +569,8 @@
     <string name="playback_tags_add">Dodaj tag</string>
     <string name="playback_tags_remove">Usuń tag</string>
     <string name="playback_tags_hint">np. mieszkanie, ubezpieczenie</string>
+    <string name="playback_tags_manage_title">Tag</string>
+    <string name="playback_tags_manage_explain">Zmiana nazwy zmienia ten tag we wszystkich nagraniach, które go mają. Zmiana na istniejący tag scala oba.</string>
+    <string name="playback_tags_rename">Zmień nazwę</string>
+    <string name="playback_tags_delete_everywhere">Usuń wszędzie</string>
 </resources>

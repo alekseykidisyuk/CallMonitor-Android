@@ -569,4 +569,8 @@
     <string name="playback_tags_add">Ajouter une étiquette</string>
     <string name="playback_tags_remove">Supprimer l\'étiquette</string>
     <string name="playback_tags_hint">p. ex. l\'appartement, assurance</string>
+    <string name="playback_tags_manage_title">Étiquette</string>
+    <string name="playback_tags_manage_explain">Le renommage modifie cette étiquette sur tous les enregistrements qui la portent. La renommer en une étiquette existante fusionne les deux.</string>
+    <string name="playback_tags_rename">Renommer</string>
+    <string name="playback_tags_delete_everywhere">Supprimer partout</string>
 </resources>

@@ -569,4 +569,8 @@
     <string name="playback_tags_add">添加标签</string>
     <string name="playback_tags_remove">移除标签</string>
     <string name="playback_tags_hint">例如：房子、保险</string>
+    <string name="playback_tags_manage_title">标签</string>
+    <string name="playback_tags_manage_explain">重命名会更改所有带有该标签的录音。重命名为已存在的标签会将两者合并。</string>
+    <string name="playback_tags_rename">重命名</string>
+    <string name="playback_tags_delete_everywhere">全部删除</string>
 </resources>

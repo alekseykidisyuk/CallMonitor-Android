@@ -569,4 +569,8 @@
     <string name="playback_tags_add">Добавить метку</string>
     <string name="playback_tags_remove">Удалить метку</string>
     <string name="playback_tags_hint">например: квартира, страховка</string>
+    <string name="playback_tags_manage_title">Метка</string>
+    <string name="playback_tags_manage_explain">Переименование меняет метку во всех записях, где она есть. Переименование в существующую метку объединяет их.</string>
+    <string name="playback_tags_rename">Переименовать</string>
+    <string name="playback_tags_delete_everywhere">Удалить везде</string>
 </resources>

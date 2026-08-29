@@ -87,6 +87,21 @@ interface RecordingTagDao {
     @Query("DELETE FROM recording_tags WHERE displayName = :displayName AND tag = :tag")
     suspend fun remove(displayName: String, tag: String)
 
+    /**
+     * Renames [from] to [to] on every recording that carries it.
+     *
+     * **`UPDATE OR REPLACE`, not a plain UPDATE.** Renaming *work* to *admin* on a call that already
+     * carries *admin* would collide with the composite primary key and abort the whole statement —
+     * leaving the rename half-applied across the library, which is worse than not offering it. The
+     * conflict resolution merges those rows instead, which is exactly what merging two tags means.
+     */
+    @Query("UPDATE OR REPLACE recording_tags SET tag = :to WHERE tag = :from")
+    suspend fun renameEverywhere(from: String, to: String)
+
+    /** Removes [tag] from every recording. */
+    @Query("DELETE FROM recording_tags WHERE tag = :tag")
+    suspend fun deleteEverywhere(tag: String)
+
     /** Part of the delete cascade: a tag outliving its recording is a record of a deleted call. */
     @Query("DELETE FROM recording_tags WHERE displayName = :displayName")
     suspend fun deleteFor(displayName: String)

@@ -58,6 +58,9 @@ class TranscriptExportTest {
             segment(2_500, 5_000, "Hi, how are you", SpeakerChannel.B.key)
         ),
         speakerNames = names,
+        summary = null,
+        note = null,
+        tags = emptyList(),
         language = "he",
         model = "large-v3-turbo-q8_0"
     )
@@ -229,6 +232,25 @@ class TranscriptExportTest {
     }
 
     // ---- json ----
+
+    @Test
+    fun `tags reach markdown and json, and no subtitle file`() {
+        // They belong to the reader, not to the audio: a cue file has nowhere to put them and a
+        // player would render them as a spoken line.
+        val tagged = doc.copy(tags = listOf("the flat", "insurance"))
+
+        assertTrue("`the flat`" in TranscriptExport.render(TranscriptFormat.MARKDOWN, tagged))
+        assertTrue("insurance" in TranscriptExport.render(TranscriptFormat.JSON, tagged))
+        assertFalse("the flat" in TranscriptExport.render(TranscriptFormat.SRT, tagged))
+        assertFalse("the flat" in TranscriptExport.render(TranscriptFormat.VTT, tagged))
+    }
+
+    @Test
+    fun `no tags leaves no empty line under the title`() {
+        val md = TranscriptExport.render(TranscriptFormat.MARKDOWN, doc)
+
+        assertFalse(md, "``" in md)
+    }
 
     @Test
     fun `json carries the channel key and the resolved name for each segment`() {

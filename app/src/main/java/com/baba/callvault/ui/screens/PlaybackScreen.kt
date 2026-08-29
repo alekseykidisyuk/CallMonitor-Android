@@ -13,6 +13,7 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,6 +74,7 @@ import com.baba.callvault.data.transcripts.TranscriptStatus
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.InputChip
@@ -123,6 +125,9 @@ fun PlaybackScreen(
     knownTags: List<String> = emptyList(),
     onAddTag: (String) -> Unit = {},
     onRemoveTag: (String) -> Unit = {},
+    /** Renames a tag on every recording carrying it — the only way to fix a typo already applied. */
+    onRenameTag: (String, String) -> Unit = { _, _ -> },
+    onDeleteTagEverywhere: (String) -> Unit = {},
     onSummarise: () -> Unit,
     onStopSummary: () -> Unit,
     onBack: () -> Unit,
@@ -202,7 +207,9 @@ fun PlaybackScreen(
                 tags = tags,
                 knownTags = knownTags,
                 onAddTag = onAddTag,
-                onRemoveTag = onRemoveTag
+                onRemoveTag = onRemoveTag,
+                onRenameTag = onRenameTag,
+                onDeleteTagEverywhere = onDeleteTagEverywhere
             )
             NoteCard(note = note, onNoteChange = onNoteChange)
         }
@@ -617,9 +624,12 @@ private fun TagCard(
     tags: List<String>,
     knownTags: List<String>,
     onAddTag: (String) -> Unit,
-    onRemoveTag: (String) -> Unit
+    onRemoveTag: (String) -> Unit,
+    onRenameTag: (String, String) -> Unit,
+    onDeleteTagEverywhere: (String) -> Unit
 ) {
     var adding by remember { mutableStateOf(false) }
+    var managing by remember { mutableStateOf<String?>(null) }
 
     CvCard(contentPadding = PaddingValues(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -642,13 +652,18 @@ private fun TagCard(
             tags.forEach { tag ->
                 InputChip(
                     selected = false,
-                    onClick = { onRemoveTag(tag) },
+                    // The chip body manages the tag everywhere; the × takes it off this call alone.
+                    // Two different scopes, so they are two different targets rather than one
+                    // control that sometimes means the library and sometimes means this recording.
+                    onClick = { managing = tag },
                     label = { Text(tag) },
                     trailingIcon = {
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = stringResource(R.string.playback_tags_remove),
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clickable { onRemoveTag(tag) }
                         )
                     },
                     colors = InputChipDefaults.inputChipColors(
@@ -674,6 +689,21 @@ private fun TagCard(
                 )
             )
         }
+    }
+
+    managing?.let { tag ->
+        ManageTagDialog(
+            tag = tag,
+            onDismiss = { managing = null },
+            onRename = { newName ->
+                managing = null
+                onRenameTag(tag, newName)
+            },
+            onDeleteEverywhere = {
+                managing = null
+                onDeleteTagEverywhere(tag)
+            }
+        )
     }
 
     if (adding) {
@@ -739,6 +769,63 @@ private fun AddTagDialog(
                 onClick = { onConfirm(text) },
                 enabled = text.isNotBlank()
             ) { Text(stringResource(R.string.general_ok)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_cancel)) }
+        }
+    )
+}
+
+/**
+ * Renaming or removing a tag across the whole library.
+ *
+ * Scoped to *everywhere* on purpose, and said so in the copy. Taking a tag off this one call is the ×
+ * on the chip; this dialog is the other thing entirely, and a user who cannot tell which they are
+ * about to do will eventually do the wrong one to twenty recordings at once.
+ *
+ * Renaming onto an existing tag merges the two, which is the only way to repair a tag that was coined
+ * twice — the outcome most people actually want when they open this.
+ */
+@Composable
+private fun ManageTagDialog(
+    tag: String,
+    onDismiss: () -> Unit,
+    onRename: (String) -> Unit,
+    onDeleteEverywhere: () -> Unit
+) {
+    var text by remember(tag) { mutableStateOf(tag) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.playback_tags_manage_title)) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { if (it.length <= TagName.MAX_LENGTH) text = it },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.playback_tags_manage_explain),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                TextButton(
+                    onClick = onDeleteEverywhere,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text(stringResource(R.string.playback_tags_delete_everywhere)) }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onRename(text) },
+                enabled = text.isNotBlank() && text != tag
+            ) { Text(stringResource(R.string.playback_tags_rename)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_cancel)) }

@@ -103,6 +103,15 @@ fun TranscriptSheet(
      * already are; the caller only has to put it on disk and raise the chooser.
      */
     onExport: (TranscriptFormat, ExportDocument) -> Unit = { _, _ -> },
+    /**
+     * The note and tags attached to this recording, so an export carries them.
+     *
+     * Passed in rather than read here for the same reason the speaker names are: the sheet renders
+     * what it is given. They reach only the formats with somewhere to put them — Markdown and JSON —
+     * and never a subtitle file.
+     */
+    note: String = "",
+    tags: List<String> = emptyList(),
     onRetranscribe: () -> Unit,
     onDelete: () -> Unit,
     /**
@@ -260,6 +269,8 @@ fun TranscriptSheet(
                                         // still being written, or was offered and declined, must not
                                         // reach the file as a half-finished account of the call.
                                         summary = (summaryState as? SummaryCardState.Ready)?.summary,
+                                        note = note,
+                                        tags = tags,
                                         language = transcript?.transcript?.language,
                                         model = transcript?.transcript?.modelId
                                     )

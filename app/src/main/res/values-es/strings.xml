@@ -569,4 +569,8 @@
     <string name="playback_tags_add">Añadir etiqueta</string>
     <string name="playback_tags_remove">Quitar etiqueta</string>
     <string name="playback_tags_hint">p. ej. el piso, seguro</string>
+    <string name="playback_tags_manage_title">Etiqueta</string>
+    <string name="playback_tags_manage_explain">Al renombrar, la etiqueta cambia en todas las grabaciones que la tienen. Renombrarla a una etiqueta existente fusiona ambas.</string>
+    <string name="playback_tags_rename">Renombrar</string>
+    <string name="playback_tags_delete_everywhere">Eliminar en todas partes</string>
 </resources>

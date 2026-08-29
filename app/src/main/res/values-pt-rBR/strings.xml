@@ -572,4 +572,8 @@
     <string name="playback_tags_add">Adicionar etiqueta</string>
     <string name="playback_tags_remove">Remover etiqueta</string>
     <string name="playback_tags_hint">ex.: o apartamento, seguro</string>
+    <string name="playback_tags_manage_title">Etiqueta</string>
+    <string name="playback_tags_manage_explain">Renomear altera esta etiqueta em todas as gravações que a têm. Renomeá-la para uma etiqueta existente mescla as duas.</string>
+    <string name="playback_tags_rename">Renomear</string>
+    <string name="playback_tags_delete_everywhere">Excluir em todos</string>
 </resources>

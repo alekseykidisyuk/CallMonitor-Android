@@ -569,4 +569,8 @@
     <string name="playback_tags_add">Thêm thẻ</string>
     <string name="playback_tags_remove">Xóa thẻ</string>
     <string name="playback_tags_hint">ví dụ: căn hộ, bảo hiểm</string>
+    <string name="playback_tags_manage_title">Thẻ</string>
+    <string name="playback_tags_manage_explain">Đổi tên sẽ thay đổi thẻ này trên mọi bản ghi có nó. Đổi thành thẻ đã có sẽ gộp cả hai.</string>
+    <string name="playback_tags_rename">Đổi tên</string>
+    <string name="playback_tags_delete_everywhere">Xóa ở mọi nơi</string>
 </resources>

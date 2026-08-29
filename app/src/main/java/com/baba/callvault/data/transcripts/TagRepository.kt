@@ -88,6 +88,40 @@ object TagRepository {
         }
     }
 
+    /**
+     * Renames [tag] to [input] everywhere it appears, and returns the new name.
+     *
+     * **The one operation that makes tagging survivable.** Without it a typo applied across twenty
+     * calls can only be fixed by opening all twenty, which in practice means living with it — and one
+     * misspelled tag splits a filter for good.
+     *
+     * Renaming onto a tag that already exists is a **merge**, and deliberately so: it is the only way
+     * to repair *work* and *Work Stuff* having been coined separately. The canonicalisation excludes
+     * the tag being renamed, so correcting only its capitalisation is not mistaken for a no-op.
+     *
+     * Null means the new name was not a tag at all, or was the same one back again.
+     */
+    suspend fun rename(context: Context, tag: String, input: String): String? {
+        val others = runCatching { dao(context).allTags() }.getOrDefault(emptyList())
+            .filterNot { it == tag }
+        val renamed = TagName.canonical(input, others) ?: return null
+        if (renamed == tag) return null
+
+        return runCatching {
+            dao(context).renameEverywhere(tag, renamed)
+            renamed
+        }.getOrElse {
+            AppLogger.w(TAG, "Could not rename a tag: ${it.message}")
+            null
+        }
+    }
+
+    /** Removes [tag] from every recording carrying it. */
+    suspend fun deleteEverywhere(context: Context, tag: String) {
+        runCatching { dao(context).deleteEverywhere(tag) }
+            .onFailure { AppLogger.w(TAG, "Could not delete a tag: ${it.message}") }
+    }
+
     /** Takes [tag] off [displayName]. Leaves it on every other recording that carries it. */
     suspend fun remove(context: Context, displayName: String, tag: String) {
         runCatching { dao(context).remove(displayName, tag) }

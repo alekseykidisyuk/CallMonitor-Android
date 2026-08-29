@@ -93,6 +93,16 @@ class TagNameTest {
     }
 
     @Test
+    fun `renaming only the capitalisation is not swallowed as a no-op`() {
+        // The rename path excludes the tag being renamed from the existing set, so correcting "work"
+        // to "Work" is a real change. Without that exclusion it would canonicalise straight back to
+        // "work" and the user would tap Rename and watch nothing happen, twice, and give up.
+        val othersExcludingItself = listOf("insurance", "home")
+
+        assertEquals("Work", TagName.canonical("Work", existing = othersExcludingItself))
+    }
+
+    @Test
     fun `an unrelated existing tag is left alone`() {
         assertEquals("home", TagName.canonical("home", existing = listOf("work", "insurance")))
     }

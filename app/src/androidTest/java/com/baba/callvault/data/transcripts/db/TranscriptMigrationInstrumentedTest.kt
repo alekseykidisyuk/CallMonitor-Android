@@ -259,6 +259,36 @@ class TranscriptMigrationInstrumentedTest {
         }
     }
 
+    @Test
+    fun renaming_a_tag_onto_an_existing_one_merges_rather_than_aborting() {
+        // The reason the rename uses UPDATE OR REPLACE. A plain UPDATE would collide with the
+        // composite primary key on any recording already carrying the destination tag and abort the
+        // whole statement — leaving the rename half-applied across the library, which is worse than
+        // not offering it at all.
+        helper.createDatabase(DB_NAME, 5).close()
+        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+
+        db.execSQL("INSERT INTO recording_tags (displayName, tag) VALUES ('a.ogg', 'work')")
+        db.execSQL("INSERT INTO recording_tags (displayName, tag) VALUES ('a.ogg', 'admin')")
+        db.execSQL("INSERT INTO recording_tags (displayName, tag) VALUES ('b.ogg', 'work')")
+
+        db.execSQL("UPDATE OR REPLACE recording_tags SET tag = 'admin' WHERE tag = 'work'")
+
+        // a.ogg had both and keeps one; b.ogg's is renamed. Nothing is lost and nothing is doubled.
+        db.query("SELECT COUNT(*) FROM recording_tags WHERE displayName = 'a.ogg'").use {
+            assertTrue(it.moveToFirst())
+            assertEquals(1, it.getInt(0))
+        }
+        db.query("SELECT tag FROM recording_tags WHERE displayName = 'b.ogg'").use {
+            assertTrue(it.moveToFirst())
+            assertEquals("admin", it.getString(0))
+        }
+        db.query("SELECT COUNT(*) FROM recording_tags WHERE tag = 'work'").use {
+            assertTrue(it.moveToFirst())
+            assertEquals(0, it.getInt(0))
+        }
+    }
+
     private companion object {
         /** Deliberately not `transcripts.db` — the helper deletes it between runs. */
         const val DB_NAME = "migration-test-transcripts.db"

@@ -407,6 +407,12 @@ fun HomeScreen(
                 onRemoveTag = { tag ->
                     transcriptScope.launch { TagRepository.remove(context, displayName, tag) }
                 },
+                onRenameTag = { tag, newName ->
+                    transcriptScope.launch { TagRepository.rename(context, tag, newName) }
+                },
+                onDeleteTagEverywhere = { tag ->
+                    transcriptScope.launch { TagRepository.deleteEverywhere(context, tag) }
+                },
                 onSummarise = { SummaryScheduler.runNow(context, displayName) },
                 onStopSummary = { SummaryScheduler.stopNow(context) },
                 onBack = closePlayback,
@@ -706,9 +712,20 @@ fun HomeScreen(
             AppPreferences(context).getSpeakerMapConfirmed()
         }
 
+        // The note and the tags travel with an export. Read here rather than inside the sheet so
+        // the sheet stays a pure rendering of what it is handed, like everything else it shows.
+        val sheetNote by remember(displayName) {
+            RecordingExtrasRepository.note(context, displayName)
+        }.collectAsState(initial = "")
+        val sheetTags by remember(displayName) {
+            TagRepository.tagsFor(context, displayName)
+        }.collectAsState(initial = emptyList())
+
         TranscriptSheet(
             transcript = transcript,
             title = title,
+            note = sheetNote,
+            tags = sheetTags,
             positionMs = if (isThisTrack) playback.positionMs.toLong() else -1L,
             durationMs = if (isThisTrack) playback.durationMs.toLong() else 0L,
             isPlaying = isThisTrack && playback.phase == RecordingPlaybackController.Phase.PLAYING,

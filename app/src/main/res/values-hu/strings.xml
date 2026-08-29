@@ -569,4 +569,8 @@
     <string name="playback_tags_add">Címke hozzáadása</string>
     <string name="playback_tags_remove">Címke eltávolítása</string>
     <string name="playback_tags_hint">pl. lakás, biztosítás</string>
+    <string name="playback_tags_manage_title">Címke</string>
+    <string name="playback_tags_manage_explain">Az átnevezés minden olyan felvételen megváltoztatja ezt a címkét, amelyen szerepel. Ha meglévő címke nevére nevezed át, a kettő összeolvad.</string>
+    <string name="playback_tags_rename">Átnevezés</string>
+    <string name="playback_tags_delete_everywhere">Törlés mindenhonnan</string>
 </resources>
