@@ -571,21 +571,5 @@
     <string name="playback_tags_manage_explain">Переименование меняет метку во всех записях, где она есть. Переименование в существующую метку объединяет их.</string>
     <string name="playback_tags_rename">Переименовать</string>
     <string name="playback_tags_delete_everywhere">Удалить везде</string>
-    <string name="settings_section_trash">Недавно удалённые</string>
-    <string name="settings_trash_restore">Восстановить</string>
-    <string name="settings_trash_delete_forever">Удалить навсегда</string>
     <string name="transcript_share_text">Текст</string>
-    <string name="settings_trash_keep_title">Хранить удалённые записи</string>
-    <string name="settings_trash_keep_days">%1$d дн.</string>
-    <string name="settings_trash_keep_off">Удалять сразу</string>
-    <string name="settings_trash_keep_explain">Удалённую запись можно восстановить до конца срока. Она остаётся в папке под изменённым именем, поэтому файловый менеджер и синхронизация её видят.</string>
-    <string name="settings_trash_keep_off_explain">Удаление сразу убирает запись. Восстанавливать нечего.</string>
-    <string name="settings_trash_empty_now">Очистить сейчас (%1$d)</string>
-    <string name="settings_trash_empty_confirm_title">Очистить удалённые записи?</string>
-    <string name="settings_trash_empty_confirm_message">%1$d записей будут удалены навсегда вместе с расшифровками и заметками. Отменить будет нельзя.</string>
-    <string name="home_filter_deleted_chip">Удалённые (%1$d)</string>
-    <string name="home_deleted_days_left">Осталось %1$d дн.</string>
-    <string name="home_purge_confirm_title">Удалить навсегда?</string>
-    <string name="home_purge_confirm_message">Запись будет удалена вместе с расшифровкой, кратким изложением и заметками. Отменить будет нельзя.</string>
-    <string name="settings_trash_vs_retention">Это не связано с хранением. Хранение удаляет старые записи навсегда и не помещает их сюда.</string>
 </resources>

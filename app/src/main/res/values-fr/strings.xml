@@ -571,21 +571,5 @@
     <string name="playback_tags_manage_explain">Le renommage modifie cette étiquette sur tous les enregistrements qui la portent. La renommer en une étiquette existante fusionne les deux.</string>
     <string name="playback_tags_rename">Renommer</string>
     <string name="playback_tags_delete_everywhere">Supprimer partout</string>
-    <string name="settings_section_trash">Supprimés récemment</string>
-    <string name="settings_trash_restore">Restaurer</string>
-    <string name="settings_trash_delete_forever">Supprimer définitivement</string>
     <string name="transcript_share_text">Texte</string>
-    <string name="settings_trash_keep_title">Conserver les enregistrements supprimés</string>
-    <string name="settings_trash_keep_days">%1$d jours</string>
-    <string name="settings_trash_keep_off">Supprimer immédiatement</string>
-    <string name="settings_trash_keep_explain">Un enregistrement supprimé peut être restauré jusqu\'à la fin de ce délai. Il reste dans votre dossier sous un autre nom : un gestionnaire de fichiers et toute synchronisation peuvent encore le voir.</string>
-    <string name="settings_trash_keep_off_explain">La suppression retire l\'enregistrement immédiatement. Il n\'y a rien à restaurer.</string>
-    <string name="settings_trash_empty_now">Vider maintenant (%1$d)</string>
-    <string name="settings_trash_empty_confirm_title">Vider les enregistrements supprimés ?</string>
-    <string name="settings_trash_empty_confirm_message">%1$d enregistrements seront supprimés définitivement, avec leurs transcriptions et leurs notes. Action irréversible.</string>
-    <string name="home_filter_deleted_chip">Supprimés (%1$d)</string>
-    <string name="home_deleted_days_left">%1$d jours restants</string>
-    <string name="home_purge_confirm_title">Supprimer définitivement ?</string>
-    <string name="home_purge_confirm_message">L\'enregistrement disparaît, avec sa transcription, son résumé et ses notes. Action irréversible.</string>
-    <string name="settings_trash_vs_retention">C\'est indépendant de la Rétention. La rétention supprime définitivement les anciens enregistrements et ne les place pas ici.</string>
 </resources>

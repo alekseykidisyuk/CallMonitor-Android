@@ -17,8 +17,6 @@ import androidx.lifecycle.viewModelScope
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.transcripts.TagRepository
-import com.baba.callvault.system.storage.RecordingTrashRepository
-import com.baba.callvault.system.storage.TrashedRecording
 import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.data.health.CallGapDetector
 import com.baba.callvault.data.health.CallLogReader
@@ -34,8 +32,6 @@ import com.baba.callvault.data.recordings.RecordingDirection
 import androidx.documentfile.provider.DocumentFile
 import com.baba.callvault.data.recordings.RecordingCatalog
 import com.baba.callvault.utils.AppLogger
-import com.baba.callvault.data.recordings.DeleteScope
-import com.baba.callvault.data.recordings.RecordingSelection
 import com.baba.callvault.data.recordings.RecordingsRepository
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingSource
@@ -157,10 +153,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val dateFilter: String? = null,
         /** The selected tag, or null for "all tags". */
         val tagFilter: String? = null,
-        /** True while the list is showing deleted recordings instead of live ones. */
-        val showingTrash: Boolean = false,
-        /** What is in the trash. Read on refresh, because it is a walk of the storage folders. */
-        val trashed: List<TrashedRecording> = emptyList(),
         /**
          * Which tags each recording carries.
          *
@@ -441,22 +433,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 usbScreenLockRisk = UsbDefaultConfig.isScreenLockRisk(appContext)
             )
         }
-        // Off the main thread: this walks both storage folders, and on the Drive folder that is a
-        // network round trip. Leaving the chip out until it arrives is right — a chip that appears a
-        // moment later is better than a list that waits for one.
-        viewModelScope.launch {
-            val trashed = withContext(Dispatchers.IO) {
-                runCatching { RecordingTrashRepository.list(appContext) }.getOrDefault(emptyList())
-            }
-            _uiState.update { state ->
-                state.copy(
-                    trashed = trashed,
-                    // Nothing left to show means nothing to stay looking at. Without this, emptying
-                    // the trash leaves the list in a mode with no rows and no chip to leave by.
-                    showingTrash = state.showingTrash && trashed.isNotEmpty()
-                )
-            }
-        }
         // An install-over can drop WRITE_SECURE_SETTINGS while the daemon stays warm (recording still
         // works). Whenever the grant is missing, silently try to restore it over any transport that's
         // already up (WD still on / loopback armed) — no user action, no adbd churn — so a later daemon
@@ -593,37 +569,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(directionFilter = filter) }
     }
 
-    /**
-     * Switches the list between live recordings and deleted ones.
-     *
-     * A mode rather than another facet: the other four narrow the same set, while this one changes
-     * which set is being shown, and the rows themselves offer different actions. Sharing the chip row
-     * is a presentation choice — it is where the user already looks to change what the list contains.
-     */
-    fun setShowingTrash(showing: Boolean) {
-        _uiState.update { it.copy(showingTrash = showing) }
-    }
-
-    /** Puts a deleted recording back, then reloads so it reappears in the live list. */
-    fun restoreTrashed(trashedName: String) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                RecordingTrashRepository.restore(appContext, trashedName)
-            }
-            refresh()
-        }
-    }
-
-    /** Removes a deleted recording for good, with its transcript, summary, note and tags. */
-    fun deleteTrashedForever(trashedName: String) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                RecordingTrashRepository.deleteForever(appContext, trashedName)
-            }
-            refresh()
-        }
-    }
-
     /** Selects a tag to filter to, or null for "all tags". */
     fun setTagFilter(tag: String?) {
         _uiState.update { it.copy(tagFilter = tag) }
@@ -751,16 +696,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
         _uiState.update { it.copy(deletingUris = it.deletingUris + item.uri) }
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                // To the trash, not off the disk. This is the path where a mis-tap costs the whole
-                // recording, and audio cannot be regenerated at any price.
-                //
-                // If the rename fails — a provider that will not rename, a revoked grant — fall back
-                // to the delete this used to do rather than leaving the user with a tap that did
-                // nothing. Better a delete they asked for than a button that silently does not work.
-                val trashed = RecordingTrashRepository.trash(appContext, item.displayName)
-                if (!trashed) RecordingsRepository.deleteRecording(appContext, item)
-            }
+            withContext(Dispatchers.IO) { RecordingsRepository.deleteRecording(appContext, item) }
             refresh()
             _uiState.update { it.copy(deletingUris = it.deletingUris - item.uri) }
         }
@@ -788,42 +724,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * The whole set is marked as deleting up front so every affected row shows its spinner together;
      * refreshing per file would make the list jump under the user's finger while the rest run.
      */
-    /**
-     * Bulk delete from a multi-selection, routed like the single-recording delete.
-     *
-     * **Scope decides whether the trash is involved, and it has to.** Deleting *both* copies is the
-     * end of the recording, so it goes to the trash exactly as the per-row delete does — a
-     * multi-selection is the easiest place of all to destroy more than was meant. Deleting only the
-     * Device or only the Drive copy is not losing the recording; the other copy survives, so the file
-     * is removed outright rather than leaving a trashed duplicate of something the user still has.
-     *
-     * This was missed when the trash was first wired up: only the per-row delete went through it, so
-     * the highest-volume mis-tap path in the app stayed irreversible.
-     */
-    fun deleteSelection(items: List<RecordingItem>, scope: DeleteScope) {
-        if (items.isEmpty()) return
-        if (scope != DeleteScope.BOTH) {
-            deleteUris(RecordingSelection.urisToDelete(items, scope))
-            return
-        }
-
-        val uris = RecordingSelection.urisToDelete(items, scope)
-        if (playback.value.activeUri in uris) playbackController.stop()
-        _uiState.update { it.copy(deletingUris = it.deletingUris + uris) }
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                items.forEach { item ->
-                    // Same fallback as the single delete: if the rename cannot happen, do the delete
-                    // the user asked for rather than leaving a tap that did nothing.
-                    val trashed = RecordingTrashRepository.trash(appContext, item.displayName)
-                    if (!trashed) RecordingsRepository.deleteRecording(appContext, item)
-                }
-            }
-            refresh()
-            _uiState.update { it.copy(deletingUris = it.deletingUris - uris.toSet()) }
-        }
-    }
-
     fun deleteUris(uris: List<Uri>) {
         if (uris.isEmpty()) return
         if (playback.value.activeUri in uris) playbackController.stop()

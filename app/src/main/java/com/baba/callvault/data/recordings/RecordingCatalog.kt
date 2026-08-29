@@ -102,17 +102,11 @@ object RecordingCatalog {
      *
      * The transcript cascade is explicit because transcripts live in a separate database (see
      * [TranscriptCascade]); SQLite cannot do it for us.
-     *
-     * @param cascade whether to destroy the transcript, summary, note and tags with the row.
-     *   **False only when the recording can still come back** — moving one to the trash drops its
-     *   catalog row while the audio survives under another name, and taking its transcript with it
-     *   would make a later restore return silent audio and nothing else. Every other caller wants
-     *   the default: a row removed because the recording is gone for good.
      */
-    suspend fun removeName(context: Context, displayName: String, cascade: Boolean = true) {
+    suspend fun removeName(context: Context, displayName: String) {
         runCatching { dao(context).deleteByName(displayName) }
             .onFailure { AppLogger.w(TAG, "removeName('$displayName') failed: ${it.message}") }
-        if (cascade) TranscriptCascade.deleteFor(context, listOf(displayName))
+        TranscriptCascade.deleteFor(context, listOf(displayName))
     }
 
     /**

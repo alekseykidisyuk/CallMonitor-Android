@@ -484,7 +484,6 @@ private const val SUB_OUTGOING = "sub_outgoing"
 private const val SUB_WHERE = "sub_where"
 private const val SUB_UPLOAD = "sub_upload"
 private const val SUB_RETENTION = "sub_retention"
-private const val SUB_TRASH = "sub_trash"
 private const val SUB_VISUAL = "sub_visual"
 private const val SUB_PRIVACY = "sub_privacy"
 private const val SUB_EXPERIMENTAL = "sub_experimental"
@@ -766,15 +765,6 @@ private fun StorageSection(
             expanded = openSub == SUB_RETENTION,
             onToggle = { openSub = if (openSub == SUB_RETENTION) null else SUB_RETENTION },
         ) { RetentionSubSection(preferences, updateTrigger, actions) }
-
-        // Beside retention, which is the other rule about when recordings stop existing. The two
-        // answer the same question from opposite ends — how long a kept recording lives, and how long
-        // a deleted one does — and a user reasoning about disk space wants both in one place.
-        SettingsSubSection(
-            title = stringResource(R.string.settings_section_trash),
-            expanded = openSub == SUB_TRASH,
-            onToggle = { openSub = if (openSub == SUB_TRASH) null else SUB_TRASH },
-        ) { TrashSettings(preferences, updateTrigger) }
     }
 }
 

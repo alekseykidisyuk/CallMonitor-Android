@@ -571,21 +571,5 @@
     <string name="playback_tags_manage_explain">Al renombrar, la etiqueta cambia en todas las grabaciones que la tienen. Renombrarla a una etiqueta existente fusiona ambas.</string>
     <string name="playback_tags_rename">Renombrar</string>
     <string name="playback_tags_delete_everywhere">Eliminar en todas partes</string>
-    <string name="settings_section_trash">Eliminados recientemente</string>
-    <string name="settings_trash_restore">Restaurar</string>
-    <string name="settings_trash_delete_forever">Eliminar definitivamente</string>
     <string name="transcript_share_text">Texto</string>
-    <string name="settings_trash_keep_title">Conservar grabaciones eliminadas</string>
-    <string name="settings_trash_keep_days">%1$d días</string>
-    <string name="settings_trash_keep_off">Eliminar de inmediato</string>
-    <string name="settings_trash_keep_explain">Una grabación eliminada puede restaurarse hasta que se agote este plazo. Permanece en tu carpeta con otro nombre, así que un gestor de archivos y cualquier sincronización aún pueden verla.</string>
-    <string name="settings_trash_keep_off_explain">Al eliminar, la grabación se borra de inmediato. No hay nada que restaurar.</string>
-    <string name="settings_trash_empty_now">Vaciar ahora (%1$d)</string>
-    <string name="settings_trash_empty_confirm_title">¿Vaciar las grabaciones eliminadas?</string>
-    <string name="settings_trash_empty_confirm_message">Se eliminarán definitivamente %1$d grabaciones, con sus transcripciones y notas. No se puede deshacer.</string>
-    <string name="home_filter_deleted_chip">Eliminados (%1$d)</string>
-    <string name="home_deleted_days_left">Quedan %1$d días</string>
-    <string name="home_purge_confirm_title">¿Eliminar definitivamente?</string>
-    <string name="home_purge_confirm_message">La grabación se elimina, junto con su transcripción, resumen y notas. No se puede deshacer.</string>
-    <string name="settings_trash_vs_retention">Esto es independiente de la Retención. La retención elimina las grabaciones antiguas de forma permanente y no las trae aquí.</string>
 </resources>

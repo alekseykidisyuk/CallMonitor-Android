@@ -148,9 +148,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.baba.callvault.ui.common.CallOriginBadge
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material3.ButtonDefaults
-import com.baba.callvault.system.storage.RecordingTrash
-import com.baba.callvault.system.storage.TrashedRecording
 import com.baba.callvault.R
 import com.baba.callvault.system.shareTranscriptFile
 import com.baba.callvault.data.transcripts.TagRepository
@@ -234,8 +231,6 @@ fun HomeScreen(
     var playbackFor by remember { mutableStateOf<String?>(null) }
     /** The recording whose delete is awaiting confirmation, raised from the playback screen. */
     var confirmDeleteFor by remember { mutableStateOf<String?>(null) }
-    /** A deleted recording the user has asked to remove for good — the last irreversible step. */
-    var confirmPurgeFor by remember { mutableStateOf<String?>(null) }
 
     /** Whether the search-across-transcripts sheet is open. */
     var showTranscriptSearch by remember { mutableStateOf(false) }
@@ -518,7 +513,7 @@ fun HomeScreen(
                 needsScopeChoice = RecordingSelection.needsScopeChoice(selectedItems),
                 onConfirm = { scope ->
                     showBulkDelete = false
-                    viewModel.deleteSelection(selectedItems, scope)
+                    viewModel.deleteUris(RecordingSelection.urisToDelete(selectedItems, scope))
                     clearSelection()
                 },
                 onDismiss = { showBulkDelete = false },
@@ -629,9 +624,6 @@ fun HomeScreen(
                         tagFilter = uiState.tagFilter,
                         availableTags = uiState.availableTags,
                         onTagFilterChange = { viewModel.setTagFilter(it) },
-                        trashedCount = uiState.trashed.size,
-                        showingTrash = uiState.showingTrash,
-                        onShowingTrashChange = { viewModel.setShowingTrash(it) },
                         onSourceFilterChange = { viewModel.setSourceFilter(it) },
                         onDirectionFilterChange = { viewModel.setDirectionFilter(it) },
                         onContactFilterChange = { viewModel.setContactFilter(it) },
@@ -640,15 +632,7 @@ fun HomeScreen(
                 }
             }
 
-            if (uiState.showingTrash) {
-                items(uiState.trashed, key = { it.trashedName }) { item ->
-                    DeletedRecordingRow(
-                        item = item,
-                        onRestore = { viewModel.restoreTrashed(item.trashedName) },
-                        onDeleteForever = { confirmPurgeFor = item.trashedName }
-                    )
-                }
-            } else if (recordings.isEmpty()) {
+            if (recordings.isEmpty()) {
                 // Only once the list has actually been read. Before that the list is *unknown*, and
                 // announcing "no recordings yet" to someone with sixty of them — for the half second
                 // it takes to read the folder — is simply wrong.
@@ -816,32 +800,6 @@ fun HomeScreen(
             summaryState = sheetSummary,
             onSummarise = { SummaryScheduler.runNow(context, displayName) },
             onStopSummary = { SummaryScheduler.stopNow(context) }
-        )
-    }
-
-    confirmPurgeFor?.let { trashedName ->
-        // The one irreversible step left. Everything before it is a rename that can be undone; past
-        // here the audio, the transcript, the summary, the note and the tags are all gone.
-        AlertDialog(
-            onDismissRequest = { confirmPurgeFor = null },
-            title = { Text(stringResource(R.string.home_purge_confirm_title)) },
-            text = { Text(stringResource(R.string.home_purge_confirm_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirmPurgeFor = null
-                        viewModel.deleteTrashedForever(trashedName)
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) { Text(stringResource(R.string.settings_trash_delete_forever)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmPurgeFor = null }) {
-                    Text(stringResource(R.string.general_cancel))
-                }
-            }
         )
     }
 
@@ -1397,9 +1355,6 @@ private fun RecordingFilterBar(
     tagFilter: String?,
     availableTags: List<String>,
     onTagFilterChange: (String?) -> Unit,
-    trashedCount: Int,
-    showingTrash: Boolean,
-    onShowingTrashChange: (Boolean) -> Unit,
     onSourceFilterChange: (SourceFilter) -> Unit,
     onDirectionFilterChange: (DirectionFilter) -> Unit,
     onContactFilterChange: (String?) -> Unit,
@@ -1483,16 +1438,6 @@ private fun RecordingFilterBar(
                 options = tagOptions,
                 selected = tagFilter,
                 onSelected = onTagFilterChange
-            )
-        }
-        // Absent entirely when the trash is empty, which is most of the time for most people. A
-        // permanent "Deleted (0)" would be a control that can only ever show an empty list, and it
-        // would sit in the row every day to serve the rare occasion.
-        if (trashedCount > 0) {
-            ToggleFilterChip(
-                text = stringResource(R.string.home_filter_deleted_chip, trashedCount),
-                active = showingTrash,
-                onClick = { onShowingTrashChange(!showingTrash) }
             )
         }
         FilterChip(
@@ -2462,68 +2407,4 @@ private fun formatMillis(millis: Int): String {
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     return String.format(Locale.US, "%d:%02d", minutes, seconds)
-}
-
-
-/**
- * A deleted recording, with the two things that can still be done to it.
- *
- * Deliberately not the ordinary row: it cannot be played, tapped into, tagged or transcribed, and
- * offering any of that would be a control that fails. What it shows instead is the one fact that
- * matters here — how long is left before it goes for good.
- */
-@Composable
-private fun DeletedRecordingRow(
-    item: TrashedRecording,
-    onRestore: () -> Unit,
-    onDeleteForever: () -> Unit
-) {
-    val now = remember(item.trashedName) { System.currentTimeMillis() }
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)) {
-        Text(
-            text = item.originalName,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = stringResource(
-                R.string.home_deleted_days_left,
-                RecordingTrash.daysRemaining(item.trashedName, now)
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = onRestore) {
-                Text(stringResource(R.string.settings_trash_restore))
-            }
-            TextButton(
-                onClick = onDeleteForever,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) { Text(stringResource(R.string.settings_trash_delete_forever)) }
-        }
-    }
-}
-
-/**
- * A filter chip that is a switch rather than a menu.
- *
- * The others open a list of values; this one has two states, and giving it a dropdown containing
- * "on" and "off" would be a menu to express what a tap already says.
- */
-@Composable
-private fun ToggleFilterChip(text: String, active: Boolean, onClick: () -> Unit) {
-    androidx.compose.material3.FilterChip(
-        selected = active,
-        onClick = onClick,
-        label = { Text(text) },
-        // Stated, not defaulted: this app's scheme resolves the M3 selected-chip container to a
-        // coral that reads as an error state.
-        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-    )
 }

@@ -34,6 +34,44 @@ to 1.6.0 — stale, written before the version scheme moved). 20100 clears the 1
 
 The maintainer is running this build daily for a few days before cutting the release.
 
+### 🅿️ Trash / recycle bin — built 2026-08-29, then REVERTED and PARKED
+
+Built end to end and reverted the same day. The maintainer's verdict was that it was more machinery
+than the problem deserved: *"I think we overdid it with the trash."* Agreed — a delete already has a
+confirmation, and the bin added a setting, a Home mode, a purge schedule and two folder-scanning code
+paths to protect against a mis-tap that is already guarded once.
+
+**Do not rebuild it from scratch without reading this.** The design worked, and the reverted commits
+are `1ad9391`, `d47c8d2`, `1cd5de3`, `2d59385`.
+
+**What the design got right, if it ever comes back:**
+
+- **Rename in place; never move or copy.** A move needs `FLAG_SUPPORTS_MOVE`, which not every SAF
+  provider offers, and the copy-and-delete fallback would download and re-upload the file on the Drive
+  folder — a hundred megabytes over mobile data to delete something. A rename transfers no bytes and
+  is exactly as reversible. All state lives in the file name, so no table can disagree with the folder.
+- **Filter at `RecordingsRepository.enumerateFolder`**, the single funnel every listing goes through.
+  `UntrackedRecordings` and `DriveCatalogRepair` both use it, which is what stopped a trashed file
+  reading as untracked and being deleted on the *live* retention schedule.
+
+**Three traps that cost real time, and would again:**
+
+1. 🚨 **Trashing must not run `TranscriptCascade`.** The transcript, summary, note and tags belong to
+   a recording that can still come back; taking them on the way in makes a restore return silent
+   audio. `RecordingCatalog.removeName` grew a `cascade` flag for that one caller.
+2. 🚨 **`RetentionScheduler` cancels the daily sweep when retention is off — the default — and that
+   sweep is the only thing that empties the trash.** So the bin never purged for most users and grew
+   without bound. The purge code was written to run "regardless of whether retention is on", which was
+   true of the worker and false of the world.
+3. 🚨 **Every delete path has to be routed, not just the per-row one.** Bulk multi-select delete
+   bypassed the bin entirely on the first pass — the easiest place in the app to destroy more than was
+   meant. Per-copy delete correctly stays permanent, since the other copy survives.
+
+**And the question that surfaced two of those:** retention and the bin are independent. Retention
+deletes **permanently** and does not fill the bin, so a 7-day retention is 7 days, not 7 + 30. That is
+right — retention exists to bound storage — but nothing in the UI said so, and it is the first thing
+anyone asks.
+
 ### 🔵 Remove the "Transcribe again" button — agreed 2026-08-29
 
 Drop the retranscribe action from the transcript sheet before the release.
@@ -41,14 +79,14 @@ Drop the retranscribe action from the transcript sheet before the release.
 **Why.** It exists because the model or the language pin might have been wrong, which was a real
 worry while transcription was being built and the defaults were still moving. Once the version ships
 with a settled model and a pinned language it stops earning its place: it costs minutes of CPU and
-battery, it is one of five actions on a sheet the user reaches to *read* something, and the failure it
-repairs is one they will now almost never hit.
+battery, it is one of several actions on a sheet the user reaches to *read* something, and the failure
+it repairs is one they will now almost never hit.
 
-**Do not simply hide it.** `TranscriptRepository.retry` is also how a FAILED transcript is retried,
-and the nightly queue deliberately skips FAILED so an undecodable file is not attempted every night
-for ever. Removing the button must leave a way to retry a *failed* one — otherwise a recording that
-failed once can never be transcribed again by any route. The likely shape is: keep retry where the
-row shows FAILED, drop it where the transcript is DONE.
+🚨 **Do not simply delete the call.** `TranscriptRepository.retry` is also how a FAILED transcript is
+retried, and the nightly queue deliberately skips FAILED so an undecodable file is not attempted every
+night for ever. Removing the button must leave a way to retry a *failed* one — otherwise a recording
+that failed once can never be transcribed again by any route. The likely shape is: keep retry where
+the row shows FAILED, drop it where the transcript is DONE.
 
 Agreed with the maintainer on 2026-08-29: "it won't be necessary once we release the version."
 

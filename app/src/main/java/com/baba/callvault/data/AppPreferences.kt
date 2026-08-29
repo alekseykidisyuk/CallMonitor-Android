@@ -250,7 +250,6 @@ class AppPreferences(context: Context) {
         SPEAKER_MAP_OVERRIDE("speaker_map_override"),
         SPEAKER_MAP_CONFIRMED("speaker_map_confirmed"),
         APP_LOCK_ENABLED("app_lock_enabled"),
-        TRASH_RETENTION_DAYS("trash_retention_days"),
 
         // --- Retention ---
         RETENTION_LINKED("retention_linked"),
@@ -901,21 +900,6 @@ class AppPreferences(context: Context) {
     fun isAppLockEnabled(): Boolean = getBoolean(Key.APP_LOCK_ENABLED, false)
 
     fun setAppLockEnabled(enabled: Boolean) = setBoolean(Key.APP_LOCK_ENABLED, enabled)
-
-    // -------- Deleted recordings --------
-
-    /**
-     * How many days a deleted recording is kept before it is removed for good.
-     *
-     * **Zero means delete immediately** — the behaviour before the trash existed, kept as a real
-     * option rather than a legacy path. A trashed file stays in the storage folder under a renamed
-     * form, so it is still visible to a file manager and to whatever syncs that folder; somebody who
-     * deletes a call because they want it *gone* is entitled to have that mean gone.
-     */
-    fun getTrashRetentionDays(): Int =
-        getInt(Key.TRASH_RETENTION_DAYS, com.baba.callvault.system.storage.RecordingTrash.RETENTION_DAYS)
-
-    fun setTrashRetentionDays(days: Int) = setInt(Key.TRASH_RETENTION_DAYS, days)
 
     // -------- Sync Schedule --------
 
