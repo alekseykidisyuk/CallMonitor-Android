@@ -72,6 +72,36 @@ deletes **permanently** and does not fill the bin, so a 7-day retention is 7 day
 right — retention exists to bound storage — but nothing in the UI said so, and it is the first thing
 anyone asks.
 
+### 🔴 E3 — off-Wi-Fi reboot re-arm — SPIKE DONE 2026-08-29, no door found
+
+Off-Wi-Fi recording ships (v1.4.0): `adb tcpip` puts adbd on a TCP port and the app connects to
+127.0.0.1, so a call records with no network. **The port does not survive a reboot**, and re-arming it
+means sending `tcpip:<port>` *through an existing ADB connection* — which off Wi-Fi you do not have.
+To get a connection you need the port; to open the port you need a connection.
+
+## Four doors tried. Three are shut, one is untested.
+
+Measured on the OP9 and the AOSP emulator, 2026-08-29. The post-reboot state was reproduced without
+rebooting: Wi-Fi off, then `adb usb` to drop adbd back to USB-only (`service.adb.tcp.port` → 0).
+
+| Door | Result |
+|---|---|
+| `setprop persist.adb.tcp.port` from shell — would open the port at every boot and end the problem outright | ❌ `Failed to set property` — **and it fails on the AOSP emulator too**, so it is SELinux, not an OEM choice. Only adbd may write it, which is the deadlock restated |
+| `setprop service.adb.tcp.port` from shell | ❌ same |
+| `settings put global adb_wifi_enabled 1` with Wi-Fi off — the app holds `WRITE_SECURE_SETTINGS`, so this is the one lever it *can* pull after a reboot | ❌ the platform **resets it to 0**. Control with Wi-Fi on: it sticks. So the gate is the *network*, not our permission |
+| The phone's own **hotspot** as a substitute network | ❓ **untested** — `cmd wifi start-softap` throws `SecurityException: Uid 2000 does not have access`, so it cannot be tested from adb. A user can turn a hotspot on by hand, and if soft-AP counts as a Wi-Fi network for Wireless Debugging, that is a real off-Wi-Fi recovery path |
+
+## Verdict
+
+**No code-only escape exists.** Every route to opening the port runs through adbd, and adbd only takes
+the instruction over a connection that cannot exist yet. This is not a missing API we have failed to
+find; it is the shape of the problem.
+
+**The one thing left worth trying costs a minute and needs a person:** with Wi-Fi off, switch the
+hotspot on, then try to enable Wireless Debugging. If that works, the fix is documentation and a
+prompt — "turn your hotspot on for ten seconds" — rather than code, and the residual hole closes for
+anyone willing to do it.
+
 ### 🅿️ Capture fallback ladder with RMS audibility check — PARKED 2026-08-29, before any work
 
 `cally`'s design, and the competitive research called it "the single most valuable idea in the
