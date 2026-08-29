@@ -122,9 +122,33 @@ The recording for that call is stamped `20260829_123630.877`, about **one second
 recording was named, not when the broadcast arrived, and the logcat ring had already rotated past the
 call's start. It bounds the gain rather than stating it.
 
-**Still untested: a VoIP call.** `selfManaged=true` is the whole reason this is worth having, and no
-self-managed call has been through it yet. The Telecom dump says `supportsSelfMg?true`, so the bind
-should happen; nobody has watched it.
+## 🚨 A WhatsApp call produces NO callback — the VoIP case does not work, and cannot
+
+Measured on the OP12, 2026-08-29, immediately after the carrier call above. An 18-second WhatsApp
+call was recorded normally by CallVault (`…voip-WhatsApp…ogg`, `farPartyHeard=true`) and **our
+`InCallService` received nothing at all** — no `onCallAdded`, no `onCallRemoved`, with the logcat ring
+still holding the carrier call from two minutes earlier.
+
+`dumpsys telecom` says why, and it is not our binding:
+
+    12:36:29  Enter SIM_CALL / MODE_IN_CALL / TC@161            ← the carrier call, we saw it
+    12:38:59  CommSess{uid=10394, created=12:38:42, callId=none} ← WhatsApp: a session, not a Call
+
+**`callId=none`.** WhatsApp never registers its calls with Telecom as a self-managed
+`ConnectionService`, so Telecom has no `Call` object to hand anybody. No `InCallService` — ours,
+BCR's, or the dialer's — can see a call that was never given to Telecom. `supportsSelfMg?true` on our
+bind is necessary and not sufficient: it says we *would* be told, if anyone told Telecom.
+
+**This corrects the research** (`09-capture-techniques.md` §1.7 and the synthesis), which presented the
+VoIP/carrier distinction as coming "by construction" from the bind. For apps that register with
+Telecom — Signal uses `ConnectionService` — it would. For WhatsApp on this phone it does not, and
+WhatsApp is the maintainer's main VoIP case. **Untested: Signal, Telegram.**
+
+**What survives, and it is still worth having:** carrier calls gain an authoritative number,
+direction and state at the earliest moment a call exists, plus the foreground lift. And the *absence*
+of a callback becomes a usable negative signal — if our own VoIP detection fires and Telecom said
+nothing, it really is not a carrier call. That is weaker than the research promised but is still
+better than inferring both sides.
 
 **The OP9 is a useful negative control** — it holds the association but *not* the role. If it binds
 there too, the role is not what is doing the work and the mechanism is something else.
