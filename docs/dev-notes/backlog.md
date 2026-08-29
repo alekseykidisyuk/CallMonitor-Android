@@ -174,6 +174,88 @@ Worth saying in the README and in the recovery prompt, because it is a materiall
 2. **Notify after the boot**, when the listener is down, rather than letting a missed call be the
    notification.
 
+## Fourth pass, 2026-08-29 — four parallel research tracks + AOSP source. **Closed for good.**
+
+### The gate, from AOSP source, byte-identical in every release 12 → main
+
+`AdbDebuggingManager.getCurrentWifiApInfo()`:
+
+```java
+WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+if (wifiInfo == null || wifiInfo.getNetworkId() == -1) {
+    Slog.i(TAG, "Not connected to any wireless network. Not enabling adbwifi.");
+```
+
+An **infrastructure STA association** check — not `NetworkCapabilities`, not `getActiveNetwork()`. On
+null the handler writes `ADB_WIFI_ENABLED=0` and breaks; the TLS server is never started.
+
+### Why every "make our own network" idea fails, with the reason
+
+P2P, `startLocalOnlyHotspot()`, SoftAP and Wi-Fi Aware all live on **separate interfaces** and none
+writes a `networkId` into the **STA** `WifiInfo`; several switch STA off, which independently forces
+−1. `WifiP2pServiceImpl` has zero `NetworkAgent` references, so P2P can never present as
+`TRANSPORT_WIFI` at all. That is why the maintainer's hotspot test failed, and the whole family was
+never viable.
+
+### Device owner: dead, and now for a stated reason
+
+`DevicePolicyManagerService`'s `GLOBAL_SETTINGS_ALLOWLIST` **does** contain `ADB_WIFI_ENABLED`, so a
+device-owner app could flip it from app code with no shell — genuinely new, and it looked like the
+loop-breaker. But the gate sits **downstream of the setting**. It changes *who may ask*, not the
+answer. Not worth the device-owner enrolment UX.
+
+### The race window does not exist — measured, with a validated instrument
+
+The claim that adbd briefly starts a listener before teardown was tested directly on the OP9:
+baseline `::`-bound listeners captured from `/proc/net/tcp6`, then `adb_wifi_enabled=1`, then **200
+rapid on-device polls**. **No new listener, ever.** Setting reset to 0.
+
+🚨 **The first attempt at this test was invalid and the control caught it.** Polling
+`service.adb.tls.port` / `persist.adb.tls_server.enable` returned empty *even with Wi-Fi on and the
+server demonstrably running* — a blind instrument producing a false negative. The working detectors
+are `/proc/net/tcp6` (state `0A`) and, from the host, `adb mdns services` showing
+`_adb-tls-connect._tcp`. **Always run the positive control before believing a negative.**
+
+Confirmed in passing: the TLS server binds `in6addr_any` — **all interfaces, loopback included** — on
+an **ephemeral** port (mDNS-advertised, not 5555). So there is no interface obstacle once it runs.
+
+### Independent corroboration that this is closed by design
+
+`droserasprout/io.drsr.hotspotadb` is an Xposed/LSPosed module whose entire purpose is removing this
+restriction. It hooks the exact three call sites and injects a **synthetic** `AdbConnectionInfo` with a
+forged BSSID, because the real call returns null. **Magisk + Zygisk required; no non-root variant.**
+When a root module has to fabricate a BSSID, the door is shut.
+
+### Also: the teardown is continuous
+
+A receiver disables wireless debugging on Wi-Fi off, disconnect, empty BSSID **or a BSSID change from
+roaming**, and teardown calls `kick_all_tcp_tls_transports()`. So "enable it at home and walk out" was
+never going to survive the walk either.
+
+### 🔑 What this pass is actually worth: the recovery is far cheaper than we tell users
+
+Neither gate consults `NET_CAPABILITY_VALIDATED`. **A bare association with no internet passes.** So
+recovery is not "get home to Wi-Fi", it is:
+
+- **another phone's hotspot** — the maintainer carries two;
+- a café or hotel AP nobody logs into; a car's Wi-Fi; a travel router with nothing plugged in.
+
+Our copy says "needs Wi-Fi", which users read as "needs internet". **That is one string, and it turns a
+dead end into a ten-second fix.**
+
+### One free diagnostic worth wiring in
+
+`logcat -s AdbDebuggingManager` — the line `Not connected to any wireless network. Not enabling
+adbwifi.` settles this entire class of bug report instantly. Worth capturing specifically, given the
+256 KiB ring rotates within minutes.
+
+### 🆕 A competitor nobody had found: `LyoSU/cally`
+
+https://github.com/LyoSU/cally — *"Pixel call recorder for stock Android via Shizuku — no root...
+Dual-track VOICE_UPLINK+DOWNLINK with 5-step fallback ladder... opt-in cloud transcription."* Almost
+exactly CallVault's shape, cloud-optional where we are on-device. **It was not in the 2026-08-27
+competitive research.** Worth its own look.
+
 ## The one idea that sidesteps the bridge entirely — needs a product decision, not research
 
 Record from the **app's own uid with plain `MIC`**, when the privileged bridge is down. No ADB, no
