@@ -338,6 +338,14 @@ fun SettingsContent(
                 )
             }
             item {
+                // Directly after Storage: the trash is storage, and someone looking for a recording
+                // they deleted looks where recordings are configured.
+                TrashSection(
+                    expanded = openSection == SECTION_TRASH,
+                    onToggle = { onToggleSection(SECTION_TRASH) }
+                )
+            }
+            item {
                 AudioSection(
                     preferences, updateTrigger, actions,
                     expanded = openSection == SECTION_AUDIO,
@@ -470,6 +478,7 @@ fun SettingsContent(
 // Settings accordion: stable keys identifying each section. At most one section is open at a time;
 // [SECTION_RECORDING] is the one open when Settings is first entered.
 private const val SECTION_RECORDING = "recording"
+private const val SECTION_TRASH = "trash"
 private const val SECTION_STORAGE = "storage"
 private const val SECTION_RETENTION = "retention"
 private const val SECTION_AUDIO = "audio"

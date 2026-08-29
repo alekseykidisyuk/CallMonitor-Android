@@ -43,6 +43,14 @@ class RetentionSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWo
 
     override suspend fun doWork(): Result {
         val prefs = AppPreferences(applicationContext)
+
+        // First, and regardless of whether retention is on at all: the trash has its own fixed
+        // thirty days and is not the user's retention setting. Someone with retention switched off
+        // still expects a deleted recording to stop taking up space eventually, and this is the only
+        // thing that removes it.
+        runCatching { RecordingTrashRepository.purgeExpired(applicationContext) }
+            .onFailure { AppLogger.w(TAG, "Could not purge the trash: ${it.message}") }
+
         val localDays = prefs.getRetentionLocalDays()
         val driveDays = prefs.getRetentionDriveDays()
         if (localDays <= 0 && driveDays <= 0) {

@@ -399,7 +399,6 @@
     <string name="transcript_action_retry">Az átírás nem sikerült – próbáld újra</string>
     <string name="transcript_action_transcribe">Hívás átírása</string>
     <string name="transcript_action_transcribe_short">Átírás</string>
-    <string name="transcript_copy">Másolás</string>
     <string name="transcript_delete">Szöveg törlése</string>
     <string name="transcript_delete_confirm_message">A(z) %1$s átirata törlődik. Maga a felvétel megmarad, és később újra átírható.</string>
     <string name="transcript_delete_confirm_title">Törli ezt az átiratot?</string>
@@ -415,7 +414,6 @@
     <string name="transcript_search_hint">Keresés az elhangzottak között</string>
     <string name="transcript_search_idle">Írjon be egy szót az összes átirat átkereséséhez.</string>
     <string name="transcript_share">Megosztás</string>
-    <string name="transcript_export">Exportálás</string>
     <string name="transcript_export_chooser">Átirat megosztása</string>
     <string name="transcript_export_failed">Az átirat exportálása nem sikerült</string>
     <string name="transcript_speaker_a">A beszélő</string>
@@ -573,4 +571,10 @@
     <string name="playback_tags_manage_explain">Az átnevezés minden olyan felvételen megváltoztatja ezt a címkét, amelyen szerepel. Ha meglévő címke nevére nevezed át, a kettő összeolvad.</string>
     <string name="playback_tags_rename">Átnevezés</string>
     <string name="playback_tags_delete_everywhere">Törlés mindenhonnan</string>
+    <string name="settings_section_trash">Nemrég törölt</string>
+    <string name="settings_trash_empty">Itt nincs semmi. A törölt felvételeket 30 napig megőrizzük, mielőtt véglegesen eltávolítanánk.</string>
+    <string name="settings_trash_days_left">%1$d nap maradt</string>
+    <string name="settings_trash_restore">Visszaállítás</string>
+    <string name="settings_trash_delete_forever">Végleges törlés</string>
+    <string name="transcript_share_text">Szöveg</string>
 </resources>

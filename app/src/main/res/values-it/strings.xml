@@ -399,7 +399,6 @@
     <string name="transcript_action_retry">Trascrizione non riuscita — riprova</string>
     <string name="transcript_action_transcribe">Trascrivi questa chiamata</string>
     <string name="transcript_action_transcribe_short">Trascrivi</string>
-    <string name="transcript_copy">Copia</string>
     <string name="transcript_delete">Elimina testo</string>
     <string name="transcript_delete_confirm_message">La trascrizione di %1$s verrà eliminata. La registrazione viene conservata e potrai trascriverla di nuovo in seguito.</string>
     <string name="transcript_delete_confirm_title">Eliminare questa trascrizione?</string>
@@ -415,7 +414,6 @@
     <string name="transcript_search_hint">Cerca ciò che è stato detto</string>
     <string name="transcript_search_idle">Digita una parola per cercare in tutte le tue trascrizioni.</string>
     <string name="transcript_share">Condividi</string>
-    <string name="transcript_export">Esporta</string>
     <string name="transcript_export_chooser">Condividi trascrizione</string>
     <string name="transcript_export_failed">Impossibile esportare la trascrizione</string>
     <string name="transcript_speaker_a">Interlocutore A</string>
@@ -573,4 +571,10 @@
     <string name="playback_tags_manage_explain">Rinominare cambia questa etichetta su tutte le registrazioni che la contengono. Rinominarla con un\'etichetta esistente unisce le due.</string>
     <string name="playback_tags_rename">Rinomina</string>
     <string name="playback_tags_delete_everywhere">Elimina ovunque</string>
+    <string name="settings_section_trash">Eliminati di recente</string>
+    <string name="settings_trash_empty">Non c\'è nulla. Le registrazioni eliminate vengono conservate per 30 giorni prima di essere rimosse definitivamente.</string>
+    <string name="settings_trash_days_left">%1$d giorni rimasti</string>
+    <string name="settings_trash_restore">Ripristina</string>
+    <string name="settings_trash_delete_forever">Elimina definitivamente</string>
+    <string name="transcript_share_text">Testo</string>
 </resources>

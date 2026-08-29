@@ -9,7 +9,8 @@
 package com.baba.callvault.ui.common
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,7 +75,7 @@ import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
  * @param onDelete        discard the text and keep the audio. Someone may want the recording without
  *                        a searchable transcript of what was said in it.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun TranscriptSheet(
     transcript: TranscriptWithSegments?,
@@ -203,7 +204,13 @@ fun TranscriptSheet(
                             segment = segment,
                             speaker = speakerNames.of(segment.speaker),
                             isActive = index == active,
-                            onClick = { onSeekTo(segment.startMs) }
+                            onClick = { onSeekTo(segment.startMs) },
+                            // The speaker's name goes with it. A quoted line without who said it is
+                            // the thing a transcript exists to stop being ambiguous about.
+                            onLongClick = {
+                                val who = speakerNames.of(segment.speaker)?.let { "$it: " }.orEmpty()
+                                onCopy(who + segment.text.trim())
+                            }
                         )
                     }
                 }
@@ -237,23 +244,27 @@ fun TranscriptSheet(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             val plain = segments.asPlainText(speakerNames)
-            TextButton(onClick = { onCopy(plain) }, enabled = segments.isNotEmpty()) {
-                Text(stringResource(R.string.transcript_copy))
-            }
-            // Share stays plain text and Export writes a file, because they are different errands.
-            // Sending a `.txt` attachment to a chat is worse than sending the words, and sending the
-            // words to a subtitle editor is useless — collapsing the two would break one of them.
-            TextButton(onClick = { onShare(plain) }, enabled = segments.isNotEmpty()) {
-                Text(stringResource(R.string.transcript_share))
-            }
+            // One Share button rather than three that overlap. Copy is gone: copying the *whole*
+            // transcript was never the common want, and long-pressing a line — which copies just that
+            // sentence — is both what people actually reach for and impossible to do from a button.
             Box {
                 var formatsShown by remember { mutableStateOf(false) }
                 TextButton(onClick = { formatsShown = true }, enabled = segments.isNotEmpty()) {
-                    Text(stringResource(R.string.transcript_export))
+                    Text(stringResource(R.string.transcript_share))
                 }
                 // A menu rather than a screen: five formats is a choice, not a workflow, and the
                 // labels are file extensions that need no explaining.
                 DropdownMenu(expanded = formatsShown, onDismissRequest = { formatsShown = false }) {
+                    // First, and not a file: sending the words into a chat is the commonest share by
+                    // far, and an attachment there is worse than the text. The formats below it are
+                    // for somewhere that wants a document.
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.transcript_share_text)) },
+                        onClick = {
+                            formatsShown = false
+                            onShare(plain)
+                        }
+                    )
                     TranscriptFormat.entries.forEach { format ->
                         DropdownMenuItem(
                             text = { Text(format.label) },
@@ -394,7 +405,15 @@ private fun TranscriptLine(
     segment: TranscriptSegmentEntry,
     speaker: String?,
     isActive: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    /**
+     * Copies just this sentence.
+     *
+     * On a long press because the short press is already the useful one — it plays from here — and
+     * quoting a single line is what people actually want from a transcript. Copying the whole thing
+     * was a button nobody needed; this is the want it was standing in for.
+     */
+    onLongClick: () -> Unit
 ) {
     // The whole line mirrors, not just the words. Setting only the text's direction left the timestamp
     // column stranded on the left of a Hebrew transcript and short lines hugging the wrong edge,
@@ -409,7 +428,7 @@ private fun TranscriptLine(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
                 // A tint rather than bolder text: re-weighting the line would reflow it, so every
                 // line would twitch sideways as the highlight passed through.
                 .background(

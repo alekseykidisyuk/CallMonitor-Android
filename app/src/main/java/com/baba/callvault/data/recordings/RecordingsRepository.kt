@@ -17,6 +17,7 @@ import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.StorageTarget
 import com.baba.callvault.data.recordings.db.RecordingEntry
 import com.baba.callvault.system.permissions.PermissionChecks
+import com.baba.callvault.system.storage.RecordingTrash
 import com.baba.callvault.utils.AppLogger
 import com.baba.callvault.utils.VoicemailLabel
 import com.baba.callvault.transcription.AudioDecoder
@@ -372,6 +373,10 @@ object RecordingsRepository {
             val tree = DocumentFile.fromTreeUri(context, folderUri)
             val files = tree?.listFiles() ?: emptyArray()
             for (doc in files) {
+                // Trashed recordings are excluded here, at the single funnel every listing goes
+                // through, rather than at each screen. A deleted recording that reappeared in one
+                // list the app forgot to filter would be worse than no trash at all.
+                if (RecordingTrash.isTrashed(doc.name)) continue
                 if (doc.isFile && isAudio(doc) && isUsable(doc)) {
                     result.add(toItem(doc))
                 }

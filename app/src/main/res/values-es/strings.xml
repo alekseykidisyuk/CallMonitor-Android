@@ -399,7 +399,6 @@
     <string name="transcript_action_retry">La transcripción falló: inténtalo de nuevo</string>
     <string name="transcript_action_transcribe">Transcribir esta llamada</string>
     <string name="transcript_action_transcribe_short">Transcribir</string>
-    <string name="transcript_copy">Copiar</string>
     <string name="transcript_delete">Eliminar texto</string>
     <string name="transcript_delete_confirm_message">Se eliminará la transcripción de %1$s. La grabación se conserva y puedes transcribirla de nuevo más adelante.</string>
     <string name="transcript_delete_confirm_title">¿Eliminar esta transcripción?</string>
@@ -415,7 +414,6 @@
     <string name="transcript_search_hint">Buscar lo que se dijo</string>
     <string name="transcript_search_idle">Escribe una palabra para buscar en todas tus transcripciones.</string>
     <string name="transcript_share">Compartir</string>
-    <string name="transcript_export">Exportar</string>
     <string name="transcript_export_chooser">Compartir transcripción</string>
     <string name="transcript_export_failed">No se pudo exportar la transcripción</string>
     <string name="transcript_speaker_a">Hablante A</string>
@@ -573,4 +571,10 @@
     <string name="playback_tags_manage_explain">Al renombrar, la etiqueta cambia en todas las grabaciones que la tienen. Renombrarla a una etiqueta existente fusiona ambas.</string>
     <string name="playback_tags_rename">Renombrar</string>
     <string name="playback_tags_delete_everywhere">Eliminar en todas partes</string>
+    <string name="settings_section_trash">Eliminados recientemente</string>
+    <string name="settings_trash_empty">No hay nada. Las grabaciones eliminadas se conservan 30 días antes de borrarse definitivamente.</string>
+    <string name="settings_trash_days_left">Quedan %1$d días</string>
+    <string name="settings_trash_restore">Restaurar</string>
+    <string name="settings_trash_delete_forever">Eliminar definitivamente</string>
+    <string name="transcript_share_text">Texto</string>
 </resources>

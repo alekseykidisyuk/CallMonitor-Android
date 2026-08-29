@@ -402,7 +402,6 @@
     <string name="transcript_action_retry">A transcrição falhou — tente novamente</string>
     <string name="transcript_action_transcribe">Transcrever esta chamada</string>
     <string name="transcript_action_transcribe_short">Transcrever</string>
-    <string name="transcript_copy">Copiar</string>
     <string name="transcript_delete">Excluir texto</string>
     <string name="transcript_delete_confirm_message">A transcrição de %1$s será excluída. A gravação em si é mantida, e você pode transcrevê-la novamente depois.</string>
     <string name="transcript_delete_confirm_title">Excluir esta transcrição?</string>
@@ -418,7 +417,6 @@
     <string name="transcript_search_hint">Buscar o que foi dito</string>
     <string name="transcript_search_idle">Digite uma palavra para buscar em todas as suas transcrições.</string>
     <string name="transcript_share">Compartilhar</string>
-    <string name="transcript_export">Exportar</string>
     <string name="transcript_export_chooser">Compartilhar transcrição</string>
     <string name="transcript_export_failed">Não foi possível exportar a transcrição</string>
     <string name="transcript_speaker_a">Interlocutor A</string>
@@ -576,4 +574,10 @@
     <string name="playback_tags_manage_explain">Renomear altera esta etiqueta em todas as gravações que a têm. Renomeá-la para uma etiqueta existente mescla as duas.</string>
     <string name="playback_tags_rename">Renomear</string>
     <string name="playback_tags_delete_everywhere">Excluir em todos</string>
+    <string name="settings_section_trash">Excluídos recentemente</string>
+    <string name="settings_trash_empty">Não há nada aqui. As gravações excluídas ficam guardadas por 30 dias antes de serem removidas de vez.</string>
+    <string name="settings_trash_days_left">Faltam %1$d dias</string>
+    <string name="settings_trash_restore">Restaurar</string>
+    <string name="settings_trash_delete_forever">Excluir definitivamente</string>
+    <string name="transcript_share_text">Texto</string>
 </resources>

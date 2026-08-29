@@ -399,7 +399,6 @@
     <string name="transcript_action_retry">Расшифровка не удалась — повторить</string>
     <string name="transcript_action_transcribe">Расшифровать этот звонок</string>
     <string name="transcript_action_transcribe_short">Расшифровать</string>
-    <string name="transcript_copy">Копировать</string>
     <string name="transcript_delete">Удалить текст</string>
     <string name="transcript_delete_confirm_message">Расшифровка %1$s будет удалена. Сама запись сохранится, и позже её можно расшифровать снова.</string>
     <string name="transcript_delete_confirm_title">Удалить эту расшифровку?</string>
@@ -415,7 +414,6 @@
     <string name="transcript_search_hint">Поиск по сказанному</string>
     <string name="transcript_search_idle">Введите слово, чтобы искать по всем вашим расшифровкам.</string>
     <string name="transcript_share">Поделиться</string>
-    <string name="transcript_export">Экспорт</string>
     <string name="transcript_export_chooser">Поделиться расшифровкой</string>
     <string name="transcript_export_failed">Не удалось экспортировать расшифровку</string>
     <string name="transcript_speaker_a">Говорящий A</string>
@@ -573,4 +571,10 @@
     <string name="playback_tags_manage_explain">Переименование меняет метку во всех записях, где она есть. Переименование в существующую метку объединяет их.</string>
     <string name="playback_tags_rename">Переименовать</string>
     <string name="playback_tags_delete_everywhere">Удалить везде</string>
+    <string name="settings_section_trash">Недавно удалённые</string>
+    <string name="settings_trash_empty">Здесь пусто. Удалённые записи хранятся 30 дней, после чего удаляются окончательно.</string>
+    <string name="settings_trash_days_left">Осталось %1$d дн.</string>
+    <string name="settings_trash_restore">Восстановить</string>
+    <string name="settings_trash_delete_forever">Удалить навсегда</string>
+    <string name="transcript_share_text">Текст</string>
 </resources>

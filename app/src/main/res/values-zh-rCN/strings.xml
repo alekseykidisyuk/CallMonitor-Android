@@ -399,7 +399,6 @@
     <string name="transcript_action_retry">转写失败 — 重试</string>
     <string name="transcript_action_transcribe">转写这通通话</string>
     <string name="transcript_action_transcribe_short">转写</string>
-    <string name="transcript_copy">复制</string>
     <string name="transcript_delete">删除文字</string>
     <string name="transcript_delete_confirm_message">%1$s 的文字记录将被删除。录音本身会保留，稍后可以重新转写。</string>
     <string name="transcript_delete_confirm_title">删除这份文字记录？</string>
@@ -415,7 +414,6 @@
     <string name="transcript_search_hint">搜索通话内容</string>
     <string name="transcript_search_idle">输入词语即可搜索你的全部文字记录。</string>
     <string name="transcript_share">分享</string>
-    <string name="transcript_export">导出</string>
     <string name="transcript_export_chooser">分享转录文本</string>
     <string name="transcript_export_failed">无法导出转录文本</string>
     <string name="transcript_speaker_a">说话人 A</string>
@@ -573,4 +571,10 @@
     <string name="playback_tags_manage_explain">重命名会更改所有带有该标签的录音。重命名为已存在的标签会将两者合并。</string>
     <string name="playback_tags_rename">重命名</string>
     <string name="playback_tags_delete_everywhere">全部删除</string>
+    <string name="settings_section_trash">最近删除</string>
+    <string name="settings_trash_empty">这里没有内容。已删除的录音会保留 30 天，然后被永久移除。</string>
+    <string name="settings_trash_days_left">剩余 %1$d 天</string>
+    <string name="settings_trash_restore">恢复</string>
+    <string name="settings_trash_delete_forever">永久删除</string>
+    <string name="transcript_share_text">文本</string>
 </resources>

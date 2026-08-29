@@ -399,7 +399,6 @@
     <string name="transcript_action_retry">Transkrypcja nie powiodła się — spróbuj ponownie</string>
     <string name="transcript_action_transcribe">Transkrybuj tę rozmowę</string>
     <string name="transcript_action_transcribe_short">Transkrybuj</string>
-    <string name="transcript_copy">Kopiuj</string>
     <string name="transcript_delete">Usuń tekst</string>
     <string name="transcript_delete_confirm_message">Transkrypcja %1$s zostanie usunięta. Samo nagranie pozostanie i możesz je ponownie przepisać później.</string>
     <string name="transcript_delete_confirm_title">Usunąć tę transkrypcję?</string>
@@ -415,7 +414,6 @@
     <string name="transcript_search_hint">Szukaj w wypowiedziach</string>
     <string name="transcript_search_idle">Wpisz słowo, aby przeszukać wszystkie swoje transkrypcje.</string>
     <string name="transcript_share">Udostępnij</string>
-    <string name="transcript_export">Eksportuj</string>
     <string name="transcript_export_chooser">Udostępnij transkrypcję</string>
     <string name="transcript_export_failed">Nie udało się wyeksportować transkrypcji</string>
     <string name="transcript_speaker_a">Rozmówca A</string>
@@ -573,4 +571,10 @@
     <string name="playback_tags_manage_explain">Zmiana nazwy zmienia ten tag we wszystkich nagraniach, które go mają. Zmiana na istniejący tag scala oba.</string>
     <string name="playback_tags_rename">Zmień nazwę</string>
     <string name="playback_tags_delete_everywhere">Usuń wszędzie</string>
+    <string name="settings_section_trash">Ostatnio usunięte</string>
+    <string name="settings_trash_empty">Nic tu nie ma. Usunięte nagrania są przechowywane przez 30 dni, zanim znikną na dobre.</string>
+    <string name="settings_trash_days_left">Pozostało %1$d dni</string>
+    <string name="settings_trash_restore">Przywróć</string>
+    <string name="settings_trash_delete_forever">Usuń trwale</string>
+    <string name="transcript_share_text">Tekst</string>
 </resources>

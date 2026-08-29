@@ -17,6 +17,7 @@ import androidx.lifecycle.viewModelScope
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.transcripts.TagRepository
+import com.baba.callvault.system.storage.RecordingTrashRepository
 import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.data.health.CallGapDetector
 import com.baba.callvault.data.health.CallLogReader
@@ -696,7 +697,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
         _uiState.update { it.copy(deletingUris = it.deletingUris + item.uri) }
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { RecordingsRepository.deleteRecording(appContext, item) }
+            withContext(Dispatchers.IO) {
+                // To the trash, not off the disk. This is the path where a mis-tap costs the whole
+                // recording, and audio cannot be regenerated at any price.
+                //
+                // If the rename fails — a provider that will not rename, a revoked grant — fall back
+                // to the delete this used to do rather than leaving the user with a tap that did
+                // nothing. Better a delete they asked for than a button that silently does not work.
+                val trashed = RecordingTrashRepository.trash(appContext, item.displayName)
+                if (!trashed) RecordingsRepository.deleteRecording(appContext, item)
+            }
             refresh()
             _uiState.update { it.copy(deletingUris = it.deletingUris - item.uri) }
         }

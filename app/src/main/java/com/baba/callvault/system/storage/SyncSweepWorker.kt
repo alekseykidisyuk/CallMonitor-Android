@@ -69,6 +69,10 @@ class SyncSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(
             if (!file.isFile) continue
             // A staging document from an interrupted copy is not a recording.
             if (CloudCopyPolicy.isStagingName(name)) continue
+            // Neither is one the user has deleted. Uploading a trashed file would put a copy on Drive
+            // under its trashed name, which the purge then has to find and remove — and in the window
+            // between, the user's cloud folder holds a recording they believe they deleted.
+            if (RecordingTrash.isTrashed(name)) continue
 
             val sourceSize = runCatching { file.length() }.getOrDefault(-1L)
             if (sourceSize <= 0L) {

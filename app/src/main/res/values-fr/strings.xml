@@ -399,7 +399,6 @@
     <string name="transcript_action_retry">Échec de la transcription — réessayer</string>
     <string name="transcript_action_transcribe">Transcrire cet appel</string>
     <string name="transcript_action_transcribe_short">Transcrire</string>
-    <string name="transcript_copy">Copier</string>
     <string name="transcript_delete">Supprimer le texte</string>
     <string name="transcript_delete_confirm_message">La transcription de %1$s sera supprimée. L\'enregistrement est conservé et vous pourrez le transcrire à nouveau plus tard.</string>
     <string name="transcript_delete_confirm_title">Supprimer cette transcription ?</string>
@@ -415,7 +414,6 @@
     <string name="transcript_search_hint">Rechercher ce qui a été dit</string>
     <string name="transcript_search_idle">Saisissez un mot pour chercher dans toutes vos transcriptions.</string>
     <string name="transcript_share">Partager</string>
-    <string name="transcript_export">Exporter</string>
     <string name="transcript_export_chooser">Partager la transcription</string>
     <string name="transcript_export_failed">Impossible d\'exporter la transcription</string>
     <string name="transcript_speaker_a">Interlocuteur A</string>
@@ -573,4 +571,10 @@
     <string name="playback_tags_manage_explain">Le renommage modifie cette étiquette sur tous les enregistrements qui la portent. La renommer en une étiquette existante fusionne les deux.</string>
     <string name="playback_tags_rename">Renommer</string>
     <string name="playback_tags_delete_everywhere">Supprimer partout</string>
+    <string name="settings_section_trash">Supprimés récemment</string>
+    <string name="settings_trash_empty">Rien ici. Les enregistrements supprimés sont conservés 30 jours avant d\'être effacés définitivement.</string>
+    <string name="settings_trash_days_left">%1$d jours restants</string>
+    <string name="settings_trash_restore">Restaurer</string>
+    <string name="settings_trash_delete_forever">Supprimer définitivement</string>
+    <string name="transcript_share_text">Texte</string>
 </resources>

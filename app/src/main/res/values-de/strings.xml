@@ -399,7 +399,6 @@
     <string name="transcript_action_retry">Transkription fehlgeschlagen – erneut versuchen</string>
     <string name="transcript_action_transcribe">Dieses Gespräch transkribieren</string>
     <string name="transcript_action_transcribe_short">Transkribieren</string>
-    <string name="transcript_copy">Kopieren</string>
     <string name="transcript_delete">Text löschen</string>
     <string name="transcript_delete_confirm_message">Das Transkript von %1$s wird gelöscht. Die Aufnahme selbst bleibt erhalten, und Sie können sie später erneut transkribieren.</string>
     <string name="transcript_delete_confirm_title">Dieses Transkript löschen?</string>
@@ -415,7 +414,6 @@
     <string name="transcript_search_hint">Nach Gesagtem suchen</string>
     <string name="transcript_search_idle">Geben Sie ein Wort ein, um alle Ihre Transkripte zu durchsuchen.</string>
     <string name="transcript_share">Teilen</string>
-    <string name="transcript_export">Exportieren</string>
     <string name="transcript_export_chooser">Transkript teilen</string>
     <string name="transcript_export_failed">Transkript konnte nicht exportiert werden</string>
     <string name="transcript_speaker_a">Sprecher A</string>
@@ -573,4 +571,10 @@
     <string name="playback_tags_manage_explain">Beim Umbenennen ändert sich dieser Tag bei jeder Aufnahme, die ihn hat. Ein Umbenennen auf einen vorhandenen Tag führt beide zusammen.</string>
     <string name="playback_tags_rename">Umbenennen</string>
     <string name="playback_tags_delete_everywhere">Überall löschen</string>
+    <string name="settings_section_trash">Zuletzt gelöscht</string>
+    <string name="settings_trash_empty">Nichts vorhanden. Gelöschte Aufnahmen werden 30 Tage aufbewahrt, bevor sie endgültig entfernt werden.</string>
+    <string name="settings_trash_days_left">Noch %1$d Tage</string>
+    <string name="settings_trash_restore">Wiederherstellen</string>
+    <string name="settings_trash_delete_forever">Endgültig löschen</string>
+    <string name="transcript_share_text">Text</string>
 </resources>
