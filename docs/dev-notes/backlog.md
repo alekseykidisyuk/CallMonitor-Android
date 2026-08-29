@@ -72,6 +72,48 @@ deletes **permanently** and does not fill the bin, so a 7-day retention is 7 day
 right — retention exists to bound storage — but nothing in the UI said so, and it is the first thing
 anyone asks.
 
+### 🔵 E1 — non-UI `InCallService` — researched 2026-08-29, DEVICE-VERIFIED, spike next
+
+Telecom binds our app at `onCallAdded` — the earliest moment a call exists — giving the number,
+direction, state and the VoIP/carrier distinction **by construction** rather than by inference. The
+bind also lifts the process to foreground, which is why BCR says it avoids Android 12+'s background
+microphone limitation and needs no boot receiver.
+
+**Prior art, already studied (see `research/2026-08-27-competitive/09-capture-techniques.md` §1.7).**
+BCR uses `CONTROL_INCALL_EXPERIENCE`, which needs root or system. **Our own upstream,
+ShizuCallRecorder, found the non-root equivalent**: the `MANAGE_ONGOING_CALLS` appop is
+`signature|appop`, so an appop grant is a legitimate path, and Telecom's `InCallController` has a
+single `||` on it. Works Android 12–16; Android 11 has no appop branch and cannot.
+
+## 🚨 The documented primary path is DEAD on the maintainer's phones — measured 2026-08-29
+
+| | OP12 · OxygenOS · Android 16 | OP9 · ColorOS · Android 14 |
+|---|---|---|
+| `appops set … MANAGE_ONGOING_CALLS allow` | ❌ silently ignored, **exit 0** | ❌ ignored |
+| `appops set` for *any* op (control) | ❌ also ignored — it is the ROM, not the op | ❌ |
+| `cmd companiondevice associate … COMPANION_DEVICE_WATCH` | ✅ association created | ✅ association created |
+| `cmd role get-role-holders … COMPANION_DEVICE_WATCH` | ✅ **holds the role** | ❌ **role not held** |
+
+So the `companiondevice` route is not a fallback here, it is **the** route — and it is confirmed
+working only on Android 16. On Android 14/ColorOS the association exists while the role does not, so
+the capability may not follow.
+
+⚠️ **`appops set` returning exit 0 while doing nothing** is the trap: any code that grants and assumes
+success will believe it worked. Read the value back, always.
+
+⚠️ Running `associate` twice creates a **duplicate** association. Done accidentally on the OP9 while
+testing and removed with `cmd companiondevice disassociate 0 <pkg> <mac>`.
+
+⚠️ A fake association was left on **both** phones during this research (mac `00:11:22:33:44:55`). It
+does not appear in Settings' paired list and is removed on uninstall.
+
+## Next step is a spike, not the feature
+
+`telecom is-non-ui-in-call-service-bound com.baba.callvault` returns **false** on both, which proves
+nothing yet — we have no `InCallService` declared, so there is nothing for Telecom to bind. The
+decisive test is a manifest entry plus an empty service: if Telecom binds it, E1 is worth building
+properly; if not, an hour was spent instead of days. **Do that before writing any of the feature.**
+
 ### 🔵 Remove the "Transcribe again" button — agreed 2026-08-29
 
 Drop the retranscribe action from the transcript sheet before the release.
