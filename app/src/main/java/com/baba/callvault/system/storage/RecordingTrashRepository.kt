@@ -55,6 +55,10 @@ object RecordingTrashRepository {
      */
     suspend fun trash(context: Context, displayName: String): Boolean = withContext(Dispatchers.IO) {
         if (RecordingTrash.isTrashed(displayName)) return@withContext false
+        // Zero days is a real setting, not a disabled feature: somebody who deletes a call because
+        // they want it gone should not find it renamed in a folder their phone syncs. Reporting
+        // false sends the caller down its ordinary delete, which is exactly what is wanted.
+        if (AppPreferences(context).getTrashRetentionDays() <= 0) return@withContext false
 
         val trashedName = RecordingTrash.trashedName(displayName, System.currentTimeMillis())
         var renamedAny = false
@@ -80,6 +84,13 @@ object RecordingTrashRepository {
             RecordingCatalog.removeName(context, displayName, cascade = false)
         }
         renamedAny
+    }
+
+    /** Empties the trash now, whatever each item's age. Returns how many recordings went. */
+    suspend fun emptyNow(context: Context): Int {
+        var purged = 0
+        list(context).forEach { if (deleteForever(context, it.trashedName)) purged++ }
+        return purged
     }
 
     /** Everything currently in the trash, across both folders, newest deletion first. */
@@ -155,14 +166,18 @@ object RecordingTrashRepository {
         }
 
     /**
-     * Removes everything whose thirty days are up. Returns how many recordings went.
+     * Removes everything whose retention period is up. Returns how many recordings went.
      *
      * Called from the retention sweep, beside the sweep of live recordings, so the trash cannot grow
      * without bound on a phone nobody empties by hand.
      */
     suspend fun purgeExpired(context: Context): Int {
         val now = System.currentTimeMillis()
-        val expired = list(context).filter { RecordingTrash.isExpired(it.trashedName, now) }
+        // The period in force now, not the one that applied when each file was deleted. Shortening
+        // the setting is a decision about everything in the trash, and a user who cuts it to a week
+        // expects the month-old ones to go rather than to sit out their original term.
+        val days = AppPreferences(context).getTrashRetentionDays().coerceAtLeast(0)
+        val expired = list(context).filter { RecordingTrash.isExpired(it.trashedName, now, days) }
         var purged = 0
         expired.forEach { if (deleteForever(context, it.trashedName)) purged++ }
         if (purged > 0) AppLogger.i(TAG, "Purged $purged expired recording(s) from the trash")

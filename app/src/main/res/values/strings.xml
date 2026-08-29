@@ -777,9 +777,15 @@
     <string name="playback_tags_rename">Rename</string>
     <string name="playback_tags_delete_everywhere">Delete everywhere</string>
     <string name="settings_section_trash">Recently deleted</string>
-    <string name="settings_trash_empty">Nothing here. Deleted recordings are kept for 30 days before they are removed for good.</string>
-    <string name="settings_trash_days_left">%1$d days left</string>
     <string name="settings_trash_restore">Restore</string>
     <string name="settings_trash_delete_forever">Delete forever</string>
     <string name="transcript_share_text">Text</string>
+    <string name="settings_trash_keep_title">Keep deleted recordings</string>
+    <string name="settings_trash_keep_days">%1$d days</string>
+    <string name="settings_trash_keep_off">Delete immediately</string>
+    <string name="settings_trash_keep_explain">A deleted recording can be restored until this runs out. It stays in your storage folder under a changed name, so a file manager and anything syncing that folder can still see it.</string>
+    <string name="settings_trash_keep_off_explain">Deleting removes the recording straight away. There is nothing to restore.</string>
+    <string name="settings_trash_empty_now">Empty now (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">Empty deleted recordings?</string>
+    <string name="settings_trash_empty_confirm_message">%1$d recordings will be removed for good, with their transcripts and notes. This cannot be undone.</string>
 </resources>

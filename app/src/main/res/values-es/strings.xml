@@ -572,9 +572,15 @@
     <string name="playback_tags_rename">Renombrar</string>
     <string name="playback_tags_delete_everywhere">Eliminar en todas partes</string>
     <string name="settings_section_trash">Eliminados recientemente</string>
-    <string name="settings_trash_empty">No hay nada. Las grabaciones eliminadas se conservan 30 días antes de borrarse definitivamente.</string>
-    <string name="settings_trash_days_left">Quedan %1$d días</string>
     <string name="settings_trash_restore">Restaurar</string>
     <string name="settings_trash_delete_forever">Eliminar definitivamente</string>
     <string name="transcript_share_text">Texto</string>
+    <string name="settings_trash_keep_title">Conservar grabaciones eliminadas</string>
+    <string name="settings_trash_keep_days">%1$d días</string>
+    <string name="settings_trash_keep_off">Eliminar de inmediato</string>
+    <string name="settings_trash_keep_explain">Una grabación eliminada puede restaurarse hasta que se agote este plazo. Permanece en tu carpeta con otro nombre, así que un gestor de archivos y cualquier sincronización aún pueden verla.</string>
+    <string name="settings_trash_keep_off_explain">Al eliminar, la grabación se borra de inmediato. No hay nada que restaurar.</string>
+    <string name="settings_trash_empty_now">Vaciar ahora (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">¿Vaciar las grabaciones eliminadas?</string>
+    <string name="settings_trash_empty_confirm_message">Se eliminarán definitivamente %1$d grabaciones, con sus transcripciones y notas. No se puede deshacer.</string>
 </resources>

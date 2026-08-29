@@ -572,9 +572,15 @@
     <string name="playback_tags_rename">Rinomina</string>
     <string name="playback_tags_delete_everywhere">Elimina ovunque</string>
     <string name="settings_section_trash">Eliminati di recente</string>
-    <string name="settings_trash_empty">Non c\'è nulla. Le registrazioni eliminate vengono conservate per 30 giorni prima di essere rimosse definitivamente.</string>
-    <string name="settings_trash_days_left">%1$d giorni rimasti</string>
     <string name="settings_trash_restore">Ripristina</string>
     <string name="settings_trash_delete_forever">Elimina definitivamente</string>
     <string name="transcript_share_text">Testo</string>
+    <string name="settings_trash_keep_title">Conserva le registrazioni eliminate</string>
+    <string name="settings_trash_keep_days">%1$d giorni</string>
+    <string name="settings_trash_keep_off">Elimina subito</string>
+    <string name="settings_trash_keep_explain">Una registrazione eliminata può essere ripristinata fino alla scadenza. Resta nella cartella con un nome diverso, quindi un file manager e la sincronizzazione possono ancora vederla.</string>
+    <string name="settings_trash_keep_off_explain">L\'eliminazione rimuove subito la registrazione. Non c\'è nulla da ripristinare.</string>
+    <string name="settings_trash_empty_now">Svuota ora (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">Svuotare le registrazioni eliminate?</string>
+    <string name="settings_trash_empty_confirm_message">%1$d registrazioni verranno rimosse definitivamente, con trascrizioni e note. Non è reversibile.</string>
 </resources>

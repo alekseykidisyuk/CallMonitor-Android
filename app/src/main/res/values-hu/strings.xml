@@ -572,9 +572,15 @@
     <string name="playback_tags_rename">Átnevezés</string>
     <string name="playback_tags_delete_everywhere">Törlés mindenhonnan</string>
     <string name="settings_section_trash">Nemrég törölt</string>
-    <string name="settings_trash_empty">Itt nincs semmi. A törölt felvételeket 30 napig megőrizzük, mielőtt véglegesen eltávolítanánk.</string>
-    <string name="settings_trash_days_left">%1$d nap maradt</string>
     <string name="settings_trash_restore">Visszaállítás</string>
     <string name="settings_trash_delete_forever">Végleges törlés</string>
     <string name="transcript_share_text">Szöveg</string>
+    <string name="settings_trash_keep_title">Törölt felvételek megőrzése</string>
+    <string name="settings_trash_keep_days">%1$d nap</string>
+    <string name="settings_trash_keep_off">Azonnali törlés</string>
+    <string name="settings_trash_keep_explain">A törölt felvétel eddig állítható vissza. A tárolómappában marad megváltozott néven, így a fájlkezelő és a szinkronizálás továbbra is látja.</string>
+    <string name="settings_trash_keep_off_explain">A törlés azonnal eltávolítja a felvételt. Nincs mit visszaállítani.</string>
+    <string name="settings_trash_empty_now">Ürítés most (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">Ürítsük a törölt felvételeket?</string>
+    <string name="settings_trash_empty_confirm_message">%1$d felvétel véglegesen törlődik az átirataikkal és jegyzeteikkel együtt. Ez nem vonható vissza.</string>
 </resources>

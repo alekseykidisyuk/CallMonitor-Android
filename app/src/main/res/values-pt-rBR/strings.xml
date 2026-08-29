@@ -575,9 +575,15 @@
     <string name="playback_tags_rename">Renomear</string>
     <string name="playback_tags_delete_everywhere">Excluir em todos</string>
     <string name="settings_section_trash">Excluídos recentemente</string>
-    <string name="settings_trash_empty">Não há nada aqui. As gravações excluídas ficam guardadas por 30 dias antes de serem removidas de vez.</string>
-    <string name="settings_trash_days_left">Faltam %1$d dias</string>
     <string name="settings_trash_restore">Restaurar</string>
     <string name="settings_trash_delete_forever">Excluir definitivamente</string>
     <string name="transcript_share_text">Texto</string>
+    <string name="settings_trash_keep_title">Manter gravações excluídas</string>
+    <string name="settings_trash_keep_days">%1$d dias</string>
+    <string name="settings_trash_keep_off">Excluir imediatamente</string>
+    <string name="settings_trash_keep_explain">Uma gravação excluída pode ser restaurada até esse prazo acabar. Ela fica na sua pasta com outro nome, então um gerenciador de arquivos e qualquer sincronização ainda a veem.</string>
+    <string name="settings_trash_keep_off_explain">Excluir remove a gravação na hora. Não há nada para restaurar.</string>
+    <string name="settings_trash_empty_now">Esvaziar agora (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">Esvaziar as gravações excluídas?</string>
+    <string name="settings_trash_empty_confirm_message">%1$d gravações serão removidas de vez, com suas transcrições e notas. Isso não pode ser desfeito.</string>
 </resources>

@@ -572,9 +572,15 @@
     <string name="playback_tags_rename">重命名</string>
     <string name="playback_tags_delete_everywhere">全部删除</string>
     <string name="settings_section_trash">最近删除</string>
-    <string name="settings_trash_empty">这里没有内容。已删除的录音会保留 30 天，然后被永久移除。</string>
-    <string name="settings_trash_days_left">剩余 %1$d 天</string>
     <string name="settings_trash_restore">恢复</string>
     <string name="settings_trash_delete_forever">永久删除</string>
     <string name="transcript_share_text">文本</string>
+    <string name="settings_trash_keep_title">保留已删除的录音</string>
+    <string name="settings_trash_keep_days">%1$d 天</string>
+    <string name="settings_trash_keep_off">立即删除</string>
+    <string name="settings_trash_keep_explain">在此期限内可以恢复已删除的录音。它会以改名后的形式留在存储文件夹中，因此文件管理器和同步工具仍能看到。</string>
+    <string name="settings_trash_keep_off_explain">删除会立即移除录音，没有可恢复的内容。</string>
+    <string name="settings_trash_empty_now">立即清空 (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">清空已删除的录音？</string>
+    <string name="settings_trash_empty_confirm_message">%1$d 条录音及其转录文本和笔记将被永久删除，此操作无法撤销。</string>
 </resources>

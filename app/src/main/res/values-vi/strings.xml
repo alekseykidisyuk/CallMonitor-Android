@@ -572,9 +572,15 @@
     <string name="playback_tags_rename">Đổi tên</string>
     <string name="playback_tags_delete_everywhere">Xóa ở mọi nơi</string>
     <string name="settings_section_trash">Đã xóa gần đây</string>
-    <string name="settings_trash_empty">Không có gì ở đây. Bản ghi đã xóa được giữ trong 30 ngày trước khi bị xóa vĩnh viễn.</string>
-    <string name="settings_trash_days_left">Còn %1$d ngày</string>
     <string name="settings_trash_restore">Khôi phục</string>
     <string name="settings_trash_delete_forever">Xóa vĩnh viễn</string>
     <string name="transcript_share_text">Văn bản</string>
+    <string name="settings_trash_keep_title">Giữ bản ghi đã xóa</string>
+    <string name="settings_trash_keep_days">%1$d ngày</string>
+    <string name="settings_trash_keep_off">Xóa ngay</string>
+    <string name="settings_trash_keep_explain">Bản ghi đã xóa có thể khôi phục cho đến khi hết thời hạn. Nó vẫn nằm trong thư mục lưu trữ với tên khác, nên trình quản lý tệp và công cụ đồng bộ vẫn thấy được.</string>
+    <string name="settings_trash_keep_off_explain">Xóa sẽ loại bỏ bản ghi ngay lập tức. Không có gì để khôi phục.</string>
+    <string name="settings_trash_empty_now">Dọn ngay (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">Dọn các bản ghi đã xóa?</string>
+    <string name="settings_trash_empty_confirm_message">%1$d bản ghi sẽ bị xóa vĩnh viễn cùng bản chép lời và ghi chú. Không thể hoàn tác.</string>
 </resources>

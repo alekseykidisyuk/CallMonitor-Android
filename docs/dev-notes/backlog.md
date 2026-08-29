@@ -34,6 +34,24 @@ to 1.6.0 — stale, written before the version scheme moved). 20100 clears the 1
 
 The maintainer is running this build daily for a few days before cutting the release.
 
+### 🔵 Remove the "Transcribe again" button — agreed 2026-08-29
+
+Drop the retranscribe action from the transcript sheet before the release.
+
+**Why.** It exists because the model or the language pin might have been wrong, which was a real
+worry while transcription was being built and the defaults were still moving. Once the version ships
+with a settled model and a pinned language it stops earning its place: it costs minutes of CPU and
+battery, it is one of five actions on a sheet the user reaches to *read* something, and the failure it
+repairs is one they will now almost never hit.
+
+**Do not simply hide it.** `TranscriptRepository.retry` is also how a FAILED transcript is retried,
+and the nightly queue deliberately skips FAILED so an undecodable file is not attempted every night
+for ever. Removing the button must leave a way to retry a *failed* one — otherwise a recording that
+failed once can never be transcribed again by any route. The likely shape is: keep retry where the
+row shows FAILED, drop it where the transcript is DONE.
+
+Agreed with the maintainer on 2026-08-29: "it won't be necessary once we release the version."
+
 ### 🔴 Seven calls recorded zero audio on the OP12 — found 2026-08-25, WATCHING FOR A RECURRENCE
 
 Found while verifying the 2.1.0 install on the maintainer's daily driver. Seven consecutive **carrier**

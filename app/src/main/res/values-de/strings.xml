@@ -572,9 +572,15 @@
     <string name="playback_tags_rename">Umbenennen</string>
     <string name="playback_tags_delete_everywhere">Überall löschen</string>
     <string name="settings_section_trash">Zuletzt gelöscht</string>
-    <string name="settings_trash_empty">Nichts vorhanden. Gelöschte Aufnahmen werden 30 Tage aufbewahrt, bevor sie endgültig entfernt werden.</string>
-    <string name="settings_trash_days_left">Noch %1$d Tage</string>
     <string name="settings_trash_restore">Wiederherstellen</string>
     <string name="settings_trash_delete_forever">Endgültig löschen</string>
     <string name="transcript_share_text">Text</string>
+    <string name="settings_trash_keep_title">Gelöschte Aufnahmen behalten</string>
+    <string name="settings_trash_keep_days">%1$d Tage</string>
+    <string name="settings_trash_keep_off">Sofort löschen</string>
+    <string name="settings_trash_keep_explain">Eine gelöschte Aufnahme lässt sich bis zum Ablauf wiederherstellen. Sie bleibt unter geändertem Namen im Speicherordner, ist also für Dateimanager und Synchronisierung weiterhin sichtbar.</string>
+    <string name="settings_trash_keep_off_explain">Beim Löschen wird die Aufnahme sofort entfernt. Es gibt nichts wiederherzustellen.</string>
+    <string name="settings_trash_empty_now">Jetzt leeren (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">Gelöschte Aufnahmen leeren?</string>
+    <string name="settings_trash_empty_confirm_message">%1$d Aufnahmen werden endgültig entfernt, samt Transkripten und Notizen. Das lässt sich nicht rückgängig machen.</string>
 </resources>

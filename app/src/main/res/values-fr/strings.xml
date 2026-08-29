@@ -572,9 +572,15 @@
     <string name="playback_tags_rename">Renommer</string>
     <string name="playback_tags_delete_everywhere">Supprimer partout</string>
     <string name="settings_section_trash">Supprimés récemment</string>
-    <string name="settings_trash_empty">Rien ici. Les enregistrements supprimés sont conservés 30 jours avant d\'être effacés définitivement.</string>
-    <string name="settings_trash_days_left">%1$d jours restants</string>
     <string name="settings_trash_restore">Restaurer</string>
     <string name="settings_trash_delete_forever">Supprimer définitivement</string>
     <string name="transcript_share_text">Texte</string>
+    <string name="settings_trash_keep_title">Conserver les enregistrements supprimés</string>
+    <string name="settings_trash_keep_days">%1$d jours</string>
+    <string name="settings_trash_keep_off">Supprimer immédiatement</string>
+    <string name="settings_trash_keep_explain">Un enregistrement supprimé peut être restauré jusqu\'à la fin de ce délai. Il reste dans votre dossier sous un autre nom : un gestionnaire de fichiers et toute synchronisation peuvent encore le voir.</string>
+    <string name="settings_trash_keep_off_explain">La suppression retire l\'enregistrement immédiatement. Il n\'y a rien à restaurer.</string>
+    <string name="settings_trash_empty_now">Vider maintenant (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">Vider les enregistrements supprimés ?</string>
+    <string name="settings_trash_empty_confirm_message">%1$d enregistrements seront supprimés définitivement, avec leurs transcriptions et leurs notes. Action irréversible.</string>
 </resources>

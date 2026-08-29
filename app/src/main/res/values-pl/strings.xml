@@ -572,9 +572,15 @@
     <string name="playback_tags_rename">Zmień nazwę</string>
     <string name="playback_tags_delete_everywhere">Usuń wszędzie</string>
     <string name="settings_section_trash">Ostatnio usunięte</string>
-    <string name="settings_trash_empty">Nic tu nie ma. Usunięte nagrania są przechowywane przez 30 dni, zanim znikną na dobre.</string>
-    <string name="settings_trash_days_left">Pozostało %1$d dni</string>
     <string name="settings_trash_restore">Przywróć</string>
     <string name="settings_trash_delete_forever">Usuń trwale</string>
     <string name="transcript_share_text">Tekst</string>
+    <string name="settings_trash_keep_title">Przechowuj usunięte nagrania</string>
+    <string name="settings_trash_keep_days">%1$d dni</string>
+    <string name="settings_trash_keep_off">Usuwaj natychmiast</string>
+    <string name="settings_trash_keep_explain">Usunięte nagranie można przywrócić do końca tego okresu. Pozostaje w folderze pod zmienioną nazwą, więc menedżer plików i synchronizacja nadal je widzą.</string>
+    <string name="settings_trash_keep_off_explain">Usunięcie od razu kasuje nagranie. Nie ma czego przywracać.</string>
+    <string name="settings_trash_empty_now">Opróżnij teraz (%1$d)</string>
+    <string name="settings_trash_empty_confirm_title">Opróżnić usunięte nagrania?</string>
+    <string name="settings_trash_empty_confirm_message">%1$d nagrań zostanie trwale usuniętych wraz z transkrypcjami i notatkami. Tego nie można cofnąć.</string>
 </resources>

@@ -8,13 +8,11 @@
 
 package com.baba.callvault.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,105 +20,117 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
-import com.baba.callvault.system.storage.RecordingTrash
+import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.system.storage.RecordingTrashRepository
-import com.baba.callvault.system.storage.TrashedRecording
+import com.baba.callvault.ui.common.M3DropdownField
+import com.baba.callvault.ui.common.OptionItem
 import kotlinx.coroutines.launch
 
 /**
- * Recordings the user has deleted and can still get back.
+ * How long a deleted recording is kept, and a way to empty the bin now.
  *
- * **Every row says how long it has left.** A recycle bin whose contents vanish on a schedule nobody
- * stated is a worse promise than no recycle bin: the whole value is knowing that a mistake is
- * recoverable *for a while*, and "a while" has to be visible or it cannot be relied on.
+ * **Settings only — this is not where deleted recordings are browsed.** Restoring one is something a
+ * person does while looking at their recordings, not while configuring the app, so that belongs on
+ * the main screen. What belongs here is the policy: how long, and clear it out.
  *
- * Home reloads its list on resume, so a restored recording is simply there when the user goes back;
- * this section deliberately does not reach across to tell it, which would be a second path to keep in
- * step with the first.
- *
- * Deleting for good is error-coloured and immediate. It is the only irreversible action left in the
- * delete story, and it is one the user has now taken two deliberate steps to reach.
+ * **Zero days is offered as a real choice, not a way to switch the feature off.** A trashed file
+ * stays in the storage folder under a renamed form, so a file manager and any sync tool can still see
+ * it — somebody who deletes a call because they want it *gone* is entitled to have that mean gone,
+ * and burying that option inside the feature would be deciding it for them.
  */
 @Composable
-fun TrashSection(expanded: Boolean, onToggle: () -> Unit) {
+fun TrashSettings(preferences: AppPreferences, updateTrigger: Int) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var items by remember { mutableStateOf<List<TrashedRecording>>(emptyList()) }
-    var reloadNonce by remember { mutableStateOf(0) }
 
-    // Read only while the section is open. It walks both storage folders, which on the Drive folder
-    // is a network round trip, and doing that to draw a section header nobody expanded would make
-    // opening Settings slower for everyone who never deletes anything.
-    LaunchedEffect(expanded, reloadNonce) {
-        if (expanded) items = RecordingTrashRepository.list(context)
+    var days by remember(updateTrigger) { mutableIntStateOf(preferences.getTrashRetentionDays()) }
+    var inTrash by remember { mutableIntStateOf(0) }
+    var reloadNonce by remember { mutableIntStateOf(0) }
+    var confirmEmpty by remember { mutableStateOf(false) }
+
+    // Counted rather than assumed, because Empty has to be able to say what it will destroy — and
+    // because a count of zero is what lets the row be absent instead of asking about nothing.
+    LaunchedEffect(reloadNonce) {
+        inTrash = runCatching { RecordingTrashRepository.list(context).size }.getOrDefault(0)
     }
 
-    SettingsSection(
-        title = stringResource(R.string.settings_section_trash),
-        expanded = expanded,
-        onToggle = onToggle
-    ) {
-        if (items.isEmpty()) {
-            Text(
-                text = stringResource(R.string.settings_trash_empty),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            return@SettingsSection
-        }
+    val options = listOf(
+        OptionItem(key = "0", label = stringResource(R.string.settings_trash_keep_off)),
+        OptionItem(key = "7", label = stringResource(R.string.settings_trash_keep_days, 7)),
+        OptionItem(key = "30", label = stringResource(R.string.settings_trash_keep_days, 30)),
+        OptionItem(key = "90", label = stringResource(R.string.settings_trash_keep_days, 90))
+    )
 
-        val now = System.currentTimeMillis()
-        items.forEach { item ->
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                Text(
-                    text = item.originalName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = stringResource(
-                        R.string.settings_trash_days_left,
-                        RecordingTrash.daysRemaining(item.trashedName, now)
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.height(4.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = {
+    DropdownRow {
+        M3DropdownField(
+            label = stringResource(R.string.settings_trash_keep_title),
+            selected = options.firstOrNull { it.key == days.toString() } ?: options[2],
+            options = options,
+            onOptionSelected = { option ->
+                val chosen = option.key.toIntOrNull() ?: 0
+                days = chosen
+                preferences.setTrashRetentionDays(chosen)
+            }
+        )
+    }
+
+    Text(
+        text = stringResource(
+            if (days <= 0) R.string.settings_trash_keep_off_explain
+            else R.string.settings_trash_keep_explain
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+    )
+
+    if (inTrash > 0) {
+        TextButton(
+            onClick = { confirmEmpty = true },
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            modifier = Modifier.padding(horizontal = 8.dp)
+        ) {
+            Text(stringResource(R.string.settings_trash_empty_now, inTrash))
+        }
+    }
+    Spacer(Modifier.height(4.dp))
+
+    if (confirmEmpty) {
+        AlertDialog(
+            onDismissRequest = { confirmEmpty = false },
+            title = { Text(stringResource(R.string.settings_trash_empty_confirm_title)) },
+            // Says the number and says it cannot be undone. This is the one irreversible action left
+            // in the whole delete story, and it destroys several recordings at once rather than one.
+            text = { Text(stringResource(R.string.settings_trash_empty_confirm_message, inTrash)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmEmpty = false
                         scope.launch {
-                            RecordingTrashRepository.restore(context, item.trashedName)
+                            RecordingTrashRepository.emptyNow(context)
                             reloadNonce++
                         }
-                    }) { Text(stringResource(R.string.settings_trash_restore)) }
-
-                    TextButton(
-                        onClick = {
-                            scope.launch {
-                                RecordingTrashRepository.deleteForever(context, item.trashedName)
-                                reloadNonce++
-                            }
-                        },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
-                    ) { Text(stringResource(R.string.settings_trash_delete_forever)) }
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text(stringResource(R.string.settings_trash_delete_forever)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmEmpty = false }) {
+                    Text(stringResource(R.string.general_cancel))
                 }
             }
-        }
+        )
     }
 }
