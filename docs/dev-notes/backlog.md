@@ -256,7 +256,59 @@ Dual-track VOICE_UPLINK+DOWNLINK with 5-step fallback ladder... opt-in cloud tra
 exactly CallVault's shape, cloud-optional where we are on-device. **It was not in the 2026-08-27
 competitive research.** Worth its own look.
 
-## The one idea that sidesteps the bridge entirely — needs a product decision, not research
+## ⛔ The MIC-fallback idea is DEAD — and it would have been worse than doing nothing
+
+I proposed recording from the app's own uid when the bridge is down, and framed the cost as a privacy
+trade. **That was wrong on the facts.** Verified against AOSP source at every tag from 12 to 16:
+
+**An ordinary app uid capturing during a call receives digital zeros.** Not degraded audio, not the
+near party, not a quiet far party — `AudioFlinger` `memset`s the buffer to 0 while `startRecording()`
+reports success. `AudioPolicyService::updateUidStates_l()` sets `allowCapture=false` for any uid
+lacking `CAPTURE_AUDIO_OUTPUT` or `BYPASS_CONCURRENT_RECORD_AUDIO_RESTRICTION`.
+
+- **Speakerphone makes no difference** — the decision references no route or device; it is
+  route-independent by construction.
+- **VoIP is the same gate** — `is_state_in_call()` covers `MODE_IN_COMMUNICATION` too.
+- **Every source is remapped anyway.** `Engine.cpp` rewrites MIC/VOICE_RECOGNITION/CAMCORDER to
+  `VOICE_COMMUNICATION` during a call, which routes to a physical mic with **AEC and NS applied** —
+  the one path engineered to remove the speaker leakage an acoustic fallback would need.
+- **MediaProjection cannot reach it either**, twice over: carrier downlink is a device→device patch
+  that never consults mix matching, and the VoIP usage allowlist for an ordinary app is exactly
+  `{UNKNOWN, MEDIA, GAME}`. 🚨 The trap: `addMatchingUid(<voip uid>)` **registers successfully and
+  yields silence** — CTS asserts precisely this. It would have produced a clean-looking file of zeros.
+- **Bluetooth SCO** is closed twice: `startBluetoothSco()` is ignored during a call, and the SCO mic
+  never carries Telephony Rx.
+- **No role or permission on 14/15/16 helps.** The three roles granting call-audio permissions are all
+  `systemOnly`, `visible="false"`, static.
+
+**So a "degraded recording" is not available at any quality. The only thing on offer was a silent file
+that passes every size, waveform and success check** — which is strictly worse than recording nothing,
+because it fails invisibly. Do not revisit.
+
+**Why the shell bridge works, stated properly:** `packages/Shell/AndroidManifest.xml` grants exactly
+`CAPTURE_AUDIO_OUTPUT`, `MODIFY_AUDIO_ROUTING`, `CALL_AUDIO_INTERCEPTION`, `CAPTURE_MEDIA_OUTPUT` and
+`CAPTURE_VOICE_COMMUNICATION_OUTPUT`. Shell is the only uid on a stock device holding that set. The
+bridge is not a workaround we found; it is the only door in the building.
+
+**History, for the record:** Android 9 added the `CAPTURE_AUDIO_OUTPUT` gate and the in-call source
+remap — that is when the direct door closed, not Android 10. Android 10 then closed the acoustic
+fallback. The accessibility + `VOICE_RECOGNITION` loophole is still live in AOSP `main` but only
+*un-silences*; the remap still applies, so it yields the AEC'd uplink mic — near party only, far party
+actively cancelled. Play-banned since 2022-05-11. That is what Cube ACR ships.
+
+## 🆕 Two things this turned up in OUR code
+
+1. **`AudioRecordingConfiguration.isClientSilenced()` — public API since API 30.** It is the supported
+   way to detect that a capture is being fed zeros. **Any path that only checks "did `startRecording()`
+   succeed" reports false success on every blocked route.** This is directly relevant to our
+   silent-recording bug class and is worth wiring in regardless of anything else here.
+2. 🚨 **Possible Android 13 VoIP gap.** `CAPTURE_VOICE_COMMUNICATION_OUTPUT` was added to
+   `packages/Shell/AndroidManifest.xml` **only in Android 14** — absent at `android-13.0.0_r1`. Our
+   VoIP loopback path depends on it, so on Android 13 and earlier the shell daemon may be unable to
+   register that mix at all. OEM Shell manifests vary. **Wants on-device confirmation before anyone
+   files it as a bug** — see [[voip-recording-feasibility]].
+
+
 
 Record from the **app's own uid with plain `MIC`**, when the privileged bridge is down. No ADB, no
 shell, no Wi-Fi. It captures the near party always and the far party only on speakerphone — the
