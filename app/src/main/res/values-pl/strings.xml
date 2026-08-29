@@ -558,4 +558,11 @@
     <string name="wizard_transcription_title">Zamiana rozmów w tekst</string>
     <string name="wizard_updates_subtitle">CallVault nie jest w żadnym sklepie z aplikacjami, więc sam sprawdza nowe wersje na GitHubie.</string>
     <string name="wizard_updates_title">Bądź na bieżąco</string>
+    <string name="app_lock_prompt_title">Odblokuj CallVault</string>
+    <string name="app_lock_locked">Zablokowano</string>
+    <string name="app_lock_unlock">Odblokuj</string>
+    <string name="settings_section_privacy">Prywatność</string>
+    <string name="settings_app_lock_title">Wymagaj odblokowania</string>
+    <string name="settings_app_lock_description">Wymagaj blokady ekranu przed pokazaniem nagrań i transkrypcji. Ukrywa je też na zrzutach ekranu i w przełączniku aplikacji.</string>
+    <string name="settings_app_lock_unavailable">Ustaw blokadę ekranu w telefonie, aby z tego skorzystać.</string>
 </resources>

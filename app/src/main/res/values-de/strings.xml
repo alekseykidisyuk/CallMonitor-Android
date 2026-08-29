@@ -558,4 +558,11 @@
     <string name="wizard_transcription_title">Anrufe in Text umwandeln</string>
     <string name="wizard_updates_subtitle">CallVault ist in keinem App-Store, daher sucht es selbst auf GitHub nach neuen Versionen.</string>
     <string name="wizard_updates_title">Auf dem neuesten Stand bleiben</string>
+    <string name="app_lock_prompt_title">CallVault entsperren</string>
+    <string name="app_lock_locked">Gesperrt</string>
+    <string name="app_lock_unlock">Entsperren</string>
+    <string name="settings_section_privacy">Datenschutz</string>
+    <string name="settings_app_lock_title">Entsperren verlangen</string>
+    <string name="settings_app_lock_description">Vor dem Anzeigen von Aufnahmen und Transkripten die Bildschirmsperre verlangen. Hält sie außerdem aus Screenshots und der App-Übersicht heraus.</string>
+    <string name="settings_app_lock_unavailable">Richte dafür zuerst eine Bildschirmsperre auf deinem Telefon ein.</string>
 </resources>

@@ -249,6 +249,7 @@ class AppPreferences(context: Context) {
         MODE_AUTO_DISABLED("mode_auto_disabled"),
         SPEAKER_MAP_OVERRIDE("speaker_map_override"),
         SPEAKER_MAP_CONFIRMED("speaker_map_confirmed"),
+        APP_LOCK_ENABLED("app_lock_enabled"),
 
         // --- Retention ---
         RETENTION_LINKED("retention_linked"),
@@ -885,6 +886,20 @@ class AppPreferences(context: Context) {
     fun getSpeakerMapConfirmed(): Boolean = getBoolean(Key.SPEAKER_MAP_CONFIRMED, false)
 
     fun setSpeakerMapConfirmed(confirmed: Boolean) = setBoolean(Key.SPEAKER_MAP_CONFIRMED, confirmed)
+
+    // -------- App lock --------
+
+    /**
+     * Whether opening the app requires the device unlock.
+     *
+     * Off by default. On is the safer setting, but a lock nobody asked for on an app somebody already
+     * relies on reads as a malfunction the first time it appears — and
+     * [com.baba.callvault.system.AppLock.isEnabled] gates this on the phone actually having a screen
+     * lock, so a stored `true` is a request rather than a guarantee.
+     */
+    fun isAppLockEnabled(): Boolean = getBoolean(Key.APP_LOCK_ENABLED, false)
+
+    fun setAppLockEnabled(enabled: Boolean) = setBoolean(Key.APP_LOCK_ENABLED, enabled)
 
     // -------- Sync Schedule --------
 

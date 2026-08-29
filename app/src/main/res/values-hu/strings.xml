@@ -558,4 +558,11 @@
     <string name="wizard_transcription_title">Hívásokból szöveg</string>
     <string name="wizard_updates_subtitle">A CallVault nincs alkalmazásboltban, ezért maga keresi az új verziókat a GitHubon.</string>
     <string name="wizard_updates_title">Naprakészen tartás</string>
+    <string name="app_lock_prompt_title">CallVault feloldása</string>
+    <string name="app_lock_locked">Zárolva</string>
+    <string name="app_lock_unlock">Feloldás</string>
+    <string name="settings_section_privacy">Adatvédelem</string>
+    <string name="settings_app_lock_title">Feloldás kérése</string>
+    <string name="settings_app_lock_description">A képernyőzár kérése a felvételek és átiratok megjelenítése előtt. A képernyőképekről és az alkalmazásváltóból is kihagyja őket.</string>
+    <string name="settings_app_lock_unavailable">Ehhez előbb állíts be képernyőzárat a telefonodon.</string>
 </resources>

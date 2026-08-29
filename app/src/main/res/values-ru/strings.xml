@@ -558,4 +558,11 @@
     <string name="wizard_transcription_title">Звонки в текст</string>
     <string name="wizard_updates_subtitle">CallVault не публикуется в магазинах приложений, поэтому сам проверяет новые версии на GitHub.</string>
     <string name="wizard_updates_title">Быть в курсе обновлений</string>
+    <string name="app_lock_prompt_title">Разблокировать CallVault</string>
+    <string name="app_lock_locked">Заблокировано</string>
+    <string name="app_lock_unlock">Разблокировать</string>
+    <string name="settings_section_privacy">Конфиденциальность</string>
+    <string name="settings_app_lock_title">Требовать разблокировку</string>
+    <string name="settings_app_lock_description">Запрашивать блокировку экрана перед показом записей и расшифровок. Также скрывает их со скриншотов и из списка недавних приложений.</string>
+    <string name="settings_app_lock_unavailable">Чтобы включить, настройте блокировку экрана на телефоне.</string>
 </resources>

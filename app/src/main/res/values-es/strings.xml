@@ -558,4 +558,11 @@
     <string name="wizard_transcription_title">Convertir las llamadas en texto</string>
     <string name="wizard_updates_subtitle">CallVault no está en ninguna tienda de aplicaciones, así que busca nuevas versiones en GitHub por su cuenta.</string>
     <string name="wizard_updates_title">Mantente al día</string>
+    <string name="app_lock_prompt_title">Desbloquear CallVault</string>
+    <string name="app_lock_locked">Bloqueado</string>
+    <string name="app_lock_unlock">Desbloquear</string>
+    <string name="settings_section_privacy">Privacidad</string>
+    <string name="settings_app_lock_title">Requerir desbloqueo</string>
+    <string name="settings_app_lock_description">Pedir el bloqueo de pantalla antes de mostrar grabaciones y transcripciones. También las mantiene fuera de las capturas y del selector de apps.</string>
+    <string name="settings_app_lock_unavailable">Configura un bloqueo de pantalla en tu teléfono para usar esto.</string>
 </resources>

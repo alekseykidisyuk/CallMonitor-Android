@@ -558,4 +558,11 @@
     <string name="wizard_transcription_title">把通话变成文字</string>
     <string name="wizard_updates_subtitle">CallVault 不在任何应用商店上架，因此会自行到 GitHub 查看新版本。</string>
     <string name="wizard_updates_title">保持最新</string>
+    <string name="app_lock_prompt_title">解锁 CallVault</string>
+    <string name="app_lock_locked">已锁定</string>
+    <string name="app_lock_unlock">解锁</string>
+    <string name="settings_section_privacy">隐私</string>
+    <string name="settings_app_lock_title">需要解锁</string>
+    <string name="settings_app_lock_description">在显示录音和转录文本前要求屏幕锁。同时使其不出现在截图和应用切换器中。</string>
+    <string name="settings_app_lock_unavailable">请先在手机上设置屏幕锁以使用此功能。</string>
 </resources>

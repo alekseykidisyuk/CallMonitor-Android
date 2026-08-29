@@ -558,4 +558,11 @@
     <string name="wizard_transcription_title">Biến cuộc gọi thành văn bản</string>
     <string name="wizard_updates_subtitle">CallVault không có trên kho ứng dụng nào, nên tự tìm phiên bản mới trên GitHub.</string>
     <string name="wizard_updates_title">Luôn được cập nhật</string>
+    <string name="app_lock_prompt_title">Mở khóa CallVault</string>
+    <string name="app_lock_locked">Đã khóa</string>
+    <string name="app_lock_unlock">Mở khóa</string>
+    <string name="settings_section_privacy">Quyền riêng tư</string>
+    <string name="settings_app_lock_title">Yêu cầu mở khóa</string>
+    <string name="settings_app_lock_description">Yêu cầu khóa màn hình trước khi hiện bản ghi và bản chép lời. Đồng thời ẩn chúng khỏi ảnh chụp màn hình và trình chuyển ứng dụng.</string>
+    <string name="settings_app_lock_unavailable">Hãy đặt khóa màn hình trên điện thoại để dùng tính năng này.</string>
 </resources>

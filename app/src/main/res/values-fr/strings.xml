@@ -558,4 +558,11 @@
     <string name="wizard_transcription_title">Transformer les appels en texte</string>
     <string name="wizard_updates_subtitle">CallVault n\'est sur aucune boutique d\'applications : il cherche donc lui-même les nouvelles versions sur GitHub.</string>
     <string name="wizard_updates_title">Rester à jour</string>
+    <string name="app_lock_prompt_title">Déverrouiller CallVault</string>
+    <string name="app_lock_locked">Verrouillé</string>
+    <string name="app_lock_unlock">Déverrouiller</string>
+    <string name="settings_section_privacy">Confidentialité</string>
+    <string name="settings_app_lock_title">Exiger le déverrouillage</string>
+    <string name="settings_app_lock_description">Demander le verrouillage de l\'écran avant d\'afficher les enregistrements et les transcriptions. Les exclut aussi des captures d\'écran et du sélecteur d\'applications.</string>
+    <string name="settings_app_lock_unavailable">Configurez un verrouillage d\'écran sur votre téléphone pour utiliser cette option.</string>
 </resources>

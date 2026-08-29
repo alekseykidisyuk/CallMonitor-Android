@@ -558,4 +558,11 @@
     <string name="wizard_transcription_title">Trasformare le chiamate in testo</string>
     <string name="wizard_updates_subtitle">CallVault non è su nessuno store, quindi cerca da sé le nuove versioni su GitHub.</string>
     <string name="wizard_updates_title">Restare aggiornati</string>
+    <string name="app_lock_prompt_title">Sblocca CallVault</string>
+    <string name="app_lock_locked">Bloccato</string>
+    <string name="app_lock_unlock">Sblocca</string>
+    <string name="settings_section_privacy">Privacy</string>
+    <string name="settings_app_lock_title">Richiedi sblocco</string>
+    <string name="settings_app_lock_description">Richiede il blocco schermo prima di mostrare registrazioni e trascrizioni. Le esclude anche dagli screenshot e dal selettore app.</string>
+    <string name="settings_app_lock_unavailable">Imposta un blocco schermo sul telefono per usare questa opzione.</string>
 </resources>

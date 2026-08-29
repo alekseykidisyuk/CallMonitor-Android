@@ -78,6 +78,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.annotation.StringRes
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.system.AppLock
 import com.baba.callvault.data.ModeCapability
 import com.baba.callvault.integrations.adb.AdbShell
 import com.baba.callvault.integrations.adb.UsbDefaultConfig
@@ -484,6 +485,7 @@ private const val SUB_WHERE = "sub_where"
 private const val SUB_UPLOAD = "sub_upload"
 private const val SUB_RETENTION = "sub_retention"
 private const val SUB_VISUAL = "sub_visual"
+private const val SUB_PRIVACY = "sub_privacy"
 private const val SUB_EXPERIMENTAL = "sub_experimental"
 private const val SUB_UPDATES = "sub_updates"
 private const val SUB_PRIVILEGES = "privileges"
@@ -1443,6 +1445,11 @@ private fun GeneralSection(
             onToggle = { openSub = if (openSub == SUB_VISUAL) null else SUB_VISUAL },
         ) { VisualSubSection(preferences, updateTrigger, actions) }
         SettingsSubSection(
+            title = stringResource(R.string.settings_section_privacy),
+            expanded = openSub == SUB_PRIVACY,
+            onToggle = { openSub = if (openSub == SUB_PRIVACY) null else SUB_PRIVACY },
+        ) { PrivacySubSection(preferences, updateTrigger) }
+        SettingsSubSection(
             title = stringResource(R.string.settings_section_experimental),
             expanded = openSub == SUB_EXPERIMENTAL,
             onToggle = { openSub = if (openSub == SUB_EXPERIMENTAL) null else SUB_EXPERIMENTAL },
@@ -1453,6 +1460,40 @@ private fun GeneralSection(
             onToggle = { openSub = if (openSub == SUB_UPDATES) null else SUB_UPDATES },
         ) { UpdatesSubSection(preferences, updateTrigger, actions) }
     }
+}
+
+/**
+ * The app lock, and for now nothing else.
+ *
+ * Its own sub-section rather than a row in Visual, because it is the first setting here that is about
+ * who may *see* the app rather than how it looks, and because the next few privacy settings will want
+ * somewhere obvious to go.
+ */
+@Composable
+private fun PrivacySubSection(preferences: AppPreferences, updateTrigger: Int) {
+    val context = LocalContext.current
+    // Re-read on every settings change: the user may have gone to system Settings and added a screen
+    // lock precisely because this row told them to, and coming back to a still-disabled row would
+    // read as the app being wrong.
+    val available = remember(updateTrigger) { AppLock.isAvailable(context) }
+    var enabled by remember(updateTrigger) { mutableStateOf(preferences.isAppLockEnabled()) }
+
+    SettingsToggleRow(
+        label = stringResource(R.string.settings_app_lock_title),
+        checked = enabled && available,
+        onCheckedChange = {
+            enabled = it
+            preferences.setAppLockEnabled(it)
+        },
+        // Disabled rather than hidden when the phone has no screen lock: hiding it would leave
+        // someone looking for a feature they have read about with no idea why it is absent.
+        enabled = available,
+        description = stringResource(
+            if (available) R.string.settings_app_lock_description
+            else R.string.settings_app_lock_unavailable
+        ),
+        descriptionBelow = true,
+    )
 }
 
 @Composable
