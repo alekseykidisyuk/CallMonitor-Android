@@ -35,6 +35,8 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | R18 | **The transcript has one Share button**, offering plain text or a file format, and **long-pressing a line copies that sentence** with the speaker's name. | Minor, but if the README walks through the transcript screen it should not describe a separate Copy button. | ✅ VERIFIED 2026-08-29 |
 
+| R19 | **The off-Wi-Fi reboot limitation is real and permanent.** Off-Wi-Fi recording works, but `adb tcpip` clears on reboot and cannot be re-armed without reaching a Wi-Fi network once. | State it plainly in the setup section rather than letting a user discover it by missing a call. Four escapes were tested and all are shut — including on AOSP — so this is a platform limit, not a gap we intend to close. Saying so is more honest than silence, and the research says disclosure order is what this audience actually punishes. | ✅ VERIFIED 2026-08-29 by spike + a hand test |
+
 | R12 | **CallVault says when a recording contains no audio.** | Safe to state, but state it *narrowly*: it catches a file with no audio samples, **not** a full-length recording of silence. An over-broad claim here would manufacture exactly the false confidence the fix exists to remove. | ✅ VERIFIED 2026-08-27 |
 
 ## Blocked on verification — do not write these into the README yet

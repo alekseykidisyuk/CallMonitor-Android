@@ -72,7 +72,7 @@ deletes **permanently** and does not fill the bin, so a 7-day retention is 7 day
 right — retention exists to bound storage — but nothing in the UI said so, and it is the first thing
 anyone asks.
 
-### 🔴 E3 — off-Wi-Fi reboot re-arm — SPIKE DONE 2026-08-29, no door found
+### ⛔ E3 — off-Wi-Fi reboot re-arm — SPIKE DONE 2026-08-29, **UNSOLVABLE without root. Do not re-investigate.**
 
 Off-Wi-Fi recording ships (v1.4.0): `adb tcpip` puts adbd on a TCP port and the app connects to
 127.0.0.1, so a call records with no network. **The port does not survive a reboot**, and re-arming it
@@ -89,7 +89,7 @@ rebooting: Wi-Fi off, then `adb usb` to drop adbd back to USB-only (`service.adb
 | `setprop persist.adb.tcp.port` from shell — would open the port at every boot and end the problem outright | ❌ `Failed to set property` — **and it fails on the AOSP emulator too**, so it is SELinux, not an OEM choice. Only adbd may write it, which is the deadlock restated |
 | `setprop service.adb.tcp.port` from shell | ❌ same |
 | `settings put global adb_wifi_enabled 1` with Wi-Fi off — the app holds `WRITE_SECURE_SETTINGS`, so this is the one lever it *can* pull after a reboot | ❌ the platform **resets it to 0**. Control with Wi-Fi on: it sticks. So the gate is the *network*, not our permission |
-| The phone's own **hotspot** as a substitute network | ❓ **untested** — `cmd wifi start-softap` throws `SecurityException: Uid 2000 does not have access`, so it cannot be tested from adb. A user can turn a hotspot on by hand, and if soft-AP counts as a Wi-Fi network for Wireless Debugging, that is a real off-Wi-Fi recovery path |
+| The phone's own **hotspot** as a substitute network | ❌ **tested by the maintainer by hand, 2026-08-29: Wireless Debugging cannot be enabled with only a hotspot up.** Soft-AP does not satisfy it. `cmd wifi start-softap` also refuses uid 2000, so this could only ever have been checked by a person |
 
 ## Verdict
 
@@ -97,10 +97,23 @@ rebooting: Wi-Fi off, then `adb usb` to drop adbd back to USB-only (`service.adb
 the instruction over a connection that cannot exist yet. This is not a missing API we have failed to
 find; it is the shape of the problem.
 
-**The one thing left worth trying costs a minute and needs a person:** with Wi-Fi off, switch the
-hotspot on, then try to enable Wireless Debugging. If that works, the fix is documentation and a
-prompt — "turn your hotspot on for ten seconds" — rather than code, and the residual hole closes for
-anyone willing to do it.
+**All four doors are now shut.** Reboot away from a real Wi-Fi network and the privileged bridge stays
+down until the phone next reaches one. Nothing in the app can change that, and no amount of further
+searching will: this is a platform property, verified on AOSP as well as on two OEM ROMs.
+
+## What is still worth doing, and it is small
+
+We cannot fix it. We can stop it being **silent**, which the demand research says is what users punish
+hardest — a bridge that collapses quietly is the top reason people abandon this category (24 sources).
+Today the app tries to re-arm, fails, logs a warning, and the user finds out by missing a call or by
+opening the app and reading the status card.
+
+The mitigation is a **notification when offline recording is enabled and the loopback listener is
+down** — "recording is paused until this phone reaches Wi-Fi once" — fired after boot rather than at
+the moment a call is missed. That is a small, contained piece of work and it converts the worst
+property of this hole (invisibility) into an inconvenience.
+
+**And the README must state the limitation plainly** rather than leaving it to look like an oversight.
 
 ### 🅿️ Capture fallback ladder with RMS audibility check — PARKED 2026-08-29, before any work
 
