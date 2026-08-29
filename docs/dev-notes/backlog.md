@@ -72,7 +72,7 @@ deletes **permanently** and does not fill the bin, so a 7-day retention is 7 day
 right — retention exists to bound storage — but nothing in the UI said so, and it is the first thing
 anyone asks.
 
-### 🔵 E1 — non-UI `InCallService` — researched 2026-08-29, DEVICE-VERIFIED, spike next
+### 🟡 E1 — non-UI `InCallService` — ✅ SPIKE SUCCEEDED on the OP12, 2026-08-29
 
 Telecom binds our app at `onCallAdded` — the earliest moment a call exists — giving the number,
 direction, state and the VoIP/carrier distinction **by construction** rather than by inference. The
@@ -106,6 +106,28 @@ testing and removed with `cmd companiondevice disassociate 0 <pkg> <mac>`.
 
 ⚠️ A fake association was left on **both** phones during this research (mac `00:11:22:33:44:55`). It
 does not appear in Settings' paired list and is removed on uninstall.
+
+## ✅ The spike answered it: Telecom binds us on OxygenOS 16
+
+Real outgoing call on the OP12, 2026-08-29 (`da035bf`):
+
+    12:36:29.836  onCallAdded:   direction=outgoing selfManaged=false state=9 (CONNECTING)
+    12:36:44.983  onCallRemoved: direction=outgoing selfManaged=false state=7 (DISCONNECTED)
+
+**Direction and the self-managed flag both correct, from the platform**, on a phone where the appop
+grant is silently blocked — so the companion-device role *does* carry the capability on Android 16.
+
+The recording for that call is stamped `20260829_123630.877`, about **one second after** the callback.
+📐 That is a proxy, not a direct measurement of our detection latency — the file stamp is when the
+recording was named, not when the broadcast arrived, and the logcat ring had already rotated past the
+call's start. It bounds the gain rather than stating it.
+
+**Still untested: a VoIP call.** `selfManaged=true` is the whole reason this is worth having, and no
+self-managed call has been through it yet. The Telecom dump says `supportsSelfMg?true`, so the bind
+should happen; nobody has watched it.
+
+**The OP9 is a useful negative control** — it holds the association but *not* the role. If it binds
+there too, the role is not what is doing the work and the mechanism is something else.
 
 ## Next step is a spike, not the feature
 
