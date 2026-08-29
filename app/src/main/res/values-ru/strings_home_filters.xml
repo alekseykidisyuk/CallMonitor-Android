@@ -28,4 +28,11 @@
     <string name="home_source_badge_both">Устройство + Drive</string>
     <string name="home_source_badge_drive">Drive</string>
     <string name="home_source_badge_local">Устройство</string>
+
+    <!-- Tag facet (chip label + "all" option). %1$s = current value shown on the chip. -->
+    <string name="home_filter_tag_label">Метка</string>
+    <string name="home_filter_tag_chip">Метка: %1$s</string>
+    <string name="home_filter_tag_all">Все метки</string>
+    <string name="home_filter_tag_all_short">Все</string>
+
 </resources>

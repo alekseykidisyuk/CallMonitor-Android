@@ -770,4 +770,8 @@
     <string name="settings_app_lock_title">Require unlock</string>
     <string name="settings_app_lock_description">Ask for your screen lock before showing recordings and transcripts. Also keeps them out of screenshots and the app switcher.</string>
     <string name="settings_app_lock_unavailable">Set a screen lock on your phone to use this.</string>
+    <string name="playback_tags_title">Tags</string>
+    <string name="playback_tags_add">Add tag</string>
+    <string name="playback_tags_remove">Remove tag</string>
+    <string name="playback_tags_hint">e.g. the flat, insurance</string>
 </resources>

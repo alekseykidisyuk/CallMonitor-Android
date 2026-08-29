@@ -75,5 +75,15 @@ object TranscriptCascade {
             // As above: the summary is an account of a private call and is never logged.
             AppLogger.w(TAG, "Failed to delete summaries for ${displayNames.size} recording(s): ${it.message}")
         }
+
+        runCatching {
+            val dao = TranscriptDatabase.get(context).tagDao()
+            displayNames.forEach { dao.deleteFor(it) }
+        }.onFailure {
+            // A tag is short, but it is the user's own word for what a call was about — an orphaned
+            // `lawyer` or `hospital` is a readable record of a conversation they deleted, and it
+            // would go on appearing in the filter row afterwards. Never logged, for that reason.
+            AppLogger.w(TAG, "Failed to delete tags for ${displayNames.size} recording(s): ${it.message}")
+        }
     }
 }

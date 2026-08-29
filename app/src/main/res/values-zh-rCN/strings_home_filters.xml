@@ -28,4 +28,11 @@
     <string name="home_source_badge_both">设备 + Drive</string>
     <string name="home_source_badge_drive">Drive</string>
     <string name="home_source_badge_local">设备</string>
+
+    <!-- Tag facet (chip label + "all" option). %1$s = current value shown on the chip. -->
+    <string name="home_filter_tag_label">标签</string>
+    <string name="home_filter_tag_chip">标签: %1$s</string>
+    <string name="home_filter_tag_all">全部标签</string>
+    <string name="home_filter_tag_all_short">全部</string>
+
 </resources>

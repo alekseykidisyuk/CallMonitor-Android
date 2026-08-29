@@ -565,4 +565,8 @@
     <string name="settings_app_lock_title">需要解锁</string>
     <string name="settings_app_lock_description">在显示录音和转录文本前要求屏幕锁。同时使其不出现在截图和应用切换器中。</string>
     <string name="settings_app_lock_unavailable">请先在手机上设置屏幕锁以使用此功能。</string>
+    <string name="playback_tags_title">标签</string>
+    <string name="playback_tags_add">添加标签</string>
+    <string name="playback_tags_remove">移除标签</string>
+    <string name="playback_tags_hint">例如：房子、保险</string>
 </resources>

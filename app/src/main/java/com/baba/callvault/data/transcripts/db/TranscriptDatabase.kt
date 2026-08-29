@@ -44,9 +44,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         RecordingWaveformEntry::class,
         CallSummaryEntry::class,
         CallSummaryFts::class,
-        SpeakerTurnsEntry::class
+        SpeakerTurnsEntry::class,
+        RecordingTagEntry::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(TranscriptStateConverter::class)
@@ -59,6 +60,8 @@ abstract class TranscriptDatabase : RoomDatabase() {
     abstract fun summaryDao(): CallSummaryDao
 
     abstract fun speakerTurnsDao(): SpeakerTurnsDao
+
+    abstract fun tagDao(): RecordingTagDao
 
     companion object {
 
@@ -198,13 +201,36 @@ abstract class TranscriptDatabase : RoomDatabase() {
         }
 
         /**
+         * v5 → v6: tags.
+         *
+         * Hand-written like the rest, and a tag has the same claim on surviving as a note does: it is
+         * a judgement the user made about a call — *this one was about the flat* — and nothing on
+         * disk records it, so a destructive bump would simply lose it.
+         *
+         * The composite primary key is the deduplication: applying a tag twice writes the same row
+         * rather than a second one. The index on `tag` is what keeps filtering cheap once somebody
+         * has years of calls.
+         */
+        internal val MIGRATION_5_6_SQL = listOf(
+            "CREATE TABLE IF NOT EXISTS `recording_tags` (" +
+                "`displayName` TEXT NOT NULL, " +
+                "`tag` TEXT NOT NULL, " +
+                "PRIMARY KEY(`displayName`, `tag`))",
+            "CREATE INDEX IF NOT EXISTS `index_recording_tags_tag` ON `recording_tags` (`tag`)"
+        )
+
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) = MIGRATION_5_6_SQL.forEach(db::execSQL)
+        }
+
+        /**
          * Every migration, in one place, used by both [get] and the migration test.
          *
          * One list rather than two so a migration that is written but never registered cannot
          * happen — that mistake would look exactly like a correct build until an upgrading user
          * opened the app, and this database has no destructive fallback to catch them.
          */
-        internal val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        internal val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 
         @Volatile
         private var INSTANCE: TranscriptDatabase? = null

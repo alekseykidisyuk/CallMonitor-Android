@@ -565,4 +565,8 @@
     <string name="settings_app_lock_title">Требовать разблокировку</string>
     <string name="settings_app_lock_description">Запрашивать блокировку экрана перед показом записей и расшифровок. Также скрывает их со скриншотов и из списка недавних приложений.</string>
     <string name="settings_app_lock_unavailable">Чтобы включить, настройте блокировку экрана на телефоне.</string>
+    <string name="playback_tags_title">Метки</string>
+    <string name="playback_tags_add">Добавить метку</string>
+    <string name="playback_tags_remove">Удалить метку</string>
+    <string name="playback_tags_hint">например: квартира, страховка</string>
 </resources>

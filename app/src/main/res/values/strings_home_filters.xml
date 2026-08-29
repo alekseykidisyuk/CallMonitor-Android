@@ -51,4 +51,11 @@
     <string name="home_delete_copy_device_content_desc">Delete Device copy</string>
     <string name="home_delete_copy_drive_content_desc">Delete Drive copy</string>
 
+
+    <!-- Tag facet (chip label + "all" option). %1$s = current value shown on the chip. -->
+    <string name="home_filter_tag_label">Tag</string>
+    <string name="home_filter_tag_chip">Tag: %1$s</string>
+    <string name="home_filter_tag_all">All tags</string>
+    <string name="home_filter_tag_all_short">All</string>
+
 </resources>

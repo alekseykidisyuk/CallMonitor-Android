@@ -72,7 +72,8 @@ class TranscriptSchemaMigrationTest {
             TranscriptDatabase.MIGRATION_1_2_SQL +
                 TranscriptDatabase.MIGRATION_2_3_SQL +
                 TranscriptDatabase.MIGRATION_3_4_SQL +
-                TranscriptDatabase.MIGRATION_4_5_SQL
+                TranscriptDatabase.MIGRATION_4_5_SQL +
+                TranscriptDatabase.MIGRATION_5_6_SQL
             ).map(::sqlIn)
         val original = tablesAt(version = 1)
 
@@ -143,6 +144,24 @@ class TranscriptSchemaMigrationTest {
         )
     }
 
+    @Test
+    fun `the tags migration creates exactly the table Room expects at v6`() {
+        val statements = TranscriptDatabase.MIGRATION_5_6_SQL.map(::sqlIn)
+
+        assertTrue(createSqlFor(version = 6, table = "recording_tags") in statements)
+    }
+
+    @Test
+    fun `the tags migration creates the index the filter depends on`() {
+        // Without it, filtering by a tag is a full scan of every assignment on every keystroke of the
+        // list. It would be correct and it would get slower every year.
+        assertTrue(
+            TranscriptDatabase.MIGRATION_5_6_SQL.any {
+                "index_recording_tags_tag" in it && "CREATE INDEX" in it
+            }
+        )
+    }
+
     /** Room's own content-sync triggers for an external-content FTS [table] at [version]. */
     private fun triggersFor(version: Int, table: String): List<String> {
         val entities = schema(version).getJSONObject("database").getJSONArray("entities")
@@ -181,7 +200,7 @@ class TranscriptSchemaMigrationTest {
     private fun sqlIn(sql: String): String = sql.replace(Regex("\\s+"), " ").trim()
 
     private companion object {
-        const val LATEST_VERSION = 5
+        const val LATEST_VERSION = 6
         const val SCHEMA_DIR = "schemas/com.baba.callvault.data.transcripts.db.TranscriptDatabase"
     }
 }

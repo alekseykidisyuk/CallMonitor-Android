@@ -565,4 +565,8 @@
     <string name="settings_app_lock_title">Entsperren verlangen</string>
     <string name="settings_app_lock_description">Vor dem Anzeigen von Aufnahmen und Transkripten die Bildschirmsperre verlangen. Hält sie außerdem aus Screenshots und der App-Übersicht heraus.</string>
     <string name="settings_app_lock_unavailable">Richte dafür zuerst eine Bildschirmsperre auf deinem Telefon ein.</string>
+    <string name="playback_tags_title">Tags</string>
+    <string name="playback_tags_add">Tag hinzufügen</string>
+    <string name="playback_tags_remove">Tag entfernen</string>
+    <string name="playback_tags_hint">z. B. Wohnung, Versicherung</string>
 </resources>

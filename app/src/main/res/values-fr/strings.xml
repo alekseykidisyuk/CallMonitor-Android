@@ -565,4 +565,8 @@
     <string name="settings_app_lock_title">Exiger le déverrouillage</string>
     <string name="settings_app_lock_description">Demander le verrouillage de l\'écran avant d\'afficher les enregistrements et les transcriptions. Les exclut aussi des captures d\'écran et du sélecteur d\'applications.</string>
     <string name="settings_app_lock_unavailable">Configurez un verrouillage d\'écran sur votre téléphone pour utiliser cette option.</string>
+    <string name="playback_tags_title">Étiquettes</string>
+    <string name="playback_tags_add">Ajouter une étiquette</string>
+    <string name="playback_tags_remove">Supprimer l\'étiquette</string>
+    <string name="playback_tags_hint">p. ex. l\'appartement, assurance</string>
 </resources>

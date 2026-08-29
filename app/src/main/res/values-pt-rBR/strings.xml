@@ -568,4 +568,8 @@
     <string name="settings_app_lock_title">Exigir desbloqueio</string>
     <string name="settings_app_lock_description">Pedir o bloqueio de tela antes de mostrar gravações e transcrições. Também as mantém fora de capturas de tela e do alternador de apps.</string>
     <string name="settings_app_lock_unavailable">Configure um bloqueio de tela no seu telefone para usar isso.</string>
+    <string name="playback_tags_title">Etiquetas</string>
+    <string name="playback_tags_add">Adicionar etiqueta</string>
+    <string name="playback_tags_remove">Remover etiqueta</string>
+    <string name="playback_tags_hint">ex.: o apartamento, seguro</string>
 </resources>

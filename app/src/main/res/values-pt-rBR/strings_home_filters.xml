@@ -28,4 +28,11 @@
     <string name="home_source_badge_both">Dispositivo + Drive</string>
     <string name="home_source_badge_drive">Drive</string>
     <string name="home_source_badge_local">Dispositivo</string>
+
+    <!-- Tag facet (chip label + "all" option). %1$s = current value shown on the chip. -->
+    <string name="home_filter_tag_label">Etiqueta</string>
+    <string name="home_filter_tag_chip">Etiqueta: %1$s</string>
+    <string name="home_filter_tag_all">Todas as etiquetas</string>
+    <string name="home_filter_tag_all_short">Todas</string>
+
 </resources>

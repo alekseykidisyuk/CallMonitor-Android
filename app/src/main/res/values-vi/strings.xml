@@ -565,4 +565,8 @@
     <string name="settings_app_lock_title">Yêu cầu mở khóa</string>
     <string name="settings_app_lock_description">Yêu cầu khóa màn hình trước khi hiện bản ghi và bản chép lời. Đồng thời ẩn chúng khỏi ảnh chụp màn hình và trình chuyển ứng dụng.</string>
     <string name="settings_app_lock_unavailable">Hãy đặt khóa màn hình trên điện thoại để dùng tính năng này.</string>
+    <string name="playback_tags_title">Thẻ</string>
+    <string name="playback_tags_add">Thêm thẻ</string>
+    <string name="playback_tags_remove">Xóa thẻ</string>
+    <string name="playback_tags_hint">ví dụ: căn hộ, bảo hiểm</string>
 </resources>

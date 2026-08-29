@@ -150,6 +150,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Groups
 import com.baba.callvault.R
 import com.baba.callvault.system.shareTranscriptFile
+import com.baba.callvault.data.transcripts.TagRepository
 import com.baba.callvault.data.transcripts.export.TranscriptExportFile
 import com.baba.callvault.data.transcripts.export.TranscriptExport
 import com.baba.callvault.data.AppPreferences
@@ -376,6 +377,13 @@ fun HomeScreen(
 
             val summaryState by rememberSummaryState(displayName)
 
+            val tags by remember(displayName) {
+                TagRepository.tagsFor(context, displayName)
+            }.collectAsState(initial = emptyList())
+            val knownTags by remember {
+                TagRepository.allTags(context)
+            }.collectAsState(initial = emptyList())
+
             PlaybackScreen(
                 item = openItem,
                 playback = playback,
@@ -390,6 +398,14 @@ fun HomeScreen(
                     transcriptScope.launch {
                         RecordingExtrasRepository.saveNote(context, displayName, text)
                     }
+                },
+                tags = tags,
+                knownTags = knownTags.map { it.tag },
+                onAddTag = { text ->
+                    transcriptScope.launch { TagRepository.add(context, displayName, text) }
+                },
+                onRemoveTag = { tag ->
+                    transcriptScope.launch { TagRepository.remove(context, displayName, tag) }
                 },
                 onSummarise = { SummaryScheduler.runNow(context, displayName) },
                 onStopSummary = { SummaryScheduler.stopNow(context) },
@@ -599,6 +615,9 @@ fun HomeScreen(
                         dateFilter = uiState.dateFilter,
                         availableContacts = uiState.availableContacts,
                         availableDates = uiState.availableDates,
+                        tagFilter = uiState.tagFilter,
+                        availableTags = uiState.availableTags,
+                        onTagFilterChange = { viewModel.setTagFilter(it) },
                         onSourceFilterChange = { viewModel.setSourceFilter(it) },
                         onDirectionFilterChange = { viewModel.setDirectionFilter(it) },
                         onContactFilterChange = { viewModel.setContactFilter(it) },
@@ -1316,6 +1335,9 @@ private fun RecordingFilterBar(
     dateFilter: String?,
     availableContacts: List<String>,
     availableDates: List<String>,
+    tagFilter: String?,
+    availableTags: List<String>,
+    onTagFilterChange: (String?) -> Unit,
     onSourceFilterChange: (SourceFilter) -> Unit,
     onDirectionFilterChange: (DirectionFilter) -> Unit,
     onContactFilterChange: (String?) -> Unit,
@@ -1356,6 +1378,16 @@ private fun RecordingFilterBar(
     }
     val dateValueLabel = dateFilter ?: allDatesShort
 
+    // Tag facet. Absent entirely until at least one tag exists: a chip reading "Tag: All" on a
+    // library with no tags is a control that can only ever do nothing.
+    val allTagsLabel = stringResource(R.string.home_filter_tag_all)
+    val allTagsShort = stringResource(R.string.home_filter_tag_all_short)
+    val tagOptions = buildList<FilterOption<String?>> {
+        add(FilterOption(null, allTagsLabel))
+        availableTags.forEach { add(FilterOption(it, it)) }
+    }
+    val tagValueLabel = tagFilter ?: allTagsShort
+
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1382,6 +1414,15 @@ private fun RecordingFilterBar(
             selected = contactFilter,
             onSelected = onContactFilterChange
         )
+        if (availableTags.isNotEmpty()) {
+            FilterChip(
+                text = stringResource(R.string.home_filter_tag_chip, tagValueLabel),
+                active = tagFilter != null,
+                options = tagOptions,
+                selected = tagFilter,
+                onSelected = onTagFilterChange
+            )
+        }
         FilterChip(
             text = stringResource(R.string.home_filter_date_chip, dateValueLabel),
             active = dateFilter != null,

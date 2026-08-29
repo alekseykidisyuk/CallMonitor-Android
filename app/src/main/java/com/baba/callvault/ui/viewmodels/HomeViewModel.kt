@@ -16,6 +16,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.transcripts.TagRepository
 import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.data.health.CallGapDetector
 import com.baba.callvault.data.health.CallLogReader
@@ -150,6 +151,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val directionFilter: DirectionFilter = DirectionFilter.ALL,
         val contactFilter: String? = null,
         val dateFilter: String? = null,
+        /** The selected tag, or null for "all tags". */
+        val tagFilter: String? = null,
+        /**
+         * Which tags each recording carries.
+         *
+         * Held here rather than queried per tag so [filteredRecordings] stays a pure function of
+         * state, exactly like the contact and date facets beside it.
+         */
+        val tagsByRecording: Map<String, Set<String>> = emptyMap(),
         /** Release tag of a known-newer version (drives the update banner), or null. */
         val availableUpdateTag: String? = null,
         /**
@@ -195,6 +205,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             get() = recordings.map { RecordingsRepository.dayKey(it) }.distinct()
 
         /**
+         * Every tag in use, most-used first then alphabetically.
+         *
+         * Ordered by use because the filter row is read constantly and a tag applied to one call
+         * years ago should not sit in front of the one applied to forty.
+         *
+         * Deliberately derived from every assignment rather than only from the *listed* recordings:
+         * narrowing the offered tags as other facets narrow the list would make a tag vanish from
+         * the row at the moment somebody went looking for it.
+         */
+        val availableTags: List<String>
+            get() = tagsByRecording.values.flatten()
+                .groupingBy { it }.eachCount()
+                .entries
+                .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }
+                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.key })
+                .map { it.key }
+
+        /**
          * The recordings to render: [recordings] narrowed by all four facets (AND), preserving the
          * repository's newest-first ordering. Derived on read so it always reflects the current
          * filters without a repo reload.
@@ -204,7 +232,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 matchesSource(item) &&
                     matchesDirection(item) &&
                     (contactFilter == null || contactKey(item) == contactFilter) &&
-                    (dateFilter == null || RecordingsRepository.dayKey(item) == dateFilter)
+                    (dateFilter == null || RecordingsRepository.dayKey(item) == dateFilter) &&
+                    (tagFilter == null || tagsByRecording[item.displayName]?.contains(tagFilter) == true)
             }
 
         private fun matchesSource(item: RecordingItem): Boolean = when (sourceFilter) {
@@ -256,6 +285,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         refresh()
         observeInstallWork()
         observePlaybackErrors()
+        observeTags()
         preferences.registerChangeListener(prefsListener)
     }
 
@@ -269,6 +299,31 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * error. Only prunes on a CONFIRMED-missing file — a transient/network error (exists() throws) leaves
      * the entry untouched, so a valid recording is never removed by a hiccup.
      */
+    /**
+     * Keeps the tag facet in step with the database.
+     *
+     * A tag applied on the playback screen has to reach the Home filter row without a reload, and
+     * removing the last recording carrying a tag has to take that tag out of the row — otherwise the
+     * row offers a filter that can only ever produce an empty list.
+     */
+    private fun observeTags() {
+        viewModelScope.launch {
+            TagRepository.assignments(appContext).collect { assignments ->
+                _uiState.update { state ->
+                    state.copy(
+                        tagsByRecording = assignments,
+                        // Drop a filter whose tag has just stopped existing. Without this, deleting
+                        // the last recording carrying it leaves the list filtered to nothing with no
+                        // chip selected to explain why.
+                        tagFilter = state.tagFilter?.takeIf { tag ->
+                            assignments.values.any { tag in it }
+                        }
+                    )
+                }
+            }
+        }
+    }
+
     private fun observePlaybackErrors() {
         viewModelScope.launch {
             playbackController.state.collect { state ->
@@ -512,6 +567,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /** Updates the active call-direction facet; the derived list re-computes on the next read. */
     fun setDirectionFilter(filter: DirectionFilter) {
         _uiState.update { it.copy(directionFilter = filter) }
+    }
+
+    /** Selects a tag to filter to, or null for "all tags". */
+    fun setTagFilter(tag: String?) {
+        _uiState.update { it.copy(tagFilter = tag) }
     }
 
     /** Selects a specific contact key to filter to, or null for "all contacts". */

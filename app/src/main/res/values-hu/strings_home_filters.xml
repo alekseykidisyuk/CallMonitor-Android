@@ -28,4 +28,11 @@
     <string name="home_source_badge_both">Eszköz + Drive</string>
     <string name="home_source_badge_drive">Drive</string>
     <string name="home_source_badge_local">Eszköz</string>
+
+    <!-- Tag facet (chip label + "all" option). %1$s = current value shown on the chip. -->
+    <string name="home_filter_tag_label">Címke</string>
+    <string name="home_filter_tag_chip">Címke: %1$s</string>
+    <string name="home_filter_tag_all">Összes címke</string>
+    <string name="home_filter_tag_all_short">Összes</string>
+
 </resources>

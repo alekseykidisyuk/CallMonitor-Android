@@ -565,4 +565,8 @@
     <string name="settings_app_lock_title">Richiedi sblocco</string>
     <string name="settings_app_lock_description">Richiede il blocco schermo prima di mostrare registrazioni e trascrizioni. Le esclude anche dagli screenshot e dal selettore app.</string>
     <string name="settings_app_lock_unavailable">Imposta un blocco schermo sul telefono per usare questa opzione.</string>
+    <string name="playback_tags_title">Etichette</string>
+    <string name="playback_tags_add">Aggiungi etichetta</string>
+    <string name="playback_tags_remove">Rimuovi etichetta</string>
+    <string name="playback_tags_hint">es. casa, assicurazione</string>
 </resources>

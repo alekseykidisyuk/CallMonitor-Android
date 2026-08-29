@@ -565,4 +565,8 @@
     <string name="settings_app_lock_title">Wymagaj odblokowania</string>
     <string name="settings_app_lock_description">Wymagaj blokady ekranu przed pokazaniem nagrań i transkrypcji. Ukrywa je też na zrzutach ekranu i w przełączniku aplikacji.</string>
     <string name="settings_app_lock_unavailable">Ustaw blokadę ekranu w telefonie, aby z tego skorzystać.</string>
+    <string name="playback_tags_title">Tagi</string>
+    <string name="playback_tags_add">Dodaj tag</string>
+    <string name="playback_tags_remove">Usuń tag</string>
+    <string name="playback_tags_hint">np. mieszkanie, ubezpieczenie</string>
 </resources>

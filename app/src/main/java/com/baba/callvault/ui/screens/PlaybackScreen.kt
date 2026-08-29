@@ -70,6 +70,19 @@ import com.baba.callvault.R
 import com.baba.callvault.data.recordings.RecordingDirection
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.transcripts.TranscriptStatus
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Label
+import com.baba.callvault.data.transcripts.TagName
 import com.baba.callvault.ui.common.CvCard
 import com.baba.callvault.ui.common.CvScaffold
 import com.baba.callvault.ui.common.RecordingLabel
@@ -104,6 +117,12 @@ fun PlaybackScreen(
     peaks: FloatArray,
     note: String,
     onNoteChange: (String) -> Unit,
+    /** The user's own labels for this call — see [com.baba.callvault.data.transcripts.TagRepository]. */
+    tags: List<String> = emptyList(),
+    /** Every tag already in use anywhere, offered as suggestions so near-duplicates do not accrue. */
+    knownTags: List<String> = emptyList(),
+    onAddTag: (String) -> Unit = {},
+    onRemoveTag: (String) -> Unit = {},
     onSummarise: () -> Unit,
     onStopSummary: () -> Unit,
     onBack: () -> Unit,
@@ -175,6 +194,15 @@ fun PlaybackScreen(
                     onSeek(millis.toInt())
                     if (!isPlaying) onPlay()
                 }
+            )
+            // Between the summary and the note: a tag is the shortest thing on the screen and the
+            // one most often applied right after listening, so it sits where the thumb already is
+            // rather than below a text field that opens the keyboard.
+            TagCard(
+                tags = tags,
+                knownTags = knownTags,
+                onAddTag = onAddTag,
+                onRemoveTag = onRemoveTag
             )
             NoteCard(note = note, onNoteChange = onNoteChange)
         }
@@ -572,6 +600,155 @@ private fun playbackDate(item: RecordingItem): String? {
  * — the price agreed, the thing to chase. Saved as it is typed, because a note behind a Save button is
  * a note somebody loses.
  */
+/**
+ * The user's own labels for this call, and the way to add one.
+ *
+ * **Why tags exist beside a contact name.** A great many calls are with numbers that are in nobody's
+ * address book — a clinic, a landlord, a claims line — so "who it was with" cannot find them again.
+ * "The flat" can. This is the best-evidenced missing feature in the whole product survey, and the
+ * request that carries it says exactly this.
+ *
+ * Chip colours are stated rather than defaulted: this app's scheme resolves several Material 3
+ * defaults to a coral that reads as an error state, so a chip left to its own devices ships red.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagCard(
+    tags: List<String>,
+    knownTags: List<String>,
+    onAddTag: (String) -> Unit,
+    onRemoveTag: (String) -> Unit
+) {
+    var adding by remember { mutableStateOf(false) }
+
+    CvCard(contentPadding = PaddingValues(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.Label,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.playback_tags_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            tags.forEach { tag ->
+                InputChip(
+                    selected = false,
+                    onClick = { onRemoveTag(tag) },
+                    label = { Text(tag) },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.playback_tags_remove),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = InputChipDefaults.inputChipColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        trailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
+            AssistChip(
+                onClick = { adding = true },
+                label = { Text(stringResource(R.string.playback_tags_add)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                },
+                colors = AssistChipDefaults.assistChipColors(
+                    labelColor = MaterialTheme.colorScheme.primary,
+                    leadingIconContentColor = MaterialTheme.colorScheme.primary
+                )
+            )
+        }
+    }
+
+    if (adding) {
+        AddTagDialog(
+            // Only tags this recording does not already carry: offering one that is already on the
+            // chip row above invites a tap that does nothing.
+            suggestions = knownTags.filterNot { known -> tags.any { it.equals(known, ignoreCase = true) } },
+            onDismiss = { adding = false },
+            onConfirm = { text ->
+                adding = false
+                onAddTag(text)
+            }
+        )
+    }
+}
+
+/**
+ * Typing a tag, with the ones already in use offered as chips.
+ *
+ * The suggestions are the point rather than a convenience: without them people coin *flat*, *the
+ * flat* and *Flat* over three months and end up with three filters that each find a third of what
+ * they wanted. Case alone is handled for them further down, in `TagName`.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AddTagDialog(
+    suggestions: List<String>,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var text by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.playback_tags_add)) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { if (it.length <= TagName.MAX_LENGTH) text = it },
+                    singleLine = true,
+                    placeholder = { Text(stringResource(R.string.playback_tags_hint)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (suggestions.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        suggestions.take(MAX_TAG_SUGGESTIONS).forEach { suggestion ->
+                            SuggestionChip(
+                                onClick = { onConfirm(suggestion) },
+                                label = { Text(suggestion) },
+                                colors = SuggestionChipDefaults.suggestionChipColors(
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(text) },
+                enabled = text.isNotBlank()
+            ) { Text(stringResource(R.string.general_ok)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.general_cancel)) }
+        }
+    )
+}
+
+/** Enough to jog a memory, few enough that the dialog does not become a list to read. */
+private const val MAX_TAG_SUGGESTIONS = 8
+
 @Composable
 private fun NoteCard(note: String, onNoteChange: (String) -> Unit) {
     CvCard(contentPadding = PaddingValues(16.dp)) {
