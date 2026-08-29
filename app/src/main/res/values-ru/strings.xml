@@ -415,6 +415,9 @@
     <string name="transcript_search_hint">Поиск по сказанному</string>
     <string name="transcript_search_idle">Введите слово, чтобы искать по всем вашим расшифровкам.</string>
     <string name="transcript_share">Поделиться</string>
+    <string name="transcript_export">Экспорт</string>
+    <string name="transcript_export_chooser">Поделиться расшифровкой</string>
+    <string name="transcript_export_failed">Не удалось экспортировать расшифровку</string>
     <string name="transcript_speaker_a">Говорящий A</string>
     <string name="transcript_speaker_b">Говорящий B</string>
     <string name="transcript_speaker_you">Я</string>

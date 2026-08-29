@@ -415,6 +415,9 @@
     <string name="transcript_search_hint">Tìm trong nội dung đã nói</string>
     <string name="transcript_search_idle">Nhập một từ để tìm trong mọi bản chép lời của bạn.</string>
     <string name="transcript_share">Chia sẻ</string>
+    <string name="transcript_export">Xuất</string>
+    <string name="transcript_export_chooser">Chia sẻ bản ghi</string>
+    <string name="transcript_export_failed">Không thể xuất bản ghi</string>
     <string name="transcript_speaker_a">Người nói A</string>
     <string name="transcript_speaker_b">Người nói B</string>
     <string name="transcript_speaker_you">Tôi</string>

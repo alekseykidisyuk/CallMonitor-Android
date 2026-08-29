@@ -415,6 +415,9 @@
     <string name="transcript_search_hint">Rechercher ce qui a été dit</string>
     <string name="transcript_search_idle">Saisissez un mot pour chercher dans toutes vos transcriptions.</string>
     <string name="transcript_share">Partager</string>
+    <string name="transcript_export">Exporter</string>
+    <string name="transcript_export_chooser">Partager la transcription</string>
+    <string name="transcript_export_failed">Impossible d\'exporter la transcription</string>
     <string name="transcript_speaker_a">Interlocuteur A</string>
     <string name="transcript_speaker_b">Interlocuteur B</string>
     <string name="transcript_speaker_you">Moi</string>

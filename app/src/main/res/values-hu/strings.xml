@@ -415,6 +415,9 @@
     <string name="transcript_search_hint">Keresés az elhangzottak között</string>
     <string name="transcript_search_idle">Írjon be egy szót az összes átirat átkereséséhez.</string>
     <string name="transcript_share">Megosztás</string>
+    <string name="transcript_export">Exportálás</string>
+    <string name="transcript_export_chooser">Átirat megosztása</string>
+    <string name="transcript_export_failed">Az átirat exportálása nem sikerült</string>
     <string name="transcript_speaker_a">A beszélő</string>
     <string name="transcript_speaker_b">B beszélő</string>
     <string name="transcript_speaker_you">Én</string>

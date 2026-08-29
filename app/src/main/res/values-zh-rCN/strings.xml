@@ -415,6 +415,9 @@
     <string name="transcript_search_hint">搜索通话内容</string>
     <string name="transcript_search_idle">输入词语即可搜索你的全部文字记录。</string>
     <string name="transcript_share">分享</string>
+    <string name="transcript_export">导出</string>
+    <string name="transcript_export_chooser">分享转录文本</string>
+    <string name="transcript_export_failed">无法导出转录文本</string>
     <string name="transcript_speaker_a">说话人 A</string>
     <string name="transcript_speaker_b">说话人 B</string>
     <string name="transcript_speaker_you">我</string>

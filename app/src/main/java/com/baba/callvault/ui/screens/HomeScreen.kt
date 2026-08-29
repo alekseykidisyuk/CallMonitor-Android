@@ -10,6 +10,7 @@ package com.baba.callvault.ui.screens
 
 import android.net.Uri
 import android.text.format.DateUtils
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -148,6 +149,9 @@ import com.baba.callvault.ui.common.CallOriginBadge
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Groups
 import com.baba.callvault.R
+import com.baba.callvault.system.shareTranscriptFile
+import com.baba.callvault.data.transcripts.export.TranscriptExportFile
+import com.baba.callvault.data.transcripts.export.TranscriptExport
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.data.health.FailureReason
@@ -703,6 +707,25 @@ fun HomeScreen(
             onSkip = { viewModel.skipPlayback(it) },
             onCopy = { text -> context.copyToClipboard(displayName, text) },
             onShare = { text -> context.sharePlainText(displayName, text) },
+            onExport = { format, document ->
+                val file = TranscriptExportFile.write(
+                    context = context,
+                    fileName = TranscriptExport.fileName(format, displayName),
+                    content = TranscriptExport.render(format, document)
+                )
+                // A failed write is reported rather than passed over: the user tapped a format and
+                // is waiting for a chooser, so silence would read as the tap not registering and
+                // invite them to try again into the same full cache.
+                if (file == null) {
+                    Toast.makeText(
+                        context,
+                        R.string.transcript_export_failed,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    context.shareTranscriptFile(file, format.mimeType)
+                }
+            },
             onRetranscribe = {
                 startTranscription(displayName)
                 transcriptFor = null

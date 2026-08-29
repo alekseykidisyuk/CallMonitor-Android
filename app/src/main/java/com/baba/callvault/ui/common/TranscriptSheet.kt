@@ -11,6 +11,7 @@ package com.baba.callvault.ui.common
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -22,6 +23,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -30,7 +33,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +49,9 @@ import androidx.compose.ui.unit.dp
 import com.baba.callvault.R
 import com.baba.callvault.data.ChannelMap
 import com.baba.callvault.data.SpeakerNames
+import com.baba.callvault.data.transcripts.export.ExportDocument
+import com.baba.callvault.data.transcripts.export.TranscriptExport
+import com.baba.callvault.data.transcripts.export.TranscriptFormat
 import com.baba.callvault.data.transcripts.db.TranscriptSegmentEntry
 import com.baba.callvault.data.transcripts.db.TranscriptWithSegments
 
@@ -87,6 +96,13 @@ fun TranscriptSheet(
     onSkip: (Int) -> Unit,
     onCopy: (String) -> Unit,
     onShare: (String) -> Unit,
+    /**
+     * Writes the transcript out as a file in the chosen format and offers it to the share-sheet.
+     *
+     * The document is assembled here, where the segments, the speaker names and the stored summary
+     * already are; the caller only has to put it on disk and raise the chooser.
+     */
+    onExport: (TranscriptFormat, ExportDocument) -> Unit = { _, _ -> },
     onRetranscribe: () -> Unit,
     onDelete: () -> Unit,
     /**
@@ -215,8 +231,43 @@ fun TranscriptSheet(
             TextButton(onClick = { onCopy(plain) }, enabled = segments.isNotEmpty()) {
                 Text(stringResource(R.string.transcript_copy))
             }
+            // Share stays plain text and Export writes a file, because they are different errands.
+            // Sending a `.txt` attachment to a chat is worse than sending the words, and sending the
+            // words to a subtitle editor is useless — collapsing the two would break one of them.
             TextButton(onClick = { onShare(plain) }, enabled = segments.isNotEmpty()) {
                 Text(stringResource(R.string.transcript_share))
+            }
+            Box {
+                var formatsShown by remember { mutableStateOf(false) }
+                TextButton(onClick = { formatsShown = true }, enabled = segments.isNotEmpty()) {
+                    Text(stringResource(R.string.transcript_export))
+                }
+                // A menu rather than a screen: five formats is a choice, not a workflow, and the
+                // labels are file extensions that need no explaining.
+                DropdownMenu(expanded = formatsShown, onDismissRequest = { formatsShown = false }) {
+                    TranscriptFormat.entries.forEach { format ->
+                        DropdownMenuItem(
+                            text = { Text(format.label) },
+                            onClick = {
+                                formatsShown = false
+                                onExport(
+                                    format,
+                                    ExportDocument(
+                                        title = title,
+                                        segments = segments,
+                                        speakerNames = speakerNames,
+                                        // Only a summary that is actually stored. A card that is
+                                        // still being written, or was offered and declined, must not
+                                        // reach the file as a half-finished account of the call.
+                                        summary = (summaryState as? SummaryCardState.Ready)?.summary,
+                                        language = transcript?.transcript?.language,
+                                        model = transcript?.transcript?.modelId
+                                    )
+                                )
+                            }
+                        )
+                    }
+                }
             }
             TextButton(onClick = onRetranscribe) {
                 Text(stringResource(R.string.transcript_retranscribe))
@@ -388,9 +439,6 @@ private fun TranscriptLine(
  * screen does — and stays neutral for exactly as long as the screen does.
  */
 private fun List<TranscriptSegmentEntry>.asPlainText(names: SpeakerNames): String =
-    joinToString("\n") { segment ->
-        val speaker = names.of(segment.speaker)?.let { "$it: " }.orEmpty()
-        "[${TranscriptTimestamp.format(segment.startMs)}] $speaker${segment.text}"
-    }
+    TranscriptExport.plainText(this, names)
 
 private val TIMESTAMP_WIDTH = 56.dp

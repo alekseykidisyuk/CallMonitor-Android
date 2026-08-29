@@ -415,6 +415,9 @@
     <string name="transcript_search_hint">Nach Gesagtem suchen</string>
     <string name="transcript_search_idle">Geben Sie ein Wort ein, um alle Ihre Transkripte zu durchsuchen.</string>
     <string name="transcript_share">Teilen</string>
+    <string name="transcript_export">Exportieren</string>
+    <string name="transcript_export_chooser">Transkript teilen</string>
+    <string name="transcript_export_failed">Transkript konnte nicht exportiert werden</string>
     <string name="transcript_speaker_a">Sprecher A</string>
     <string name="transcript_speaker_b">Sprecher B</string>
     <string name="transcript_speaker_you">Ich</string>

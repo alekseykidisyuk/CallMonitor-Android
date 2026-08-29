@@ -736,6 +736,9 @@
     <string name="transcript_speaker_b">Speaker B</string>
     <string name="transcript_copy">Copy</string>
     <string name="transcript_share">Share</string>
+    <string name="transcript_export">Export</string>
+    <string name="transcript_export_chooser">Share transcript</string>
+    <string name="transcript_export_failed">Could not export the transcript</string>
     <string name="transcript_retranscribe">Transcribe again</string>
     <string name="home_search_transcripts">Search what was said</string>
     <string name="transcript_too_long_title">Too long to transcribe</string>

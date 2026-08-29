@@ -9,4 +9,9 @@
          attached to a share-sheet (ACTION_SEND) via FileProvider. Limited to the dedicated
          cache/logs sub-folder so nothing else in the cache directory is shareable. -->
     <cache-path name="debug_logs" path="logs/" />
+
+    <!-- Exposes an exported transcript (TXT/Markdown/SRT/VTT/JSON) so it can be attached to a
+         share-sheet. Its own sub-folder, holding one file at a time, so a share can never reach
+         anything else the app has cached. -->
+    <cache-path name="transcript_exports" path="exports/" />
 </paths>

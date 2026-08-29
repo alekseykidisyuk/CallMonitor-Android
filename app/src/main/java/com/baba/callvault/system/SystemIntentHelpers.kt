@@ -177,6 +177,31 @@ fun Context.openPayPal() {
 }
 
 /**
+ * Offers an exported transcript to the share-sheet.
+ *
+ * Separate from [shareLogFiles] because of [mimeType]: the log report is always plain text, while an
+ * export can be any of five formats, and the type is what decides which apps the chooser offers. A
+ * `.srt` announced as `text/plain` is offered to messaging apps and not to the subtitle editor the
+ * user exported it for.
+ *
+ * The file is exposed through [FileProvider] and the chosen app is granted temporary read access for
+ * the lifetime of the share — the same terms as the log report, and the reason the export is written
+ * to its own cache sub-folder rather than anywhere else.
+ */
+fun Context.shareTranscriptFile(file: File, mimeType: String) {
+    val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = mimeType
+        putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_SUBJECT, file.name)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        // The flag alone covers only what the extras name, so the URI has to be in the clip data too.
+        clipData = android.content.ClipData.newRawUri(file.name, uri)
+    }
+    launchSmartIntent(Intent.createChooser(intent, getString(R.string.transcript_export_chooser)))
+}
+
+/**
  * Shares [file] (the diagnostic log report) through the system share-sheet (ACTION_SEND), so the
  * user can attach it to an email, chat, or GitHub issue in one tap.
  *

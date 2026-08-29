@@ -415,6 +415,9 @@
     <string name="transcript_search_hint">Szukaj w wypowiedziach</string>
     <string name="transcript_search_idle">Wpisz słowo, aby przeszukać wszystkie swoje transkrypcje.</string>
     <string name="transcript_share">Udostępnij</string>
+    <string name="transcript_export">Eksportuj</string>
+    <string name="transcript_export_chooser">Udostępnij transkrypcję</string>
+    <string name="transcript_export_failed">Nie udało się wyeksportować transkrypcji</string>
     <string name="transcript_speaker_a">Rozmówca A</string>
     <string name="transcript_speaker_b">Rozmówca B</string>
     <string name="transcript_speaker_you">Ja</string>
