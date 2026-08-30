@@ -94,5 +94,14 @@ object TranscriptCascade {
             // name, exempting a call the user never protected from the sweeps.
             AppLogger.w(TAG, "Failed to delete stars for ${displayNames.size} recording(s): ${it.message}")
         }
+
+        runCatching {
+            val dao = TranscriptDatabase.get(context).flagDao()
+            displayNames.forEach { dao.deleteFor(it) }
+        }.onFailure {
+            // Orphaned marks would reattach to the next recording to reuse the name, putting the
+            // user's bookmarks on a call they were never made in.
+            AppLogger.w(TAG, "Failed to delete marks for ${displayNames.size} recording(s): ${it.message}")
+        }
     }
 }

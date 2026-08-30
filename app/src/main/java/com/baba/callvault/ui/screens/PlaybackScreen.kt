@@ -73,6 +73,10 @@ import com.baba.callvault.R
 import com.baba.callvault.data.recordings.RecordingDirection
 import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.transcripts.TranscriptStatus
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.AlertDialog
@@ -125,6 +129,9 @@ fun PlaybackScreen(
     tags: List<String> = emptyList(),
     /** Every tag already in use anywhere, offered as suggestions so near-duplicates do not accrue. */
     knownTags: List<String> = emptyList(),
+    /** Moments marked during the call, as offsets into the audio, earliest first. */
+    flags: List<Long> = emptyList(),
+    onRemoveFlag: (Long) -> Unit = {},
     /** Whether this recording is starred — see [com.baba.callvault.data.transcripts.FavouriteRepository]. */
     isFavourite: Boolean = false,
     onToggleFavourite: () -> Unit = {},
@@ -193,6 +200,16 @@ fun PlaybackScreen(
                 onSkip = onSkip,
                 onCycleSpeed = onCycleSpeed
             )
+            // Directly under the player, because every one of these is an instruction to the player:
+            // tap and it seeks there. Further down they would be a list of numbers to read rather
+            // than controls to use.
+            if (flags.isNotEmpty()) {
+                MarkedMomentsCard(
+                    flags = flags,
+                    onSeekTo = onSeek,
+                    onRemove = onRemoveFlag
+                )
+            }
             // Above the transcript row and the note, because it answers the question the transcript
             // answers more slowly — and because a stamp in it is a jump into the player above.
             SummaryCard(
@@ -220,6 +237,71 @@ fun PlaybackScreen(
             )
             NoteCard(note = note, onNoteChange = onNoteChange)
         }
+    }
+}
+
+/**
+ * The moments marked during the call, as chips that seek.
+ *
+ * A tap jumps the player there; a long press removes the mark. Long press rather than an X on every
+ * chip: the row is read far more often than it is edited, and a delete target beside each entry in a
+ * row people tap to navigate is a mis-tap that destroys something.
+ */
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
+@Composable
+private fun MarkedMomentsCard(
+    flags: List<Long>,
+    onSeekTo: (Int) -> Unit,
+    onRemove: (Long) -> Unit
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    CvCard(contentPadding = PaddingValues(16.dp)) {
+        Column {
+            Text(
+                text = stringResource(R.string.playback_marked_moments),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(10.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                flags.forEach { atMs ->
+                    Row(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(accent.copy(alpha = 0.14f))
+                            .border(1.dp, accent.copy(alpha = 0.5f), CircleShape)
+                            .combinedClickable(
+                                onClick = { onSeekTo(atMs.toInt()) },
+                                onLongClick = { onRemove(atMs) }
+                            )
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = formatMarkTime(atMs),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = accent
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** m:ss, or h:mm:ss once a call is long enough to need it. */
+private fun formatMarkTime(atMs: Long): String {
+    val totalSeconds = atMs / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format(Locale.US, "%d:%02d", minutes, seconds)
     }
 }
 

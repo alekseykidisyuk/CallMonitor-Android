@@ -124,9 +124,16 @@ class RecordingNotificationHelper(private val context: Context) {
                         RecordingForegroundService.ACTION_PAUSE_RECORDING
                     )
                 }
-                // Second, never first. Ending the recording is the one action here that cannot be
-                // undone, and putting it where Pause used to sit would have people stopping calls
-                // with the muscle memory they built for pausing them.
+                // Marking a moment sits between Pause and Stop. It is the action most likely to be
+                // pressed mid-sentence, without looking, while the phone is against an ear.
+                actions += NotificationAction(
+                    R.drawable.ic_mic,
+                    context.getString(R.string.general_flag),
+                    RecordingForegroundService.ACTION_FLAG_MOMENT
+                )
+                // Always last. Ending the recording is the one action here that cannot be undone,
+                // and it must never sit where Pause has always been — people would end calls with
+                // the muscle memory they built for pausing them.
                 actions += NotificationAction(
                     R.drawable.ic_stop,
                     context.getString(R.string.general_stop),
@@ -184,6 +191,23 @@ class RecordingNotificationHelper(private val context: Context) {
         }
 
         return builder.build()
+    }
+
+    /**
+     * Confirms that a mark landed, with the running total.
+     *
+     * A toast rather than a change to the notification: the marks cannot be listed until the call
+     * ends and the file has a name, and a button that appears to do nothing simply gets pressed
+     * again — which is how a single moment becomes five marks.
+     */
+    fun showFlagToast(count: Int) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(
+                context,
+                context.getString(R.string.recording_flag_added, count),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     /**

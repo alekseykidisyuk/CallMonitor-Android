@@ -36,6 +36,7 @@ import com.baba.callvault.transcription.AudioDecoder
 import com.baba.callvault.system.storage.MinDurationPolicy
 import com.baba.callvault.system.interop.MetadataSidecar
 import com.baba.callvault.data.recordings.RecordingsRepository
+import com.baba.callvault.data.transcripts.FlagRepository
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -52,6 +53,9 @@ import java.util.Locale
  * carrier call's metadata (number, direction, ignore-rules), none of which exists here.
  */
 object VoipRecordingCoordinator {
+
+    /** Position in the saved audio, for marks placed from the ongoing notification. */
+    private val clock = RecordingClock()
     private const val TAG = "CV:VoipRec"
 
     /** Mirrors `VoipAppIdentity.UID_UNKNOWN`, which lives in the daemon-side package. */
@@ -129,6 +133,11 @@ object VoipRecordingCoordinator {
         recording = true
         pending = saf
         codecMime = codec.mimeType
+        // A timeline and a mark buffer for this call, then the controls. Before this an app call
+        // could be recorded from start to finish with nothing to stop it and nothing to mark.
+        clock.start()
+        PendingFlags.beginCall()
+        VoipRecordingNotification.show(context, appLabel)
         AppLogger.i(TAG, "VoIP recording started -> $fileName")
     }
 
@@ -187,6 +196,24 @@ object VoipRecordingCoordinator {
         }.onFailure { AppLogger.w(TAG, "Could not record the missed VoIP call: ${it.message}") }
     }
 
+    /**
+     * Records a mark at the current position in the app call being recorded.
+     *
+     * No pause exists on this path, so the clock never stops; the offset is simply time since the
+     * recording began. Silently ignored when nothing is recording, which is what a stale
+     * notification action looks like.
+     */
+    fun markMoment(context: Context) {
+        val at = clock.audioElapsedMs()
+        if (!recording || at == null) {
+            AppLogger.w(TAG, "Mark pressed with no VoIP recording running; ignoring.")
+            return
+        }
+        PendingFlags.add(at)
+        RecordingNotificationHelper(context).showFlagToast(PendingFlags.count())
+        AppLogger.i(TAG, "Marked ${at}ms into the VoIP recording (${PendingFlags.count()} so far).")
+    }
+
     /** Stops the in-flight VoIP recording, if any. Idempotent. */
     @Synchronized
     fun onCallEnded(context: Context) {
@@ -194,6 +221,11 @@ object VoipRecordingCoordinator {
         recording = false
         val saf = pending
         pending = null
+        // Straight away, not after the file work below: the controls describe a recording that has
+        // already stopped, and a Stop button that lingers invites a second press at a moment when
+        // the next call may already be starting.
+        VoipRecordingNotification.dismiss(context)
+        clock.reset()
         runCatching { RecorderConnection.service?.stopRecording() }
             .onFailure { AppLogger.w(TAG, "stopRecording failed: ${it.message}") }
 
@@ -268,6 +300,9 @@ object VoipRecordingCoordinator {
                         }
                     }
                     RecordingCatalog.recordLocal(context, name, safUri, size, System.currentTimeMillis())
+                    // Marks collected during the call, keyed to the final name — the same rule the
+                    // carrier path follows and for the same reason.
+                    FlagRepository.save(context, name, PendingFlags.drain())
                     // Same details file as the carrier path, derived the same way from the same
                     // final name. `direction` comes out null here and that is correct rather than
                     // lazy: an app call has no reliable direction, and BCR's format already has a

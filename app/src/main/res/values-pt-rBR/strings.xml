@@ -599,4 +599,10 @@
     <string name="settings_metadata_file_label">Gravar um arquivo de detalhes</string>
     <string name="settings_metadata_file_desc">Salvar um pequeno .json ao lado de cada gravação</string>
     <string name="settings_metadata_file_hint">Usa o mesmo formato do BCR, para que apps feitos para ele — como o bcr-gui — consigam ler os detalhes das suas gravações. Só vale a pena se você usa algum.</string>
+    <string name="general_flag">Marcar</string>
+    <string name="recording_flag_added">Momento marcado (%1$d)</string>
+    <string name="voip_recording_title">Gravando uma chamada de app</string>
+    <string name="voip_recording_title_named">Gravando uma chamada do %1$s</string>
+    <string name="voip_recording_text">Marque um momento para achar depois, ou pare a gravação.</string>
+    <string name="playback_marked_moments">Momentos marcados</string>
 </resources>

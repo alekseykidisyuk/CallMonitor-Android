@@ -153,6 +153,7 @@ import androidx.compose.material.icons.filled.Groups
 import com.baba.callvault.R
 import com.baba.callvault.system.shareTranscriptFile
 import com.baba.callvault.data.transcripts.FavouriteRepository
+import com.baba.callvault.data.transcripts.FlagRepository
 import com.baba.callvault.data.transcripts.TagRepository
 import com.baba.callvault.data.transcripts.export.TranscriptExportFile
 import com.baba.callvault.data.transcripts.export.TranscriptExport
@@ -389,6 +390,9 @@ fun HomeScreen(
             val isFavourite by remember(displayName) {
                 FavouriteRepository.isFavourite(context, displayName)
             }.collectAsState(initial = false)
+            val flags by remember(displayName) {
+                FlagRepository.flagsFor(context, displayName)
+            }.collectAsState(initial = emptyList())
 
             PlaybackScreen(
                 item = openItem,
@@ -404,6 +408,10 @@ fun HomeScreen(
                     transcriptScope.launch {
                         RecordingExtrasRepository.saveNote(context, displayName, text)
                     }
+                },
+                flags = flags,
+                onRemoveFlag = { atMs ->
+                    transcriptScope.launch { FlagRepository.remove(context, displayName, atMs) }
                 },
                 isFavourite = isFavourite,
                 onToggleFavourite = {

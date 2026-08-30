@@ -44,6 +44,7 @@ import com.baba.callvault.transcription.AudioDecoder
 import com.baba.callvault.system.storage.MinDurationPolicy
 import com.baba.callvault.system.interop.MetadataSidecar
 import com.baba.callvault.data.recordings.RecordingsRepository
+import com.baba.callvault.data.transcripts.FlagRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -85,6 +86,9 @@ class RecordingForegroundService : Service() {
 
         /** Intent action sent to this service to resume the current recording. */
         const val ACTION_RESUME_RECORDING = "com.baba.callvault.RESUME_RECORDING"
+
+        /** Marks the current moment in the recording, from the ongoing notification. */
+        const val ACTION_FLAG_MOMENT = "com.baba.callvault.FLAG_MOMENT"
 
 
         /**
@@ -130,6 +134,12 @@ class RecordingForegroundService : Service() {
      */
     @Volatile
     private var stopRequested: Boolean = false
+
+    /**
+     * Position in the saved audio, for marks placed from the notification. Excludes paused time —
+     * see [RecordingClock].
+     */
+    private val recordingClock = RecordingClock()
 
     /**
      * True once the mid-call daemon-death warning has been shown for the current session. The
@@ -307,6 +317,9 @@ class RecordingForegroundService : Service() {
                 (currentState as? RecordingServiceState.Active)?.let {
                     it.engine.isPaused = true
                     currentState = it.copy(isPaused = true)
+                    // The clock has to follow, or every mark placed after a pause lands late in the
+                    // finished file by exactly the length of that pause.
+                    recordingClock.pause()
                 }
             }
 
@@ -314,6 +327,20 @@ class RecordingForegroundService : Service() {
                 (currentState as? RecordingServiceState.Active)?.let {
                     it.engine.isPaused = false
                     currentState = it.copy(isPaused = false)
+                    recordingClock.resume()
+                }
+            }
+
+            ACTION_FLAG_MOMENT -> {
+                val at = recordingClock.audioElapsedMs()
+                if (at == null) {
+                    AppLogger.w(TAG, "Flag pressed with no recording running; ignoring.")
+                } else {
+                    PendingFlags.add(at)
+                    // A button that appears to do nothing gets pressed again, so say it landed. The
+                    // marks themselves cannot be shown until the call ends and the file has a name.
+                    notificationHelper.showFlagToast(PendingFlags.count())
+                    AppLogger.i(TAG, "Marked ${at}ms into the recording (${PendingFlags.count()} so far).")
                 }
             }
 
@@ -356,6 +383,10 @@ class RecordingForegroundService : Service() {
         // 1. Create a new session (declared here to allow cleanup if startPipeline fails)
         val activeSession = AudioRecordingEngine()
         daemonLossNotified = false
+        // A fresh timeline and a fresh mark buffer for this call. beginCall() also drops anything a
+        // previous call left behind after ending badly, so marks can never spill onto the next one.
+        recordingClock.start()
+        PendingFlags.beginCall()
         // Surface a mid-call daemon death immediately — the pipeline "started successfully" only
         // proves the dispatch worked, and a daemon that dies right after leaves an empty file.
         activeSession.onDaemonLostDuringRecording = {
@@ -396,6 +427,9 @@ class RecordingForegroundService : Service() {
      * removes the foreground notification, and stops the service.
      */
     private fun stopRecordingSessionAndService() {
+        // The timeline belongs to the call that just ended; leaving it running would date the next
+        // call's marks from this one's start.
+        recordingClock.reset()
         val activeSession = (currentState as? RecordingServiceState.Active)?.engine
         if (activeSession == null) {
             AppLogger.d(TAG, "No active session, exiting standby state, removing foreground notification and stopping service.")
@@ -620,6 +654,10 @@ class RecordingForegroundService : Service() {
             // name, after any call-log rename: a sidecar written against the pre-rename name would
             // sit beside nothing and be invisible to every tool that looks for it.
             writeMetadataSidecar(name, lastModified, "com.android.phone")
+            // Marks are keyed to the FINAL name, for the same reason the sidecar is: an anonymous
+            // number gets renamed from the call log after the call, and rows written mid-call would
+            // point at a recording that no longer exists.
+            FlagRepository.save(applicationContext, name, PendingFlags.drain())
             // Before transcription is queued, never after: a transcript labels its segments from
             // these turns, so they have to be on disk by the time whisper starts writing.
             //

@@ -596,4 +596,10 @@
     <string name="settings_metadata_file_label">写入详情文件</string>
     <string name="settings_metadata_file_desc">在每个录音旁保存一个小的 .json 文件</string>
     <string name="settings_metadata_file_hint">使用与 BCR 相同的格式，因此为其开发的应用（例如 bcr-gui）可以读取你的录音详情。只有在使用这类应用时才值得开启。</string>
+    <string name="general_flag">标记</string>
+    <string name="recording_flag_added">已标记 (%1$d)</string>
+    <string name="voip_recording_title">正在录制应用通话</string>
+    <string name="voip_recording_title_named">正在录制 %1$s 通话</string>
+    <string name="voip_recording_text">标记某个时刻以便稍后查找，或停止录音。</string>
+    <string name="playback_marked_moments">标记的时刻</string>
 </resources>

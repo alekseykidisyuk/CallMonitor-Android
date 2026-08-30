@@ -596,4 +596,10 @@
     <string name="settings_metadata_file_label">Zapisuj plik ze szczegółami</string>
     <string name="settings_metadata_file_desc">Zapisuj mały plik .json obok każdego nagrania</string>
     <string name="settings_metadata_file_hint">Używa tego samego formatu co BCR, więc aplikacje stworzone dla niego — np. bcr-gui — mogą odczytać szczegóły nagrań. Warto włączyć tylko, jeśli takiej używasz.</string>
+    <string name="general_flag">Oznacz</string>
+    <string name="recording_flag_added">Oznaczono moment (%1$d)</string>
+    <string name="voip_recording_title">Nagrywanie połączenia w aplikacji</string>
+    <string name="voip_recording_title_named">Nagrywanie połączenia %1$s</string>
+    <string name="voip_recording_text">Oznacz moment, aby znaleźć go później, albo zatrzymaj nagrywanie.</string>
+    <string name="playback_marked_moments">Oznaczone momenty</string>
 </resources>

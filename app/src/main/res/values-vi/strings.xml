@@ -596,4 +596,10 @@
     <string name="settings_metadata_file_label">Ghi tệp chi tiết</string>
     <string name="settings_metadata_file_desc">Lưu một tệp .json nhỏ bên cạnh mỗi bản ghi</string>
     <string name="settings_metadata_file_hint">Dùng cùng định dạng với BCR, nên các ứng dụng làm cho nó — như bcr-gui — có thể đọc chi tiết bản ghi của bạn. Chỉ nên bật nếu bạn dùng một trong số đó.</string>
+    <string name="general_flag">Đánh dấu</string>
+    <string name="recording_flag_added">Đã đánh dấu (%1$d)</string>
+    <string name="voip_recording_title">Đang ghi cuộc gọi trong ứng dụng</string>
+    <string name="voip_recording_title_named">Đang ghi cuộc gọi %1$s</string>
+    <string name="voip_recording_text">Đánh dấu một thời điểm để tìm lại sau, hoặc dừng ghi.</string>
+    <string name="playback_marked_moments">Thời điểm đã đánh dấu</string>
 </resources>

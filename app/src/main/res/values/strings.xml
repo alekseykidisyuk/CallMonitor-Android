@@ -801,4 +801,10 @@
     <string name="settings_metadata_file_label">Write a details file</string>
     <string name="settings_metadata_file_desc">Save a small .json beside each recording</string>
     <string name="settings_metadata_file_hint">Uses the same format as BCR, so apps built for it — such as bcr-gui — can read your recordings\' details. Only worth turning on if you use one.</string>
+    <string name="general_flag">Mark</string>
+    <string name="recording_flag_added">Moment marked (%1$d)</string>
+    <string name="voip_recording_title">Recording an app call</string>
+    <string name="voip_recording_title_named">Recording a %1$s call</string>
+    <string name="voip_recording_text">Mark a moment to find it later, or stop recording.</string>
+    <string name="playback_marked_moments">Marked moments</string>
 </resources>

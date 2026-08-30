@@ -259,6 +259,15 @@ class DaemonKeepAliveService : Service() {
         }
         // The Record button on the "Ask me" prompt. Handled after startForeground above, so the
         // service is always in a legal foreground state before any work begins.
+        if (intent?.action == ACTION_VOIP_STOP) {
+            AppLogger.i(TAG, "Stop pressed on the VoIP recording notification")
+            VoipRecordingCoordinator.onCallEnded(applicationContext)
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_VOIP_FLAG_MOMENT) {
+            VoipRecordingCoordinator.markMoment(applicationContext)
+            return START_STICKY
+        }
         if (intent?.action == ACTION_VOIP_RECORD_NOW) {
             voipDetector.startNow()
         }
@@ -535,6 +544,12 @@ class DaemonKeepAliveService : Service() {
          * a second component tracking the same call state.
          */
         const val ACTION_VOIP_RECORD_NOW = "com.baba.callvault.VOIP_RECORD_NOW"
+
+        /** Stops an app-call recording from its ongoing notification. */
+        const val ACTION_VOIP_STOP = "com.baba.callvault.VOIP_STOP"
+
+        /** Marks the current moment in an app-call recording, from its ongoing notification. */
+        const val ACTION_VOIP_FLAG_MOMENT = "com.baba.callvault.VOIP_FLAG_MOMENT"
 
         /**
          * Sent by [com.baba.callvault.services.call.CallSessionManager] when a carrier call is

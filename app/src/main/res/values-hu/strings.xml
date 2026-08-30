@@ -596,4 +596,10 @@
     <string name="settings_metadata_file_label">Adatfájl írása</string>
     <string name="settings_metadata_file_desc">Kis .json mentése minden felvétel mellé</string>
     <string name="settings_metadata_file_hint">Ugyanazt a formátumot használja, mint a BCR, így az arra épülő alkalmazások — például a bcr-gui — el tudják olvasni a felvételek adatait. Csak akkor érdemes bekapcsolni, ha használ ilyet.</string>
+    <string name="general_flag">Jelölés</string>
+    <string name="recording_flag_added">Pillanat megjelölve (%1$d)</string>
+    <string name="voip_recording_title">Alkalmazáshívás rögzítése</string>
+    <string name="voip_recording_title_named">%1$s-hívás rögzítése</string>
+    <string name="voip_recording_text">Jelöljön meg egy pillanatot, hogy később megtalálja, vagy állítsa le a felvételt.</string>
+    <string name="playback_marked_moments">Megjelölt pillanatok</string>
 </resources>

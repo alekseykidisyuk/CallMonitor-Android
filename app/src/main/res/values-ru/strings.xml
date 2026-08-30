@@ -596,4 +596,10 @@
     <string name="settings_metadata_file_label">Записывать файл сведений</string>
     <string name="settings_metadata_file_desc">Сохранять небольшой .json рядом с каждой записью</string>
     <string name="settings_metadata_file_hint">Использует тот же формат, что и BCR, поэтому приложения для него — например bcr-gui — смогут читать сведения о ваших записях. Включать стоит, только если вы таким пользуетесь.</string>
+    <string name="general_flag">Метка</string>
+    <string name="recording_flag_added">Момент отмечен (%1$d)</string>
+    <string name="voip_recording_title">Идёт запись звонка в приложении</string>
+    <string name="voip_recording_title_named">Идёт запись звонка %1$s</string>
+    <string name="voip_recording_text">Отметьте момент, чтобы найти его позже, или остановите запись.</string>
+    <string name="playback_marked_moments">Отмеченные моменты</string>
 </resources>

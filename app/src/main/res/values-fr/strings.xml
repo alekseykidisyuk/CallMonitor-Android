@@ -596,4 +596,10 @@
     <string name="settings_metadata_file_label">Écrire un fichier de détails</string>
     <string name="settings_metadata_file_desc">Enregistrer un petit .json à côté de chaque enregistrement</string>
     <string name="settings_metadata_file_hint">Utilise le même format que BCR, pour que les applis conçues pour lui — comme bcr-gui — puissent lire les détails de vos enregistrements. Utile seulement si vous en utilisez une.</string>
+    <string name="general_flag">Repère</string>
+    <string name="recording_flag_added">Moment repéré (%1$d)</string>
+    <string name="voip_recording_title">Enregistrement d\'un appel d\'application</string>
+    <string name="voip_recording_title_named">Enregistrement d\'un appel %1$s</string>
+    <string name="voip_recording_text">Repérez un moment pour le retrouver plus tard, ou arrêtez l\'enregistrement.</string>
+    <string name="playback_marked_moments">Moments repérés</string>
 </resources>
