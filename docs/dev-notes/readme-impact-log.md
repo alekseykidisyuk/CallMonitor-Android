@@ -45,6 +45,10 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | R22 | **A size cap on how much of the phone recordings may fill** (off by default), oldest deleted first, starred never taken, Drive copies untouched. | Three qualifications the README must not drop: off by default, device-only, and starred recordings are never deleted even if the cap cannot be met. Any of them omitted turns an opt-in tidy-up into an unexpected data-loss claim. | ✅ VERIFIED 2026-08-30 — setting present and working on the OP12. Note: no cap sweep has actually *fired* yet, so the oldest-first and starred-exempt behaviours remain proven by unit test only |
 
+| R23 | **CallVault now says when it has stopped working**: a notification after a reboot when the recorder could not come up, and one when recordings have stopped reaching Drive. Both self-clearing, both mode-aware. | This changes what R19 has to say. The off-Wi-Fi limitation is still real and permanent, but it is no longer *silent* — the README should describe the limitation **and** the warning together, or it understates the app. | 🧪 VERIFYING — built and unit-tested 2026-08-30; needs a reboot off Wi-Fi to fire for real |
+
+| R24 | **The recovery wording is corrected everywhere it appears**: joining a Wi-Fi network for a few seconds, not "having internet". Stated in Settings up front for anyone with offline recording on. | R19 must not be written using the old framing. The gate is a Wi-Fi *association*; any access point does, with no internet at all. Describing it as an internet requirement turns a ten-second fix into a trip home and makes the limitation sound far worse than it is. | ✅ VERIFIED 2026-08-29 by the E3 spike; the copy change itself is 🧪 VERIFYING |
+
 ## Blocked on verification — do not write these into the README yet
 
 | # | Change | Why it is held |

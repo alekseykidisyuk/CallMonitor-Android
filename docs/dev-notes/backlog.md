@@ -366,6 +366,13 @@ down** — "recording is paused until this phone reaches Wi-Fi once" — fired a
 the moment a call is missed. That is a small, contained piece of work and it converts the worst
 property of this hole (invisibility) into an inconvenience.
 
+✅ **DONE 2026-08-30 (`d79eb72`)** — `SilentFailureNotifier`, raised from the boot path where the
+failure is genuinely invisible, and only from there: with the app open the Home status card already
+says it, and two mouths saying the same thing is how a warning becomes noise. Self-clearing, and
+mode-aware so a Shizuku user is told about Shizuku rather than about Wi-Fi. The Settings row also
+now states the reboot limitation up front, in the corrected "join any network for a few seconds, no
+internet needed" wording. Still needs a real off-Wi-Fi reboot to confirm it fires.
+
 **And the README must state the limitation plainly** rather than leaving it to look like an oversight.
 
 ### 🅿️ Capture fallback ladder with RMS audibility check — PARKED 2026-08-29, before any work

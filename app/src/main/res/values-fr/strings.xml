@@ -591,4 +591,5 @@
     <string name="notif_health_sync_title">Les enregistrements n\'arrivent pas sur Drive</string>
     <string name="notif_health_sync_text">La copie vers Google Drive s\'est arrêtée il y a un moment. Rien n\'est perdu — les enregistrements sont toujours sur ce téléphone — mais ils ne sont pas sauvegardés. Ouvrez CallVault pour vérifier vos réglages de stockage.</string>
     <string name="notif_health_recorder_text_shizuku">Aucun appel ne sera enregistré tant que Shizuku ne fonctionne pas à nouveau. Un redémarrage l\'arrête : il doit être relancé une fois après chaque redémarrage du téléphone.</string>
+    <string name="settings_offline_recording_reboot_note">Après un redémarrage, cela cesse de fonctionner jusqu\'à ce que le téléphone rejoigne une fois un réseau Wi-Fi. N\'importe quel réseau convient et Internet n\'est pas nécessaire : quelques secondes suffisent. CallVault vous préviendra le moment venu.</string>
 </resources>

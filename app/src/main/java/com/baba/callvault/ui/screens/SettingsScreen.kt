@@ -2220,6 +2220,15 @@ internal fun OfflineRecordingToggle() {
         },
     )
 
+    // Stated up front, and only to the people it applies to. The listener does not survive a reboot
+    // and cannot be re-armed until the phone associates with Wi-Fi once — four escapes were tested
+    // and every one is shut in AOSP, so this is a platform limit and not a gap we are going to close.
+    // Left unsaid it looks like an oversight the first time a call after a reboot is missed; said
+    // here it is a known condition with a ten-second fix.
+    if (enabled && supported) {
+        SettingsHint(stringResource(R.string.settings_offline_recording_reboot_note))
+    }
+
     dialogMode?.let { mode ->
         OfflineRecordingDialog(
             mode = mode,

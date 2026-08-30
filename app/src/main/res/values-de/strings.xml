@@ -591,4 +591,5 @@
     <string name="notif_health_sync_title">Aufnahmen erreichen Drive nicht</string>
     <string name="notif_health_sync_text">Das Kopieren zu Google Drive ist vor einiger Zeit stehengeblieben. Es ist nichts verloren — die Aufnahmen sind noch auf diesem Telefon — aber sie sind nicht gesichert. Öffnen Sie CallVault und prüfen Sie die Speichereinstellungen.</string>
     <string name="notif_health_recorder_text_shizuku">Anrufe werden erst wieder aufgezeichnet, wenn Shizuku läuft. Ein Neustart beendet es, es muss also nach jedem Neustart einmal gestartet werden.</string>
+    <string name="settings_offline_recording_reboot_note">Nach einem Neustart funktioniert dies erst wieder, wenn sich das Telefon einmal mit einem WLAN verbindet. Jedes Netz genügt, Internet ist nicht nötig — ein paar Sekunden reichen. CallVault sagt Ihnen Bescheid, wenn es so weit ist.</string>
 </resources>

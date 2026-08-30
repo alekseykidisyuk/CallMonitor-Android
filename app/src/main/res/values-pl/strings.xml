@@ -591,4 +591,5 @@
     <string name="notif_health_sync_title">Nagrania nie trafiają na Dysk</string>
     <string name="notif_health_sync_text">Kopiowanie na Dysk Google zatrzymało się jakiś czas temu. Nic nie zginęło — nagrania nadal są w tym telefonie — ale nie mają kopii zapasowej. Otwórz CallVault i sprawdź ustawienia pamięci.</string>
     <string name="notif_health_recorder_text_shizuku">Połączenia nie będą nagrywane, dopóki Shizuku znów nie działa. Restart je zatrzymuje, więc po ponownym uruchomieniu telefonu trzeba je raz włączyć.</string>
+    <string name="settings_offline_recording_reboot_note">Po ponownym uruchomieniu przestaje to działać, dopóki telefon raz nie połączy się z siecią Wi-Fi. Wystarczy dowolna sieć i nie trzeba internetu — kilka sekund wystarczy. CallVault powiadomi, gdy będzie to potrzebne.</string>
 </resources>

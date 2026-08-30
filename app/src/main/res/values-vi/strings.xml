@@ -591,4 +591,5 @@
     <string name="notif_health_sync_title">Bản ghi không lên được Drive</string>
     <string name="notif_health_sync_text">Việc sao chép lên Google Drive đã dừng từ một thời gian trước. Không mất gì cả — bản ghi vẫn còn trên điện thoại này — nhưng chúng chưa được sao lưu. Mở CallVault để kiểm tra cài đặt lưu trữ.</string>
     <string name="notif_health_recorder_text_shizuku">Cuộc gọi sẽ không được ghi cho đến khi Shizuku chạy lại. Khởi động lại máy sẽ tắt nó, nên cần bật lại một lần sau mỗi lần khởi động.</string>
+    <string name="settings_offline_recording_reboot_note">Sau khi khởi động lại, tính năng này ngừng hoạt động cho đến khi điện thoại kết nối một lần vào mạng Wi-Fi. Mạng nào cũng được và không cần internet — vài giây là đủ. CallVault sẽ báo cho bạn khi cần.</string>
 </resources>

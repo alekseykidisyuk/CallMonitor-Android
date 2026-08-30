@@ -594,4 +594,5 @@
     <string name="notif_health_sync_title">As gravações não estão chegando ao Drive</string>
     <string name="notif_health_sync_text">A cópia para o Google Drive parou há algum tempo. Nada foi perdido — as gravações ainda estão neste telefone — mas não têm backup. Abra o CallVault e confira as configurações de armazenamento.</string>
     <string name="notif_health_recorder_text_shizuku">As chamadas não serão gravadas até o Shizuku voltar a rodar. Reiniciar o desliga, então ele precisa ser iniciado uma vez depois que o telefone reinicia.</string>
+    <string name="settings_offline_recording_reboot_note">Depois de reiniciar, isso para de funcionar até o telefone entrar uma vez em uma rede Wi-Fi. Qualquer rede serve e não precisa de internet — alguns segundos bastam. O CallVault avisa quando for necessário.</string>
 </resources>
