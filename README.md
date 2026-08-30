@@ -96,10 +96,10 @@ The other mode is CallVault's own: it pairs once, on the phone, and needs no sec
 | Works without installing another app | ✅ | ❌ |
 | Recording works after a reboot, with nothing to do | ✅ | ❌ |
 | Phone calls | ✅ | ✅ |
-| App calls <sub>opt-in</sub> | ✅ | ❌ |
+| App calls (opt-in) | ✅ | ❌ |
 | Speaker labels | ✅ | ❌ |
-| Keeps recording if Android kills the background process <sub>opt-in</sub> | ✅ | ❌ |
-| Recording away from Wi-Fi <sub>opt-in</sub> | ✅ | ❌ |
+| Keeps recording if Android kills the background process (opt-in) | ✅ | ❌ |
+| Recording away from Wi-Fi (opt-in) | ✅ | ❌ |
 | Full bug-report export | ✅ | ❌ |
 
 > [!NOTE]
