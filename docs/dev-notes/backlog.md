@@ -57,7 +57,27 @@ too. **Any future reason to sweep must be added to both.**
 
 **What is NOT done from that row:** nothing else — D6 is now complete. What remains unbuilt from the
 D list is D1 (live level meter), D2 (record private, publish complete), D5 (notification actions),
-D7 (BCR sidecar JSON), D9 (per-app VoIP whitelist + lock-screen ask) and D10 (warn sync stopped).
+D9 (per-app VoIP whitelist + lock-screen ask).
+
+**Since updated:** D10 and the off-Wi-Fi notification shipped as `d79eb72`; the Stop action as
+`5f127c9`; the BCR sidecar as `0f3b3c6`. D5's QS tile was dropped by the maintainer as unwanted, and
+**D5's "flag a moment" is NOT built** — see the note below.
+
+### 🅿️ D5 "flag a moment" — NOT built, needs a decision first
+
+Pause/Resume already existed. Stop is done. Flag is the remaining third and it is **carrier-only**
+unless a whole ongoing notification is built for the VoIP path, which today posts only error and
+"ended" notifications and has no action surface at all.
+
+That matters specifically for this maintainer: on 2026-08-30 three of the four recordings on the
+OP12 that day were `voip-WhatsApp`. A carrier-only flag button would be nearly useless to the person
+asking for it, so it was not built on the quiet assumption that some flag is better than none.
+
+Cost if it is wanted: an in-memory list of offsets during the call, an elapsed-audio clock on the
+engine (wall clock minus accumulated pause, since paused time is not written to the file), persisting
+at finalize against the FINAL name to survive the call-log rename, a `recording_flags` table at v8
+joined to the cascade, and chips on the playback screen that seek. Roughly favourites-sized for the
+carrier path; roughly double that if the VoIP path gets its own ongoing notification.
 
 **Confirmed on the OP12 by the maintainer, 2026-08-30**: the star, the Starred filter chip and both
 new Settings rows all work. Installed as release 2.1.2 over 2.1.2; the v6 → v7 migration applied

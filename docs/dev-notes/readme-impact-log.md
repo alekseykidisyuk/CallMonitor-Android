@@ -49,6 +49,10 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | R24 | **The recovery wording is corrected everywhere it appears**: joining a Wi-Fi network for a few seconds, not "having internet". Stated in Settings up front for anyone with offline recording on. | R19 must not be written using the old framing. The gate is a Wi-Fi *association*; any access point does, with no internet at all. Describing it as an internet requirement turns a ten-second fix into a trip home and makes the limitation sound far worse than it is. | ✅ VERIFIED 2026-08-29 by the E3 spike; the copy change itself is 🧪 VERIFYING |
 
+| R25 | **The call notification offers Stop as well as Pause/Resume.** | Minor, but the README should not describe the notification as pause-only. Pause and Resume were always there; Stop is new. | 🧪 VERIFYING — built 2026-08-30 |
+
+| R26 | **Optional BCR-compatible `.json` details file beside each recording** (off by default). | This upgrades an existing claim. `docs/SUPPORT.md` already says we replicate BCR's *filename* format; with this we also write their metadata file, so tools like `bcr-gui` get the number, contact and direction rather than only a file listing. State it as opt-in. | 🧪 VERIFYING — schema copied from BCR's README and unit-tested against the literal key names 2026-08-30; not yet read by an actual bcr-gui install |
+
 ## Blocked on verification — do not write these into the README yet
 
 | # | Change | Why it is held |
