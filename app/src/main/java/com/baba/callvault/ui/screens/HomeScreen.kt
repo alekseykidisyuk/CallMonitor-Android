@@ -410,6 +410,7 @@ fun HomeScreen(
                     }
                 },
                 flags = flags,
+                onPlayFromFlag = { atMs -> viewModel.playFrom(openItem.uri, atMs.toInt()) },
                 onRemoveFlag = { atMs ->
                     transcriptScope.launch { FlagRepository.remove(context, displayName, atMs) }
                 },

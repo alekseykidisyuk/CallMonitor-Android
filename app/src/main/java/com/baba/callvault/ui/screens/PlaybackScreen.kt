@@ -131,6 +131,13 @@ fun PlaybackScreen(
     knownTags: List<String> = emptyList(),
     /** Moments marked during the call, as offsets into the audio, earliest first. */
     flags: List<Long> = emptyList(),
+    /**
+     * Play from a mark. NOT a seek: [onSeek] only moves a track that is already prepared, so on a
+     * recording that has not been played yet it clamps to a duration of zero and silently starts
+     * from the beginning. Same reason the transcript lines and summary timestamps use their own
+     * play-from rather than seeking.
+     */
+    onPlayFromFlag: (Long) -> Unit = {},
     onRemoveFlag: (Long) -> Unit = {},
     /** Whether this recording is starred — see [com.baba.callvault.data.transcripts.FavouriteRepository]. */
     isFavourite: Boolean = false,
@@ -206,7 +213,7 @@ fun PlaybackScreen(
             if (flags.isNotEmpty()) {
                 MarkedMomentsCard(
                     flags = flags,
-                    onSeekTo = onSeek,
+                    onPlayFrom = onPlayFromFlag,
                     onRemove = onRemoveFlag
                 )
             }
@@ -243,7 +250,9 @@ fun PlaybackScreen(
 /**
  * The moments marked during the call, as chips that seek.
  *
- * A tap jumps the player there; a long press removes the mark. Long press rather than an X on every
+ * A tap plays from there; a long press removes the mark. Playing rather than seeking, because a tap
+ * on a moment means "let me hear this", and a seek on a recording that has not been played yet does
+ * not even move the cursor — it clamps to zero and starts from the top. Long press rather than an X on every
  * chip: the row is read far more often than it is edited, and a delete target beside each entry in a
  * row people tap to navigate is a mis-tap that destroys something.
  */
@@ -251,7 +260,7 @@ fun PlaybackScreen(
 @Composable
 private fun MarkedMomentsCard(
     flags: List<Long>,
-    onSeekTo: (Int) -> Unit,
+    onPlayFrom: (Long) -> Unit,
     onRemove: (Long) -> Unit
 ) {
     val accent = MaterialTheme.colorScheme.primary
@@ -274,7 +283,7 @@ private fun MarkedMomentsCard(
                             .background(accent.copy(alpha = 0.14f))
                             .border(1.dp, accent.copy(alpha = 0.5f), CircleShape)
                             .combinedClickable(
-                                onClick = { onSeekTo(atMs.toInt()) },
+                                onClick = { onPlayFrom(atMs) },
                                 onLongClick = { onRemove(atMs) }
                             )
                             .padding(horizontal = 14.dp, vertical = 8.dp),
