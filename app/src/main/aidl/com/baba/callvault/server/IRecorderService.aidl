@@ -225,4 +225,18 @@ interface IRecorderService {
      * simply be merged and sorted by their timestamps.
      */
     String[] drainDiagnostics();
+
+    /**
+     * Pauses or resumes an in-flight VoIP recording.
+     *
+     * Appended at the END of this interface on purpose: AIDL assigns transaction ids in declaration
+     * order, so inserting anywhere else would renumber every method after it and a daemon from a
+     * previous build would answer the wrong call. The app must still tolerate this being absent —
+     * a daemon left over from an older APK simply does not implement it.
+     *
+     * Paused chunks are read from the capture queues and dropped, so the microphone is never touched
+     * and the feeder threads never back up; nothing reaches the encoder, which means paused time is
+     * absent from the file exactly as it is on the carrier path.
+     */
+    void setVoipPaused(boolean paused);
 }

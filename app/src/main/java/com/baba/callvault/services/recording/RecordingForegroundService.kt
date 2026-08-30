@@ -337,8 +337,12 @@ class RecordingForegroundService : Service() {
                     AppLogger.w(TAG, "Flag pressed with no recording running; ignoring.")
                 } else {
                     PendingFlags.add(at)
-                    // A button that appears to do nothing gets pressed again, so say it landed. The
-                    // marks themselves cannot be shown until the call ends and the file has a name.
+                    // Re-post so the button's own label shows the new count. A button that appears
+                    // to do nothing gets pressed again, which is how one moment becomes five marks.
+                    updateNotification()
+                    // The toast as well, for the case where the shade is already closed. It is not
+                    // relied on: with the shade open it renders behind it and is never seen, which
+                    // is exactly what was reported.
                     notificationHelper.showFlagToast(PendingFlags.count())
                     AppLogger.i(TAG, "Marked ${at}ms into the recording (${PendingFlags.count()} so far).")
                 }

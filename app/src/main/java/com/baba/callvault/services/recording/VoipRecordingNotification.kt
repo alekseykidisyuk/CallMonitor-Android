@@ -27,8 +27,10 @@ import com.baba.callvault.utils.AppLogger
  * a moment in it. For anyone whose calls are mostly in a messenger, that was the whole feature
  * missing.
  *
- * Stop and Mark only. There is no pause on this path — the daemon's VoIP capture has no pause to
- * drive — and offering a button that did nothing would be worse than offering none.
+ * Pause/Resume, Mark and Stop — the same three the carrier notification offers. Pause reaches the
+ * daemon over [com.baba.callvault.server.IRecorderService.setVoipPaused]; an older daemon left over
+ * from a previous APK does not implement it, and the caller degrades rather than showing a button
+ * that does nothing.
  */
 object VoipRecordingNotification {
 
@@ -38,7 +40,7 @@ object VoipRecordingNotification {
     private const val NOTIFICATION_ID = 5
 
     @SuppressLint("MissingPermission")
-    fun show(context: Context, appLabel: String?) {
+    fun show(context: Context, appLabel: String?, marks: Int = 0, paused: Boolean = false) {
         val title =
             if (appLabel.isNullOrBlank()) context.getString(R.string.voip_recording_title)
             else context.getString(R.string.voip_recording_title_named, appLabel)
@@ -46,7 +48,11 @@ object VoipRecordingNotification {
         val builder = NotificationCompat.Builder(context, RecordingNotificationHelper.CHANNEL_ID_SERVICE)
             .setSmallIcon(R.drawable.ic_mic)
             .setContentTitle(title)
-            .setContentText(context.getString(R.string.voip_recording_text))
+            .setContentText(
+                context.getString(
+                    if (paused) R.string.voip_recording_paused else R.string.voip_recording_text
+                )
+            )
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
@@ -55,7 +61,19 @@ object VoipRecordingNotification {
 
         builder.addAction(
             R.drawable.ic_mic,
-            context.getString(R.string.general_flag),
+            context.getString(if (paused) R.string.general_resume else R.string.general_pause),
+            serviceIntent(
+                context,
+                if (paused) DaemonKeepAliveService.ACTION_VOIP_RESUME
+                else DaemonKeepAliveService.ACTION_VOIP_PAUSE
+            )
+        )
+        // The count is on the button, not in a toast: this action is pressed with the shade open,
+        // and a toast renders behind the shade where it can never be seen.
+        builder.addAction(
+            R.drawable.ic_mic,
+            if (marks > 0) context.getString(R.string.general_flag_count, marks)
+            else context.getString(R.string.general_flag),
             serviceIntent(context, DaemonKeepAliveService.ACTION_VOIP_FLAG_MOMENT)
         )
         // Last, like the carrier notification, and for the same reason: it is the one button here

@@ -148,6 +148,15 @@ internal class VoipCaptureSession(
      * Pairs one chunk from each direction, downmixes to mono and drives the encoder. Each side is read
      * on its own thread so a slow or silent one cannot stall the other.
      */
+    /** Set from the app while a recording is in flight; see [captureLoop] for what it does. */
+    private val pauseRequested = AtomicBoolean(false)
+
+    /** Pauses or resumes the encode. Safe to call when nothing is recording; it simply arms the flag. */
+    fun setPaused(paused: Boolean) {
+        pauseRequested.set(paused)
+        AppLogger.i(TAG, "VoIP capture ${if (paused) "paused" else "resumed"} by the user")
+    }
+
     private fun captureLoop(near: AudioRecord, far: AudioRecord, enc: MediaCodec, mux: MediaMuxer) {
         val qNear: BlockingQueue<ByteArray> = ArrayBlockingQueue(QUEUE_CHUNKS)
         val qFar: BlockingQueue<ByteArray> = ArrayBlockingQueue(QUEUE_CHUNKS)
@@ -171,6 +180,12 @@ internal class VoipCaptureSession(
             while (!stopRequested.get()) {
                 val n = qNear.poll(CHUNK_WAIT_MS, TimeUnit.MILLISECONDS) ?: silence.also { substituted++ }
                 val f = qFar.poll(CHUNK_WAIT_MS, TimeUnit.MILLISECONDS) ?: silence
+                // Paused: the chunks were read above and are now dropped. The AudioRecords and the
+                // feeder threads are untouched — capture itself does not change shape when a user
+                // pauses — but nothing reaches the encoder, the speaker detector or the frame count,
+                // so the paused stretch is simply absent from the file. Same result as the carrier
+                // path, reached without going anywhere near the microphone.
+                if (pauseRequested.get()) continue
                 var o = 0
                 var farPeak = 0
                 for (i in 0 until CHUNK_BYTES step 2) {

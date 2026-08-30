@@ -57,6 +57,12 @@ object VoipRecordingCoordinator {
 
     /** Position in the saved audio, for marks placed from the ongoing notification. */
     private val clock = RecordingClock()
+
+    /** Kept so the notification can be re-posted with a new count or paused state. */
+    private var currentAppLabel: String? = null
+
+    /** Whether the user has paused this recording from the notification. */
+    private var paused = false
     private const val TAG = "CV:VoipRec"
 
     /** Mirrors `VoipAppIdentity.UID_UNKNOWN`, which lives in the daemon-side package. */
@@ -148,6 +154,8 @@ object VoipRecordingCoordinator {
         // could be recorded from start to finish with nothing to stop it and nothing to mark.
         clock.start()
         PendingFlags.beginCall()
+        currentAppLabel = appLabel
+        paused = false
         VoipRecordingNotification.show(context, appLabel)
         AppLogger.i(TAG, "VoIP recording started -> $fileName")
     }
@@ -221,8 +229,36 @@ object VoipRecordingCoordinator {
             return
         }
         PendingFlags.add(at)
+        // Re-post so the button's own label shows the new count — the only confirmation that is
+        // actually visible with the shade open.
+        VoipRecordingNotification.show(context, currentAppLabel, PendingFlags.count(), paused)
         RecordingNotificationHelper(context).showFlagToast(PendingFlags.count())
         AppLogger.i(TAG, "Marked ${at}ms into the VoIP recording (${PendingFlags.count()} so far).")
+    }
+
+    /**
+     * Pauses or resumes the recording of the app call in progress.
+     *
+     * The daemon owns the encode on this path, so the pause has to travel over the binder. A daemon
+     * left over from an older APK does not implement `setVoipPaused`, and the call throws; when that
+     * happens nothing changes and the notification keeps saying what is actually true, rather than
+     * showing "Paused" over a recording that is still running.
+     */
+    fun setPaused(context: Context, pause: Boolean) {
+        if (!recording) {
+            AppLogger.w(TAG, "Pause pressed with no VoIP recording running; ignoring.")
+            return
+        }
+        val ok = runCatching { RecorderConnection.service?.setVoipPaused(pause); true }
+            .onFailure { AppLogger.w(TAG, "setVoipPaused failed (old daemon?): ${it.message}") }
+            .getOrDefault(false)
+        if (!ok) return
+
+        paused = pause
+        // The clock follows the encode, or every mark placed after a pause lands late in the file by
+        // the length of that pause — the same rule the carrier path follows.
+        if (pause) clock.pause() else clock.resume()
+        VoipRecordingNotification.show(context, currentAppLabel, PendingFlags.count(), paused)
     }
 
     /** Stops the in-flight VoIP recording, if any. Idempotent. */
@@ -237,6 +273,8 @@ object VoipRecordingCoordinator {
         // the next call may already be starting.
         VoipRecordingNotification.dismiss(context)
         clock.reset()
+        currentAppLabel = null
+        paused = false
         runCatching { RecorderConnection.service?.stopRecording() }
             .onFailure { AppLogger.w(TAG, "stopRecording failed: ${it.message}") }
 

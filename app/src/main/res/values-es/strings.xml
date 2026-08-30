@@ -607,4 +607,6 @@
     <string name="settings_voip_apps_all">Se graban todas las apps</string>
     <string name="settings_voip_apps_some">%1$d app(s) no se grabarán</string>
     <string name="settings_voip_apps_hint">Desactiva una app y sus llamadas nunca se grabarán. Todo está activado hasta que lo cambies. No se listan las apps que no pueden grabar audio, porque no pueden hacer este tipo de llamada.</string>
+    <string name="general_flag_count">Marcar (%1$d)</string>
+    <string name="voip_recording_paused">En pausa. Ahora mismo no se guarda nada.</string>
 </resources>

@@ -607,4 +607,6 @@
     <string name="settings_voip_apps_all">Nagrywane są wszystkie aplikacje</string>
     <string name="settings_voip_apps_some">%1$d aplikacji nie będzie nagrywanych</string>
     <string name="settings_voip_apps_hint">Wyłącz aplikację, a jej połączenia nigdy nie będą nagrywane. Wszystko jest włączone, dopóki tego nie zmienisz. Aplikacje bez możliwości nagrywania dźwięku nie są wymienione, bo nie mogą prowadzić takich połączeń.</string>
+    <string name="general_flag_count">Oznacz (%1$d)</string>
+    <string name="voip_recording_paused">Wstrzymano. W tej chwili nic nie jest zapisywane.</string>
 </resources>

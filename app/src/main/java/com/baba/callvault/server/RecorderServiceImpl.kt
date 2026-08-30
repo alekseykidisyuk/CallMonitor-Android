@@ -335,6 +335,22 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
         if (enabled) AppLogger.i(TAG, "recorder host identity: ${AudioAttribution.describe()}")
     }
 
+    /**
+     * Pauses or resumes the VoIP encode.
+     *
+     * Routed to [lastVoipSession] rather than to the generic `session`, because only a VoIP session
+     * has a pause: the carrier path pauses in the app's own encoder and never reaches the daemon.
+     * A no-op when nothing is recording, which is what a stale notification action looks like.
+     */
+    override fun setVoipPaused(paused: Boolean) {
+        val active = lastVoipSession
+        if (active == null) {
+            AppLogger.w(TAG, "setVoipPaused($paused) ignored: no VoIP session")
+            return
+        }
+        active.setPaused(paused)
+    }
+
     override fun drainDiagnostics(): Array<String> = AppLogger.drainRing().toTypedArray()
 
     override fun killStaleRecorders() {

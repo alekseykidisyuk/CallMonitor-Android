@@ -607,4 +607,6 @@
     <string name="settings_voip_apps_all">Записываются все приложения</string>
     <string name="settings_voip_apps_some">%1$d приложение(й) не записывается</string>
     <string name="settings_voip_apps_hint">Выключите приложение — и его звонки никогда не будут записываться. Всё включено, пока вы не измените. Приложения без записи звука не показаны: они не могут совершать такие звонки.</string>
+    <string name="general_flag_count">Метка (%1$d)</string>
+    <string name="voip_recording_paused">Пауза. Сейчас ничего не сохраняется.</string>
 </resources>

@@ -126,9 +126,15 @@ class RecordingNotificationHelper(private val context: Context) {
                 }
                 // Marking a moment sits between Pause and Stop. It is the action most likely to be
                 // pressed mid-sentence, without looking, while the phone is against an ear.
+                // The count lives on the BUTTON, not in a toast. The action is pressed with the
+                // notification shade open, and a toast renders behind the shade — so the only
+                // confirmation the user could get was one they could not see. Here the label itself
+                // ticks up, right under the thumb that just pressed it.
+                val marks = PendingFlags.count()
                 actions += NotificationAction(
                     R.drawable.ic_mic,
-                    context.getString(R.string.general_flag),
+                    if (marks > 0) context.getString(R.string.general_flag_count, marks)
+                    else context.getString(R.string.general_flag),
                     RecordingForegroundService.ACTION_FLAG_MOMENT
                 )
                 // Always last. Ending the recording is the one action here that cannot be undone,

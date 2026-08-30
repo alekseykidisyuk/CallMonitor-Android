@@ -607,4 +607,6 @@
     <string name="settings_voip_apps_all">Mọi ứng dụng đều được ghi</string>
     <string name="settings_voip_apps_some">%1$d ứng dụng sẽ không được ghi</string>
     <string name="settings_voip_apps_hint">Tắt một ứng dụng và cuộc gọi của nó sẽ không bao giờ được ghi. Mọi thứ đều bật cho đến khi bạn thay đổi. Ứng dụng không ghi được âm thanh sẽ không hiện ra, vì chúng không thực hiện loại cuộc gọi này.</string>
+    <string name="general_flag_count">Đánh dấu (%1$d)</string>
+    <string name="voip_recording_paused">Đã tạm dừng. Hiện không có gì được lưu.</string>
 </resources>

@@ -812,4 +812,6 @@
     <string name="settings_voip_apps_all">Every app is recorded</string>
     <string name="settings_voip_apps_some">%1$d app(s) will not be recorded</string>
     <string name="settings_voip_apps_hint">Switch an app off and its calls are never recorded. Everything is on until you change it. Apps that cannot record audio are not listed, since they cannot place the kind of call this captures.</string>
+    <string name="general_flag_count">Mark (%1$d)</string>
+    <string name="voip_recording_paused">Paused. Nothing is being saved right now.</string>
 </resources>

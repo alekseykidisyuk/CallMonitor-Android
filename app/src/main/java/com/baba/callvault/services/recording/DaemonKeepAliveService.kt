@@ -268,6 +268,10 @@ class DaemonKeepAliveService : Service() {
             VoipRecordingCoordinator.markMoment(applicationContext)
             return START_STICKY
         }
+        if (intent?.action == ACTION_VOIP_PAUSE || intent?.action == ACTION_VOIP_RESUME) {
+            VoipRecordingCoordinator.setPaused(applicationContext, intent.action == ACTION_VOIP_PAUSE)
+            return START_STICKY
+        }
         if (intent?.action == ACTION_VOIP_RECORD_NOW) {
             voipDetector.startNow()
         }
@@ -550,6 +554,12 @@ class DaemonKeepAliveService : Service() {
 
         /** Marks the current moment in an app-call recording, from its ongoing notification. */
         const val ACTION_VOIP_FLAG_MOMENT = "com.baba.callvault.VOIP_FLAG_MOMENT"
+
+        /** Pauses an app-call recording from its ongoing notification. */
+        const val ACTION_VOIP_PAUSE = "com.baba.callvault.VOIP_PAUSE"
+
+        /** Resumes a paused app-call recording. */
+        const val ACTION_VOIP_RESUME = "com.baba.callvault.VOIP_RESUME"
 
         /**
          * Sent by [com.baba.callvault.services.call.CallSessionManager] when a carrier call is
