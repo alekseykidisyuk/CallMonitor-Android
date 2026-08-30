@@ -585,4 +585,10 @@
     <string name="storage_cap_gigabytes">%1$d GB trên điện thoại này</string>
     <string name="storage_cap_caption">Khi bản ghi vượt mức này, dọn dẹp hằng ngày sẽ xóa những bản cũ nhất khỏi điện thoại cho đến khi vừa đủ. Bản ghi gắn sao không bao giờ bị xóa, kể cả khi vì thế mà vẫn vượt mức. Bản ghi có cả trên Drive chỉ mất bản sao ở đây.</string>
     <string name="storage_cap_confirm_message">Bản ghi sẽ bị xóa khỏi điện thoại này mỗi khi vượt giới hạn, cũ nhất trước. Bản ghi gắn sao không bao giờ bị lấy. Không thể hoàn tác.</string>
+    <string name="notif_health_channel">Sự cố cần bạn xử lý</string>
+    <string name="notif_health_recorder_title">CallVault hiện không thể ghi âm</string>
+    <string name="notif_health_recorder_text">Cuộc gọi sẽ không được ghi cho đến khi điện thoại này kết nối một lần vào mạng Wi-Fi. Mạng nào cũng được và không cần internet — vài giây là đủ, sau đó vẫn hoạt động kể cả khi không có Wi-Fi.</string>
+    <string name="notif_health_sync_title">Bản ghi không lên được Drive</string>
+    <string name="notif_health_sync_text">Việc sao chép lên Google Drive đã dừng từ một thời gian trước. Không mất gì cả — bản ghi vẫn còn trên điện thoại này — nhưng chúng chưa được sao lưu. Mở CallVault để kiểm tra cài đặt lưu trữ.</string>
+    <string name="notif_health_recorder_text_shizuku">Cuộc gọi sẽ không được ghi cho đến khi Shizuku chạy lại. Khởi động lại máy sẽ tắt nó, nên cần bật lại một lần sau mỗi lần khởi động.</string>
 </resources>

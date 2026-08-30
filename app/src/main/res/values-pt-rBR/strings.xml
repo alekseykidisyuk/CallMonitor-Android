@@ -588,4 +588,10 @@
     <string name="storage_cap_gigabytes">%1$d GB neste telefone</string>
     <string name="storage_cap_caption">Quando suas gravações passarem disso, a limpeza diária exclui as mais antigas deste telefone até caberem. Gravações marcadas nunca são excluídas, mesmo que isso mantenha o limite estourado. Uma gravação que também está no Drive perde só a cópia daqui.</string>
     <string name="storage_cap_confirm_message">Gravações serão excluídas deste telefone sempre que passarem do limite, das mais antigas primeiro. As marcadas nunca são levadas. Isso não pode ser desfeito.</string>
+    <string name="notif_health_channel">Problemas que precisam de você</string>
+    <string name="notif_health_recorder_title">O CallVault não consegue gravar agora</string>
+    <string name="notif_health_recorder_text">As chamadas não serão gravadas até este telefone entrar uma vez em uma rede Wi-Fi. Qualquer rede serve e não precisa de internet — alguns segundos bastam, e depois continua funcionando mesmo fora do Wi-Fi.</string>
+    <string name="notif_health_sync_title">As gravações não estão chegando ao Drive</string>
+    <string name="notif_health_sync_text">A cópia para o Google Drive parou há algum tempo. Nada foi perdido — as gravações ainda estão neste telefone — mas não têm backup. Abra o CallVault e confira as configurações de armazenamento.</string>
+    <string name="notif_health_recorder_text_shizuku">As chamadas não serão gravadas até o Shizuku voltar a rodar. Reiniciar o desliga, então ele precisa ser iniciado uma vez depois que o telefone reinicia.</string>
 </resources>

@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import com.baba.callvault.R
 import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.utils.AppLogger
+import com.baba.callvault.system.health.SilentFailureNotifier
 
 /**
  * Short-lived foreground service that runs [AdbShell.ensureConnected] on the IO thread after boot.
@@ -68,6 +69,20 @@ class AdbConnectionService : Service() {
             val started = runCatching { RecorderBackend.ensureRunning(applicationContext) }
                 .getOrDefault(false)
             AppLogger.i(TAG, "Boot: recorder daemon connected=$started")
+
+            // The one place this failure is genuinely invisible. Off Wi-Fi after a reboot the ADB
+            // listener cannot be re-armed, so `started` is false and, until now, the entire user-facing
+            // consequence was this log line — the next thing that happened was a call not being
+            // recorded. Warned here and nowhere else: with the app open the status card already says
+            // it, and two mouths saying the same thing is how a warning becomes noise.
+            if (started) {
+                SilentFailureNotifier.clearRecorderUnavailable(applicationContext)
+            } else {
+                SilentFailureNotifier.warnRecorderUnavailable(applicationContext)
+            }
+            // Boot is the reliable moment for this. A phone that has not been opened in months is
+            // exactly the case worth catching, and it still reboots.
+            SilentFailureNotifier.checkSyncHealth(applicationContext)
 
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()

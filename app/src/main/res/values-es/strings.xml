@@ -585,4 +585,10 @@
     <string name="storage_cap_gigabytes">%1$d GB en este teléfono</string>
     <string name="storage_cap_caption">Cuando tus grabaciones superen esto, la limpieza diaria elimina las más antiguas de este teléfono hasta que quepan. Las destacadas nunca se eliminan, aunque eso implique excederse. Una grabación que también esté en Drive solo pierde su copia local.</string>
     <string name="storage_cap_confirm_message">Se eliminarán grabaciones de este teléfono siempre que superen el límite, empezando por las más antiguas. Las destacadas nunca se tocan. No se puede deshacer.</string>
+    <string name="notif_health_channel">Problemas que requieren tu atención</string>
+    <string name="notif_health_recorder_title">CallVault no puede grabar ahora</string>
+    <string name="notif_health_recorder_text">No se grabarán llamadas hasta que este teléfono se conecte una vez a una red Wi-Fi. Sirve cualquier red y no necesita internet: bastan unos segundos y luego sigue funcionando incluso sin Wi-Fi.</string>
+    <string name="notif_health_sync_title">Las grabaciones no llegan a Drive</string>
+    <string name="notif_health_sync_text">La copia a Google Drive se detuvo hace tiempo. No se ha perdido nada: las grabaciones siguen en este teléfono, pero no tienen copia de seguridad. Abre CallVault y revisa los ajustes de almacenamiento.</string>
+    <string name="notif_health_recorder_text_shizuku">No se grabarán llamadas hasta que Shizuku vuelva a estar en marcha. Un reinicio lo detiene, así que hay que iniciarlo una vez tras reiniciar el teléfono.</string>
 </resources>

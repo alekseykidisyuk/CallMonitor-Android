@@ -585,4 +585,10 @@
     <string name="storage_cap_gigabytes">%1$d Go sur ce téléphone</string>
     <string name="storage_cap_caption">Dès que vos enregistrements dépassent cette taille, le nettoyage quotidien supprime les plus anciens de ce téléphone jusqu\'à repasser dessous. Les favoris ne sont jamais supprimés, quitte à rester au-dessus de la limite. Un enregistrement également présent sur Drive ne perd que sa copie locale.</string>
     <string name="storage_cap_confirm_message">Des enregistrements seront supprimés de ce téléphone dès que la limite est dépassée, les plus anciens d\'abord. Les favoris ne sont jamais pris. Action irréversible.</string>
+    <string name="notif_health_channel">Problèmes qui vous concernent</string>
+    <string name="notif_health_recorder_title">CallVault ne peut pas enregistrer</string>
+    <string name="notif_health_recorder_text">Aucun appel ne sera enregistré tant que ce téléphone ne se sera pas connecté une fois à un réseau Wi-Fi. N\'importe quel réseau convient et Internet n\'est pas nécessaire : quelques secondes suffisent, puis cela continue de fonctionner même hors Wi-Fi.</string>
+    <string name="notif_health_sync_title">Les enregistrements n\'arrivent pas sur Drive</string>
+    <string name="notif_health_sync_text">La copie vers Google Drive s\'est arrêtée il y a un moment. Rien n\'est perdu — les enregistrements sont toujours sur ce téléphone — mais ils ne sont pas sauvegardés. Ouvrez CallVault pour vérifier vos réglages de stockage.</string>
+    <string name="notif_health_recorder_text_shizuku">Aucun appel ne sera enregistré tant que Shizuku ne fonctionne pas à nouveau. Un redémarrage l\'arrête : il doit être relancé une fois après chaque redémarrage du téléphone.</string>
 </resources>

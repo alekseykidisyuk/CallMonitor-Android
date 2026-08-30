@@ -585,4 +585,10 @@
     <string name="storage_cap_gigabytes">%1$d GB ezen a telefonon</string>
     <string name="storage_cap_caption">Amint a felvételek túllépik ezt, a napi takarítás a legrégebbieket törli erről a telefonról, amíg vissza nem fér. A csillagozott felvételek soha nem törlődnek, még akkor sem, ha így a korlát felett marad. A Drive-ban is meglévő felvétel csak az itteni példányát veszíti el.</string>
     <string name="storage_cap_confirm_message">A felvételek törlődnek erről a telefonról, valahányszor túllépik a korlátot, a legrégebbiekkel kezdve. A csillagozottakat soha nem érinti. Ez nem vonható vissza.</string>
+    <string name="notif_health_channel">Beavatkozást igénylő problémák</string>
+    <string name="notif_health_recorder_title">A CallVault most nem tud felvenni</string>
+    <string name="notif_health_recorder_text">Addig nem lesz hívásrögzítés, amíg a telefon egyszer nem csatlakozik egy Wi-Fi hálózathoz. Bármelyik hálózat megfelel, és internet sem kell — néhány másodperc elég, utána Wi-Fi nélkül is működik tovább.</string>
+    <string name="notif_health_sync_title">A felvételek nem jutnak el a Drive-ba</string>
+    <string name="notif_health_sync_text">A Google Drive-ba másolás egy ideje leállt. Semmi nem veszett el — a felvételek még a telefonon vannak —, de nincs róluk biztonsági másolat. Nyissa meg a CallVaultot, és ellenőrizze a tárolási beállításokat.</string>
+    <string name="notif_health_recorder_text_shizuku">Addig nem lesz hívásrögzítés, amíg a Shizuku újra nem fut. Az újraindítás leállítja, ezért a telefon újraindulása után egyszer el kell indítani.</string>
 </resources>

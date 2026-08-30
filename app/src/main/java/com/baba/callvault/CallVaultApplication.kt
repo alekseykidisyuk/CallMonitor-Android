@@ -24,6 +24,10 @@ import com.baba.callvault.system.updates.UpdateScheduler
 import com.baba.callvault.server.RecorderConnection
 import com.baba.callvault.services.recording.VoipCaptureController
 import com.baba.callvault.utils.AppLogger
+import com.baba.callvault.system.health.SilentFailureNotifier
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -187,8 +191,17 @@ class CallVaultApplication : Application() {
                 // Readiness ("starting up… → ready to record") is surfaced by the SINGLE persistent
                 // DaemonKeepAliveService notification — no separate notifier here, which previously
                 // produced a DUPLICATE readiness notification alongside the keep-alive one.
-                runCatching { RecorderBackend.ensureRunning(applicationContext) }
+                val started = runCatching { RecorderBackend.ensureRunning(applicationContext) }
                     .onFailure { AppLogger.w(TAG, "Startup recorder-daemon warmup failed: ${it.message}") }
+                    .getOrDefault(false)
+                // Clear only; never warn from here. The boot path raises the warning because nobody
+                // is looking then — but the app being open IS someone looking, and the Home status
+                // card already explains it in place. What must not happen is a warning from a
+                // previous boot outliving the problem and teaching the user to ignore the next one.
+                if (started) SilentFailureNotifier.clearRecorderUnavailable(applicationContext)
+                CoroutineScope(Dispatchers.IO).launch {
+                    SilentFailureNotifier.checkSyncHealth(applicationContext)
+                }
             }.apply { isDaemon = true }.start()
         }
     }
