@@ -3,6 +3,87 @@
 All notable changes to CallVault are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project uses semantic-ish versioning.
 
+## [2.2.0]
+
+A release about the parts of using a call recorder that are not the recording: finding a call again,
+controlling one while it is happening, and being told when something has quietly stopped working.
+
+### Added
+
+- **Mark a moment while you are talking.** A button on the call notification drops a bookmark at the
+  point you press it; the recording's page shows them as chips that play from there. It works on
+  phone calls and app calls alike, and the marks are positions in the saved audio, so they stay
+  correct even if you paused.
+
+- **App calls have controls at all.** Until now a WhatsApp or Signal recording in progress could be
+  started and finished with nothing to stop it. It now carries its own notification with pause,
+  resume, stop and mark — the same ones a phone call has.
+
+- **An app call interrupted by a phone call stays one recording.** Take a cell call in the middle of
+  a WhatsApp call and come back, and it used to arrive as two separate files. The app recording is
+  now held open across the phone call and continues into the same one. The microphone is genuinely
+  released for the phone call — it has to be, or the phone call's own recording suffers — so the held
+  stretch is absent rather than recorded.
+
+- **Choose which apps get recorded.** Every app is on by default; switch one off and its calls are
+  never recorded. Useful where consent law differs, or for an app you simply would rather leave alone.
+
+- **Stars and tags.** Star the calls worth keeping and filter the list to them; label calls with your
+  own words and filter by those. A tag can be renamed or removed everywhere at once, which is the
+  only way to fix a typo already applied to forty calls.
+
+- **Export a transcript** as plain text, Markdown, SRT, VTT or JSON. The subtitle formats mean a
+  recording and its transcript can be opened together in any video player.
+
+- **Search covers summaries and notes**, not only the spoken words. A call is now findable by what its
+  summary concluded, or by something you wrote about it afterwards.
+
+- **An optional app lock**, using your phone's own unlock, before any recording or transcript is shown.
+
+- **Housekeeping that is not only about age.** Alongside deleting recordings past a chosen age, you can
+  now cap how much space they may take, or discard very short ones — a misdial or a call that rang
+  out. All off by default, and a starred recording is never deleted automatically, even if that means
+  the cap is not met.
+
+- **CallVault says when it has stopped working.** If recording cannot start after a reboot, or
+  recordings stop reaching Google Drive, you are told. Both of those used to be silent, and the way
+  you found out was a call that was not there.
+
+- **An optional BCR-compatible details file** beside each recording, so tools built for BCR — such as
+  bcr-gui — can read your calls' number, contact and direction. Off by default.
+
+- **Long calls can be transcribed.** They are decoded and transcribed in passes rather than all at
+  once, which is what used to exhaust memory on anything long.
+
+### Changed
+
+- **One Share button in a transcript**, offering plain text or a file, instead of separate Copy,
+  Share and Export. Long-press a line to copy just that sentence; a single tap still plays from it.
+
+- **The summary model is smaller** — 2.62 GB instead of 3.46 GB — by using the quantisation-aware
+  build rather than a plain quantisation of the full model. Same model, fewer gigabytes to download
+  and to hold in memory.
+
+- **Offline recording states its limitation up front.** A reboot clears it, and it returns as soon as
+  the phone joins any Wi-Fi network for a few seconds. It does not need internet, and any access point
+  will do — wording that used to make a ten-second fix sound like a trip home.
+
+### Fixed
+
+- **Nothing appears in your storage folder until a recording is complete.** Syncthing, FolderSync and
+  Nextcloud upload whatever they find, so a file that grew during the call was being backed up
+  truncated. Recordings are now written privately and published whole.
+
+- **An app call no longer loses its speaker separation.** The capture had both sides apart all along
+  and was discarding it at the downmix, so app calls arrived with no speaker labels while phone calls
+  had them.
+
+- **A transcript with malformed text no longer takes the app down.**
+
+- **Transcription and summarisation no longer stop when the screen goes off.**
+
+- **Call details survive on Android 13.**
+
 ## [2.1.2]
 
 Fixes a transcription regression introduced in 2.1.1.
