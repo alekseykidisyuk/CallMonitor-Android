@@ -159,6 +159,10 @@ class AppPreferences(context: Context) {
         // upgrades, and the calls it would take are exactly the ones nobody would notice going.
         const val MIN_DURATION_SECONDS = 0
 
+        // No cap. Like the retention period beside it, a shipped default that deleted would take
+        // recordings from everyone who upgrades without ever having asked for it.
+        const val STORAGE_CAP_BYTES = 0L
+
         const val RETENTION_LOCAL_DAYS = 0
         const val RETENTION_DRIVE_DAYS = 0
         // Daily sweep time, in the device's LOCAL time zone (so e.g. "00:00" means local midnight
@@ -258,6 +262,7 @@ class AppPreferences(context: Context) {
         // --- Retention ---
         RETENTION_LINKED("retention_linked"),
         MIN_DURATION_SECONDS("min_duration_seconds"),
+        STORAGE_CAP_BYTES("storage_cap_bytes"),
         RETENTION_LOCAL_DAYS("retention_local_days"),
         RETENTION_DRIVE_DAYS("retention_drive_days"),
         RETENTION_TIME_HOUR("retention_time_hour"),
@@ -945,6 +950,12 @@ class AppPreferences(context: Context) {
 
     /** Sets the shortest recording worth keeping, in seconds (0 = keep every recording). */
     fun setMinDurationSeconds(seconds: Int) = setInt(Key.MIN_DURATION_SECONDS, seconds)
+
+    /** Delete the oldest device recordings once the library exceeds this many bytes (0 = no cap). */
+    fun getStorageCapBytes() = getLong(Key.STORAGE_CAP_BYTES, DefaultsValue.STORAGE_CAP_BYTES)
+
+    /** Sets the on-device size cap in bytes (0 = no cap). */
+    fun setStorageCapBytes(bytes: Long) = setLong(Key.STORAGE_CAP_BYTES, bytes)
 
     /** Retention in days for on-device recordings (0 = keep forever). */
     fun getRetentionLocalDays() = getInt(Key.RETENTION_LOCAL_DAYS, DefaultsValue.RETENTION_LOCAL_DAYS)

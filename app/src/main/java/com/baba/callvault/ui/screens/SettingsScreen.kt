@@ -146,6 +146,7 @@ import androidx.compose.material.icons.filled.WifiOff
 import com.baba.callvault.ui.common.OfflineDialogMode
 import com.baba.callvault.ui.common.OfflineRecordingDialog
 import com.baba.callvault.system.storage.MinDurationPolicy
+import com.baba.callvault.system.storage.StorageCapPolicy
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalResources
 import org.xmlpull.v1.XmlPullParser
@@ -1163,6 +1164,16 @@ private fun UploadScheduleSubSection(
     )
 }
 
+/**
+ * A destructive settings change waiting on the user's confirmation, with the sentence that explains
+ * what it will do. Carrying the message with the action is what stops the age period and the size
+ * cap — which delete for different reasons — sharing one vague warning.
+ */
+private data class PendingDestructiveChange(
+    @androidx.annotation.StringRes val messageRes: Int,
+    val apply: () -> Unit
+)
+
 /** Retention: auto-delete recordings older than a chosen period. One shared period for device & Drive,
  * or a separate period for each. Destructive, so it defaults to "Keep forever" and a confirmation is
  * shown the first time a non-forever period is chosen.
@@ -1190,6 +1201,14 @@ private fun RetentionSubSection(
             }
         )
     }
+    val capBytes = remember(updateTrigger) { preferences.getStorageCapBytes() }
+    val capOptions = StorageCapPolicy.PRESET_BYTES.map { bytes ->
+        OptionItem(
+            bytes.toString(),
+            if (bytes == 0L) stringResource(R.string.storage_cap_off)
+            else stringResource(R.string.storage_cap_gigabytes, bytes / (1L shl 30))
+        )
+    }
     val linked = remember(updateTrigger) { preferences.isRetentionLinked() }
     val localDays = remember(updateTrigger) { preferences.getRetentionLocalDays() }
     val driveDays = remember(updateTrigger) { preferences.getRetentionDriveDays() }
@@ -1198,10 +1217,16 @@ private fun RetentionSubSection(
     fun optionFor(days: Int) =
         options.find { it.key == RetentionPeriod.fromDays(days).days.toString() } ?: options.first()
 
-    // Enabling retention from OFF is destructive, so stash the apply-action and confirm first.
-    var pendingConfirm by remember { mutableStateOf<(() -> Unit)?>(null) }
+    // Turning either destructive setting on from OFF is confirmed first. The message differs: an age
+    // period deletes by age and the cap deletes by size, and one sentence covering both would be
+    // vague exactly where the user is being asked to authorise deleting their own recordings.
+    var pendingConfirm by remember { mutableStateOf<PendingDestructiveChange?>(null) }
     fun applyOrConfirm(wasOff: Boolean, newDays: Int, apply: () -> Unit) {
-        if (wasOff && newDays > 0) pendingConfirm = apply else apply()
+        if (wasOff && newDays > 0) {
+            pendingConfirm = PendingDestructiveChange(R.string.retention_confirm_message, apply)
+        } else {
+            apply()
+        }
     }
 
     Column {
@@ -1274,9 +1299,34 @@ private fun RetentionSubSection(
             }
         }
 
+        SettingsDivider()
+
+        // Device only. A Drive copy costs nothing on this phone and has its own quota, so deleting
+        // one to free space here would be indefensible — and because only the device copy goes, a
+        // recording that is also in Drive keeps its transcript and its place in the list.
+        DropdownRow {
+            M3DropdownField(
+                label = stringResource(R.string.storage_cap_label),
+                selected = capOptions.find { it.key == capBytes.toString() } ?: capOptions.first(),
+                options = capOptions,
+                onOptionSelected = { opt ->
+                    val bytes = opt.key.toLongOrNull() ?: 0L
+                    if (capBytes == 0L && bytes > 0L) {
+                        pendingConfirm = PendingDestructiveChange(R.string.storage_cap_confirm_message) {
+                            actions.setStorageCapBytes(bytes)
+                        }
+                    } else {
+                        actions.setStorageCapBytes(bytes)
+                    }
+                }
+            )
+        }
+        SettingsHint(stringResource(R.string.storage_cap_caption))
+
         // Sweep time — only relevant once retention is enabled. Two dropdowns (Hour/Minute) in the
-        // device's LOCAL time zone, mirroring the sync-schedule picker.
-        if (localDays > 0 || driveDays > 0) {
+        // device's LOCAL time zone, mirroring the sync-schedule picker. The cap counts: it runs in
+        // this same daily sweep, so a cap-only setup still needs to be able to say when.
+        if (localDays > 0 || driveDays > 0 || capBytes > 0L) {
             SettingsDivider()
             val hour = remember(updateTrigger) { preferences.getRetentionTimeHour() }
             val minute = remember(updateTrigger) { preferences.getRetentionTimeMinute() }
@@ -1318,9 +1368,9 @@ private fun RetentionSubSection(
         AlertDialog(
             onDismissRequest = { pendingConfirm = null },
             title = { Text(stringResource(R.string.retention_confirm_title)) },
-            text = { Text(stringResource(R.string.retention_confirm_message)) },
+            text = { Text(stringResource(confirm.messageRes)) },
             confirmButton = {
-                TextButton(onClick = { confirm(); pendingConfirm = null }) {
+                TextButton(onClick = { confirm.apply(); pendingConfirm = null }) {
                     Text(stringResource(R.string.retention_confirm_enable))
                 }
             },
@@ -2668,6 +2718,7 @@ private fun SettingsScreenPreview() {
             override fun setDriveFolderUri(uri: android.net.Uri?) {}
             override fun setRetentionLinked(linked: Boolean) {}
             override fun setMinDurationSeconds(seconds: Int) {}
+            override fun setStorageCapBytes(bytes: Long) {}
             override fun setRetentionLocalDays(days: Int) {}
             override fun setRetentionDriveDays(days: Int) {}
             override fun setRetentionTimeHour(hour: Int) {}

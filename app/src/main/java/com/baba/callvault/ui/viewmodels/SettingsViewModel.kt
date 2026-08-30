@@ -72,6 +72,8 @@ interface SettingsActions {
     fun setRetentionLinked(linked: Boolean)
     fun setMinDurationSeconds(seconds: Int)
 
+    fun setStorageCapBytes(bytes: Long)
+
     fun setRetentionLocalDays(days: Int)
     fun setRetentionDriveDays(days: Int)
     fun setRetentionTimeHour(hour: Int)
@@ -348,6 +350,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     override fun setMinDurationSeconds(seconds: Int) {
         preferences.setMinDurationSeconds(seconds)
+        refresh()
+    }
+
+    /**
+     * Saves the on-device size cap (bytes; 0 = no cap) and reconciles the periodic sweep.
+     *
+     * Reconciling is not optional here. The cap is enforced by the same daily job as the age
+     * periods, and that job is cancelled when there is nothing to sweep for — so a cap set on a
+     * device with no age period would never run at all without this call.
+     */
+    override fun setStorageCapBytes(bytes: Long) {
+        preferences.setStorageCapBytes(bytes)
+        RetentionScheduler.apply(appContext)
         refresh()
     }
 

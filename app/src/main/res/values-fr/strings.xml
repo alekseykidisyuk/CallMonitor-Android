@@ -580,4 +580,9 @@
     <string name="min_duration_seconds">Moins de %1$d secondes</string>
     <string name="min_duration_one_minute">Moins d\'une minute</string>
     <string name="min_duration_caption">Un faux numéro ou un appel resté sans réponse est supprimé dès qu\'il se termine, avant toute transcription ou tout envoi. Les enregistrements existants ne sont pas touchés.</string>
+    <string name="storage_cap_label">Limiter l\'espace utilisé</string>
+    <string name="storage_cap_off">Aucune limite</string>
+    <string name="storage_cap_gigabytes">%1$d Go sur ce téléphone</string>
+    <string name="storage_cap_caption">Dès que vos enregistrements dépassent cette taille, le nettoyage quotidien supprime les plus anciens de ce téléphone jusqu\'à repasser dessous. Les favoris ne sont jamais supprimés, quitte à rester au-dessus de la limite. Un enregistrement également présent sur Drive ne perd que sa copie locale.</string>
+    <string name="storage_cap_confirm_message">Des enregistrements seront supprimés de ce téléphone dès que la limite est dépassée, les plus anciens d\'abord. Les favoris ne sont jamais pris. Action irréversible.</string>
 </resources>

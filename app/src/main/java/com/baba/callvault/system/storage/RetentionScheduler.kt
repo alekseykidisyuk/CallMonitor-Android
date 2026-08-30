@@ -33,15 +33,24 @@ object RetentionScheduler {
     private const val TAG = "CV:RetentionScheduler"
     private const val PERIOD_HOURS = 24L
 
-    /** Reconciles the periodic sweep with the current retention prefs. */
+    /**
+     * Reconciles the periodic sweep with the current retention prefs.
+     *
+     * "Retention off" now means BOTH the age periods and the size cap are off. It used to mean only
+     * the periods, which was correct while they were the sole reason to sweep and became a silent
+     * bug the moment the storage cap was added: a user with a cap set and no age period would have
+     * had the daily job cancelled out from under them, and the setting would simply never have done
+     * anything, with the UI happily showing it enabled.
+     */
     fun apply(context: Context) {
         val prefs = AppPreferences(context)
         val maxDays = maxOf(prefs.getRetentionLocalDays(), prefs.getRetentionDriveDays())
+        val capBytes = prefs.getStorageCapBytes()
         val workManager = WorkManager.getInstance(context)
 
-        if (maxDays <= 0) {
+        if (maxDays <= 0 && capBytes <= 0L) {
             workManager.cancelUniqueWork(WORK_NAME)
-            AppLogger.i(TAG, "Retention sweep cancelled (retention off).")
+            AppLogger.i(TAG, "Retention sweep cancelled (no age period and no size cap).")
             return
         }
 

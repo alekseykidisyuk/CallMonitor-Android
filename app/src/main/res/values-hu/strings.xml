@@ -580,4 +580,9 @@
     <string name="min_duration_seconds">%1$d másodpercnél rövidebb</string>
     <string name="min_duration_one_minute">Egy percnél rövidebb</string>
     <string name="min_duration_caption">A téves hívás vagy a kicsengett hívás a befejezés pillanatában törlődik, még az átirat és a feltöltés előtt. A meglévő felvételeket nem érinti.</string>
+    <string name="storage_cap_label">Tárhely korlátozása</string>
+    <string name="storage_cap_off">Nincs korlát</string>
+    <string name="storage_cap_gigabytes">%1$d GB ezen a telefonon</string>
+    <string name="storage_cap_caption">Amint a felvételek túllépik ezt, a napi takarítás a legrégebbieket törli erről a telefonról, amíg vissza nem fér. A csillagozott felvételek soha nem törlődnek, még akkor sem, ha így a korlát felett marad. A Drive-ban is meglévő felvétel csak az itteni példányát veszíti el.</string>
+    <string name="storage_cap_confirm_message">A felvételek törlődnek erről a telefonról, valahányszor túllépik a korlátot, a legrégebbiekkel kezdve. A csillagozottakat soha nem érinti. Ez nem vonható vissza.</string>
 </resources>

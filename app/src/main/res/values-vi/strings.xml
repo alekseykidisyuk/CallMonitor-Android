@@ -580,4 +580,9 @@
     <string name="min_duration_seconds">Ngắn hơn %1$d giây</string>
     <string name="min_duration_one_minute">Ngắn hơn một phút</string>
     <string name="min_duration_caption">Cuộc gọi nhầm hoặc đổ chuông không nghe sẽ bị xóa ngay khi kết thúc, trước khi chép lời hay tải lên. Không ảnh hưởng đến bản ghi đã có.</string>
+    <string name="storage_cap_label">Giới hạn dung lượng</string>
+    <string name="storage_cap_off">Không giới hạn</string>
+    <string name="storage_cap_gigabytes">%1$d GB trên điện thoại này</string>
+    <string name="storage_cap_caption">Khi bản ghi vượt mức này, dọn dẹp hằng ngày sẽ xóa những bản cũ nhất khỏi điện thoại cho đến khi vừa đủ. Bản ghi gắn sao không bao giờ bị xóa, kể cả khi vì thế mà vẫn vượt mức. Bản ghi có cả trên Drive chỉ mất bản sao ở đây.</string>
+    <string name="storage_cap_confirm_message">Bản ghi sẽ bị xóa khỏi điện thoại này mỗi khi vượt giới hạn, cũ nhất trước. Bản ghi gắn sao không bao giờ bị lấy. Không thể hoàn tác.</string>
 </resources>

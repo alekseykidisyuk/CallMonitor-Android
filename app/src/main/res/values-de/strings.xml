@@ -580,4 +580,9 @@
     <string name="min_duration_seconds">Kürzer als %1$d Sekunden</string>
     <string name="min_duration_one_minute">Kürzer als eine Minute</string>
     <string name="min_duration_caption">Ein Fehlanruf oder ein Anruf, der nur klingelte, wird sofort nach Ende gelöscht — vor Transkription und Upload. Bereits vorhandene Aufnahmen bleiben unberührt.</string>
+    <string name="storage_cap_label">Speicherplatz begrenzen</string>
+    <string name="storage_cap_off">Kein Limit</string>
+    <string name="storage_cap_gigabytes">%1$d GB auf diesem Telefon</string>
+    <string name="storage_cap_caption">Sobald Ihre Aufnahmen das überschreiten, löscht die tägliche Bereinigung die ältesten von diesem Telefon, bis es wieder passt. Markierte Aufnahmen werden nie gelöscht, auch wenn das Limit dadurch überschritten bleibt. Eine auch in Drive gespeicherte Aufnahme verliert nur ihre Kopie hier.</string>
+    <string name="storage_cap_confirm_message">Aufnahmen werden von diesem Telefon gelöscht, sobald sie das Limit überschreiten — die ältesten zuerst. Markierte Aufnahmen sind ausgenommen. Das lässt sich nicht rückgängig machen.</string>
 </resources>

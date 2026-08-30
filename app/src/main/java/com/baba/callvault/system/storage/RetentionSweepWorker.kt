@@ -21,6 +21,7 @@ import com.baba.callvault.data.recordings.RecordingsRepository.RecordingItem
 import com.baba.callvault.data.recordings.UntrackedRecordings
 import com.baba.callvault.data.transcripts.TranscriptCascade
 import com.baba.callvault.utils.AppLogger
+import com.baba.callvault.data.transcripts.FavouriteRepository
 
 /**
  * Daily sweep that permanently deletes recordings older than the configured retention period. Reads the
@@ -45,8 +46,11 @@ class RetentionSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWo
         val prefs = AppPreferences(applicationContext)
         val localDays = prefs.getRetentionLocalDays()
         val driveDays = prefs.getRetentionDriveDays()
-        if (localDays <= 0 && driveDays <= 0) {
-            AppLogger.i(TAG, "Retention off; nothing to sweep.")
+        val capBytes = prefs.getStorageCapBytes()
+        // The size cap is a second, independent reason to sweep. Testing only the day counts here is
+        // what would have made a cap-only setup do nothing at all, for ever, while showing as on.
+        if (localDays <= 0 && driveDays <= 0 && capBytes <= 0L) {
+            AppLogger.i(TAG, "Retention off and no size cap; nothing to sweep.")
             return Result.success()
         }
 
@@ -83,8 +87,78 @@ class RetentionSweepWorker(ctx: Context, params: WorkerParameters) : CoroutineWo
         deletedDrive += deletedDriveNames.size
         cascadeForUntracked(untracked, deletedDeviceNames + deletedDriveNames)
 
-        AppLogger.i(TAG, "Retention sweep complete (deletedLocal=$deletedLocal deletedDrive=$deletedDrive).")
+        // After the age pass, never before: an expired recording should go because it expired, and
+        // counting it against the cap first could evict a newer one that the age rule was going to
+        // spare. Running second also means the cap only ever sees what age retention chose to keep.
+        val deletedByCap = if (capBytes > 0L) sweepStorageCap(capBytes) else 0
+
+        AppLogger.i(
+            TAG,
+            "Retention sweep complete (deletedLocal=$deletedLocal deletedDrive=$deletedDrive deletedByCap=$deletedByCap)."
+        )
         return Result.success()
+    }
+
+    /**
+     * Deletes the oldest device copies until the on-device library is back under [capBytes].
+     *
+     * Device copies only, and only the device copy: a recording that is also in Drive keeps its row,
+     * its transcript and its place in the list — the cap frees this phone, it does not destroy the
+     * recording. The transcript cascade therefore runs only for the ones whose last copy this takes,
+     * which `RecordingCatalog.removeCopyByUri` already handles.
+     *
+     * @return how many device copies were deleted.
+     */
+    private suspend fun sweepStorageCap(capBytes: Long): Int {
+        // A failed read here must mean "protect everything", not "protect nothing". Sweeping with an
+        // empty exemption set would delete precisely the recordings the user starred to keep, so the
+        // cap sits this run out instead and tries again tomorrow.
+        val favourites = runCatching { FavouriteRepository.snapshot(applicationContext).toSet() }
+            .getOrElse {
+                AppLogger.w(
+                    TAG,
+                    "Could not read the starred recordings (${it.message}); skipping the size cap this run " +
+                        "rather than sweeping without the exemption."
+                )
+                return 0
+            }
+
+        val entries = RecordingCatalog.all(applicationContext)
+        val uriByName = entries.mapNotNull { e -> e.localUri?.let { e.displayName to it } }.toMap()
+        val candidates = entries.mapNotNull { entry ->
+            // No device copy, or a size we never measured: not something this cap can act on. A
+            // recording is never deleted on the strength of a size we do not have.
+            if (entry.localUri == null) return@mapNotNull null
+            val size = entry.localSizeBytes ?: return@mapNotNull null
+            StorageCapPolicy.Candidate(
+                displayName = entry.displayName,
+                sizeBytes = size,
+                lastModified = entry.lastModified,
+                isFavourite = entry.displayName in favourites
+            )
+        }
+
+        val doomed = StorageCapPolicy.selectForEviction(candidates, capBytes)
+        if (doomed.isEmpty()) return 0
+
+        var deleted = 0
+        for (name in doomed) {
+            val uri = uriByName[name] ?: continue
+            if (RecordingsRepository.deleteFile(applicationContext, uri.toUri())) deleted++
+        }
+
+        // Said plainly, because it is the one case where the setting visibly does not do what it
+        // says: the library stays over the cap and that is the intended answer, not a failure.
+        val protectedBytes = candidates.filter { it.isFavourite }.sumOf { it.sizeBytes }
+        if (protectedBytes > capBytes) {
+            AppLogger.i(
+                TAG,
+                "Starred recordings alone ($protectedBytes bytes) exceed the ${capBytes}-byte cap; " +
+                    "staying over it rather than deleting them."
+            )
+        }
+        AppLogger.i(TAG, "Storage cap: deleted $deleted of ${doomed.size} selected device copies.")
+        return deleted
     }
 
     /**

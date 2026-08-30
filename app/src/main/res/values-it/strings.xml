@@ -580,4 +580,9 @@
     <string name="min_duration_seconds">Meno di %1$d secondi</string>
     <string name="min_duration_one_minute">Meno di un minuto</string>
     <string name="min_duration_caption">Una chiamata sbagliata o senza risposta viene eliminata appena finisce, prima della trascrizione o del caricamento. Le registrazioni esistenti non sono toccate.</string>
+    <string name="storage_cap_label">Limita lo spazio usato</string>
+    <string name="storage_cap_off">Nessun limite</string>
+    <string name="storage_cap_gigabytes">%1$d GB su questo telefono</string>
+    <string name="storage_cap_caption">Quando le registrazioni superano questa soglia, la pulizia quotidiana elimina le più vecchie da questo telefono finché non rientrano. Le registrazioni preferite non vengono mai eliminate, anche a costo di restare sopra il limite. Una registrazione presente anche su Drive perde solo la copia locale.</string>
+    <string name="storage_cap_confirm_message">Le registrazioni verranno eliminate da questo telefono ogni volta che superano il limite, dalla più vecchia. Le preferite non vengono mai toccate. Non è reversibile.</string>
 </resources>

@@ -580,4 +580,9 @@
     <string name="min_duration_seconds">Krótsze niż %1$d s</string>
     <string name="min_duration_one_minute">Krótsze niż minuta</string>
     <string name="min_duration_caption">Pomyłkowe lub nieodebrane połączenie jest usuwane zaraz po zakończeniu, przed transkrypcją i wysyłką. Nie dotyczy już zapisanych nagrań.</string>
+    <string name="storage_cap_label">Ogranicz zajmowane miejsce</string>
+    <string name="storage_cap_off">Bez limitu</string>
+    <string name="storage_cap_gigabytes">%1$d GB w tym telefonie</string>
+    <string name="storage_cap_caption">Gdy nagrania przekroczą ten rozmiar, codzienne porządkowanie usuwa najstarsze z tego telefonu, aż się zmieszczą. Nagrania oznaczone gwiazdką nie są usuwane nigdy, nawet jeśli limit pozostanie przekroczony. Nagranie obecne także na Dysku traci tylko kopię lokalną.</string>
+    <string name="storage_cap_confirm_message">Nagrania będą usuwane z tego telefonu za każdym razem, gdy przekroczą limit — od najstarszych. Oznaczonych gwiazdką to nie dotyczy. Tego nie można cofnąć.</string>
 </resources>

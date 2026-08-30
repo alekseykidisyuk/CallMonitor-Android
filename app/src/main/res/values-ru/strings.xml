@@ -580,4 +580,9 @@
     <string name="min_duration_seconds">Короче %1$d секунд</string>
     <string name="min_duration_one_minute">Короче минуты</string>
     <string name="min_duration_caption">Ошибочный или неотвеченный звонок удаляется сразу после завершения — до расшифровки и загрузки. Уже записанное не затрагивается.</string>
+    <string name="storage_cap_label">Ограничить занимаемое место</string>
+    <string name="storage_cap_off">Без ограничения</string>
+    <string name="storage_cap_gigabytes">%1$d ГБ на этом телефоне</string>
+    <string name="storage_cap_caption">Когда записи превысят этот объём, ежедневная очистка удалит самые старые с этого телефона, пока они не поместятся. Отмеченные записи не удаляются никогда, даже если из-за этого лимит остаётся превышенным. Запись, которая есть и в Drive, теряет только локальную копию.</string>
+    <string name="storage_cap_confirm_message">Записи будут удаляться с этого телефона всякий раз, когда объём превысит лимит, начиная с самых старых. Отмеченные не трогаются. Отменить будет нельзя.</string>
 </resources>
