@@ -59,6 +59,8 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | R29 | **Per-app choice of which apps' calls are recorded** (all on by default). | Directly relevant to the consent/legal paragraph: it is the answer to "I want this for some apps but not others", and it is worth saying that the default records everything so nobody assumes an opt-in they did not make. | 🧪 VERIFYING — built and unit-tested 2026-08-30 |
 
+| R30 | **An app call interrupted by a phone call stays ONE recording.** The app-call capture is held open across the phone call and continues into the same file. | Worth stating plainly — it is the kind of detail that separates a call recorder that has been used from one that has been written. State the limit honestly too: the held stretch is absent from the file rather than recorded, because the microphone genuinely has to be released for the phone call's own recording to be correct. | 🧪 VERIFYING — built and the state machine unit-tested 2026-08-30; needs a real switched call, listened to |
+
 ## Blocked on verification — do not write these into the README yet
 
 | # | Change | Why it is held |

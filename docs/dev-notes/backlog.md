@@ -63,6 +63,36 @@ D9 (per-app VoIP whitelist + lock-screen ask).
 `5f127c9`; the BCR sidecar as `0f3b3c6`. D5's QS tile was dropped by the maintainer as unwanted, and
 **D5's "flag a moment" is NOT built** — see the note below.
 
+### 🧪 Switching between an app call and a phone call — ONE file (`fcbff97`, 2026-08-30)
+
+Reported by the maintainer: WhatsApp call → answer a cell call → return → the app call came back as
+a **second** recording. The audio was never lost (the first half is published when the phone call is
+answered) but one conversation in two files is not one recording.
+
+**The constraint that shapes the whole design:** the app capture MUST release the microphone for the
+phone call. A second voice AudioRecord open during a carrier recording silently drops the user's own
+side — see [[no-second-voice-capture-during-call]]. So this is a *suspend*, not the pause added the
+same day: the pause keeps the mic, and using it here would trade a split app recording for a
+half-broken phone recording.
+
+Encoder, muxer and fd stay open; new records are acquired on the way back. Re-acquiring mid-recording
+was already proven — `retakeMic` does it on One UI.
+
+**Two things that were nearly bugs, recorded so they are not reintroduced:**
+- The feeder threads ended themselves on a failed read. Correct for a broken capture, fatal for a
+  suspended one — the thread would be gone before the phone call finished. They now wait.
+- `CaptureAudit.released()` was being called twice for the same id (once on suspend, once in stop),
+  which logs a misleading "already released" line into the exact record a stuck-microphone report is
+  read from. The id is zeroed on suspend.
+
+**Reverse direction needs nothing.** Nothing stops a carrier recording when an app call starts, and
+`mayStartNow` blocks an app recording while a phone call is up, so cell → app → cell was already one
+continuous carrier file.
+
+**Open risk, only a real call can settle it:** whether the far-party submix re-attaches after the
+phone call. If it does not, the second half is near-side only — logged explicitly rather than failing
+silently, so the log will say so.
+
 ### ✅ D5 "mark a moment" — BUILT 2026-08-30 on both paths (`abd5ae0`)
 
 The maintainer chose the both-paths option, so app calls gained their own ongoing notification
