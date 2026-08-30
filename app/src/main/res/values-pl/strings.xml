@@ -572,4 +572,7 @@
     <string name="playback_tags_rename">Zmień nazwę</string>
     <string name="playback_tags_delete_everywhere">Usuń wszędzie</string>
     <string name="transcript_share_text">Tekst</string>
+    <string name="playback_star">Oznacz nagranie gwiazdką</string>
+    <string name="playback_unstar">Usuń gwiazdkę</string>
+    <string name="home_filter_favourites_chip">Oznaczone</string>
 </resources>

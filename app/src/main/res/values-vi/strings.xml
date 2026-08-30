@@ -572,4 +572,7 @@
     <string name="playback_tags_rename">Đổi tên</string>
     <string name="playback_tags_delete_everywhere">Xóa ở mọi nơi</string>
     <string name="transcript_share_text">Văn bản</string>
+    <string name="playback_star">Gắn sao bản ghi này</string>
+    <string name="playback_unstar">Bỏ gắn sao</string>
+    <string name="home_filter_favourites_chip">Gắn sao</string>
 </resources>

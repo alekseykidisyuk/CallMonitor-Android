@@ -85,5 +85,14 @@ object TranscriptCascade {
             // would go on appearing in the filter row afterwards. Never logged, for that reason.
             AppLogger.w(TAG, "Failed to delete tags for ${displayNames.size} recording(s): ${it.message}")
         }
+
+        runCatching {
+            val dao = TranscriptDatabase.get(context).favouriteDao()
+            displayNames.forEach { dao.deleteFor(it) }
+        }.onFailure {
+            // Left behind, a star would silently re-attach itself to the next recording to reuse the
+            // name, exempting a call the user never protected from the sweeps.
+            AppLogger.w(TAG, "Failed to delete stars for ${displayNames.size} recording(s): ${it.message}")
+        }
     }
 }

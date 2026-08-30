@@ -39,6 +39,8 @@ import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -123,6 +125,9 @@ fun PlaybackScreen(
     tags: List<String> = emptyList(),
     /** Every tag already in use anywhere, offered as suggestions so near-duplicates do not accrue. */
     knownTags: List<String> = emptyList(),
+    /** Whether this recording is starred — see [com.baba.callvault.data.transcripts.FavouriteRepository]. */
+    isFavourite: Boolean = false,
+    onToggleFavourite: () -> Unit = {},
     onAddTag: (String) -> Unit = {},
     onRemoveTag: (String) -> Unit = {},
     /** Renames a tag on every recording carrying it — the only way to fix a typo already applied. */
@@ -170,6 +175,8 @@ fun PlaybackScreen(
                 transcriptPercent = transcriptPercent,
                 onOpenTranscript = onOpenTranscript,
                 onTranscribe = onTranscribe,
+                isFavourite = isFavourite,
+                onToggleFavourite = onToggleFavourite,
                 onDelete = onDelete
             )
             PlayerCard(
@@ -230,6 +237,8 @@ private fun CallHeaderCard(
     transcriptPercent: Int,
     onOpenTranscript: () -> Unit,
     onTranscribe: () -> Unit,
+    isFavourite: Boolean,
+    onToggleFavourite: () -> Unit,
     onDelete: () -> Unit
 ) {
     val accent = MaterialTheme.colorScheme.primary
@@ -314,6 +323,20 @@ private fun CallHeaderCard(
                         )
                     }
                 }
+            }
+
+            // Third from the right, so adding it left the two controls that were already here on the
+            // exact pixels people had learned. Explicitly tinted in both states: an un-tinted M3 icon
+            // resolves to CoralDeep in this scheme, which would read as an error rather than a star.
+            IconButton(onClick = onToggleFavourite, modifier = Modifier.size(ACTION_TARGET)) {
+                Icon(
+                    imageVector = if (isFavourite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                    contentDescription = stringResource(
+                        if (isFavourite) R.string.playback_unstar else R.string.playback_star
+                    ),
+                    tint = if (isFavourite) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
             }
 
             // The same one-slot control the list rows use — transcribe / in progress / read / retry

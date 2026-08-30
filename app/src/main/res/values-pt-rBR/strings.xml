@@ -575,4 +575,7 @@
     <string name="playback_tags_rename">Renomear</string>
     <string name="playback_tags_delete_everywhere">Excluir em todos</string>
     <string name="transcript_share_text">Texto</string>
+    <string name="playback_star">Marcar esta gravação</string>
+    <string name="playback_unstar">Remover marcação</string>
+    <string name="home_filter_favourites_chip">Marcadas</string>
 </resources>

@@ -572,4 +572,7 @@
     <string name="playback_tags_rename">Rinomina</string>
     <string name="playback_tags_delete_everywhere">Elimina ovunque</string>
     <string name="transcript_share_text">Testo</string>
+    <string name="playback_star">Aggiungi ai preferiti</string>
+    <string name="playback_unstar">Rimuovi dai preferiti</string>
+    <string name="home_filter_favourites_chip">Preferiti</string>
 </resources>

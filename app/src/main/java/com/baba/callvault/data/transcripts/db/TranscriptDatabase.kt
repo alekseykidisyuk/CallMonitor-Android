@@ -45,9 +45,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CallSummaryEntry::class,
         CallSummaryFts::class,
         SpeakerTurnsEntry::class,
-        RecordingTagEntry::class
+        RecordingTagEntry::class,
+        RecordingFavouriteEntry::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(TranscriptStateConverter::class)
@@ -62,6 +63,8 @@ abstract class TranscriptDatabase : RoomDatabase() {
     abstract fun speakerTurnsDao(): SpeakerTurnsDao
 
     abstract fun tagDao(): RecordingTagDao
+
+    abstract fun favouriteDao(): RecordingFavouriteDao
 
     companion object {
 
@@ -224,13 +227,32 @@ abstract class TranscriptDatabase : RoomDatabase() {
         }
 
         /**
+         * v6 → v7: starred recordings.
+         *
+         * Presence in the table is the state, so there is nothing to backfill — every existing
+         * recording is correctly unstarred by having no row. Hand-written like the rest, because this
+         * database has no destructive fallback and a star now carries a promise: a starred recording
+         * is exempt from the retention sweep and the storage cap, so losing this table would silently
+         * hand the sweeps recordings the user had protected.
+         */
+        internal val MIGRATION_6_7_SQL = listOf(
+            "CREATE TABLE IF NOT EXISTS `recording_favourites` (" +
+                "`displayName` TEXT NOT NULL, " +
+                "PRIMARY KEY(`displayName`))"
+        )
+
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) = MIGRATION_6_7_SQL.forEach(db::execSQL)
+        }
+
+        /**
          * Every migration, in one place, used by both [get] and the migration test.
          *
          * One list rather than two so a migration that is written but never registered cannot
          * happen — that mistake would look exactly like a correct build until an upgrading user
          * opened the app, and this database has no destructive fallback to catch them.
          */
-        internal val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+        internal val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 
         @Volatile
         private var INSTANCE: TranscriptDatabase? = null

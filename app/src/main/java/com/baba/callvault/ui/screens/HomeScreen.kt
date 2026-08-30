@@ -17,6 +17,8 @@ import androidx.compose.foundation.clickable
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Surface
 import com.baba.callvault.system.openWirelessDebugging
 import com.baba.callvault.data.recordings.DeleteScope
@@ -150,6 +152,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Groups
 import com.baba.callvault.R
 import com.baba.callvault.system.shareTranscriptFile
+import com.baba.callvault.data.transcripts.FavouriteRepository
 import com.baba.callvault.data.transcripts.TagRepository
 import com.baba.callvault.data.transcripts.export.TranscriptExportFile
 import com.baba.callvault.data.transcripts.export.TranscriptExport
@@ -383,6 +386,9 @@ fun HomeScreen(
             val knownTags by remember {
                 TagRepository.allTags(context)
             }.collectAsState(initial = emptyList())
+            val isFavourite by remember(displayName) {
+                FavouriteRepository.isFavourite(context, displayName)
+            }.collectAsState(initial = false)
 
             PlaybackScreen(
                 item = openItem,
@@ -397,6 +403,12 @@ fun HomeScreen(
                 onNoteChange = { text ->
                     transcriptScope.launch {
                         RecordingExtrasRepository.saveNote(context, displayName, text)
+                    }
+                },
+                isFavourite = isFavourite,
+                onToggleFavourite = {
+                    transcriptScope.launch {
+                        FavouriteRepository.toggle(context, displayName, isFavourite)
                     }
                 },
                 tags = tags,
@@ -624,6 +636,9 @@ fun HomeScreen(
                         tagFilter = uiState.tagFilter,
                         availableTags = uiState.availableTags,
                         onTagFilterChange = { viewModel.setTagFilter(it) },
+                        favouritesOnly = uiState.favouritesOnly,
+                        hasFavourites = uiState.favourites.isNotEmpty(),
+                        onFavouritesOnlyChange = { viewModel.setFavouritesOnly(it) },
                         onSourceFilterChange = { viewModel.setSourceFilter(it) },
                         onDirectionFilterChange = { viewModel.setDirectionFilter(it) },
                         onContactFilterChange = { viewModel.setContactFilter(it) },
@@ -1355,6 +1370,9 @@ private fun RecordingFilterBar(
     tagFilter: String?,
     availableTags: List<String>,
     onTagFilterChange: (String?) -> Unit,
+    favouritesOnly: Boolean,
+    hasFavourites: Boolean,
+    onFavouritesOnlyChange: (Boolean) -> Unit,
     onSourceFilterChange: (SourceFilter) -> Unit,
     onDirectionFilterChange: (DirectionFilter) -> Unit,
     onContactFilterChange: (String?) -> Unit,
@@ -1410,6 +1428,15 @@ private fun RecordingFilterBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // Only once something is starred. Before that the chip would be a control whose every use
+        // produces an empty list, sitting at the head of a row people read on every visit.
+        if (hasFavourites) {
+            ToggleFilterChip(
+                text = stringResource(R.string.home_filter_favourites_chip),
+                active = favouritesOnly,
+                onToggle = { onFavouritesOnlyChange(!favouritesOnly) }
+            )
+        }
         FilterChip(
             text = stringResource(R.string.home_filter_source_chip, sourceValueLabel),
             active = sourceFilter != SourceFilter.ALL,
@@ -1519,6 +1546,53 @@ private fun <T> FilterChip(
                 )
             }
         }
+    }
+}
+
+/**
+ * A filter chip for a facet with exactly two states, toggled by a single tap.
+ *
+ * Deliberately not a [FilterChip] with an "All / Starred only" dropdown: that is two taps and a menu
+ * to express a boolean. It carries the same fill, border and tint as an active [FilterChip] so the
+ * row still reads as one set of controls, and swaps the dropdown caret for the star itself.
+ */
+@Composable
+private fun ToggleFilterChip(
+    text: String,
+    active: Boolean,
+    onToggle: () -> Unit
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    val containerColor =
+        if (active) primary.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surfaceVariant
+    val contentColor =
+        if (active) primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor =
+        if (active) primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant
+
+    Row(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(containerColor)
+            .border(1.dp, borderColor, CircleShape)
+            .clickable(onClick = onToggle)
+            .padding(start = 10.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (active) Icons.Filled.Star else Icons.Filled.StarBorder,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

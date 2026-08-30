@@ -777,4 +777,7 @@
     <string name="playback_tags_rename">Rename</string>
     <string name="playback_tags_delete_everywhere">Delete everywhere</string>
     <string name="transcript_share_text">Text</string>
+    <string name="playback_star">Star this recording</string>
+    <string name="playback_unstar">Remove star</string>
+    <string name="home_filter_favourites_chip">Starred</string>
 </resources>

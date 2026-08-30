@@ -572,4 +572,7 @@
     <string name="playback_tags_rename">Átnevezés</string>
     <string name="playback_tags_delete_everywhere">Törlés mindenhonnan</string>
     <string name="transcript_share_text">Szöveg</string>
+    <string name="playback_star">Felvétel csillagozása</string>
+    <string name="playback_unstar">Csillag eltávolítása</string>
+    <string name="home_filter_favourites_chip">Csillagozott</string>
 </resources>

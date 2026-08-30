@@ -572,4 +572,7 @@
     <string name="playback_tags_rename">Renombrar</string>
     <string name="playback_tags_delete_everywhere">Eliminar en todas partes</string>
     <string name="transcript_share_text">Texto</string>
+    <string name="playback_star">Destacar esta grabación</string>
+    <string name="playback_unstar">Quitar de destacados</string>
+    <string name="home_filter_favourites_chip">Destacadas</string>
 </resources>

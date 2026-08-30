@@ -572,4 +572,7 @@
     <string name="playback_tags_rename">Umbenennen</string>
     <string name="playback_tags_delete_everywhere">Überall löschen</string>
     <string name="transcript_share_text">Text</string>
+    <string name="playback_star">Aufnahme markieren</string>
+    <string name="playback_unstar">Markierung entfernen</string>
+    <string name="home_filter_favourites_chip">Markiert</string>
 </resources>

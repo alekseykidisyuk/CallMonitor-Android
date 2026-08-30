@@ -44,7 +44,7 @@ class TranscriptMigrationInstrumentedTest {
     )
 
     @Test
-    fun migrates_v1_to_v6_without_losing_a_transcript() {
+    fun migrates_v1_to_v7_without_losing_a_transcript() {
         // A user who transcribed a call two versions ago and has not opened the app since.
         helper.createDatabase(DB_NAME, 1).use { db ->
             db.execSQL(
@@ -57,7 +57,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         // Room validated the schema on open, which is most of the point. The rest is the data.
         db.query("SELECT state, language FROM transcripts WHERE displayName = 'old-call.ogg'").use {
@@ -87,7 +87,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query("SELECT text FROM recording_notes WHERE displayName = 'call.ogg'").use {
             assertTrue("the user's note did not survive the upgrade", it.moveToFirst())
@@ -106,7 +106,7 @@ class TranscriptMigrationInstrumentedTest {
         // time this table is ever touched.
         helper.createDatabase(DB_NAME, 2).close()
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.execSQL(
             "INSERT INTO call_summaries (displayName, document, model, createdAt) " +
@@ -130,7 +130,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query("SELECT document FROM call_summaries WHERE displayName = 'call.ogg'").use {
             assertTrue("the summary did not survive the upgrade", it.moveToFirst())
@@ -144,7 +144,7 @@ class TranscriptMigrationInstrumentedTest {
         // table has to work the first time it is written to, which is the end of a real call.
         helper.createDatabase(DB_NAME, 3).close()
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.execSQL(
             "INSERT INTO speaker_turns (displayName, turns, outgoing, observedMap, updatedAt) " +
@@ -165,9 +165,9 @@ class TranscriptMigrationInstrumentedTest {
         // Migrations use CREATE TABLE IF NOT EXISTS, and this is what says so. An upgrade that ran
         // half-way and was interrupted comes back through the same path.
         helper.createDatabase(DB_NAME, 2).close()
-        helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS).close()
+        helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS).close()
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query("SELECT count(*) FROM call_summaries").use {
             assertTrue(it.moveToFirst())
@@ -188,7 +188,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query(
             "SELECT n.displayName FROM recording_notes AS n " +
@@ -205,7 +205,7 @@ class TranscriptMigrationInstrumentedTest {
         // The other half: the triggers themselves. A backfill that worked while the triggers were
         // missing would pass the test above and then never index anything again.
         helper.createDatabase(DB_NAME, 4).close()
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.execSQL(
             "INSERT INTO recording_notes (displayName, text, updatedAt) " +
@@ -234,7 +234,7 @@ class TranscriptMigrationInstrumentedTest {
             )
         }
 
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.query("SELECT document, searchText FROM call_summaries WHERE displayName = 'call.ogg'").use {
             assertTrue("the summary did not survive the upgrade", it.moveToFirst())
@@ -248,7 +248,7 @@ class TranscriptMigrationInstrumentedTest {
         // The composite primary key is the whole deduplication story: applying a tag twice has to be
         // a no-op, not a second row that shows the same chip twice on the same recording.
         helper.createDatabase(DB_NAME, 5).close()
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.execSQL("INSERT OR REPLACE INTO recording_tags (displayName, tag) VALUES ('a.ogg', 'the flat')")
         db.execSQL("INSERT OR REPLACE INTO recording_tags (displayName, tag) VALUES ('a.ogg', 'the flat')")
@@ -266,7 +266,7 @@ class TranscriptMigrationInstrumentedTest {
         // whole statement — leaving the rename half-applied across the library, which is worse than
         // not offering it at all.
         helper.createDatabase(DB_NAME, 5).close()
-        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true, *TranscriptDatabase.MIGRATIONS)
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true, *TranscriptDatabase.MIGRATIONS)
 
         db.execSQL("INSERT INTO recording_tags (displayName, tag) VALUES ('a.ogg', 'work')")
         db.execSQL("INSERT INTO recording_tags (displayName, tag) VALUES ('a.ogg', 'admin')")

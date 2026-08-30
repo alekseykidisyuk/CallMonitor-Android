@@ -16,6 +16,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.data.transcripts.FavouriteRepository
 import com.baba.callvault.data.transcripts.TagRepository
 import com.baba.callvault.data.PrivilegedMode
 import com.baba.callvault.data.health.CallGapDetector
@@ -153,6 +154,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val dateFilter: String? = null,
         /** The selected tag, or null for "all tags". */
         val tagFilter: String? = null,
+        /** True when the list is narrowed to starred recordings only. */
+        val favouritesOnly: Boolean = false,
+        /**
+         * The starred recordings, by display name.
+         *
+         * In the state for the same reason [tagsByRecording] is: it keeps [filteredRecordings] a
+         * pure function of state rather than something that has to await a query mid-draw.
+         */
+        val favourites: Set<String> = emptySet(),
         /**
          * Which tags each recording carries.
          *
@@ -233,7 +243,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     matchesDirection(item) &&
                     (contactFilter == null || contactKey(item) == contactFilter) &&
                     (dateFilter == null || RecordingsRepository.dayKey(item) == dateFilter) &&
-                    (tagFilter == null || tagsByRecording[item.displayName]?.contains(tagFilter) == true)
+                    (tagFilter == null || tagsByRecording[item.displayName]?.contains(tagFilter) == true) &&
+                    (!favouritesOnly || item.displayName in favourites)
             }
 
         private fun matchesSource(item: RecordingItem): Boolean = when (sourceFilter) {
@@ -286,6 +297,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         observeInstallWork()
         observePlaybackErrors()
         observeTags()
+        observeFavourites()
         preferences.registerChangeListener(prefsListener)
     }
 
@@ -318,6 +330,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         tagFilter = state.tagFilter?.takeIf { tag ->
                             assignments.values.any { tag in it }
                         }
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Keeps the starred set live, so a star applied on the playback screen reaches the Home filter
+     * without a reload — the same contract [observeTags] has.
+     */
+    private fun observeFavourites() {
+        viewModelScope.launch {
+            FavouriteRepository.all(appContext).collect { names ->
+                _uiState.update { state ->
+                    state.copy(
+                        favourites = names.toSet(),
+                        // Unstarring the last one must also drop the filter. Otherwise the list sits
+                        // empty with a chip selected that no longer has anything behind it.
+                        favouritesOnly = state.favouritesOnly && names.isNotEmpty()
                     )
                 }
             }
@@ -572,6 +603,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /** Selects a tag to filter to, or null for "all tags". */
     fun setTagFilter(tag: String?) {
         _uiState.update { it.copy(tagFilter = tag) }
+    }
+
+    /** Narrows the list to starred recordings, or back to all of them. */
+    fun setFavouritesOnly(on: Boolean) {
+        _uiState.update { it.copy(favouritesOnly = on) }
     }
 
     /** Selects a specific contact key to filter to, or null for "all contacts". */
