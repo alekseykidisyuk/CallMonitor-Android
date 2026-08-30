@@ -593,4 +593,7 @@
     <string name="notif_health_recorder_text_shizuku">Połączenia nie będą nagrywane, dopóki Shizuku znów nie działa. Restart je zatrzymuje, więc po ponownym uruchomieniu telefonu trzeba je raz włączyć.</string>
     <string name="settings_offline_recording_reboot_note">Po ponownym uruchomieniu przestaje to działać, dopóki telefon raz nie połączy się z siecią Wi-Fi. Wystarczy dowolna sieć i nie trzeba internetu — kilka sekund wystarczy. CallVault powiadomi, gdy będzie to potrzebne.</string>
     <string name="general_stop">Zatrzymaj</string>
+    <string name="settings_metadata_file_label">Zapisuj plik ze szczegółami</string>
+    <string name="settings_metadata_file_desc">Zapisuj mały plik .json obok każdego nagrania</string>
+    <string name="settings_metadata_file_hint">Używa tego samego formatu co BCR, więc aplikacje stworzone dla niego — np. bcr-gui — mogą odczytać szczegóły nagrań. Warto włączyć tylko, jeśli takiej używasz.</string>
 </resources>

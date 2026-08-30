@@ -596,4 +596,7 @@
     <string name="notif_health_recorder_text_shizuku">As chamadas não serão gravadas até o Shizuku voltar a rodar. Reiniciar o desliga, então ele precisa ser iniciado uma vez depois que o telefone reinicia.</string>
     <string name="settings_offline_recording_reboot_note">Depois de reiniciar, isso para de funcionar até o telefone entrar uma vez em uma rede Wi-Fi. Qualquer rede serve e não precisa de internet — alguns segundos bastam. O CallVault avisa quando for necessário.</string>
     <string name="general_stop">Parar</string>
+    <string name="settings_metadata_file_label">Gravar um arquivo de detalhes</string>
+    <string name="settings_metadata_file_desc">Salvar um pequeno .json ao lado de cada gravação</string>
+    <string name="settings_metadata_file_hint">Usa o mesmo formato do BCR, para que apps feitos para ele — como o bcr-gui — consigam ler os detalhes das suas gravações. Só vale a pena se você usa algum.</string>
 </resources>

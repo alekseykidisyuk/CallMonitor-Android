@@ -733,6 +733,18 @@ private fun StorageSection(
 
         SettingsDivider()
 
+        // Beside the destination rather than with the deletion settings: this is about what lands in
+        // the folder, not about what is removed from it.
+        SettingsToggleRow(
+            label = stringResource(R.string.settings_metadata_file_label),
+            description = stringResource(R.string.settings_metadata_file_desc),
+            checked = remember(updateTrigger) { preferences.isWriteMetadataFileEnabled() },
+            onCheckedChange = { actions.setWriteMetadataFileEnabled(it) }
+        )
+        SettingsHint(stringResource(R.string.settings_metadata_file_hint))
+
+        SettingsDivider()
+
         NavigationRow(
             icon = Icons.Filled.Folder,
             label = stringResource(R.string.settings_recording_folder_label),
@@ -2727,6 +2739,7 @@ private fun SettingsScreenPreview() {
             override fun setDriveFolderUri(uri: android.net.Uri?) {}
             override fun setRetentionLinked(linked: Boolean) {}
             override fun setMinDurationSeconds(seconds: Int) {}
+            override fun setWriteMetadataFileEnabled(enabled: Boolean) {}
             override fun setStorageCapBytes(bytes: Long) {}
             override fun setRetentionLocalDays(days: Int) {}
             override fun setRetentionDriveDays(days: Int) {}

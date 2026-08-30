@@ -157,6 +157,10 @@ class AppPreferences(context: Context) {
         const val RETENTION_LINKED = true
         // Off. A default that discarded would silently start deleting recordings for everyone who
         // upgrades, and the calls it would take are exactly the ones nobody would notice going.
+        // Off. It puts a second file in the user's folder for every call — a visible change to
+        // something they look at — and it only earns its keep for someone using a tool that reads it.
+        const val WRITE_METADATA_FILE = false
+
         const val MIN_DURATION_SECONDS = 0
 
         // No cap. Like the retention period beside it, a shipped default that deleted would take
@@ -261,6 +265,7 @@ class AppPreferences(context: Context) {
 
         // --- Retention ---
         RETENTION_LINKED("retention_linked"),
+        WRITE_METADATA_FILE("write_metadata_file"),
         MIN_DURATION_SECONDS("min_duration_seconds"),
         STORAGE_CAP_BYTES("storage_cap_bytes"),
         RETENTION_LOCAL_DAYS("retention_local_days"),
@@ -944,6 +949,12 @@ class AppPreferences(context: Context) {
 
     /** Sets whether device & Drive share one retention period. */
     fun setRetentionLinked(linked: Boolean) = setBoolean(Key.RETENTION_LINKED, linked)
+
+    /** Whether to write a BCR-compatible `.json` details file beside each recording. */
+    fun isWriteMetadataFileEnabled() = getBoolean(Key.WRITE_METADATA_FILE, DefaultsValue.WRITE_METADATA_FILE)
+
+    /** Sets whether a `.json` details file is written beside each recording. */
+    fun setWriteMetadataFileEnabled(enabled: Boolean) = setBoolean(Key.WRITE_METADATA_FILE, enabled)
 
     /** Discard finished recordings shorter than this many seconds (0 = keep every recording). */
     fun getMinDurationSeconds() = getInt(Key.MIN_DURATION_SECONDS, DefaultsValue.MIN_DURATION_SECONDS)

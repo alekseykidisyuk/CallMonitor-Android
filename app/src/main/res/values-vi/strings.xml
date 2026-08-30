@@ -593,4 +593,7 @@
     <string name="notif_health_recorder_text_shizuku">Cuộc gọi sẽ không được ghi cho đến khi Shizuku chạy lại. Khởi động lại máy sẽ tắt nó, nên cần bật lại một lần sau mỗi lần khởi động.</string>
     <string name="settings_offline_recording_reboot_note">Sau khi khởi động lại, tính năng này ngừng hoạt động cho đến khi điện thoại kết nối một lần vào mạng Wi-Fi. Mạng nào cũng được và không cần internet — vài giây là đủ. CallVault sẽ báo cho bạn khi cần.</string>
     <string name="general_stop">Dừng</string>
+    <string name="settings_metadata_file_label">Ghi tệp chi tiết</string>
+    <string name="settings_metadata_file_desc">Lưu một tệp .json nhỏ bên cạnh mỗi bản ghi</string>
+    <string name="settings_metadata_file_hint">Dùng cùng định dạng với BCR, nên các ứng dụng làm cho nó — như bcr-gui — có thể đọc chi tiết bản ghi của bạn. Chỉ nên bật nếu bạn dùng một trong số đó.</string>
 </resources>

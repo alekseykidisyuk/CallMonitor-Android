@@ -593,4 +593,7 @@
     <string name="notif_health_recorder_text_shizuku">在 Shizuku 重新运行之前，通话不会被录制。重启会停止它，因此手机重启后需要再启动一次。</string>
     <string name="settings_offline_recording_reboot_note">重启后，此功能会停止工作，直到手机连接一次 Wi-Fi 网络。任何网络都可以，也不需要联网——几秒钟即可。需要时 CallVault 会提醒你。</string>
     <string name="general_stop">停止</string>
+    <string name="settings_metadata_file_label">写入详情文件</string>
+    <string name="settings_metadata_file_desc">在每个录音旁保存一个小的 .json 文件</string>
+    <string name="settings_metadata_file_hint">使用与 BCR 相同的格式，因此为其开发的应用（例如 bcr-gui）可以读取你的录音详情。只有在使用这类应用时才值得开启。</string>
 </resources>

@@ -34,6 +34,8 @@ import kotlinx.coroutines.launch
 import com.baba.callvault.utils.AppLogger
 import com.baba.callvault.transcription.AudioDecoder
 import com.baba.callvault.system.storage.MinDurationPolicy
+import com.baba.callvault.system.interop.MetadataSidecar
+import com.baba.callvault.data.recordings.RecordingsRepository
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -266,6 +268,24 @@ object VoipRecordingCoordinator {
                         }
                     }
                     RecordingCatalog.recordLocal(context, name, safUri, size, System.currentTimeMillis())
+                    // Same details file as the carrier path, derived the same way from the same
+                    // final name. `direction` comes out null here and that is correct rather than
+                    // lazy: an app call has no reliable direction, and BCR's format already has a
+                    // null for a field that cannot be determined.
+                    run {
+                        val parsed = RecordingsRepository.parseName(name)
+                        MetadataSidecar.writeIfEnabled(
+                            context = context,
+                            folderUri = AppPreferences(context).getRecordingFolderUri(),
+                            audioName = name,
+                            timestampUnixMs = parsed.startedAtMillis ?: System.currentTimeMillis(),
+                            packageName = null,
+                            direction = null,
+                            phoneNumber = parsed.number,
+                            contactName = parsed.contactName,
+                            durationSecsEncoded = null
+                        )
+                    }
                     // Collect the speaker turns the capture just measured, before transcription is
                     // queued — the runner reads them from the database when it labels segments, so
                     // arriving afterwards would mean an unlabelled transcript.

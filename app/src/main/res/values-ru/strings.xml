@@ -593,4 +593,7 @@
     <string name="notif_health_recorder_text_shizuku">Звонки не будут записываться, пока снова не заработает Shizuku. Перезагрузка останавливает его, поэтому после перезапуска телефона его нужно один раз запустить.</string>
     <string name="settings_offline_recording_reboot_note">После перезагрузки это перестаёт работать, пока телефон один раз не подключится к сети Wi-Fi. Подойдёт любая сеть, интернет не нужен — хватит нескольких секунд. CallVault сообщит, когда это понадобится.</string>
     <string name="general_stop">Остановить</string>
+    <string name="settings_metadata_file_label">Записывать файл сведений</string>
+    <string name="settings_metadata_file_desc">Сохранять небольшой .json рядом с каждой записью</string>
+    <string name="settings_metadata_file_hint">Использует тот же формат, что и BCR, поэтому приложения для него — например bcr-gui — смогут читать сведения о ваших записях. Включать стоит, только если вы таким пользуетесь.</string>
 </resources>

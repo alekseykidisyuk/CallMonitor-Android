@@ -593,4 +593,7 @@
     <string name="notif_health_recorder_text_shizuku">Addig nem lesz hívásrögzítés, amíg a Shizuku újra nem fut. Az újraindítás leállítja, ezért a telefon újraindulása után egyszer el kell indítani.</string>
     <string name="settings_offline_recording_reboot_note">Újraindítás után ez addig nem működik, amíg a telefon egyszer nem csatlakozik egy Wi-Fi hálózathoz. Bármelyik hálózat megfelel, és internet sem kell — néhány másodperc elég. A CallVault szólni fog, amikor szükség van rá.</string>
     <string name="general_stop">Leállítás</string>
+    <string name="settings_metadata_file_label">Adatfájl írása</string>
+    <string name="settings_metadata_file_desc">Kis .json mentése minden felvétel mellé</string>
+    <string name="settings_metadata_file_hint">Ugyanazt a formátumot használja, mint a BCR, így az arra épülő alkalmazások — például a bcr-gui — el tudják olvasni a felvételek adatait. Csak akkor érdemes bekapcsolni, ha használ ilyet.</string>
 </resources>

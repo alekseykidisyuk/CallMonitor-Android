@@ -593,4 +593,7 @@
     <string name="notif_health_recorder_text_shizuku">Anrufe werden erst wieder aufgezeichnet, wenn Shizuku läuft. Ein Neustart beendet es, es muss also nach jedem Neustart einmal gestartet werden.</string>
     <string name="settings_offline_recording_reboot_note">Nach einem Neustart funktioniert dies erst wieder, wenn sich das Telefon einmal mit einem WLAN verbindet. Jedes Netz genügt, Internet ist nicht nötig — ein paar Sekunden reichen. CallVault sagt Ihnen Bescheid, wenn es so weit ist.</string>
     <string name="general_stop">Stopp</string>
+    <string name="settings_metadata_file_label">Detaildatei schreiben</string>
+    <string name="settings_metadata_file_desc">Kleine .json-Datei neben jeder Aufnahme speichern</string>
+    <string name="settings_metadata_file_hint">Verwendet dasselbe Format wie BCR, damit dafür gebaute Apps — etwa bcr-gui — die Details Ihrer Aufnahmen lesen können. Nur sinnvoll, wenn Sie so eine App nutzen.</string>
 </resources>

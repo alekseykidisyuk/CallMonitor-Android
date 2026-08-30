@@ -72,6 +72,8 @@ interface SettingsActions {
     fun setRetentionLinked(linked: Boolean)
     fun setMinDurationSeconds(seconds: Int)
 
+    fun setWriteMetadataFileEnabled(enabled: Boolean)
+
     fun setStorageCapBytes(bytes: Long)
 
     fun setRetentionLocalDays(days: Int)
@@ -339,6 +341,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Saves whether device & Drive share one retention period. */
     override fun setRetentionLinked(linked: Boolean) {
         preferences.setRetentionLinked(linked)
+        refresh()
+    }
+
+    /** Saves whether a BCR-compatible details file is written beside each recording. */
+    override fun setWriteMetadataFileEnabled(enabled: Boolean) {
+        preferences.setWriteMetadataFileEnabled(enabled)
         refresh()
     }
 

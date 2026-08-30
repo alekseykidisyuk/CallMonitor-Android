@@ -42,6 +42,8 @@ import com.baba.callvault.utils.PhoneNumberManager
 import com.baba.callvault.utils.RecordingFileNameFormatter
 import com.baba.callvault.transcription.AudioDecoder
 import com.baba.callvault.system.storage.MinDurationPolicy
+import com.baba.callvault.system.interop.MetadataSidecar
+import com.baba.callvault.data.recordings.RecordingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -517,6 +519,31 @@ class RecordingForegroundService : Service() {
     }
 
     /**
+     * Writes the BCR-compatible details file beside a finished carrier recording.
+     *
+     * Everything it reports is read back out of the final file name rather than carried down from
+     * the call, so the two capture paths derive it identically and neither can drift from the other.
+     */
+    private fun writeMetadataSidecar(name: String, lastModified: Long, packageName: String) {
+        val parsed = RecordingsRepository.parseName(name)
+        MetadataSidecar.writeIfEnabled(
+            context = applicationContext,
+            folderUri = AppPreferences(applicationContext).getRecordingFolderUri(),
+            audioName = name,
+            timestampUnixMs = parsed.startedAtMillis ?: lastModified,
+            packageName = packageName,
+            direction = when (parsed.direction) {
+                RecordingDirection.INCOMING -> "in"
+                RecordingDirection.OUTGOING -> "out"
+                else -> null
+            },
+            phoneNumber = parsed.number,
+            contactName = parsed.contactName,
+            durationSecsEncoded = null
+        )
+    }
+
+    /**
      * Routes the final (post-rename) recording file to the configured storage destination via [StorageRouter].
      * Resolves the display name from the DocumentFile; if the DocumentFile cannot be resolved the call is a no-op.
      *
@@ -589,6 +616,10 @@ class RecordingForegroundService : Service() {
         // CallLog fallback above). Written for every storage target, regardless of where the file lands.
         CoroutineScope(Dispatchers.IO).launch {
             RecordingCatalog.recordLocal(applicationContext, name, uri, sizeBytes, lastModified)
+            // The BCR-compatible details file, when the user asked for one. Driven off the FINAL
+            // name, after any call-log rename: a sidecar written against the pre-rename name would
+            // sit beside nothing and be invisible to every tool that looks for it.
+            writeMetadataSidecar(name, lastModified, "com.android.phone")
             // Before transcription is queued, never after: a transcript labels its segments from
             // these turns, so they have to be on disk by the time whisper starts writing.
             //
