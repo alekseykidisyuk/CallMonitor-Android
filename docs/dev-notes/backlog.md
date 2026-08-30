@@ -34,7 +34,7 @@ to 1.6.0 — stale, written before the version scheme moved). 20100 clears the 1
 
 The maintainer is running this build daily for a few days before cutting the release.
 
-### 🧪 Favourites, min-duration discard, storage cap — built 2026-08-30
+### ✅ Favourites, min-duration discard, storage cap — VERIFIED 2026-08-30
 
 Three of the four things the D6 row bundled. `19a018d`, `ce9fee8`, `1afaecc`.
 
@@ -59,9 +59,14 @@ too. **Any future reason to sweep must be added to both.**
 D list is D1 (live level meter), D2 (record private, publish complete), D5 (notification actions),
 D7 (BCR sidecar JSON), D9 (per-app VoIP whitelist + lock-screen ask) and D10 (warn sync stopped).
 
-**Needs on-device confirmation before any of it is VERIFIED:** star toggles and survives a reopen;
-the Starred chip filters; a short call is actually discarded; a cap sweep deletes oldest-first and
-skips a starred recording. 1027 unit tests pass, which settles none of that.
+**Confirmed on the OP12 by the maintainer, 2026-08-30**: the star, the Starred filter chip and both
+new Settings rows all work. Installed as release 2.1.2 over 2.1.2; the v6 → v7 migration applied
+cleanly on a real database.
+
+**Still proven only by unit test**, because no real event has exercised them yet: that a genuinely
+short call is discarded, and that a cap sweep deletes oldest-first while skipping a starred
+recording. Neither needs chasing — they will settle themselves in ordinary use — but do not write
+either into the README as a measured result until one has actually fired.
 
 ### 🅿️ Trash / recycle bin — built 2026-08-29, then REVERTED and PARKED
 
