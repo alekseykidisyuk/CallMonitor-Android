@@ -112,6 +112,32 @@ from the capture channels and are genuinely mode-dependent.
 **Published but NOT yet device-verified**, so worth pulling if any of it proves wrong: R23, R26,
 R29. Each is a visible setting or a warning the user can check; none was invented.
 
+## Folded into the README — 2026-08-30, second pass: the ColorOS setup wall
+
+**R31 — OPPO, OnePlus and Realme phones need one Developer-options switch before CallVault can work
+at all.** Published as a new `### On OPPO, OnePlus and Realme phones` subsection under *Install*,
+plus a pointer from the Requirements callout. Deliberately published **ahead of any code fix**, at
+the maintainer's instruction, because a user hitting this today has no way to know what is wrong.
+
+What the README now says, and why each part is there:
+
+- **It affects Shizuku mode too.** Verified: the block is on the shell uid, and Shizuku *is* shell.
+  Omitting this would send OPPO users to Shizuku as a workaround that cannot work.
+- **Both names for the switch** — *Disable system optimization* (current) and *Disable permission
+  monitoring* (older builds). Searching for the wrong one finds nothing.
+- **The switch on our own OP9 Pro is confirmed working** (2026-08-24, and re-measured 2026-08-30:
+  with it on, `appops set`, `pm grant` and `WRITE_SECURE_SETTINGS` all succeed).
+- **The English-language trap** — the item is hidden in some translations. This is 🧪 field-reported
+  from `RikkaApps/Shizuku` #374 and #2149, **not** reproduced by us; two independent reporters,
+  including one whose "ColorOS 16.0.7 removed it" bug closed when they found it in English. Published
+  because the cost of a wrong instruction here is a user switching their language back and forth for
+  nothing, while the cost of silence is a user concluding the app is broken.
+
+**Not published, on purpose:** the underlying property (`persist.sys.permission.enable`). It is an
+implementation detail, its polarity is inferred rather than proven, and it is unwritable from shell —
+so telling a user about it offers them nothing they can act on. See the memory
+`coloros-toggle-renamed-and-hidden` for the measurements.
+
 ## Blocked on verification — do not write these into the README yet
 
 | # | Change | Why it is held |

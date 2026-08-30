@@ -84,6 +84,8 @@ CallVault reaches the network in three places, and nowhere else: **GitHub**, to 
 
 > [!IMPORTANT]
 > CallVault leans on hidden Android APIs, so behaviour varies by OEM and can break on a new Android release. On phones that aggressively kill background apps (OxygenOS, MIUI, One UI), allow it in Auto-launch and exclude it from battery optimisation — see [dontkillmyapp.com](https://dontkillmyapp.com/).
+>
+> **On OPPO, OnePlus and Realme phones there is one extra switch to flip before anything works** — see [below](#on-oppo-oneplus-and-realme-phones).
 
 ## Two ways to run it
 
@@ -127,6 +129,20 @@ If a recording stops when you lock the screen, set **Default USB configuration**
 
 > [!WARNING]
 > Keep the pairing: uninstalling CallVault wipes it and there is no way to restore it — you pair again from scratch.
+
+### On OPPO, OnePlus and Realme phones
+
+ColorOS, OxygenOS and Realme UI refuse ADB permission grants out of the box. CallVault pairs, and then the privilege it needs is quietly denied — so recordings never start. **This affects Shizuku mode too**; Shizuku reports it as *"the permission of adb is limited"*.
+
+One switch fixes it, and it is not in an obvious place:
+
+1. Open *Settings → System → Developer options*.
+2. Scroll to the **bottom of the Apps section** — it is the last item there.
+3. Turn on **Disable system optimization**. Older builds call it **Disable permission monitoring**.
+
+**Can't see it?** It is hidden in some translations, which is why people conclude their update removed it. Set the phone's language to **English**, turn the switch on, then set the language back — it stays on.
+
+Flip it *before* pairing. If you already paired, restart CallVault afterwards: a session that started earlier keeps the permissions it had at the time.
 
 ## What's next
 
