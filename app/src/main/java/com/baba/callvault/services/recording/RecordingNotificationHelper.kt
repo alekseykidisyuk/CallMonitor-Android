@@ -27,6 +27,9 @@ import androidx.core.app.NotificationCompat
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 
+/** One button on the ongoing recording notification. */
+private data class NotificationAction(val icon: Int, val text: String, val intentAction: String)
+
 class RecordingNotificationHelper(private val context: Context) {
 
     companion object {
@@ -89,9 +92,10 @@ class RecordingNotificationHelper(private val context: Context) {
     fun getNotification(state: RecordingServiceState): Notification {
         val titleRes: Int
         val contentRes: Int
-        val actionIcon: Int?
-        val actionText: String?
-        val actionIntentAction: String?
+        // A list, not one slot. The notification is the only control surface during a call — the
+        // screen is against the user's ear — and it offered exactly one button while the service had
+        // supported ACTION_STOP_RECORDING all along, unreachable.
+        val actions = mutableListOf<NotificationAction>()
         // Show the cross-country tip only when the call is actually detected as cross-country.
         // (Previously it also showed when metadata was merely unknown/not-yet-enriched, which made
         // local calls briefly appear "cross-country" early in the call.)
@@ -101,31 +105,42 @@ class RecordingNotificationHelper(private val context: Context) {
             is RecordingServiceState.Starting -> {
                 titleRes = R.string.recording_standby_notification_title
                 contentRes = R.string.recording_notification_waiting
-                actionIcon = null
-                actionText = null
-                actionIntentAction = null
             }
             is RecordingServiceState.Active -> {
                 if (state.isPaused) {
                     titleRes = R.string.recording_standby_notification_title
                     contentRes = R.string.recording_notification_press_to_resume
-                    actionIcon = R.drawable.ic_stop
-                    actionText = context.getString(R.string.general_resume)
-                    actionIntentAction = RecordingForegroundService.ACTION_RESUME_RECORDING
+                    actions += NotificationAction(
+                        R.drawable.ic_mic,
+                        context.getString(R.string.general_resume),
+                        RecordingForegroundService.ACTION_RESUME_RECORDING
+                    )
                 } else {
                     titleRes = R.string.recording_notification_title
                     contentRes = R.string.recording_notification_press_to_pause
-                    actionIcon = R.drawable.ic_mic
-                    actionText = context.getString(R.string.general_pause)
-                    actionIntentAction = RecordingForegroundService.ACTION_PAUSE_RECORDING
+                    actions += NotificationAction(
+                        R.drawable.ic_mic,
+                        context.getString(R.string.general_pause),
+                        RecordingForegroundService.ACTION_PAUSE_RECORDING
+                    )
                 }
+                // Second, never first. Ending the recording is the one action here that cannot be
+                // undone, and putting it where Pause used to sit would have people stopping calls
+                // with the muscle memory they built for pausing them.
+                actions += NotificationAction(
+                    R.drawable.ic_stop,
+                    context.getString(R.string.general_stop),
+                    RecordingForegroundService.ACTION_STOP_RECORDING
+                )
             }
             else -> {
                 titleRes = R.string.recording_standby_notification_title
                 contentRes = R.string.recording_notification_press_to_start
-                actionIcon = R.drawable.ic_mic
-                actionText = context.getString(R.string.general_record)
-                actionIntentAction = RecordingForegroundService.ACTION_MANUAL_START
+                actions += NotificationAction(
+                    R.drawable.ic_mic,
+                    context.getString(R.string.general_record),
+                    RecordingForegroundService.ACTION_MANUAL_START
+                )
             }
         }
 
@@ -153,15 +168,19 @@ class RecordingNotificationHelper(private val context: Context) {
             .setSilent(state is RecordingServiceState.Active || state is RecordingServiceState.Starting) // Don't do a screen-incursion if we are already recording.
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
 
-        if (actionText != null && actionIntentAction != null && actionIcon != null) {
+        actions.forEach { notifAction ->
+            // A request code derived from the action itself, NOT a shared constant. With
+            // FLAG_UPDATE_CURRENT two actions on the same code are the same PendingIntent: the
+            // second registration rewrites the first, and both buttons then fire whichever intent
+            // won. Stop and Pause sharing a code would mean tapping Pause could end the recording.
             val actionPendingIntent = PendingIntent.getService(
-                context, 1,
+                context, notifAction.intentAction.hashCode(),
                 Intent(context, RecordingForegroundService::class.java).apply {
-                    action = actionIntentAction
+                    action = notifAction.intentAction
                 },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            builder.addAction(actionIcon, actionText, actionPendingIntent)
+            builder.addAction(notifAction.icon, notifAction.text, actionPendingIntent)
         }
 
         return builder.build()

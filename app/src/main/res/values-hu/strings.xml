@@ -592,4 +592,5 @@
     <string name="notif_health_sync_text">A Google Drive-ba másolás egy ideje leállt. Semmi nem veszett el — a felvételek még a telefonon vannak —, de nincs róluk biztonsági másolat. Nyissa meg a CallVaultot, és ellenőrizze a tárolási beállításokat.</string>
     <string name="notif_health_recorder_text_shizuku">Addig nem lesz hívásrögzítés, amíg a Shizuku újra nem fut. Az újraindítás leállítja, ezért a telefon újraindulása után egyszer el kell indítani.</string>
     <string name="settings_offline_recording_reboot_note">Újraindítás után ez addig nem működik, amíg a telefon egyszer nem csatlakozik egy Wi-Fi hálózathoz. Bármelyik hálózat megfelel, és internet sem kell — néhány másodperc elég. A CallVault szólni fog, amikor szükség van rá.</string>
+    <string name="general_stop">Leállítás</string>
 </resources>

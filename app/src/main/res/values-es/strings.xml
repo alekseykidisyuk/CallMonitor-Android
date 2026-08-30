@@ -592,4 +592,5 @@
     <string name="notif_health_sync_text">La copia a Google Drive se detuvo hace tiempo. No se ha perdido nada: las grabaciones siguen en este teléfono, pero no tienen copia de seguridad. Abre CallVault y revisa los ajustes de almacenamiento.</string>
     <string name="notif_health_recorder_text_shizuku">No se grabarán llamadas hasta que Shizuku vuelva a estar en marcha. Un reinicio lo detiene, así que hay que iniciarlo una vez tras reiniciar el teléfono.</string>
     <string name="settings_offline_recording_reboot_note">Tras reiniciar, esto deja de funcionar hasta que el teléfono se conecte una vez a una red Wi-Fi. Sirve cualquier red y no necesita internet: bastan unos segundos. CallVault te avisará cuando haga falta.</string>
+    <string name="general_stop">Detener</string>
 </resources>

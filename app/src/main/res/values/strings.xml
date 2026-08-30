@@ -797,4 +797,5 @@
     <string name="notif_health_sync_text">Copying to Google Drive stopped some time ago. Nothing is lost — the recordings are still on this phone — but they are not backed up. Open CallVault to check your storage settings.</string>
     <string name="notif_health_recorder_text_shizuku">Calls will not be recorded until Shizuku is running again. A reboot stops it, so it has to be started once after the phone restarts.</string>
     <string name="settings_offline_recording_reboot_note">After a restart this stops working until the phone joins a Wi-Fi network once. Any network will do and it does not need internet — a few seconds is enough. CallVault will tell you when that is needed.</string>
+    <string name="general_stop">Stop</string>
 </resources>
