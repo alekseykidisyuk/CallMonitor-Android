@@ -34,6 +34,35 @@ to 1.6.0 — stale, written before the version scheme moved). 20100 clears the 1
 
 The maintainer is running this build daily for a few days before cutting the release.
 
+### 🧪 Favourites, min-duration discard, storage cap — built 2026-08-30
+
+Three of the four things the D6 row bundled. `19a018d`, `ce9fee8`, `1afaecc`.
+
+**Favourites.** A star on the playback header and a one-tap "Starred" chip on Home that only appears
+once something is starred. Its own table at `transcripts.db` v7 — deliberately NOT a tag, because a
+tag can be renamed or deleted by the user and this row now carries a promise.
+
+**Discard short recordings** (off by default). Applied on both capture paths through one shared
+policy object, before the catalog, the transcription queue and StorageRouter. Refuses to delete on a
+duration of 0 — that is the extractor failing to parse the container, not an instantaneous call.
+
+**Storage cap** (off by default). Oldest device copies first, stops the moment it is under, and a
+starred recording is **never** taken even when that means the cap cannot be met. Device copies only.
+
+🚨 **The bug this nearly shipped with, recorded so it is not reintroduced:** both `RetentionScheduler`
+and `RetentionSweepWorker` treated "no age period" as "nothing to sweep for". That was true until the
+cap existed. A cap set on a phone with no age period would have had its daily job cancelled out from
+under it and would never have run once, while Settings showed it enabled. Both gates now test the cap
+too. **Any future reason to sweep must be added to both.**
+
+**What is NOT done from that row:** nothing else — D6 is now complete. What remains unbuilt from the
+D list is D1 (live level meter), D2 (record private, publish complete), D5 (notification actions),
+D7 (BCR sidecar JSON), D9 (per-app VoIP whitelist + lock-screen ask) and D10 (warn sync stopped).
+
+**Needs on-device confirmation before any of it is VERIFIED:** star toggles and survives a reopen;
+the Starred chip filters; a short call is actually discarded; a cap sweep deletes oldest-first and
+skips a starred recording. 1027 unit tests pass, which settles none of that.
+
 ### 🅿️ Trash / recycle bin — built 2026-08-29, then REVERTED and PARKED
 
 Built end to end and reverted the same day. The maintainer's verdict was that it was more machinery

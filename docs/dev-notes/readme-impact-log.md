@@ -39,6 +39,12 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | R12 | **CallVault says when a recording contains no audio.** | Safe to state, but state it *narrowly*: it catches a file with no audio samples, **not** a full-length recording of silence. An over-broad claim here would manufacture exactly the false confidence the fix exists to remove. | ✅ VERIFIED 2026-08-27 |
 
+| R20 | **A recording can be starred**, and Home has a "Starred" filter chip that appears once anything is. | Small feature, but it is load-bearing for R21 and R22: a starred recording is exempt from both automatic deletes. If the README describes either of those, it must say the star is the escape hatch. | 🧪 VERIFYING — built and unit-tested 2026-08-30; needs a tap on the device |
+
+| R21 | **Recordings shorter than a chosen length can be discarded automatically** (off by default). | Safe to describe once confirmed, but state the default plainly: it deletes nothing unless the user turns it on. Applies to carrier and app calls alike. | 🧪 VERIFYING — built and unit-tested 2026-08-30; needs a short real call |
+
+| R22 | **A size cap on how much of the phone recordings may fill** (off by default), oldest deleted first, starred never taken, Drive copies untouched. | Three qualifications the README must not drop: off by default, device-only, and starred recordings are never deleted even if the cap cannot be met. Any of them omitted turns an opt-in tidy-up into an unexpected data-loss claim. | 🧪 VERIFYING — built and unit-tested 2026-08-30; needs a real sweep on device |
+
 ## Blocked on verification — do not write these into the README yet
 
 | # | Change | Why it is held |
