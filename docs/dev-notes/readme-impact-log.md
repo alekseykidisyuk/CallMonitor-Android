@@ -61,10 +61,40 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | R30 | **An app call interrupted by a phone call stays ONE recording.** The app-call capture is held open across the phone call and continues into the same file. | Worth stating plainly — it is the kind of detail that separates a call recorder that has been used from one that has been written. State the limit honestly too: the held stretch is absent from the file rather than recorded, because the microphone genuinely has to be released for the phone call's own recording to be correct. | 🧪 VERIFYING — built and the state machine unit-tested 2026-08-30; needs a real switched call, listened to |
 
+## Folded into the README — 2026-08-30
+
+The artifact was updated on 2026-08-30 (`30a4b18b`). Folded in: **R5** (Bluetooth), **R9**
+(self-hosted sync), **R14** (search covers summaries and notes), **R15** (export), **R16** (app
+lock), **R17** (tags) plus **R20** (stars), **R21**/**R22** (housekeeping: age, size cap, minimum
+length), **R19**+**R24** (the off-Wi-Fi reboot limit, in the corrected "any network, no internet"
+wording), **R23** (says when it has stopped working), **R25**/**R27**/**R28** (in-call controls and
+marking a moment), **R26** (BCR metadata file), **R29** (per-app choice).
+
+**Two corrections made in the same pass:**
+
+- The README said *"Calls over 15 minutes can't be transcribed yet."* The shipped code has
+  `TranscriptionLengthLimit.MAX_MINUTES = 60`, so that understated the app fourfold. Replaced with a
+  non-numeric sentence — the 60-minute figure itself stays held under R11/R13, so no number is
+  published in either direction.
+- An earlier session's note that D2 ("record private, publish complete") was unimplemented was
+  **wrong**. `SafHelper.createAudioFile` is explicit: *"ALWAYS staged, and the destination file is
+  NOT created yet."* R9 was right all along; the doc was not.
+
+**Shizuku was promoted.** It had appeared only as a column of ❌ in a comparison, which read as a
+lesser fallback. It is now a named mode under "Two ways to run it", with the table relabelled
+*Built-in mode / Shizuku mode*. A claim that speaker labels "work the same" in Shizuku mode was
+caught and removed before publishing — the table says ❌ for that row, because speaker labels come
+from the capture channels and are genuinely mode-dependent.
+
+**Published but NOT yet device-verified**, so worth pulling if any of it proves wrong: R23, R26,
+R29. Each is a visible setting or a warning the user can check; none was invented.
+
 ## Blocked on verification — do not write these into the README yet
 
 | # | Change | Why it is held |
 |---|---|---|
+| R30 | **An app call interrupted by a phone call stays ONE recording.** | Deliberately NOT published on 2026-08-30. It is the riskiest change in the release — it edits the daemon's capture loop — and the maintainer could not test the switch scenario. Publish only after a real switched call has been listened to in both directions. |
+
 | R13 | **Long calls can be transcribed** — chunked passes removed the length ceiling that used to refuse anything over 15 minutes. | The regression that killed the first attempt is confirmed gone, but on **one** call, by **one** user, in **one** language (Hebrew, 26:41, 2026-08-28). Agreed with the maintainer that this is not enough to publish a claim on. Needs the French tester on a call that crosses a chunk seam, plus one call over 20 minutes from someone other than the maintainer. See `2026-08-27-decode-memory-and-silent-failure.md`. |
 | R11 | The **60-minute** figure itself. | Same hold as R13, and additionally the number is arithmetic rather than a measurement — no call anywhere near 60 minutes has been transcribed. Publishing a limit we have never reached invites exactly the bug report it would cause. |
 
