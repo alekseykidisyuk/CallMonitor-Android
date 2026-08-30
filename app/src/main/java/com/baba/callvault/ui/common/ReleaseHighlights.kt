@@ -36,6 +36,14 @@ object ReleaseHighlights {
 
     private val ALL = listOf(
         ReleaseHighlight(
+            version = "2.2.0",
+            title = R.string.whatsnew_220_title,
+            body = R.string.whatsnew_220_body,
+            // Most of this release applies on its own, but the housekeeping options are off by
+            // default and are the ones someone would go looking for, so the pointer names them.
+            whereToFind = R.string.whatsnew_220_where,
+        ),
+        ReleaseHighlight(
             version = "2.1.1",
             title = R.string.whatsnew_211_title,
             body = R.string.whatsnew_211_body,
