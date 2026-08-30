@@ -63,6 +63,10 @@ object VoipRecordingCoordinator {
 
     /** Whether the user has paused this recording from the notification. */
     private var paused = false
+
+    /** Whether the recording is being held open across a carrier call. */
+    var isSuspendedForCarrierCall = false
+        private set
     private const val TAG = "CV:VoipRec"
 
     /** Mirrors `VoipAppIdentity.UID_UNKNOWN`, which lives in the daemon-side package. */
@@ -156,6 +160,7 @@ object VoipRecordingCoordinator {
         PendingFlags.beginCall()
         currentAppLabel = appLabel
         paused = false
+        isSuspendedForCarrierCall = false
         VoipRecordingNotification.show(context, appLabel)
         AppLogger.i(TAG, "VoIP recording started -> $fileName")
     }
@@ -261,6 +266,39 @@ object VoipRecordingCoordinator {
         VoipRecordingNotification.show(context, currentAppLabel, PendingFlags.count(), paused)
     }
 
+    /**
+     * Holds the recording open while a carrier call takes over, and resumes it into the SAME file.
+     *
+     * This is not [setPaused]. A pause keeps the microphone; this gives it up, because it has to — a
+     * second voice AudioRecord open during a carrier recording silently drops the user's own side of
+     * the phone call, which would trade a split app recording for a half-broken phone one.
+     *
+     * Returns false when the daemon could not do it, which is the signal for the caller to fall back
+     * to the old behaviour and simply end the recording. A daemon left over from an older APK does
+     * not have this method, and pretending it worked would hold a file open that nothing is writing.
+     */
+    fun setSuspendedForCarrierCall(context: Context, suspend: Boolean): Boolean {
+        if (!recording) return false
+        val ok = runCatching { RecorderConnection.service?.setVoipSuspended(suspend); true }
+            .onFailure { AppLogger.w(TAG, "setVoipSuspended failed (old daemon?): ${it.message}") }
+            .getOrDefault(false)
+        if (!ok) return false
+
+        isSuspendedForCarrierCall = suspend
+        // The clock follows, so a mark placed after the phone call still lands in the right place in
+        // a file that does not contain the held stretch.
+        if (suspend) clock.pause() else clock.resume()
+        VoipRecordingNotification.show(
+            context, currentAppLabel, PendingFlags.count(), paused, heldForCall = suspend
+        )
+        AppLogger.i(
+            TAG,
+            if (suspend) "App-call recording held open for a carrier call"
+            else "App-call recording resumed into the same file"
+        )
+        return true
+    }
+
     /** Stops the in-flight VoIP recording, if any. Idempotent. */
     @Synchronized
     fun onCallEnded(context: Context) {
@@ -275,6 +313,7 @@ object VoipRecordingCoordinator {
         clock.reset()
         currentAppLabel = null
         paused = false
+        isSuspendedForCarrierCall = false
         runCatching { RecorderConnection.service?.stopRecording() }
             .onFailure { AppLogger.w(TAG, "stopRecording failed: ${it.message}") }
 

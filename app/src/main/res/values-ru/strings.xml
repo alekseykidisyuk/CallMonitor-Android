@@ -609,4 +609,5 @@
     <string name="settings_voip_apps_hint">Выключите приложение — и его звонки никогда не будут записываться. Всё включено, пока вы не измените. Приложения без записи звука не показаны: они не могут совершать такие звонки.</string>
     <string name="general_flag_count">Метка (%1$d)</string>
     <string name="voip_recording_paused">Пауза. Сейчас ничего не сохраняется.</string>
+    <string name="voip_recording_held">Приостановлено из-за телефонного звонка. Запись продолжится, когда вы вернётесь.</string>
 </resources>

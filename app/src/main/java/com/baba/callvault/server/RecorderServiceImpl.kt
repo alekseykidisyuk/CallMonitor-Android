@@ -351,6 +351,16 @@ open class RecorderServiceImpl(private val apkPath: String) : IRecorderService.S
         active.setPaused(paused)
     }
 
+    /** Holds the app-call recording open across a carrier call. See the AIDL for why it is not a pause. */
+    override fun setVoipSuspended(suspended: Boolean) {
+        val active = lastVoipSession
+        if (active == null) {
+            AppLogger.w(TAG, "setVoipSuspended($suspended) ignored: no VoIP session")
+            return
+        }
+        active.setSuspended(suspended)
+    }
+
     override fun drainDiagnostics(): Array<String> = AppLogger.drainRing().toTypedArray()
 
     override fun killStaleRecorders() {

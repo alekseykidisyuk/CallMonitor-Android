@@ -609,4 +609,5 @@
     <string name="settings_voip_apps_hint">Kapcsoljon ki egy alkalmazást, és a hívásai soha nem lesznek rögzítve. Minden be van kapcsolva, amíg nem módosítja. A hangrögzítésre képtelen alkalmazások nem szerepelnek, mert nem tudnak ilyen hívást kezdeményezni.</string>
     <string name="general_flag_count">Jelölés (%1$d)</string>
     <string name="voip_recording_paused">Szüneteltetve. Most semmi nem kerül mentésre.</string>
+    <string name="voip_recording_held">Telefonhívás miatt tartva. A felvétel folytatódik, amikor visszatér.</string>
 </resources>

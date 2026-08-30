@@ -48,6 +48,17 @@ class VoipCallDetector(private val context: Context) {
     /** True while we believe a VoIP call is up, so repeat signals don't restart the recording. */
     private var callActive = false
 
+    /**
+     * True while the app call is held open across a carrier call.
+     *
+     * The app call has NOT ended — it is on hold in its own app — so [callActive] deliberately stays
+     * true. Clearing it would let the mode event that arrives when the phone call finishes look like
+     * a brand new app call, which is precisely the behaviour that produced two files for one
+     * conversation.
+     */
+    private var suspendedForCarrier = false
+
+
     /** Set while a recording is running, so the host can reflect it in its notification. */
     @Volatile
     var isRecording: Boolean = false
@@ -73,6 +84,8 @@ class VoipCallDetector(private val context: Context) {
     private val endCallRunnable = Runnable {
         if (callActive) {
             callActive = false
+            suspendedForCarrier = false
+            handler.removeCallbacks(suspendTimeout)
             AppLogger.i(TAG, "VoIP call ended")
             // Take the prompt down with the call. Leaving it would offer to record a call that is
             // over, and tapping it would start a recording of nothing.
@@ -81,6 +94,21 @@ class VoipCallDetector(private val context: Context) {
                 .onFailure { AppLogger.w(TAG, "VoIP stop failed: ${it.message}") }
             isRecording = false
             onRecordingStateChanged?.invoke()
+        }
+    }
+
+    /**
+     * Last resort. A held recording keeps an encoder, a muxer and the output fd open the whole time,
+     * so a signal that never arrives would leak all three and lose the recording outright. If the
+     * phone call somehow never reports finishing, finalise what we have.
+     *
+     * Declared after [endCallRunnable] because it calls it: the other order is a forward reference
+     * that Kotlin rejects outright.
+     */
+    private val suspendTimeout: Runnable = Runnable {
+        if (suspendedForCarrier) {
+            AppLogger.w(TAG, "App call held for a carrier call for too long — finalising what we have")
+            endCallRunnable.run()
         }
     }
 
@@ -113,9 +141,29 @@ class VoipCallDetector(private val context: Context) {
      */
     fun abortForCarrierCall() {
         if (!callActive) return
-        AppLogger.i(TAG, "A carrier call was answered — dropping the app-call recording")
         handler.removeCallbacks(endCallRunnable)
+
+        // Hold it open rather than ending it, so returning to the app call continues the SAME file.
+        // Splitting one conversation across two recordings is what this replaces.
+        val held = runCatching { VoipRecordingCoordinator.setSuspendedForCarrierCall(context, true) }
+            .getOrDefault(false)
+        if (held) {
+            suspendedForCarrier = true
+            handler.removeCallbacks(suspendTimeout)
+            handler.postDelayed(suspendTimeout, SUSPEND_MAX_MS)
+            AppLogger.i(TAG, "A carrier call was answered — holding the app-call recording open")
+            // callActive stays true and the prompt stays cancelled: the app call is still up, it is
+            // simply not the one the phone is playing.
+            VoipRecordPrompt.cancel(context)
+            return
+        }
+
+        // The daemon could not hold it — an older one has no setVoipSuspended — so fall back to what
+        // this always did. Two files is worse than one, and far better than a file nothing is
+        // writing to and nobody will ever finalise.
+        AppLogger.i(TAG, "A carrier call was answered — dropping the app-call recording (no suspend available)")
         callActive = false
+        suspendedForCarrier = false
         VoipRecordPrompt.cancel(context)
         runCatching { VoipRecordingCoordinator.onCallEnded(context) }
             .onFailure { AppLogger.w(TAG, "VoIP stop failed: ${it.message}") }
@@ -123,9 +171,40 @@ class VoipCallDetector(private val context: Context) {
         onRecordingStateChanged?.invoke()
     }
 
+    /**
+     * Reacts to an audio-mode change.
+     *
+     * The decision itself lives in [VoipSwitchPolicy] so it can be tested — it has four states and
+     * three modes, and none of it is reachable through a real [AudioManager]. This method only
+     * carries the decision out.
+     */
     private fun evaluate(mode: Int) {
-        val inVoipCall = mode == AudioManager.MODE_IN_COMMUNICATION
-        if (inVoipCall && !callActive) {
+        when (VoipSwitchPolicy.decide(mode, callActive, suspendedForCarrier)) {
+            VoipSwitchPolicy.Action.NOTHING -> return
+
+            // A phone call is still up and an app call is held behind it. Waiting is the whole point.
+            VoipSwitchPolicy.Action.HOLD -> return
+
+            VoipSwitchPolicy.Action.RESUME -> {
+                handler.removeCallbacks(suspendTimeout)
+                handler.removeCallbacks(endCallRunnable)
+                suspendedForCarrier = false
+                runCatching { VoipRecordingCoordinator.setSuspendedForCarrierCall(context, false) }
+                    .onFailure { AppLogger.w(TAG, "VoIP resume failed: ${it.message}") }
+                isRecording = VoipRecordingCoordinator.isRecording
+                onRecordingStateChanged?.invoke()
+                return
+            }
+
+            VoipSwitchPolicy.Action.END -> {
+                handler.removeCallbacks(endCallRunnable)
+                handler.postDelayed(endCallRunnable, END_DEBOUNCE_MS)
+                return
+            }
+
+            VoipSwitchPolicy.Action.START -> Unit   // handled below
+        }
+        run {
             // The mode alone does not prove this is an app call. A carrier call carried over IMS
             // (Wi-Fi calling, some VoLTE stacks) can present as MODE_IN_COMMUNICATION too, and acting
             // on it would record a phone call the carrier path is already recording — see
@@ -156,9 +235,6 @@ class VoipCallDetector(private val context: Context) {
                 .onFailure { AppLogger.w(TAG, "VoIP start failed: ${it.message}") }
             isRecording = VoipRecordingCoordinator.isRecording
             onRecordingStateChanged?.invoke()
-        } else if (!inVoipCall && callActive) {
-            handler.removeCallbacks(endCallRunnable)
-            handler.postDelayed(endCallRunnable, END_DEBOUNCE_MS)
         }
     }
 
@@ -202,5 +278,14 @@ class VoipCallDetector(private val context: Context) {
     private companion object {
         const val TAG = "CV:VoipDetect"
         const val END_DEBOUNCE_MS = 1_500L
+
+        /**
+         * How long an app call may stay held for a carrier call before it is finalised anyway.
+         *
+         * Generous, because a genuinely long phone call taken in the middle of an app call is normal
+         * and cutting it short would lose the second half. Bounded, because the held recording is
+         * holding an encoder, a muxer and the output fd the entire time.
+         */
+        const val SUSPEND_MAX_MS = 45L * 60L * 1000L
     }
 }

@@ -609,4 +609,5 @@
     <string name="settings_voip_apps_hint">关闭某个应用后，它的通话将永远不会被录制。在你更改之前一切都是开启的。不能录音的应用不会列出，因为它们无法进行此类通话。</string>
     <string name="general_flag_count">标记 (%1$d)</string>
     <string name="voip_recording_paused">已暂停。当前不会保存任何内容。</string>
+    <string name="voip_recording_held">因来电而暂挂。返回后本次录音会继续。</string>
 </resources>

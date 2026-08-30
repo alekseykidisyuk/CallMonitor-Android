@@ -609,4 +609,5 @@
     <string name="settings_voip_apps_hint">Disattiva un\'app e le sue chiamate non verranno mai registrate. Tutto è attivo finché non lo cambi. Le app che non possono registrare audio non sono elencate: non possono effettuare questo tipo di chiamata.</string>
     <string name="general_flag_count">Segna (%1$d)</string>
     <string name="voip_recording_paused">In pausa. Al momento non viene salvato nulla.</string>
+    <string name="voip_recording_held">In attesa per una chiamata telefonica. La registrazione riprenderà al tuo ritorno.</string>
 </resources>

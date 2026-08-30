@@ -99,17 +99,7 @@ internal class VoipCaptureSession(
             ?: throw IllegalStateException("VoIP far-party sink unavailable (policy not armed?)")
         farRecord = far
 
-        val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        if (minBuf <= 0) throw IllegalStateException("VoIP mic minBufferSize=$minBuf")
-        @Suppress("MissingPermission")
-        val near = AudioRecord(
-            MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT, minBuf * BUFFER_FACTOR,
-        )
-        if (near.state != AudioRecord.STATE_INITIALIZED) {
-            runCatching { near.release() }
-            throw IllegalStateException("VoIP mic capture failed to initialise")
-        }
+        val near = newNearRecord() ?: throw IllegalStateException("VoIP mic capture failed to initialise")
         nearRecord = near
         nearAuditId = CaptureAudit.opened("VoIP near capture (MIC)")
 
@@ -139,7 +129,7 @@ internal class VoipCaptureSession(
         AppLogger.i(TAG, "VoIP capture started: codec=${codec.cliKey} rate=$SAMPLE_RATE bitRate=$bitRate")
 
         muxThread = Thread {
-            runCatching { captureLoop(near, far, enc, mux) }
+            runCatching { captureLoop(enc, mux) }
                 .onFailure { AppLogger.w(TAG, "VoIP capture loop ended: ${it.message}") }
         }.apply { isDaemon = true; name = "voip-capture" }.also { it.start() }
     }
@@ -148,8 +138,94 @@ internal class VoipCaptureSession(
      * Pairs one chunk from each direction, downmixes to mono and drives the encoder. Each side is read
      * on its own thread so a slow or silent one cannot stall the other.
      */
+    /** A fresh MIC record, or null if it will not initialise. Shared by start and resume. */
+    @Suppress("MissingPermission")
+    private fun newNearRecord(): AudioRecord? {
+        val minBuf = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
+        if (minBuf <= 0) {
+            AppLogger.w(TAG, "VoIP mic minBufferSize=$minBuf")
+            return null
+        }
+        val rec = runCatching {
+            AudioRecord(
+                MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT, minBuf * BUFFER_FACTOR,
+            )
+        }.getOrNull()
+        if (rec == null || rec.state != AudioRecord.STATE_INITIALIZED) {
+            runCatching { rec?.release() }
+            return null
+        }
+        return rec
+    }
+
     /** Set from the app while a recording is in flight; see [captureLoop] for what it does. */
     private val pauseRequested = AtomicBoolean(false)
+
+    /**
+     * Set while the recording is held open across a carrier call.
+     *
+     * Different from [pauseRequested] in the one way that matters: a pause keeps the microphone, a
+     * suspend gives it up. It has to. A second voice AudioRecord open during a carrier recording
+     * silently drops the user's own side of the phone call — proven by A/B test, invisible in the
+     * logs and in the waveform — so holding our mic through a carrier call would trade a split app
+     * recording for a half-broken phone recording.
+     *
+     * The encoder, muxer and output file stay open throughout, which is what lets the app call
+     * continue into the SAME file when the phone call is over.
+     */
+    private val suspended = AtomicBoolean(false)
+
+    /** How long a feeder waits between checks while the capture is suspended. */
+    private val SUSPEND_POLL_MS = 100L
+
+    /**
+     * Releases or re-acquires the capture, keeping the output file open either way.
+     *
+     * Re-acquiring is not new machinery: [retakeMic] already replaces a live MIC record mid-recording
+     * on One UI and has been measured recovering audio a platform silencing had lost. This uses the
+     * same move for a different reason.
+     */
+    fun setSuspended(on: Boolean) {
+        if (!suspended.compareAndSet(!on, on)) return
+        if (on) {
+            AppLogger.i(TAG, "VoIP capture suspended for a carrier call — releasing the mic, keeping the file")
+            val near = nearRecord
+            nearRecord = null
+            runCatching { near?.stop() }
+            runCatching { near?.release() }
+            if (near != null) {
+                CaptureAudit.released(nearAuditId)
+                // Zeroed, or stop() releases this same id a second time and the audit logs a
+                // misleading "already released, or never registered" line — in the exact record a
+                // stuck-microphone report is read from.
+                nearAuditId = 0
+            }
+            val far = farRecord
+            farRecord = null
+            runCatching { far?.stop() }
+            runCatching { far?.release() }
+        } else {
+            // The submix first: it is the one that can fail for a reason worth logging distinctly —
+            // the policy is unarmed — while the mic failing is almost always another app holding it.
+            val far = VoipAudioPolicy.createSink()
+            if (far == null) {
+                AppLogger.w(TAG, "Could not re-open the far-party sink on resume; the rest of this call is near-side only")
+            } else {
+                farRecord = far
+                runCatching { far.startRecording() }
+            }
+            val near = newNearRecord()
+            if (near == null) {
+                AppLogger.w(TAG, "Could not re-take the mic on resume; the rest of this call is far-side only")
+            } else {
+                runCatching { near.startRecording() }
+                nearRecord = near
+                nearAuditId = CaptureAudit.opened("VoIP near capture (MIC, resumed)")
+            }
+            AppLogger.i(TAG, "VoIP capture resumed into the same file (near=${near != null} far=${far != null})")
+        }
+    }
 
     /** Pauses or resumes the encode. Safe to call when nothing is recording; it simply arms the flag. */
     fun setPaused(paused: Boolean) {
@@ -157,10 +233,10 @@ internal class VoipCaptureSession(
         AppLogger.i(TAG, "VoIP capture ${if (paused) "paused" else "resumed"} by the user")
     }
 
-    private fun captureLoop(near: AudioRecord, far: AudioRecord, enc: MediaCodec, mux: MediaMuxer) {
+    private fun captureLoop(enc: MediaCodec, mux: MediaMuxer) {
         val qNear: BlockingQueue<ByteArray> = ArrayBlockingQueue(QUEUE_CHUNKS)
         val qFar: BlockingQueue<ByteArray> = ArrayBlockingQueue(QUEUE_CHUNKS)
-        val readers = listOf(feeder(near, qNear, "near"), feeder(far, qFar, "far"))
+        val readers = listOf(feeder(qNear, "near"), feeder(qFar, "far"))
         readers.forEach { it.start() }
 
         val silence = ByteArray(CHUNK_BYTES)
@@ -185,7 +261,7 @@ internal class VoipCaptureSession(
                 // pauses — but nothing reaches the encoder, the speaker detector or the frame count,
                 // so the paused stretch is simply absent from the file. Same result as the carrier
                 // path, reached without going anywhere near the microphone.
-                if (pauseRequested.get()) continue
+                if (pauseRequested.get() || suspended.get()) continue
                 var o = 0
                 var farPeak = 0
                 for (i in 0 until CHUNK_BYTES step 2) {
@@ -237,17 +313,35 @@ internal class VoipCaptureSession(
     }
 
     /** Reads whole chunks from one direction into its queue; drops rather than blocks if the muxer lags. */
-    private fun feeder(ar: AudioRecord, q: BlockingQueue<ByteArray>, tag: String) = Thread {
+    private fun feeder(q: BlockingQueue<ByteArray>, tag: String) = Thread {
         val buf = ByteArray(CHUNK_BYTES)
-        var record = ar
         var silentChunks = 0
         while (!stopRequested.get()) {
+            // Read the record from the field on every pass rather than holding the one we started
+            // with. A suspend releases it and a resume installs a different one, and a thread
+            // clutching the original would be reading a released object.
+            val record = if (tag == "near") nearRecord else farRecord
+            if (record == null || suspended.get()) {
+                // Waiting, not dying. The old feeder ended itself the moment a read failed, which is
+                // right for a broken capture and fatal for a suspended one — the thread would be gone
+                // by the time the phone call ended and there would be nothing left to resume into.
+                try { Thread.sleep(SUSPEND_POLL_MS) } catch (e: InterruptedException) { return@Thread }
+                continue
+            }
             var off = 0
+            var interrupted = false
             while (off < CHUNK_BYTES && !stopRequested.get()) {
-                val r = record.read(buf, off, CHUNK_BYTES - off)
-                if (r <= 0) { AppLogger.d(TAG, "$tag read=$r, feeder ending"); return@Thread }
+                val r = runCatching { record.read(buf, off, CHUNK_BYTES - off) }.getOrDefault(-1)
+                if (r <= 0) {
+                    // A failed read while suspending is the record being released underneath us, not
+                    // a fault. Go back to waiting instead of ending the thread for good.
+                    if (suspended.get() || stopRequested.get()) { interrupted = true; break }
+                    AppLogger.d(TAG, "$tag read=$r, feeder ending")
+                    return@Thread
+                }
                 off += r
             }
+            if (interrupted) continue
             // Re-take the mic when the platform has silenced us.
             //
             // On One UI only one client gets the mic, and the most recent starter wins: when the VoIP
@@ -270,7 +364,9 @@ internal class VoipCaptureSession(
                         // old id and opening a new one, every re-take would read as a leaked capture
                         // — and this happens several times in a normal call.
                         CaptureAudit.released(nearAuditId)
-                        record = fresh; nearRecord = fresh
+                        // Only the field now; the loop re-reads it next pass. Keeping a local copy
+                        // in step was the old shape and would now be a second source of truth.
+                        nearRecord = fresh
                         nearAuditId = CaptureAudit.opened("VoIP near capture (MIC, re-taken)")
                     }
                 }

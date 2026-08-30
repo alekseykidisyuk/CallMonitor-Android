@@ -612,4 +612,5 @@
     <string name="settings_voip_apps_hint">Desligue um app e as chamadas dele nunca serão gravadas. Tudo fica ligado até você mudar. Apps que não podem gravar áudio não aparecem, pois não fazem esse tipo de chamada.</string>
     <string name="general_flag_count">Marcar (%1$d)</string>
     <string name="voip_recording_paused">Pausado. Nada está sendo salvo agora.</string>
+    <string name="voip_recording_held">Em espera por uma chamada telefônica. Esta gravação continua quando você voltar.</string>
 </resources>

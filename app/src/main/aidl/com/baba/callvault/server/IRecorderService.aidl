@@ -239,4 +239,17 @@ interface IRecorderService {
      * absent from the file exactly as it is on the carrier path.
      */
     void setVoipPaused(boolean paused);
+
+    /**
+     * Holds an app-call recording open across a carrier call, or resumes it afterwards.
+     *
+     * Distinct from {@link #setVoipPaused} in the one way that matters: a pause keeps the
+     * microphone, a suspend gives it up. It must — a second voice AudioRecord open during a carrier
+     * recording silently drops the user's own side of the phone call, so holding our mic through one
+     * would trade a split app recording for a half-broken phone recording.
+     *
+     * The encoder, muxer and output file stay open throughout, which is what lets the app call
+     * continue into the SAME file once the phone call is over.
+     */
+    void setVoipSuspended(boolean suspended);
 }

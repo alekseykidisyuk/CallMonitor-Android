@@ -609,4 +609,5 @@
     <string name="settings_voip_apps_hint">Tắt một ứng dụng và cuộc gọi của nó sẽ không bao giờ được ghi. Mọi thứ đều bật cho đến khi bạn thay đổi. Ứng dụng không ghi được âm thanh sẽ không hiện ra, vì chúng không thực hiện loại cuộc gọi này.</string>
     <string name="general_flag_count">Đánh dấu (%1$d)</string>
     <string name="voip_recording_paused">Đã tạm dừng. Hiện không có gì được lưu.</string>
+    <string name="voip_recording_held">Đang giữ vì có cuộc gọi điện thoại. Bản ghi sẽ tiếp tục khi bạn quay lại.</string>
 </resources>

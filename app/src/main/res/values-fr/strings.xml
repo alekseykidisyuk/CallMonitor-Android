@@ -609,4 +609,5 @@
     <string name="settings_voip_apps_hint">Désactivez une application et ses appels ne seront jamais enregistrés. Tout est activé tant que vous n\'y touchez pas. Les applications incapables d\'enregistrer de l\'audio ne sont pas listées : elles ne peuvent pas passer ce type d\'appel.</string>
     <string name="general_flag_count">Repère (%1$d)</string>
     <string name="voip_recording_paused">En pause. Rien n\'est enregistré pour le moment.</string>
+    <string name="voip_recording_held">En attente pour un appel téléphonique. Cet enregistrement reprendra à votre retour.</string>
 </resources>

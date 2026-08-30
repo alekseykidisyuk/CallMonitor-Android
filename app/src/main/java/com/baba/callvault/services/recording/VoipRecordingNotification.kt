@@ -40,7 +40,13 @@ object VoipRecordingNotification {
     private const val NOTIFICATION_ID = 5
 
     @SuppressLint("MissingPermission")
-    fun show(context: Context, appLabel: String?, marks: Int = 0, paused: Boolean = false) {
+    fun show(
+        context: Context,
+        appLabel: String?,
+        marks: Int = 0,
+        paused: Boolean = false,
+        heldForCall: Boolean = false,
+    ) {
         val title =
             if (appLabel.isNullOrBlank()) context.getString(R.string.voip_recording_title)
             else context.getString(R.string.voip_recording_title_named, appLabel)
@@ -50,7 +56,13 @@ object VoipRecordingNotification {
             .setContentTitle(title)
             .setContentText(
                 context.getString(
-                    if (paused) R.string.voip_recording_paused else R.string.voip_recording_text
+                    when {
+                        // Said explicitly, because from the outside this is indistinguishable from
+                        // the recording having stopped — and the whole point is that it has not.
+                        heldForCall -> R.string.voip_recording_held
+                        paused -> R.string.voip_recording_paused
+                        else -> R.string.voip_recording_text
+                    }
                 )
             )
             .setOngoing(true)
@@ -59,7 +71,9 @@ object VoipRecordingNotification {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        builder.addAction(
+        // No pause button while held for a phone call: the capture is already released, and a button
+        // offering to pause something that is not running is worse than no button.
+        if (!heldForCall) builder.addAction(
             R.drawable.ic_mic,
             context.getString(if (paused) R.string.general_resume else R.string.general_pause),
             serviceIntent(
