@@ -266,6 +266,7 @@ class AppPreferences(context: Context) {
         // --- Retention ---
         RETENTION_LINKED("retention_linked"),
         WRITE_METADATA_FILE("write_metadata_file"),
+        VOIP_EXCLUDED_PACKAGES("voip_excluded_packages"),
         MIN_DURATION_SECONDS("min_duration_seconds"),
         STORAGE_CAP_BYTES("storage_cap_bytes"),
         RETENTION_LOCAL_DAYS("retention_local_days"),
@@ -949,6 +950,19 @@ class AppPreferences(context: Context) {
 
     /** Sets whether device & Drive share one retention period. */
     fun setRetentionLinked(linked: Boolean) = setBoolean(Key.RETENTION_LINKED, linked)
+
+    /**
+     * Apps whose calls must NOT be recorded.
+     *
+     * Exclusions, not an allow-list, and the direction matters: an allow-list stored literally
+     * starts out empty, and an empty allow-list means "record nothing" — every existing user would
+     * silently stop recording app calls on upgrade. Empty here means "record everything", which is
+     * both the safe default and the behaviour before the setting existed.
+     */
+    fun getVoipExcludedPackages() = getStringSet(Key.VOIP_EXCLUDED_PACKAGES)
+
+    /** Replaces the set of apps whose calls are not recorded. */
+    fun setVoipExcludedPackages(packages: Set<String>) = setStringSet(Key.VOIP_EXCLUDED_PACKAGES, packages)
 
     /** Whether to write a BCR-compatible `.json` details file beside each recording. */
     fun isWriteMetadataFileEnabled() = getBoolean(Key.WRITE_METADATA_FILE, DefaultsValue.WRITE_METADATA_FILE)

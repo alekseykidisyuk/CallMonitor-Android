@@ -602,4 +602,9 @@
     <string name="voip_recording_title_named">Идёт запись звонка %1$s</string>
     <string name="voip_recording_text">Отметьте момент, чтобы найти его позже, или остановите запись.</string>
     <string name="playback_marked_moments">Отмеченные моменты</string>
+    <string name="settings_voip_apps_label">Выбрать, какие приложения записывать</string>
+    <string name="settings_voip_apps_loading">Поиск приложений…</string>
+    <string name="settings_voip_apps_all">Записываются все приложения</string>
+    <string name="settings_voip_apps_some">%1$d приложение(й) не записывается</string>
+    <string name="settings_voip_apps_hint">Выключите приложение — и его звонки никогда не будут записываться. Всё включено, пока вы не измените. Приложения без записи звука не показаны: они не могут совершать такие звонки.</string>
 </resources>

@@ -605,4 +605,9 @@
     <string name="voip_recording_title_named">Gravando uma chamada do %1$s</string>
     <string name="voip_recording_text">Marque um momento para achar depois, ou pare a gravação.</string>
     <string name="playback_marked_moments">Momentos marcados</string>
+    <string name="settings_voip_apps_label">Escolher quais apps gravar</string>
+    <string name="settings_voip_apps_loading">Procurando apps…</string>
+    <string name="settings_voip_apps_all">Todos os apps são gravados</string>
+    <string name="settings_voip_apps_some">%1$d app(s) não serão gravados</string>
+    <string name="settings_voip_apps_hint">Desligue um app e as chamadas dele nunca serão gravadas. Tudo fica ligado até você mudar. Apps que não podem gravar áudio não aparecem, pois não fazem esse tipo de chamada.</string>
 </resources>

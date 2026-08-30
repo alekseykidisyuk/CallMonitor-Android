@@ -602,4 +602,9 @@
     <string name="voip_recording_title_named">Nagrywanie połączenia %1$s</string>
     <string name="voip_recording_text">Oznacz moment, aby znaleźć go później, albo zatrzymaj nagrywanie.</string>
     <string name="playback_marked_moments">Oznaczone momenty</string>
+    <string name="settings_voip_apps_label">Wybierz aplikacje do nagrywania</string>
+    <string name="settings_voip_apps_loading">Szukanie aplikacji…</string>
+    <string name="settings_voip_apps_all">Nagrywane są wszystkie aplikacje</string>
+    <string name="settings_voip_apps_some">%1$d aplikacji nie będzie nagrywanych</string>
+    <string name="settings_voip_apps_hint">Wyłącz aplikację, a jej połączenia nigdy nie będą nagrywane. Wszystko jest włączone, dopóki tego nie zmienisz. Aplikacje bez możliwości nagrywania dźwięku nie są wymienione, bo nie mogą prowadzić takich połączeń.</string>
 </resources>

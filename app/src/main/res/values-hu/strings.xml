@@ -602,4 +602,9 @@
     <string name="voip_recording_title_named">%1$s-hívás rögzítése</string>
     <string name="voip_recording_text">Jelöljön meg egy pillanatot, hogy később megtalálja, vagy állítsa le a felvételt.</string>
     <string name="playback_marked_moments">Megjelölt pillanatok</string>
+    <string name="settings_voip_apps_label">Válassza ki, mely alkalmazásokat rögzítse</string>
+    <string name="settings_voip_apps_loading">Alkalmazások keresése…</string>
+    <string name="settings_voip_apps_all">Minden alkalmazás rögzítve</string>
+    <string name="settings_voip_apps_some">%1$d alkalmazás nem lesz rögzítve</string>
+    <string name="settings_voip_apps_hint">Kapcsoljon ki egy alkalmazást, és a hívásai soha nem lesznek rögzítve. Minden be van kapcsolva, amíg nem módosítja. A hangrögzítésre képtelen alkalmazások nem szerepelnek, mert nem tudnak ilyen hívást kezdeményezni.</string>
 </resources>

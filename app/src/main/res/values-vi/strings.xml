@@ -602,4 +602,9 @@
     <string name="voip_recording_title_named">Đang ghi cuộc gọi %1$s</string>
     <string name="voip_recording_text">Đánh dấu một thời điểm để tìm lại sau, hoặc dừng ghi.</string>
     <string name="playback_marked_moments">Thời điểm đã đánh dấu</string>
+    <string name="settings_voip_apps_label">Chọn ứng dụng cần ghi</string>
+    <string name="settings_voip_apps_loading">Đang tìm ứng dụng…</string>
+    <string name="settings_voip_apps_all">Mọi ứng dụng đều được ghi</string>
+    <string name="settings_voip_apps_some">%1$d ứng dụng sẽ không được ghi</string>
+    <string name="settings_voip_apps_hint">Tắt một ứng dụng và cuộc gọi của nó sẽ không bao giờ được ghi. Mọi thứ đều bật cho đến khi bạn thay đổi. Ứng dụng không ghi được âm thanh sẽ không hiện ra, vì chúng không thực hiện loại cuộc gọi này.</string>
 </resources>

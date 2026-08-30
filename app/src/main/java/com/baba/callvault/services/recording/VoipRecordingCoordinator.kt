@@ -37,6 +37,7 @@ import com.baba.callvault.system.storage.MinDurationPolicy
 import com.baba.callvault.system.interop.MetadataSidecar
 import com.baba.callvault.data.recordings.RecordingsRepository
 import com.baba.callvault.data.transcripts.FlagRepository
+import com.baba.callvault.data.voip.VoipAppPolicy
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -105,6 +106,16 @@ object VoipRecordingCoordinator {
                 .onFailure { AppLogger.d(TAG, "caller lookup failed: ${it.message}") }
                 .getOrNull()
         }
+        // The user's per-app choice, checked before anything is created. Not later: creating the
+        // file first and deleting it would put a recording of an excluded app on disk, however
+        // briefly, and would leave a window where a sync tool could take a copy of it.
+        if (!VoipAppPolicy.shouldRecord(callPackage, prefs.getVoipExcludedPackages())) {
+            // Not reportMissed(): this is not a miss. The user asked for this app to be left alone,
+            // and telling them off for getting what they configured is how a warning becomes noise.
+            AppLogger.i(TAG, "Not recording this call: $callPackage is switched off for recording.")
+            return
+        }
+
         val fileName = buildFileName(codec, appLabel, caller)
 
         val saf = SafHelper.createAudioFile(context, folderUri, fileName, codec.mimeType)

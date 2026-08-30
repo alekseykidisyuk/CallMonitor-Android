@@ -602,4 +602,9 @@
     <string name="voip_recording_title_named">%1$s-Anruf wird aufgezeichnet</string>
     <string name="voip_recording_text">Einen Moment markieren, um ihn später zu finden, oder Aufnahme stoppen.</string>
     <string name="playback_marked_moments">Markierte Momente</string>
+    <string name="settings_voip_apps_label">Aufzuzeichnende Apps wählen</string>
+    <string name="settings_voip_apps_loading">Apps werden gesucht …</string>
+    <string name="settings_voip_apps_all">Jede App wird aufgezeichnet</string>
+    <string name="settings_voip_apps_some">%1$d App(s) werden nicht aufgezeichnet</string>
+    <string name="settings_voip_apps_hint">Schalten Sie eine App aus, werden ihre Anrufe nie aufgezeichnet. Alles ist an, bis Sie es ändern. Apps ohne Audioaufnahme-Berechtigung werden nicht aufgeführt, da sie keine solchen Anrufe führen können.</string>
 </resources>

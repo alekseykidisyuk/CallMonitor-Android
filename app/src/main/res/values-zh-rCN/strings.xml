@@ -602,4 +602,9 @@
     <string name="voip_recording_title_named">正在录制 %1$s 通话</string>
     <string name="voip_recording_text">标记某个时刻以便稍后查找，或停止录音。</string>
     <string name="playback_marked_moments">标记的时刻</string>
+    <string name="settings_voip_apps_label">选择要录制的应用</string>
+    <string name="settings_voip_apps_loading">正在查找应用…</string>
+    <string name="settings_voip_apps_all">所有应用都会被录制</string>
+    <string name="settings_voip_apps_some">%1$d 个应用不会被录制</string>
+    <string name="settings_voip_apps_hint">关闭某个应用后，它的通话将永远不会被录制。在你更改之前一切都是开启的。不能录音的应用不会列出，因为它们无法进行此类通话。</string>
 </resources>

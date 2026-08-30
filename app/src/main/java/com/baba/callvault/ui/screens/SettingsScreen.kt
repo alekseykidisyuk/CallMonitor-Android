@@ -147,6 +147,7 @@ import com.baba.callvault.ui.common.OfflineDialogMode
 import com.baba.callvault.ui.common.OfflineRecordingDialog
 import com.baba.callvault.system.storage.MinDurationPolicy
 import com.baba.callvault.system.storage.StorageCapPolicy
+import com.baba.callvault.data.voip.VoipAppPolicy
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalResources
 import org.xmlpull.v1.XmlPullParser
@@ -1911,6 +1912,62 @@ private fun SettingsSubHeader(text: String, nested: Boolean = false, modifier: M
 }
 
 /**
+ * Which apps' calls get recorded — one switch per installed app that could place a call.
+ *
+ * Every switch is ON by default. Underneath, only the apps switched OFF are stored: an allow-list
+ * kept literally would start empty, and an empty allow-list means "record nothing", so every
+ * existing user would silently stop recording app calls the moment they upgraded. See
+ * [com.baba.callvault.data.voip.VoipAppPolicy].
+ *
+ * The list is loaded off the main thread. Enumerating installed packages with their permissions is
+ * tens of milliseconds on a full phone, which is enough to stutter a screen that is opening.
+ */
+@Composable
+private fun VoipAppPicker(prefs: AppPreferences) {
+    val context = LocalContext.current
+    var apps by remember { mutableStateOf<List<CallingApp>?>(null) }
+    var excluded by remember { mutableStateOf(prefs.getVoipExcludedPackages()) }
+    var expanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        apps = withContext(Dispatchers.IO) { VoipAppList.installedCallingApps(context) }
+    }
+
+    val loaded = apps
+    SettingsToggleRow(
+        label = stringResource(R.string.settings_voip_apps_label),
+        description = when {
+            loaded == null -> stringResource(R.string.settings_voip_apps_loading)
+            excluded.isEmpty() -> stringResource(R.string.settings_voip_apps_all)
+            else -> stringResource(R.string.settings_voip_apps_some, excluded.size)
+        },
+        checked = expanded,
+        enabled = loaded != null,
+        onCheckedChange = { expanded = it }
+    )
+
+    AnimatedVisibility(
+        visible = expanded && loaded != null,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        NestedGroup {
+            SettingsHint(stringResource(R.string.settings_voip_apps_hint))
+            loaded?.forEach { app ->
+                SettingsToggleRow(
+                    label = app.label,
+                    checked = app.packageName !in excluded,
+                    onCheckedChange = { record ->
+                        excluded = VoipAppPolicy.withRecording(excluded, app.packageName, record)
+                        prefs.setVoipExcludedPackages(excluded)
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
  * Opt-in "Record VoIP calls" toggle (experimental).
  *
  * Unlike the other opt-ins this one carries a confirmation, for two reasons that are not the app's to
@@ -2015,6 +2072,10 @@ internal fun VoipRecordingToggle(onEnabledChange: (Boolean) -> Unit = {}) {
                     prefs.setVoipAutoStartEnabled(on)
                 }
             )
+
+            SettingsDivider()
+
+            VoipAppPicker(prefs)
         }
     }
 

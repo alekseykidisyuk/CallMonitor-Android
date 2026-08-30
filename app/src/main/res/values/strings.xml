@@ -807,4 +807,9 @@
     <string name="voip_recording_title_named">Recording a %1$s call</string>
     <string name="voip_recording_text">Mark a moment to find it later, or stop recording.</string>
     <string name="playback_marked_moments">Marked moments</string>
+    <string name="settings_voip_apps_label">Choose which apps to record</string>
+    <string name="settings_voip_apps_loading">Looking for apps…</string>
+    <string name="settings_voip_apps_all">Every app is recorded</string>
+    <string name="settings_voip_apps_some">%1$d app(s) will not be recorded</string>
+    <string name="settings_voip_apps_hint">Switch an app off and its calls are never recorded. Everything is on until you change it. Apps that cannot record audio are not listed, since they cannot place the kind of call this captures.</string>
 </resources>
