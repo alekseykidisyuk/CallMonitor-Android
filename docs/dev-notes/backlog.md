@@ -63,7 +63,13 @@ D9 (per-app VoIP whitelist + lock-screen ask).
 `5f127c9`; the BCR sidecar as `0f3b3c6`. D5's QS tile was dropped by the maintainer as unwanted, and
 **D5's "flag a moment" is NOT built** — see the note below.
 
-### 🅿️ D5 "flag a moment" — NOT built, needs a decision first
+### ✅ D5 "mark a moment" — BUILT 2026-08-30 on both paths (`abd5ae0`)
+
+The maintainer chose the both-paths option, so app calls gained their own ongoing notification
+(Mark + Stop; no Pause, because the daemon's VoIP capture has none to drive). D9's per-app whitelist
+followed in the next commit. The note below is kept for the reasoning, which still holds.
+
+### 🅿️ Original framing — D5 "flag a moment", before the decision
 
 Pause/Resume already existed. Stop is done. Flag is the remaining third and it is **carrier-only**
 unless a whole ongoing notification is built for the VoIP path, which today posts only error and

@@ -53,6 +53,12 @@ Status markers follow the global convention: 🧪 VERIFYING · ✅ VERIFIED · �
 
 | R26 | **Optional BCR-compatible `.json` details file beside each recording** (off by default). | This upgrades an existing claim. `docs/SUPPORT.md` already says we replicate BCR's *filename* format; with this we also write their metadata file, so tools like `bcr-gui` get the number, contact and direction rather than only a file listing. State it as opt-in. | 🧪 VERIFYING — schema copied from BCR's README and unit-tested against the literal key names 2026-08-30; not yet read by an actual bcr-gui install |
 
+| R27 | **Mark a moment mid-call**, from the notification, on carrier and app calls alike; marks appear on the playback screen as chips that seek. | New capability worth stating. Note the marks are positions in the saved audio, so they stay correct across pauses. | 🧪 VERIFYING — built and unit-tested 2026-08-30 |
+
+| R28 | **App calls now have an ongoing notification with Stop and Mark.** | This closes a gap the README should not have to admit later: before this, a VoIP recording in progress had no controls at all. Worth stating positively rather than as a fix. | 🧪 VERIFYING — built 2026-08-30, needs a real WhatsApp call |
+
+| R29 | **Per-app choice of which apps' calls are recorded** (all on by default). | Directly relevant to the consent/legal paragraph: it is the answer to "I want this for some apps but not others", and it is worth saying that the default records everything so nobody assumes an opt-in they did not make. | 🧪 VERIFYING — built and unit-tested 2026-08-30 |
+
 ## Blocked on verification — do not write these into the README yet
 
 | # | Change | Why it is held |
