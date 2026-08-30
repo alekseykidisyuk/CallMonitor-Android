@@ -780,4 +780,9 @@
     <string name="playback_star">Star this recording</string>
     <string name="playback_unstar">Remove star</string>
     <string name="home_filter_favourites_chip">Starred</string>
+    <string name="min_duration_label">Discard short recordings</string>
+    <string name="min_duration_off">Keep them all</string>
+    <string name="min_duration_seconds">Shorter than %1$d seconds</string>
+    <string name="min_duration_one_minute">Shorter than a minute</string>
+    <string name="min_duration_caption">A misdial or a call that rang out is deleted the moment it ends, before it is transcribed or uploaded. Nothing already recorded is affected.</string>
 </resources>

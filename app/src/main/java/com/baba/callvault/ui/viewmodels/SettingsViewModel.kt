@@ -70,6 +70,8 @@ interface SettingsActions {
     fun setStorageTarget(target: StorageTarget)
     fun setDriveFolderUri(uri: android.net.Uri?)
     fun setRetentionLinked(linked: Boolean)
+    fun setMinDurationSeconds(seconds: Int)
+
     fun setRetentionLocalDays(days: Int)
     fun setRetentionDriveDays(days: Int)
     fun setRetentionTimeHour(hour: Int)
@@ -335,6 +337,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Saves whether device & Drive share one retention period. */
     override fun setRetentionLinked(linked: Boolean) {
         preferences.setRetentionLinked(linked)
+        refresh()
+    }
+
+    /**
+     * Saves the shortest recording worth keeping (seconds; 0 = keep every recording).
+     *
+     * No scheduler to reconcile: this is applied when a recording finishes, not by the daily sweep,
+     * so it takes effect from the very next call with nothing to re-enqueue.
+     */
+    override fun setMinDurationSeconds(seconds: Int) {
+        preferences.setMinDurationSeconds(seconds)
         refresh()
     }
 

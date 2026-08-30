@@ -575,4 +575,9 @@
     <string name="playback_star">Aufnahme markieren</string>
     <string name="playback_unstar">Markierung entfernen</string>
     <string name="home_filter_favourites_chip">Markiert</string>
+    <string name="min_duration_label">Kurze Aufnahmen verwerfen</string>
+    <string name="min_duration_off">Alle behalten</string>
+    <string name="min_duration_seconds">Kürzer als %1$d Sekunden</string>
+    <string name="min_duration_one_minute">Kürzer als eine Minute</string>
+    <string name="min_duration_caption">Ein Fehlanruf oder ein Anruf, der nur klingelte, wird sofort nach Ende gelöscht — vor Transkription und Upload. Bereits vorhandene Aufnahmen bleiben unberührt.</string>
 </resources>

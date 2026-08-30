@@ -155,6 +155,10 @@ class AppPreferences(context: Context) {
         // the UI shows one selector that writes both to the same value. Defaults to OFF so nothing is
         // ever deleted until the user explicitly opts in.
         const val RETENTION_LINKED = true
+        // Off. A default that discarded would silently start deleting recordings for everyone who
+        // upgrades, and the calls it would take are exactly the ones nobody would notice going.
+        const val MIN_DURATION_SECONDS = 0
+
         const val RETENTION_LOCAL_DAYS = 0
         const val RETENTION_DRIVE_DAYS = 0
         // Daily sweep time, in the device's LOCAL time zone (so e.g. "00:00" means local midnight
@@ -253,6 +257,7 @@ class AppPreferences(context: Context) {
 
         // --- Retention ---
         RETENTION_LINKED("retention_linked"),
+        MIN_DURATION_SECONDS("min_duration_seconds"),
         RETENTION_LOCAL_DAYS("retention_local_days"),
         RETENTION_DRIVE_DAYS("retention_drive_days"),
         RETENTION_TIME_HOUR("retention_time_hour"),
@@ -934,6 +939,12 @@ class AppPreferences(context: Context) {
 
     /** Sets whether device & Drive share one retention period. */
     fun setRetentionLinked(linked: Boolean) = setBoolean(Key.RETENTION_LINKED, linked)
+
+    /** Discard finished recordings shorter than this many seconds (0 = keep every recording). */
+    fun getMinDurationSeconds() = getInt(Key.MIN_DURATION_SECONDS, DefaultsValue.MIN_DURATION_SECONDS)
+
+    /** Sets the shortest recording worth keeping, in seconds (0 = keep every recording). */
+    fun setMinDurationSeconds(seconds: Int) = setInt(Key.MIN_DURATION_SECONDS, seconds)
 
     /** Retention in days for on-device recordings (0 = keep forever). */
     fun getRetentionLocalDays() = getInt(Key.RETENTION_LOCAL_DAYS, DefaultsValue.RETENTION_LOCAL_DAYS)

@@ -578,4 +578,9 @@
     <string name="playback_star">Marcar esta gravação</string>
     <string name="playback_unstar">Remover marcação</string>
     <string name="home_filter_favourites_chip">Marcadas</string>
+    <string name="min_duration_label">Descartar gravações curtas</string>
+    <string name="min_duration_off">Manter todas</string>
+    <string name="min_duration_seconds">Menos de %1$d segundos</string>
+    <string name="min_duration_one_minute">Menos de um minuto</string>
+    <string name="min_duration_caption">Uma ligação errada ou que só chamou é excluída assim que termina, antes de ser transcrita ou enviada. Não afeta o que já foi gravado.</string>
 </resources>

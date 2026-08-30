@@ -32,6 +32,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.baba.callvault.utils.AppLogger
+import com.baba.callvault.transcription.AudioDecoder
+import com.baba.callvault.system.storage.MinDurationPolicy
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -244,6 +246,25 @@ object VoipRecordingCoordinator {
             CoroutineScope(Dispatchers.IO).launch {
                 runCatching {
                     val size = SafHelper.fileSize(context, safUri)
+                    // The same too-short check the carrier path makes, through the same policy, before
+                    // this path's own catalog write. An app call reaches Home by a completely separate
+                    // route, so a guard added only over there would leave WhatsApp misdials piling up
+                    // for anyone who had turned the setting on.
+                    val minSeconds = AppPreferences(context).getMinDurationSeconds()
+                    if (minSeconds > 0) {
+                        val durationMs = AudioDecoder.durationMs(context, safUri)
+                        if (MinDurationPolicy.shouldDiscard(durationMs, minSeconds)) {
+                            AppLogger.i(
+                                TAG,
+                                "Discarding VoIP '$name': ${durationMs}ms is under the ${minSeconds}s minimum."
+                            )
+                            SafHelper.deleteDocument(
+                                DocumentFile.fromSingleUri(context, safUri),
+                                "the too-short VoIP recording '$name'"
+                            )
+                            return@runCatching
+                        }
+                    }
                     RecordingCatalog.recordLocal(context, name, safUri, size, System.currentTimeMillis())
                     // Collect the speaker turns the capture just measured, before transcription is
                     // queued — the runner reads them from the database when it labels segments, so

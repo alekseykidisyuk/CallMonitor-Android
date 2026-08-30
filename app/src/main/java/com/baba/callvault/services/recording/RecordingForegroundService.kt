@@ -40,6 +40,8 @@ import com.baba.callvault.system.storage.StorageRouter
 import com.baba.callvault.utils.AppLogger
 import com.baba.callvault.utils.PhoneNumberManager
 import com.baba.callvault.utils.RecordingFileNameFormatter
+import com.baba.callvault.transcription.AudioDecoder
+import com.baba.callvault.system.storage.MinDurationPolicy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -558,6 +560,28 @@ class RecordingForegroundService : Service() {
             recordHealth(sizeBytes, name)
             return
         }
+        // Too short to be worth keeping, if the user asked for that. Before the catalog, the
+        // transcription queue and StorageRouter — a recording discarded after any of those has
+        // already cost a whisper run or a cloud upload, and would flicker through the Home list on
+        // its way out. The duration comes from the container rather than the call log because the
+        // call log has nothing to say about an app call, and this check must mean the same thing on
+        // both capture paths.
+        val minSeconds = AppPreferences(this).getMinDurationSeconds()
+        if (minSeconds > 0) {
+            val durationMs = AudioDecoder.durationMs(applicationContext, uri)
+            if (MinDurationPolicy.shouldDiscard(durationMs, minSeconds)) {
+                AppLogger.i(
+                    TAG,
+                    "Discarding '$name': ${durationMs}ms is under the ${minSeconds}s minimum."
+                )
+                SafHelper.deleteDocument(doc, "the too-short recording '$name'")
+                // Deliberately no notification. The whole point of the setting is not being told
+                // about a misdial; a user who turned it on has already said they do not want these.
+                // It is logged, so a support question about a missing recording is still answerable.
+                return
+            }
+        }
+
         // Record this finished recording in CallVault's own catalog (the Home list's source of truth).
         // The file is on the device now, so this is the local copy; the copy/sweep workers later stamp
         // the Drive copy onto this same row by name. Done on a detached IO scope because the service may

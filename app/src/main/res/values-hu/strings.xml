@@ -575,4 +575,9 @@
     <string name="playback_star">Felvétel csillagozása</string>
     <string name="playback_unstar">Csillag eltávolítása</string>
     <string name="home_filter_favourites_chip">Csillagozott</string>
+    <string name="min_duration_label">Rövid felvételek eldobása</string>
+    <string name="min_duration_off">Mindet megtartani</string>
+    <string name="min_duration_seconds">%1$d másodpercnél rövidebb</string>
+    <string name="min_duration_one_minute">Egy percnél rövidebb</string>
+    <string name="min_duration_caption">A téves hívás vagy a kicsengett hívás a befejezés pillanatában törlődik, még az átirat és a feltöltés előtt. A meglévő felvételeket nem érinti.</string>
 </resources>

@@ -575,4 +575,9 @@
     <string name="playback_star">Oznacz nagranie gwiazdką</string>
     <string name="playback_unstar">Usuń gwiazdkę</string>
     <string name="home_filter_favourites_chip">Oznaczone</string>
+    <string name="min_duration_label">Odrzucaj krótkie nagrania</string>
+    <string name="min_duration_off">Zachowuj wszystkie</string>
+    <string name="min_duration_seconds">Krótsze niż %1$d s</string>
+    <string name="min_duration_one_minute">Krótsze niż minuta</string>
+    <string name="min_duration_caption">Pomyłkowe lub nieodebrane połączenie jest usuwane zaraz po zakończeniu, przed transkrypcją i wysyłką. Nie dotyczy już zapisanych nagrań.</string>
 </resources>

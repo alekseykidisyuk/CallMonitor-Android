@@ -575,4 +575,9 @@
     <string name="playback_star">Gắn sao bản ghi này</string>
     <string name="playback_unstar">Bỏ gắn sao</string>
     <string name="home_filter_favourites_chip">Gắn sao</string>
+    <string name="min_duration_label">Bỏ bản ghi ngắn</string>
+    <string name="min_duration_off">Giữ tất cả</string>
+    <string name="min_duration_seconds">Ngắn hơn %1$d giây</string>
+    <string name="min_duration_one_minute">Ngắn hơn một phút</string>
+    <string name="min_duration_caption">Cuộc gọi nhầm hoặc đổ chuông không nghe sẽ bị xóa ngay khi kết thúc, trước khi chép lời hay tải lên. Không ảnh hưởng đến bản ghi đã có.</string>
 </resources>

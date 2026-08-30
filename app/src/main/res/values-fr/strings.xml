@@ -575,4 +575,9 @@
     <string name="playback_star">Mettre en favori</string>
     <string name="playback_unstar">Retirer des favoris</string>
     <string name="home_filter_favourites_chip">Favoris</string>
+    <string name="min_duration_label">Ignorer les enregistrements courts</string>
+    <string name="min_duration_off">Tout conserver</string>
+    <string name="min_duration_seconds">Moins de %1$d secondes</string>
+    <string name="min_duration_one_minute">Moins d\'une minute</string>
+    <string name="min_duration_caption">Un faux numéro ou un appel resté sans réponse est supprimé dès qu\'il se termine, avant toute transcription ou tout envoi. Les enregistrements existants ne sont pas touchés.</string>
 </resources>

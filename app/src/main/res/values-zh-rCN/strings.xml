@@ -575,4 +575,9 @@
     <string name="playback_star">为该录音加星标</string>
     <string name="playback_unstar">取消星标</string>
     <string name="home_filter_favourites_chip">星标</string>
+    <string name="min_duration_label">丢弃过短的录音</string>
+    <string name="min_duration_off">全部保留</string>
+    <string name="min_duration_seconds">短于 %1$d 秒</string>
+    <string name="min_duration_one_minute">短于一分钟</string>
+    <string name="min_duration_caption">拨错或响铃未接的通话在结束时立即删除，不会被转录或上传。已有录音不受影响。</string>
 </resources>

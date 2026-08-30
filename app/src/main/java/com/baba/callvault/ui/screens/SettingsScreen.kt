@@ -145,6 +145,7 @@ import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.WifiOff
 import com.baba.callvault.ui.common.OfflineDialogMode
 import com.baba.callvault.ui.common.OfflineRecordingDialog
+import com.baba.callvault.system.storage.MinDurationPolicy
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalResources
 import org.xmlpull.v1.XmlPullParser
@@ -1178,6 +1179,17 @@ private fun RetentionSubSection(
     updateTrigger: Int,
     actions: SettingsActions
 ) {
+    val minDurationSeconds = remember(updateTrigger) { preferences.getMinDurationSeconds() }
+    val minDurationOptions = MinDurationPolicy.PRESET_SECONDS.map { seconds ->
+        OptionItem(
+            seconds.toString(),
+            when (seconds) {
+                0 -> stringResource(R.string.min_duration_off)
+                60 -> stringResource(R.string.min_duration_one_minute)
+                else -> stringResource(R.string.min_duration_seconds, seconds)
+            }
+        )
+    }
     val linked = remember(updateTrigger) { preferences.isRetentionLinked() }
     val localDays = remember(updateTrigger) { preferences.getRetentionLocalDays() }
     val driveDays = remember(updateTrigger) { preferences.getRetentionDriveDays() }
@@ -1193,6 +1205,23 @@ private fun RetentionSubSection(
     }
 
     Column {
+        // First, because it is the only control here that decides whether a recording is ever kept
+        // at all — the rest decide how long a kept one lives. Not confirmed like the periods below:
+        // it takes nothing that already exists, so the worst a mistaken setting can do is stop
+        // capturing short calls from now on, which is visible and instantly reversible.
+        DropdownRow {
+            M3DropdownField(
+                label = stringResource(R.string.min_duration_label),
+                selected = minDurationOptions.find { it.key == minDurationSeconds.toString() }
+                    ?: minDurationOptions.first(),
+                options = minDurationOptions,
+                onOptionSelected = { actions.setMinDurationSeconds(it.key.toIntOrNull() ?: 0) }
+            )
+        }
+        SettingsHint(stringResource(R.string.min_duration_caption))
+
+        SettingsDivider()
+
         SettingsToggleRow(
             label = stringResource(R.string.retention_linked_label),
             checked = linked,
@@ -2638,6 +2667,7 @@ private fun SettingsScreenPreview() {
             override fun setStorageTarget(target: StorageTarget) {}
             override fun setDriveFolderUri(uri: android.net.Uri?) {}
             override fun setRetentionLinked(linked: Boolean) {}
+            override fun setMinDurationSeconds(seconds: Int) {}
             override fun setRetentionLocalDays(days: Int) {}
             override fun setRetentionDriveDays(days: Int) {}
             override fun setRetentionTimeHour(hour: Int) {}

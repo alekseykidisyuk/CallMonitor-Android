@@ -575,4 +575,9 @@
     <string name="playback_star">Отметить запись</string>
     <string name="playback_unstar">Снять отметку</string>
     <string name="home_filter_favourites_chip">Отмеченные</string>
+    <string name="min_duration_label">Отбрасывать короткие записи</string>
+    <string name="min_duration_off">Оставлять все</string>
+    <string name="min_duration_seconds">Короче %1$d секунд</string>
+    <string name="min_duration_one_minute">Короче минуты</string>
+    <string name="min_duration_caption">Ошибочный или неотвеченный звонок удаляется сразу после завершения — до расшифровки и загрузки. Уже записанное не затрагивается.</string>
 </resources>

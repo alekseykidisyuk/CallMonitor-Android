@@ -575,4 +575,9 @@
     <string name="playback_star">Aggiungi ai preferiti</string>
     <string name="playback_unstar">Rimuovi dai preferiti</string>
     <string name="home_filter_favourites_chip">Preferiti</string>
+    <string name="min_duration_label">Scarta le registrazioni brevi</string>
+    <string name="min_duration_off">Conservale tutte</string>
+    <string name="min_duration_seconds">Meno di %1$d secondi</string>
+    <string name="min_duration_one_minute">Meno di un minuto</string>
+    <string name="min_duration_caption">Una chiamata sbagliata o senza risposta viene eliminata appena finisce, prima della trascrizione o del caricamento. Le registrazioni esistenti non sono toccate.</string>
 </resources>
