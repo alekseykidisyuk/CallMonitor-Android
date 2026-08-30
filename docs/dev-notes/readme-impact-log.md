@@ -1,5 +1,28 @@
 # README impact log
 
+## ✅ THE README IS PUBLISHED — 2026-08-30
+
+`README.md` on `main` is the rewrite (`3a2cb00`), 3,439 words → 1,832. The artifact
+(`30a4b18b-128a-4717-bbfd-d042a501f3b3`) is kept in step with it and is no longer a preview of
+something unpublished.
+
+**This file's job has changed.** It is no longer a queue of things waiting to go in; it is the record
+of what is claimed publicly and what is deliberately not. Keep logging claim-affecting changes here —
+the README can now be *wrong* rather than merely incomplete, which is a higher bar.
+
+**Two further corrections found only while converting to Markdown**, after the artifact had already
+been reviewed twice:
+
+- *"Transcribing long calls — anything over 15 minutes is refused today"* survived as a **roadmap
+  item** even after the same claim was fixed in the body. It was promising work that shipped in
+  2.2.0. Lesson: fixing a stale claim once is not enough — grep the whole document for it.
+- The summary model is **2.6 GB**, not 3.5 GB, since the quantisation-aware build landed in 2.2.0.
+  Appeared three times.
+
+**Still deliberately NOT claimed:** that an app call interrupted by a phone call stays one recording
+(R30). It shipped in 2.2.0 untested.
+
+
 The README rewrite is **approved and held** — 1,450 words down from 3,439, screenshots staged, not to
 be published until the maintainer gives the go-ahead on a release. Work has continued since it was
 approved, so this file tracks what would need to change in it *before* it goes up.
