@@ -4,8 +4,12 @@
  * Ported from RikkaApps/Shizuku (Apache-2.0):
  *   manager/src/main/java/moe/shizuku/manager/adb/AdbMdns.kt
  * Adapted: LiveData Observer<Int> → a plain (Int) -> Unit callback, and namespaced
- * into the CallVault production integrations package. Behaviour (NsdManager discovery + resolve +
- * local-interface match + port-availability probe) is unchanged.
+ * into the CallVault production integrations package.
+ *
+ * CallMonitor addition: some OEMs (confirmed on Xiaomi/HyperOS) advertise ADB on the
+ * phone's WLAN address but reject the equivalent 127.0.0.1 connection. Discovery therefore
+ * prepares [AdbLoopbackProxy] before reporting the port, so the rest of the embedded-ADB stack
+ * can keep using localhost unchanged.
  *
  * KEY POINT vs libadb-android's bundled AdbMdns: the service type passed to
  * NsdManager is the FULL form `_adb-tls-pairing._tcp` / `_adb-tls-connect._tcp`
@@ -20,10 +24,7 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.util.Log
-import java.io.IOException
-import java.net.InetSocketAddress
 import java.net.NetworkInterface
-import java.net.ServerSocket
 
 /**
  * Discovers an ADB mDNS service of [serviceType] and reports the resolved port via
@@ -79,30 +80,36 @@ class AdbMdns(
 
     @Suppress("DEPRECATION")
     private fun onServiceResolved(resolvedService: NsdServiceInfo) {
-        if (running && NetworkInterface.getNetworkInterfaces()
+        if (!running) return
+
+        val hostAddress = resolvedService.host?.hostAddress ?: return
+        if (!isLocalAddress(hostAddress)) {
+            Log.d(TAG, "Ignoring ADB mDNS service on non-local host $hostAddress")
+            return
+        }
+
+        // Stock CallVault assumes the discovered ADB service is also reachable at 127.0.0.1:port.
+        // Xiaomi/HyperOS disproves that assumption: mDNS resolves to the phone WLAN address and
+        // localhost refuses the same port. Prepare a transparent loopback bridge when needed.
+        if (!AdbLoopbackProxy.ensure(hostAddress, resolvedService.port)) {
+            Log.w(TAG, "Resolved ADB service $hostAddress:${resolvedService.port}, but loopback bridge failed")
+            return
+        }
+
+        serviceName = resolvedService.serviceName
+        onPort(resolvedService.port)
+    }
+
+    private fun isLocalAddress(hostAddress: String): Boolean =
+        runCatching {
+            NetworkInterface.getNetworkInterfaces()
                 .asSequence()
                 .any { networkInterface ->
                     networkInterface.inetAddresses
                         .asSequence()
-                        .any { resolvedService.host.hostAddress == it.hostAddress }
+                        .any { it.hostAddress == hostAddress }
                 }
-            && isPortAvailable(resolvedService.port)
-        ) {
-            serviceName = resolvedService.serviceName
-            onPort(resolvedService.port)
-        }
-    }
-
-    // The adb daemon is already bound to the advertised port, so a bind attempt FAILS
-    // for a genuine adb service — that failure is how we confirm it's the real thing.
-    private fun isPortAvailable(port: Int) = try {
-        ServerSocket().use {
-            it.bind(InetSocketAddress("127.0.0.1", port), 1)
-            false
-        }
-    } catch (e: IOException) {
-        true
-    }
+        }.getOrDefault(false)
 
     private class DiscoveryListener(private val adbMdns: AdbMdns) : NsdManager.DiscoveryListener {
         override fun onDiscoveryStarted(serviceType: String) = adbMdns.onDiscoveryStart()
