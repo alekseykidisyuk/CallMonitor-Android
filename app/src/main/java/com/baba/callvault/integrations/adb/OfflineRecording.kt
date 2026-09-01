@@ -26,6 +26,9 @@ object OfflineRecording {
 
     private const val TAG = "CV:OfflineRecording"
 
+    /** Never let a settings toggle wait indefinitely behind a stale embedded-ADB operation. */
+    private const val DISABLE_BUDGET_MS = 5_000L
+
     /**
      * Turns offline recording ON: persists the opt-in and arms the loopback listener (needs Wi-Fi +
      * Wireless Debugging ONCE to arm; records off-WiFi thereafter until reboot). Re-warms the daemon so
@@ -43,10 +46,35 @@ object OfflineRecording {
         return armed
     }
 
-    /** Turns offline recording OFF: clears the opt-in and closes the loopback port (best-effort). */
+    /**
+     * Turns offline recording OFF immediately at the preference level and closes the loopback port
+     * best-effort, with a hard time bound.
+     *
+     * After a reboot Android has already cleared classic tcpip mode. In that state the old implementation
+     * still tried to reconnect ADB just to send `usb:`, leaving the Settings dialog spinning while there
+     * was literally nothing left to close. We now skip that work entirely. When a port really is armed,
+     * disarming is allowed at most [DISABLE_BUDGET_MS]; a wedged ADB socket must never wedge the UI.
+     */
     fun disable(context: Context) {
         AppPreferences(context).setOfflineRecordingEnabled(false)
-        runCatching { AdbShell.disarmLoopback(context) }
-            .onFailure { AppLogger.d(TAG, "disarmLoopback on disable ignored: ${it.message}") }
+
+        if (!AdbShell.isLoopbackArmed(context)) {
+            AppLogger.i(TAG, "Offline recording disabled; loopback already unarmed (nothing to disarm)")
+            return
+        }
+
+        val worker = Thread {
+            runCatching { AdbShell.disarmLoopback(context) }
+                .onFailure { AppLogger.d(TAG, "disarmLoopback on disable ignored: ${it.message}") }
+        }.apply {
+            isDaemon = true
+            name = "cv-offline-disable"
+        }
+
+        worker.start()
+        runCatching { worker.join(DISABLE_BUDGET_MS) }
+        if (worker.isAlive) {
+            AppLogger.w(TAG, "Offline disarm exceeded ${DISABLE_BUDGET_MS}ms; returning without blocking UI")
+        }
     }
 }
