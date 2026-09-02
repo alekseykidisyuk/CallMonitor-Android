@@ -65,7 +65,7 @@ jobs:
               -keysize 2048 \
               -validity 10000
           fi
-          keytool -list -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey
+          keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey
 
       - name: Build test APK
         run: |
@@ -77,10 +77,39 @@ jobs:
             -PversionName="$VERSION_NAME" \
             -PciBuildNumber="$GITHUB_RUN_NUMBER"
 
-      - name: Prepare artifact
+      - name: Re-sign and verify artifact with stable test signer
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk CallMonitor-Android-test.apk
-          "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --verbose --print-certs CallMonitor-Android-test.apk
+          APKSIGNER="${ANDROID_HOME}/build-tools/36.0.0/apksigner"
+          INPUT_APK="app/build/outputs/apk/debug/app-debug.apk"
+          OUTPUT_APK="CallMonitor-Android-test.apk"
+
+          "$APKSIGNER" sign \
+            --ks "$HOME/.android/debug.keystore" \
+            --ks-key-alias androiddebugkey \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out "$OUTPUT_APK" \
+            "$INPUT_APK"
+
+          "$APKSIGNER" verify --verbose --print-certs "$OUTPUT_APK"
+
+          EXPECTED_CERT=$(keytool -list -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            | sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' \
+            | head -n 1 \
+            | tr -d ':' \
+            | tr '[:upper:]' '[:lower:]')
+          ACTUAL_CERT=$("$APKSIGNER" verify --print-certs "$OUTPUT_APK" \
+            | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
+            | head -n 1 \
+            | tr '[:upper:]' '[:lower:]')
+
+          echo "Expected test signer: $EXPECTED_CERT"
+          echo "APK signer:           $ACTUAL_CERT"
+          test -n "$EXPECTED_CERT"
+          test "$EXPECTED_CERT" = "$ACTUAL_CERT"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
