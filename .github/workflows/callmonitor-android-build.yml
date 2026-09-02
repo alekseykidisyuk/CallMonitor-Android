@@ -6,6 +6,10 @@ on:
       - "callmonitor/**"
   workflow_dispatch:
 
+concurrency:
+  group: callmonitor-android-test-build
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
