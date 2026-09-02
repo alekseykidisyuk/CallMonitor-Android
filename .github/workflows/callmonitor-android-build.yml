@@ -37,17 +37,50 @@ jobs:
             "ndk;27.2.12479018" \
             "cmake;3.22.1"
 
-      - name: Build debug APK
+      # Keep one non-production signing identity across CI runs. This is intentionally only the
+      # CallMonitor TEST signer; a production release key will live in GitHub secrets later.
+      # Stable signing matters during device development because uninstall/reinstall destroys the
+      # embedded ADB identity and privileged grants we are specifically trying to preserve/test.
+      - name: Restore stable CallMonitor test signer
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: callmonitor-android-test-signer-v1
+
+      - name: Ensure stable CallMonitor test signer exists
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair \
+              -keystore ~/.android/debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -dname "CN=CallMonitor Test,O=CallMonitor,C=UZ" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000
+          fi
+          keytool -list -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey
+
+      - name: Build test APK
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          VERSION_CODE=$((220000 + GITHUB_RUN_NUMBER))
+          VERSION_NAME="2.2.0-callmonitor.${GITHUB_RUN_NUMBER}"
+          ./gradlew assembleDebug --stacktrace \
+            -PversionCode="$VERSION_CODE" \
+            -PversionName="$VERSION_NAME" \
+            -PciBuildNumber="$GITHUB_RUN_NUMBER"
 
       - name: Prepare artifact
-        run: cp app/build/outputs/apk/debug/app-debug.apk CallMonitor-Android-debug.apk
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk CallMonitor-Android-test.apk
+          "${ANDROID_HOME}/build-tools/36.0.0/apksigner" verify --verbose --print-certs CallMonitor-Android-test.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: CallMonitor-Android-debug
-          path: CallMonitor-Android-debug.apk
+          name: CallMonitor-Android-test
+          path: CallMonitor-Android-test.apk
           if-no-files-found: error
