@@ -15,24 +15,68 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.database.ContentObserver
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.provider.Settings
+import com.baba.callvault.R
+import com.baba.callvault.data.AppPreferences
+import com.baba.callvault.integrations.adb.AdbShell
+import com.baba.callvault.server.RecorderBackend
+import com.baba.callvault.system.health.SilentFailureNotifier
+import com.baba.callvault.utils.AppLogger
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import com.baba.callvault.R
-import com.baba.callvault.server.RecorderBackend
-import com.baba.callvault.utils.AppLogger
-import com.baba.callvault.system.health.SilentFailureNotifier
 
 /**
- * Short-lived foreground service that runs [AdbShell.ensureConnected] on the IO thread after boot.
- * It re-enables Wireless debugging (if the OEM turned it off) then reconnects ADB so recording
- * works hands-free. Stops itself as soon as the connection attempt completes.
+ * Post-boot recovery service for the standalone ADB recorder.
  *
- * Mirrors the notification/foreground pattern of [com.baba.callvault.integrations.adb.AdbPairingService].
+ * A reboot clears CallVault's classic tcpip loopback listener. On ROMs that allow
+ * WRITE_SECURE_SETTINGS the service can bootstrap Wireless debugging itself and re-arm loopback.
+ * Xiaomi/HyperOS can deliberately deny that permission even to shell. In that case there is no
+ * programmatic API left that can turn Wireless debugging on, so the service stays alive and watches
+ * for the user's one manual Wireless-debugging toggle. The instant that toggle appears it retries the
+ * recorder bootstrap automatically; the user no longer has to return to CallMonitor or tap reconnect.
+ *
+ * The service also watches Wi-Fi availability. This fixes the other common boot ordering: the phone
+ * boots before Wi-Fi is associated, the first recovery fails, and previously nothing retried when Wi-Fi
+ * appeared later.
  */
 class AdbConnectionService : Service() {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val recoveryInFlight = AtomicBoolean(false)
+    private var observersRegistered = false
+
+    private val wirelessDebuggingObserver = object : ContentObserver(mainHandler) {
+        override fun onChange(selfChange: Boolean) {
+            if (AdbShell.isWirelessDebuggingEnabled(applicationContext)) {
+                AppLogger.i(TAG, "Wireless debugging became available after boot; retrying recorder recovery now")
+                attemptRecovery("wireless-debugging-enabled")
+            }
+        }
+    }
+
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            val cm = getSystemService(ConnectivityManager::class.java) ?: return
+            val caps = cm.getNetworkCapabilities(network) ?: return
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                AppLogger.i(TAG, "Wi-Fi became available after boot; retrying recorder recovery")
+                attemptRecovery("wifi-available")
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -46,6 +90,7 @@ class AdbConnectionService : Service() {
                 setShowBadge(false)
             },
         )
+        registerRecoveryObservers()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -61,34 +106,89 @@ class AdbConnectionService : Service() {
                 .notify(NOTIF_ID, buildNotification(getString(R.string.notif_startup_preparing)))
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            // Always bring up the persistent recorder daemon on boot so calls record hands-free.
-            // ensureServerRunning (transiently) enables Wireless debugging, launches the daemon, waits
-            // for its binder, then turns WD back OFF — it internally ensures the ADB connection, so no
-            // separate ensureConnected is needed.
-            val started = runCatching { RecorderBackend.ensureRunning(applicationContext) }
-                .getOrDefault(false)
-            AppLogger.i(TAG, "Boot: recorder daemon connected=$started")
+        attemptRecovery("service-start")
+        // Stay alive while recovery is pending. On HyperOS this is what lets a later manual WD toggle
+        // recover immediately instead of requiring the user to reopen CallMonitor.
+        return START_STICKY
+    }
 
-            // The one place this failure is genuinely invisible. Off Wi-Fi after a reboot the ADB
-            // listener cannot be re-armed, so `started` is false and, until now, the entire user-facing
-            // consequence was this log line — the next thing that happened was a call not being
-            // recorded. Warned here and nowhere else: with the app open the status card already says
-            // it, and two mouths saying the same thing is how a warning becomes noise.
-            if (started) {
-                SilentFailureNotifier.clearRecorderUnavailable(applicationContext)
-            } else {
-                SilentFailureNotifier.warnRecorderUnavailable(applicationContext)
-            }
-            // Boot is the reliable moment for this. A phone that has not been opened in months is
-            // exactly the case worth catching, and it still reboots.
-            SilentFailureNotifier.checkSyncHealth(applicationContext)
-
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
+    private fun attemptRecovery(reason: String) {
+        if (!recoveryInFlight.compareAndSet(false, true)) {
+            AppLogger.d(TAG, "Recovery already in flight; ignoring trigger=$reason")
+            return
         }
 
-        return START_NOT_STICKY
+        scope.launch {
+            try {
+                AppLogger.i(TAG, "Post-boot recorder recovery attempt: $reason")
+                val started = runCatching { RecorderBackend.ensureRunning(applicationContext) }
+                    .getOrDefault(false)
+                AppLogger.i(TAG, "Post-boot recorder recovery result: connected=$started reason=$reason")
+
+                if (started) {
+                    SilentFailureNotifier.clearRecorderUnavailable(applicationContext)
+                    SilentFailureNotifier.checkSyncHealth(applicationContext)
+                    mainHandler.post { finishRecoveryService() }
+                } else {
+                    SilentFailureNotifier.warnRecorderUnavailable(applicationContext)
+
+                    val prefs = AppPreferences(applicationContext)
+                    val needsManualWd = prefs.isOfflineRecordingEnabled() &&
+                        !AdbShell.isLoopbackArmed(applicationContext) &&
+                        !AdbShell.isWirelessDebuggingEnabled(applicationContext) &&
+                        !AdbShell.hasWriteSecureSettings(applicationContext)
+                    if (needsManualWd) {
+                        AppLogger.w(
+                            TAG,
+                            "Recorder cannot bootstrap automatically on this ROM: loopback was cleared by reboot and " +
+                                "WRITE_SECURE_SETTINGS is denied. Waiting for one manual Wireless-debugging toggle.",
+                        )
+                    }
+                    // Deliberately do NOT stop. Wi-Fi or the user's WD toggle may arrive later and the
+                    // registered observers will retry immediately.
+                }
+            } finally {
+                recoveryInFlight.set(false)
+            }
+        }
+    }
+
+    private fun registerRecoveryObservers() {
+        if (observersRegistered) return
+        observersRegistered = true
+        runCatching {
+            contentResolver.registerContentObserver(
+                Settings.Global.getUriFor("adb_wifi_enabled"),
+                false,
+                wirelessDebuggingObserver,
+            )
+        }.onFailure { AppLogger.w(TAG, "Could not watch Wireless debugging after boot: ${it.message}") }
+
+        runCatching {
+            val cm = getSystemService(ConnectivityManager::class.java)
+            val request = NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .build()
+            cm?.registerNetworkCallback(request, networkCallback)
+        }.onFailure { AppLogger.w(TAG, "Could not watch Wi-Fi after boot: ${it.message}") }
+    }
+
+    private fun unregisterRecoveryObservers() {
+        if (!observersRegistered) return
+        observersRegistered = false
+        runCatching { contentResolver.unregisterContentObserver(wirelessDebuggingObserver) }
+        runCatching { getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(networkCallback) }
+    }
+
+    private fun finishRecoveryService() {
+        unregisterRecoveryObservers()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    override fun onDestroy() {
+        unregisterRecoveryObservers()
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
