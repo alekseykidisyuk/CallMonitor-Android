@@ -42,4 +42,6 @@ jobs:
           submodules: false
       - name: Validate Windows PowerShell 5.1 syntax
         shell: powershell
-        run: .\server-receiver\tests\powershell_parse.ps1
+        run: |
+          .\server-receiver\tests\powershell_parse.ps1
+          .\server-receiver\tests\diagnostic_d1.ps1
