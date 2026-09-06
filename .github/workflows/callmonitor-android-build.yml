@@ -12,6 +12,9 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ !contains(github.event.head_commit.message, '[signer-backup]') }}
+    env:
+      CALLMONITOR_BUILD19_CERT_SHA256: d7e12ebca805d06bc32931ee4dcada354c0ef1da36713998015b465e1fa547fc
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -41,27 +44,27 @@ jobs:
             "ndk;27.2.12479018" \
             "cmake;3.22.1"
 
-      - name: Restore stable CallMonitor test signer
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: callmonitor-android-test-signer-v1
-
-      - name: Ensure stable CallMonitor test signer exists
+      - name: Restore original CallMonitor signer from repository secret
+        env:
+          KEYSTORE_B64: ${{ secrets.CALLMONITOR_SIGNING_KEYSTORE_B64 }}
         run: |
-          mkdir -p ~/.android
-          if [ ! -f ~/.android/debug.keystore ]; then
-            keytool -genkeypair \
-              -keystore ~/.android/debug.keystore \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
-              -dname "CN=CallMonitor Test,O=CallMonitor,C=UZ" \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000
-          fi
-          keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey
+          set -euo pipefail
+          umask 077
+          test -n "$KEYSTORE_B64" || { echo "Missing CALLMONITOR_SIGNING_KEYSTORE_B64 repository secret"; exit 1; }
+          mkdir -p "$HOME/.android"
+          python3 - <<'PYCODE'
+          import base64, os
+          from pathlib import Path
+          raw = base64.b64decode(os.environ['KEYSTORE_B64'].strip(), validate=True)
+          if not raw or len(raw) > 32768:
+              raise SystemExit('Invalid signer keystore size')
+          Path.home().joinpath('.android/debug.keystore').write_bytes(raw)
+          PYCODE
+          keytool -exportcert -keystore "$HOME/.android/debug.keystore" \
+            -storepass android -alias androiddebugkey -file "$RUNNER_TEMP/callmonitor-signer.der"
+          ACTUAL_CERT=$(sha256sum "$RUNNER_TEMP/callmonitor-signer.der" | cut -d ' ' -f 1)
+          test "$ACTUAL_CERT" = "$CALLMONITOR_BUILD19_CERT_SHA256" || { echo "Signer differs from verified build 19"; exit 1; }
+          echo "Verified original build 19 signer: $ACTUAL_CERT"
 
       - name: Apply build 16 HyperOS UI recovery patch
         run: python3 .github/scripts/build16_hyperos_ui_recovery_patch.py
@@ -102,14 +105,7 @@ jobs:
 
           "$APKSIGNER" verify --verbose --print-certs "$OUTPUT_APK"
 
-          EXPECTED_CERT=$(keytool -list -v \
-            -keystore "$HOME/.android/debug.keystore" \
-            -storepass android \
-            -alias androiddebugkey \
-            | sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' \
-            | head -n 1 \
-            | tr -d ':' \
-            | tr '[:upper:]' '[:lower:]')
+          EXPECTED_CERT="$CALLMONITOR_BUILD19_CERT_SHA256"
           ACTUAL_CERT=$("$APKSIGNER" verify --print-certs "$OUTPUT_APK" \
             | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
             | head -n 1 \

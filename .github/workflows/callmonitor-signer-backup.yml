@@ -1,0 +1,71 @@
+name: Preserve original CallMonitor build 19 signer
+
+on:
+  push:
+    branches: ["callmonitor/core-v1"]
+    paths:
+      - ".github/workflows/callmonitor-signer-backup.yml"
+      - ".github/signing/build19-recovery-public.pem"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      EXPECTED_CERT: d7e12ebca805d06bc32931ee4dcada354c0ef1da36713998015b465e1fa547fc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Restore existing signer only
+        id: signer
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: callmonitor-android-test-signer-v1
+          fail-on-cache-miss: true
+      - name: Verify identity and encrypt backup
+        env:
+          CACHE_HIT: ${{ steps.signer.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test "$CACHE_HIT" = true
+          test -s "$HOME/.android/debug.keystore"
+          keytool -exportcert -keystore "$HOME/.android/debug.keystore" \
+            -storepass android -alias androiddebugkey -file "$RUNNER_TEMP/build19-signer.der"
+          ACTUAL_CERT=$(sha256sum "$RUNNER_TEMP/build19-signer.der" | cut -d ' ' -f 1)
+          test "$ACTUAL_CERT" = "$EXPECTED_CERT"
+          mkdir signer-backup
+          openssl cms -encrypt -binary -aes-256-cbc \
+            -in "$HOME/.android/debug.keystore" \
+            -out signer-backup/build19-keystore.p7m -outform DER \
+            .github/signing/build19-recovery-public.pem
+          python3 - <<'PYCODE'
+          import hashlib, json, os
+          from pathlib import Path
+          k = Path.home().joinpath('.android/debug.keystore').read_bytes()
+          metadata = {
+              'product': 'CallMonitor', 'baseline_build': 19,
+              'certificate_sha256': os.environ['EXPECTED_CERT'],
+              'keystore_sha256': hashlib.sha256(k).hexdigest(),
+              'keystore_bytes': len(k), 'run_id': os.environ['GITHUB_RUN_ID'],
+              'source_cache_key': 'callmonitor-android-test-signer-v1',
+              'cipher': 'CMS RSA-4096 AES-256-CBC',
+              'plaintext_exported': False
+          }
+          Path('signer-backup/verification.json').write_text(json.dumps(metadata, indent=2)+'\n')
+          print('Original build 19 certificate verified; encrypted backup prepared.')
+          PYCODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CallMonitor-build19-signer-encrypted
+          path: signer-backup/
+          if-no-files-found: error
+          retention-days: 7
