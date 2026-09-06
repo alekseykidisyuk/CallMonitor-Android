@@ -42,3 +42,5 @@ if ($LASTEXITCODE -ne 1 -or !(($Result -join "`n") -match 'SHA-256 mismatch')) {
 if ((Get-Content -LiteralPath $env:CM_ADB_TRACE -Raw) -ne $Before) { throw 'ADB ran despite invalid APK hash' }
 if ($Before -match 'uninstall|pm clear') { throw 'Destructive command issued' }
 Write-Host 'PASS: corrupt APK blocked before contacting device; no uninstall or clear commands'
+# The final negative test intentionally returns 1; all assertions above passed.
+exit 0
