@@ -7,10 +7,14 @@ ROOT=pathlib.Path(tempfile.mkdtemp(prefix='cm-test-'))
 PR=ROOT/'callmonitor_private'; PUB=ROOT/'callmonitor.sensera.online'
 subprocess.run([sys.executable,str(SRC/'tools/build_package.py'),'--output',str(ROOT/'test.zip')],check=True)
 with zipfile.ZipFile(ROOT/'test.zip') as package: package.extractall(ROOT)
+# Install the exact deployed v0.1.0 bytes, then exercise the real updater.
+for name in ('api.php','ogg.php','core.php'): shutil.copy(SRC/'tests/baseline_v010'/name,PR/'app'/name)
+update=PUB/'callmonitor_update_011_eos.php'
+subprocess.run([sys.executable,str(SRC/'updates/build_update.py'),'--output',str(update)],check=True)
 KEY='test-only-'+uuid.uuid4().hex
 (PR/'config/setup.php').write_text("<?php return ['setup_key_hash'=>'"+hashlib.sha256(KEY.encode()).hexdigest()+"'];")
 router=ROOT/'router.php'
-router.write_text("<?php $p=parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); if($p==='/callmonitor_install_v010.php'){require __DIR__.'/callmonitor.sensera.online/callmonitor_install_v010.php';}elseif(in_array($p,['/','/index.php','/health.php','/status.php','/api/v1/health','/api/v1/status','/api/v1/calls'],true)){require __DIR__.'/callmonitor.sensera.online/index.php';}else{http_response_code(404); echo 'not_found';}")
+router.write_text("<?php $p=parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); if($p==='/callmonitor_update_011_eos.php'){require __DIR__.'/callmonitor.sensera.online/callmonitor_update_011_eos.php';}elseif($p==='/callmonitor_install_v010.php'){require __DIR__.'/callmonitor.sensera.online/callmonitor_install_v010.php';}elseif(in_array($p,['/','/index.php','/health.php','/status.php','/api/v1/health','/api/v1/status','/api/v1/calls'],true)){require __DIR__.'/callmonitor.sensera.online/index.php';}else{http_response_code(404); echo 'not_found';}")
 with socket.socket() as s: s.bind(('127.0.0.1',0)); PORT=s.getsockname()[1]
 URL=f'http://127.0.0.1:{PORT}'
 log=open(ROOT/'php.log','wb')
@@ -34,6 +38,19 @@ def fixture(name):
     p=SRC/'tests'/name
     return p.read_bytes() if p.exists() else base64.b64decode((p.with_suffix(p.suffix+'.b64')).read_text())
 A=fixture('stereo.ogg'); B=fixture('alternate.ogg'); MONO=fixture('mono.ogg')
+def ogg_pages(audio):
+    pages=[];pos=0
+    while pos<len(audio):
+        n=audio[pos+26];length=27+n+sum(audio[pos+27:pos+27+n]);pages.append(bytearray(audio[pos:pos+length]));pos+=length
+    return pages
+def fix_crc(page):
+    page[22:26]=b'\0'*4;crc=0
+    for byte in page:
+        crc^=byte<<24
+        for _ in range(8): crc=((crc<<1)^(0x04c11db7 if crc&0x80000000 else 0))&0xffffffff
+    page[22:26]=crc.to_bytes(4,'little');return bytes(page)
+pages=ogg_pages(A);pages[-1][5]&=~4
+NO_EOS=b''.join(bytes(p) for p in pages[:-1])+fix_crc(pages[-1])
 def meta(audio=A,**overrides):
     m=dict(call_id=str(uuid.uuid4()),device_id='redmi-note12-01',direction='out',remote_number='+998901234567',started_at=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),duration_ms='1000',app_build='19',audio_sha256=hashlib.sha256(audio).hexdigest(),audio_bytes=str(len(audio)),codec='opus',sample_rate='48000',channels='2',channel_layout='stereo',original_filename='test.ogg')
     m.update(overrides); return m
@@ -67,6 +84,44 @@ try:
     check(not (PR/'config/setup.php').exists(),'setup key removed after install')
     check((PR.stat().st_mode & 0o777)==0o700 and ((PR/'data/callmonitor.sqlite3').stat().st_mode & 0o777)==0o600,'private permissions enforced')
     c,r=req('/health.php'); check(c==200 and r['version']=='0.1.0','health ready')
+    missing=meta(NO_EOS)
+    c,r=upload(missing,audio=NO_EOS);check(c==400 and r['error']=='incomplete_ogg','deployed v0.1.0 reproduces missing-EOS rejection')
+    c,r=upload(meta());check(c==201,'existing normal call stored before update')
+    beforedb=(PR/'data/callmonitor.sqlite3').read_bytes();beforeconfig=(PR/'config/config.php').read_bytes()
+    def upgrade(auth=ADMIN):return req('/callmonitor_update_011_eos.php',form({'token':auth}),content_type='application/x-www-form-urlencoded')
+    c,r=upgrade(DEVICE);check(c==401,'device token cannot apply server update')
+    oldogg=(PR/'app/ogg.php').read_bytes();(PR/'app/ogg.php').write_bytes(oldogg+b'\n// unrelated modification\n')
+    c,r=upgrade();check(c==409 and not (PR/'config/capture_profiles.php').exists(),'updater refuses unexpected hashes before changing files')
+    (PR/'app/ogg.php').write_bytes(oldogg)
+    c,r=upgrade();check(c==200 and r['status']=='updated' and r['version']=='0.1.1','authenticated v0.1.1 updater succeeds')
+    check(beforedb==(PR/'data/callmonitor.sqlite3').read_bytes() and beforeconfig==(PR/'config/config.php').read_bytes(),'update leaves DB and credential config byte-for-byte unchanged')
+    for name in ('api.php','ogg.php','core.php'):
+        check((PR/'updates/R011_EOS/originals/app'/name).read_bytes()==(SRC/'tests/baseline_v010'/name).read_bytes(),'backup matches original '+name)
+    c,r=upgrade();check(c==200 and r['status']=='already_installed','repeated update is idempotent')
+    # Resume a compatible partial transition using the preserved original hashes.
+    shutil.copy(SRC/'tests/baseline_v010/api.php',PR/'app/api.php')
+    c,r=upgrade();check(c==200 and r['changed_files']==['app/api.php'],'interrupted update resumes without replacing other files')
+    c,r=req('/health.php');check(c==200 and r['version']=='0.1.1','health reports v0.1.1 after update')
+    c,r=upload(missing,audio=NO_EOS);check(c==201 and r['audio_eos_present'] is False and r['warnings']==['ogg_eos_missing'],'profile-approved page-aligned EOF accepted with explicit warning')
+    with conn() as db:
+        row=db.execute('SELECT relative_path,processing_status FROM calls WHERE call_id=?',(missing['call_id'],)).fetchone()
+    check((PR/'audio'/row[0]).read_bytes()==NO_EOS and row[1]=='received_eos_missing','missing-EOS original preserved without remux and flagged in DB')
+    c,r=upload(missing,audio=NO_EOS);check(c==200 and r['duplicate'] and count(missing['call_id'])==1,'missing-EOS duplicate remains exactly one call')
+    c,r=req('/api/v1/status',token=ADMIN);check(any(x['processing_status']=='received_eos_missing' for x in r['last_calls']),'admin status exposes missing-EOS marker')
+    c,r=upload(meta(NO_EOS[:-1]),audio=NO_EOS[:-1]);check(c==400,'profile compatibility still rejects partial page')
+    damaged=NO_EOS[:-1]+bytes([NO_EOS[-1]^1])
+    c,r=upload(meta(damaged),audio=damaged);check(c==400 and r['error']=='ogg_crc_mismatch','profile compatibility still enforces CRC')
+    last=ogg_pages(NO_EOS)[-1];head=bytearray(last[:27]);head[5]=0;head[6:14]=b'\xff'*8
+    head[18:22]=(int.from_bytes(head[18:22],'little')+1).to_bytes(4,'little');head[26]=1
+    incomplete=NO_EOS+fix_crc(head+b'\xff'+b'x'*255)
+    c,r=upload(meta(incomplete),audio=incomplete);check(c==400 and r['error']=='incomplete_ogg','profile compatibility rejects unfinished packet even with valid page CRC')
+    unknown=ogg_pages(NO_EOS);unknown[-1][6:14]=b'\xff'*8
+    unknown=b''.join(bytes(p) for p in unknown[:-1])+fix_crc(unknown[-1])
+    c,r=upload(meta(unknown),audio=unknown);check(c==400,'profile compatibility rejects unknown final granule')
+    unknownDevice=json.loads(cli('add-device','unverified-device','pilot','test'))['device_token']
+    c,r=upload(meta(NO_EOS,device_id='unverified-device',allow_page_aligned_eof='true'),audio=NO_EOS,auth=unknownDevice)
+    check(c==400 and r['error']=='incomplete_ogg','client metadata cannot enable EOS compatibility on another device')
+    c,r=upload(meta(B,call_id=missing['call_id']),audio=B);check(c==409,'missing-EOS call cannot be overwritten with different valid audio')
     c,_=req('/api/v1/status'); check(c==401,'unauthenticated status rejected')
     c,_=req('/api/v1/status',token=DEVICE); check(c==401,'device token cannot read admin status')
     c,_=upload(meta(),auth=ADMIN); check(c==401,'admin token cannot upload as device')

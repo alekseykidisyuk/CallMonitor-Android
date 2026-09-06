@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-const CM_VERSION = '0.1.1';
+const CM_VERSION = '0.1.0';
 umask(0077);
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
@@ -104,7 +104,7 @@ function audit(string $result, int $http, ?array $device = null, ?string $callId
 }
 function status_data(): array {
     $db = db();
-    $calls = query($db, 'SELECT call_id,device_id,tenant_id,direction,remote_number,started_at,duration_ms,audio_duration_ms,audio_bytes,audio_sha256,channels,processing_status,received_at FROM calls ORDER BY server_call_id DESC LIMIT 30')->fetchAll();
+    $calls = query($db, 'SELECT call_id,device_id,tenant_id,direction,remote_number,started_at,duration_ms,audio_duration_ms,audio_bytes,audio_sha256,channels,received_at FROM calls ORDER BY server_call_id DESC LIMIT 30')->fetchAll();
     foreach ($calls as &$c) $c['remote_number'] = masked($c['remote_number']);
     return ['ok'=>true,'version'=>CM_VERSION,'time'=>utc(),'calls_total'=>(int)$db->query('SELECT COUNT(*) FROM calls')->fetchColumn(),
         'audio_bytes_total'=>(int)$db->query('SELECT COALESCE(SUM(audio_bytes),0) FROM calls')->fetchColumn(),

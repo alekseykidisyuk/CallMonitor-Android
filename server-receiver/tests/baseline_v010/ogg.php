@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
-// Narrow validator: one Ogg Opus stream, mapping family 0, stereo. A trusted
-// device profile may permit EOF at a complete packet/page without an EOS flag.
-// This is marked explicitly, not treated as proof of full call completion.
+// Narrow receiver validator: one complete Ogg Opus stream, mapping family 0,
+// stereo. Validates framing, page CRCs, sequence, header and EOS. It does not
+// decode speech or prove the claimed speaker identities.
 function ogg_crc(string $page): int {
     static $table;
     if ($table === null) {
@@ -23,7 +23,7 @@ function exact_read($h, int $bytes): string {
     if ($s === false || strlen($s) !== $bytes) fail(400, 'truncated_ogg');
     return $s;
 }
-function opus_info(string $path, bool $allowPageAlignedEof = false): array {
+function opus_info(string $path): array {
     $h = fopen($path,'rb'); if (!$h) throw new RuntimeException('audio_read_failed');
     $seq=0; $serial=null; $packet=''; $packets=0; $audioPackets=0; $eos=false; $lastGranule=0; $preskip=0;
     try {
@@ -72,13 +72,9 @@ function opus_info(string $path, bool $allowPageAlignedEof = false): array {
             $eos=(bool)($flags&4); $seq++;
             if($eos && $packet!=='') fail(400,'incomplete_ogg_packet');
         }
-        if($audioPackets<1 || $packet!=='' || $lastGranule<=$preskip) fail(400,'incomplete_ogg');
-        if(!$eos && !$allowPageAlignedEof) fail(400,'incomplete_ogg');
-        // Even in compatibility mode require a concrete sample position on the
-        // final page. Never accept an unknown granule or a partial packet/page.
-        if(!$eos && ($g['hi']!==0 || $g['lo']<=$preskip)) fail(400,'invalid_ogg_granule');
+        if(!$eos || $audioPackets<1 || $packet!=='' || $lastGranule<=$preskip) fail(400,'incomplete_ogg');
         $duration=(int)round(($lastGranule-$preskip)/48);
         if($duration>86400000) fail(400,'audio_too_long');
-        return ['channels'=>2,'sample_rate'=>48000,'audio_duration_ms'=>$duration,'pages'=>$seq,'eos_present'=>$eos];
+        return ['channels'=>2,'sample_rate'=>48000,'audio_duration_ms'=>$duration,'pages'=>$seq];
     } finally { fclose($h); }
 }

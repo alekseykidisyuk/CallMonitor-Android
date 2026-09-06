@@ -3,15 +3,6 @@ declare(strict_types=1);
 require_once __DIR__.'/core.php';
 require_once __DIR__.'/ogg.php';
 
-function page_aligned_eof_allowed(array $device): bool {
-    $file=private_root().'/config/capture_profiles.php';
-    if(!is_file($file)) return false;
-    $profiles=require $file;
-    return is_array($profiles)
-        && ($profiles[$device['tenant_id']][$device['device_id']]['allow_page_aligned_eof'] ?? false) === true
-        && (int)$device['channels']===2 && $device['left_role']==='operator' && $device['right_role']==='client';
-}
-
 function receive_call(PDO $db, array $device): array {
     $max=cfg()['max_audio_bytes'];
     if((int)($_SERVER['CONTENT_LENGTH'] ?? 0)>$max+1048576) fail(413,'request_too_large');
@@ -48,7 +39,7 @@ function receive_call(PDO $db, array $device): array {
     if($actual!==$bytes || !hash_equals($sha,hash_file('sha256',$f['tmp_name']))) fail(400,'audio_integrity_mismatch');
     $mime=(new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
     if(!in_array($mime,['audio/ogg','application/ogg','audio/opus','application/octet-stream'],true)) fail(400,'unsupported_audio_mime');
-    $info=opus_info($f['tmp_name'],page_aligned_eof_allowed($device));
+    $info=opus_info($f['tmp_name']);
     $tmp=private_root().'/tmp/'.bin2hex(random_bytes(16)).'.part';
     if(!move_uploaded_file($f['tmp_name'],$tmp)) fail(503,'storage_unavailable');
     $tx=false;
@@ -73,14 +64,14 @@ function receive_call(PDO $db, array $device): array {
         }
         $now=utc();
         if(!$old) {
-            query($db,'INSERT INTO calls(call_id,tenant_id,device_id,operator_id,direction,remote_number,started_at,duration_ms,audio_duration_ms,app_build,audio_sha256,audio_bytes,codec,sample_rate,channels,channel_layout,left_role,right_role,original_filename,relative_path,received_at,processing_status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                [$id,$device['tenant_id'],$device['device_id'],$device['operator_id'],$direction,$remote,$start,$duration,$info['audio_duration_ms'],$build,$sha,$bytes,'opus',48000,2,'stereo',$device['left_role'],$device['right_role'],$name,$rel,$now,$info['eos_present']?'received':'received_eos_missing']);
+            query($db,'INSERT INTO calls(call_id,tenant_id,device_id,operator_id,direction,remote_number,started_at,duration_ms,audio_duration_ms,app_build,audio_sha256,audio_bytes,codec,sample_rate,channels,channel_layout,left_role,right_role,original_filename,relative_path,received_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                [$id,$device['tenant_id'],$device['device_id'],$device['operator_id'],$direction,$remote,$start,$duration,$info['audio_duration_ms'],$build,$sha,$bytes,'opus',48000,2,'stereo',$device['left_role'],$device['right_role'],$name,$rel,$now]);
             $serverId=(int)$db->lastInsertId();
             query($db,"INSERT INTO processing_jobs(server_call_id,stage,status,created_at) VALUES(?,'channel_split','waiting',?)",[$serverId,$now]);
         } else { $serverId=(int)$old['server_call_id']; $now=$old['received_at']; }
         query($db,'UPDATE devices SET last_seen_at=? WHERE device_id=?',[utc(),$device['device_id']]);
         $db->exec('COMMIT'); $tx=false;
-        return ['ok'=>true,'call_id'=>$id,'server_call_id'=>$serverId,'stored'=>true,'duplicate'=>(bool)$old,'received_at'=>$now,'audio_eos_present'=>$info['eos_present'],'warnings'=>$info['eos_present']?[]:['ogg_eos_missing']];
+        return ['ok'=>true,'call_id'=>$id,'server_call_id'=>$serverId,'stored'=>true,'duplicate'=>(bool)$old,'received_at'=>$now];
     } finally {
         if($tx) { try { $db->exec('ROLLBACK'); } catch(Throwable $ignored) {} }
         if(is_file($tmp)) @unlink($tmp);
@@ -102,9 +93,7 @@ function dispatch(): never {
         if($path==='/api/v1/calls') {
             if($method!=='POST') { header('Allow: POST'); fail(405,'method_not_allowed'); }
             $db=db(); $device=device_auth($db); $result=receive_call($db,$device);
-            $http=$result['duplicate']?200:201;
-            $event=($result['duplicate']?'duplicate':'stored').($result['audio_eos_present']?'':'_eos_missing');
-            audit($event,$http,$device,$result['call_id']);
+            $http=$result['duplicate']?200:201; audit($result['duplicate']?'duplicate':'stored',$http,$device,$result['call_id']);
             json_response($result,$http);
         }
         if(in_array($path,['/','/index.php','/status.php'],true) && in_array($method,['GET','POST'],true)) {
