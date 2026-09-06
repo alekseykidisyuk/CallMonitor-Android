@@ -8,6 +8,8 @@
 
 package com.baba.callvault.services.recording
 
+import com.baba.callvault.server.RecorderConnection
+
 /** What the keep-alive should do on this relaunch attempt. */
 enum class RecoveryStep {
     /** A usable endpoint exists and nothing is obviously wrong — just connect and launch. */
@@ -79,11 +81,15 @@ class DaemonRecoveryPolicy(
     /**
      * Whether recovery has failed enough times running to be worth telling the user about.
      *
-     * The original outage was invisible — the app showed nothing while recording was dead for hours.
-     * Home reads this to say so.
+     * A stale failure streak must never overrule a live recorder binder. On HyperOS the post-boot
+     * bootstrap can fail repeatedly before the user enables Wireless debugging, then the recorder can
+     * recover and successfully record calls while the old streak still remains. In that state a red
+     * "recording is not working" card is simply false. Only call the recovery stuck when failures have
+     * crossed the threshold AND there is currently no usable recorder connection.
      */
     val isStuck: Boolean
-        @Synchronized get() = consecutiveFailures >= escalateAfterFailures
+        @Synchronized get() =
+            consecutiveFailures >= escalateAfterFailures && !RecorderConnection.isConnected
 
     /**
      * The action to take now.
