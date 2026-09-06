@@ -69,10 +69,13 @@ jobs:
       - name: Apply build 17 search-result patch
         run: python3 .github/scripts/build17_search_result_patch.py
 
+      - name: Apply build 18 UI-cleanup patch
+        run: python3 .github/scripts/build18_cleanup_ui_patch.py
+
       - name: Build test APK
         run: |
           chmod +x ./gradlew
-          PRODUCT_BUILD=17
+          PRODUCT_BUILD=18
           VERSION_CODE=$((220000 + PRODUCT_BUILD))
           VERSION_NAME="2.2.0-callmonitor.${PRODUCT_BUILD}"
           ./gradlew assembleDebug --stacktrace \
