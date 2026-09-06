@@ -18,7 +18,9 @@ router.write_text("<?php $p=parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); if
 with socket.socket() as s: s.bind(('127.0.0.1',0)); PORT=s.getsockname()[1]
 URL=f'http://127.0.0.1:{PORT}'
 log=open(ROOT/'php.log','wb')
-proc=subprocess.Popen(['php','-d','upload_max_filesize=101M','-d','post_max_size=102M','-S',f'127.0.0.1:{PORT}','-t',str(PUB),str(router)],env={**os.environ,'CM_TEST_HTTP':'1','PHP_CLI_SERVER_WORKERS':'4'},stdout=log,stderr=log,start_new_session=True)
+# Tests deliberately rewrite config/source between requests. Disable CLI opcode
+# caching so these fixture edits do not depend on an image's revalidation delay.
+proc=subprocess.Popen(['php','-d','opcache.enable_cli=0','-d','upload_max_filesize=101M','-d','post_max_size=102M','-S',f'127.0.0.1:{PORT}','-t',str(PUB),str(router)],env={**os.environ,'CM_TEST_HTTP':'1','PHP_CLI_SERVER_WORKERS':'4'},stdout=log,stderr=log,start_new_session=True)
 checks=[]
 def check(condition,name):
     assert condition,name
@@ -179,7 +181,7 @@ try:
     with sqlite3.connect(backup) as b: check(b.execute('PRAGMA integrity_check').fetchone()[0]=='ok','online database backup valid')
     # Test policy without allocating a 100 MiB request.
     config=PR/'config/config.php'; saved=config.read_text(); config.write_text(saved.replace(str(100*1024*1024),'1024'))
-    c,_=upload(meta()); check(c==413,'configured file-size policy enforced'); config.write_text(saved)
+    c,r=upload(meta()); check(c==413,'configured file-size policy enforced (HTTP '+str(c)+')'); config.write_text(saved)
     # secure_transport must reject unencrypted production requests regardless of proxy header.
     php="require "+repr(str(PR/'app/core.php'))+"; $_SERVER['HTTP_X_FORWARDED_PROTO']='https'; try{secure_transport();exit(2);}catch(ApiError $e){exit($e->status===426?0:3);}"
     check(subprocess.run(['php','-r',php]).returncode==0,'untrusted forwarded header cannot bypass HTTPS requirement')
