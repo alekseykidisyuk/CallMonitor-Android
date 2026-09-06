@@ -305,6 +305,7 @@ fun SettingsContent(
             ),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            item { com.baba.callvault.callmonitor.UploadPanel() }
             item {
                 // Above every section and outside all of them, so it is the first thing on the screen.
                 //

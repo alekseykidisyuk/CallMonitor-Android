@@ -647,6 +647,10 @@ class RecordingForegroundService : Service() {
             }
         }
 
+        // CallMonitor: register the CLOSED file synchronously before service teardown.
+        // Audio capture/encoder/release above are the verified build 19 baseline.
+        com.baba.callvault.callmonitor.UploadScheduler.recordingClosed(applicationContext, uri, name)
+
         // Record this finished recording in CallVault's own catalog (the Home list's source of truth).
         // The file is on the device now, so this is the local copy; the copy/sweep workers later stamp
         // the Drive copy onto this same row by name. Done on a detached IO scope because the service may

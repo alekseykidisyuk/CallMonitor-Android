@@ -32,18 +32,6 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android native build dependencies
-        run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager \
-            "platforms;android-36" \
-            "build-tools;36.0.0" \
-            "ndk;27.2.12479018" \
-            "cmake;3.22.1"
-
       - name: Restore original CallMonitor signer from repository secret
         env:
           KEYSTORE_B64: ${{ secrets.CALLMONITOR_SIGNING_KEYSTORE_B64 }}
@@ -66,6 +54,21 @@ jobs:
           test "$ACTUAL_CERT" = "$CALLMONITOR_BUILD19_CERT_SHA256" || { echo "Signer differs from verified build 19"; exit 1; }
           echo "Verified original build 19 signer: $ACTUAL_CERT"
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android native build dependencies
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;27.2.12479018" \
+            "cmake;3.22.1"
+
+      - name: Verify build 19 capture boundaries
+        run: python3 .github/scripts/verify_build20_scope.py
+
       - name: Apply build 16 HyperOS UI recovery patch
         run: python3 .github/scripts/build16_hyperos_ui_recovery_patch.py
 
@@ -78,10 +81,24 @@ jobs:
       - name: Apply build 19 stereo voice-call patch
         run: python3 .github/scripts/build19_stereo_voicecall_patch.py
 
+      - name: Test CallMonitor durable delivery
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:testDebugUnitTest --tests 'com.baba.callvault.callmonitor.*' --stacktrace \
+            -PversionCode=220020 -PversionName=2.2.0-callmonitor.20 -PciBuildNumber=20
+
+      - name: Upload delivery test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CallMonitor-build20-tests
+          path: app/build/test-results/testDebugUnitTest/
+          if-no-files-found: warn
+
       - name: Build test APK
         run: |
           chmod +x ./gradlew
-          PRODUCT_BUILD=19
+          PRODUCT_BUILD=20
           VERSION_CODE=$((220000 + PRODUCT_BUILD))
           VERSION_NAME="2.2.0-callmonitor.${PRODUCT_BUILD}"
           ./gradlew assembleDebug --stacktrace \
@@ -93,7 +110,7 @@ jobs:
         run: |
           APKSIGNER="${ANDROID_HOME}/build-tools/36.0.0/apksigner"
           INPUT_APK="app/build/outputs/apk/debug/app-debug.apk"
-          OUTPUT_APK="CallMonitor-Android-test.apk"
+          OUTPUT_APK="CallMonitor-Android-build20.apk"
 
           "$APKSIGNER" sign \
             --ks "$HOME/.android/debug.keystore" \
@@ -119,6 +136,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: CallMonitor-Android-test
-          path: CallMonitor-Android-test.apk
+          name: CallMonitor-Android-build20
+          path: CallMonitor-Android-build20.apk
           if-no-files-found: error

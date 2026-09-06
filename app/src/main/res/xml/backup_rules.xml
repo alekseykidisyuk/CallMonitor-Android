@@ -18,4 +18,9 @@
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>
 -->
+        <exclude domain="sharedpref" path="callmonitor_upload.xml" />
+        <exclude domain="database" path="callmonitor_upload.db" />
+        <exclude domain="database" path="callmonitor_upload.db-journal" />
+        <exclude domain="database" path="callmonitor_upload.db-wal" />
+        <exclude domain="database" path="callmonitor_upload.db-shm" />
 </full-backup-content>

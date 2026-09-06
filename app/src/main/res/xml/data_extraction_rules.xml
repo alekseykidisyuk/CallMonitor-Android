@@ -17,6 +17,11 @@
         <include .../>
         <exclude .../>
         -->
+            <exclude domain="sharedpref" path="callmonitor_upload.xml" />
+        <exclude domain="database" path="callmonitor_upload.db" />
+        <exclude domain="database" path="callmonitor_upload.db-journal" />
+        <exclude domain="database" path="callmonitor_upload.db-wal" />
+        <exclude domain="database" path="callmonitor_upload.db-shm" />
     </cloud-backup>
     <!--
     <device-transfer>
@@ -24,4 +29,11 @@
         <exclude .../>
     </device-transfer>
     -->
+    <device-transfer>
+        <exclude domain="sharedpref" path="callmonitor_upload.xml" />
+        <exclude domain="database" path="callmonitor_upload.db" />
+        <exclude domain="database" path="callmonitor_upload.db-journal" />
+        <exclude domain="database" path="callmonitor_upload.db-wal" />
+        <exclude domain="database" path="callmonitor_upload.db-shm" />
+    </device-transfer>
 </data-extraction-rules>

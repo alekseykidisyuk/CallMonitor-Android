@@ -47,6 +47,11 @@ class CallVaultApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         AppLogger.init(applicationContext)
+        Thread {
+            runCatching { com.baba.callvault.callmonitor.UploadScheduler.apply(applicationContext) }
+                .onFailure { AppLogger.w(TAG, "CallMonitor queue scheduling will retry on next start") }
+        }.apply { name = "callmonitor-reconcile"; start() }
+
 
         // Reclaim model files no version of the app will ever use again.
         //
