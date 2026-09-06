@@ -1,0 +1,45 @@
+name: CallMonitor Server Receiver Tests
+on:
+  push:
+    branches: ['server/receiver-v0.1.0']
+    paths: ['server-receiver/**', '.github/workflows/callmonitor-server-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  receiver:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Select PHP 8.3
+        run: |
+          sudo update-alternatives --set php /usr/bin/php8.3
+          php -v
+          php -r 'if(!extension_loaded("pdo_sqlite") || !extension_loaded("fileinfo")) exit(1);'
+      - name: Lint PHP and test real HTTP receiver
+        run: |
+          python3 - <<'PY'
+          import pathlib,subprocess
+          for p in pathlib.Path('server-receiver').rglob('*.php'):
+              subprocess.run(['php','-l',str(p)],check=True)
+          PY
+          python3 server-receiver/tests/integration.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: CallMonitor-Server-test-result
+          path: server-receiver/tests/RESULT.json
+          if-no-files-found: ignore
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Validate Windows PowerShell 5.1 syntax
+        shell: powershell
+        run: .\server-receiver\tests\powershell_parse.ps1

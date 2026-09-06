@@ -1,0 +1,11 @@
+Options -Indexes
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.+)$
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%1]
+RewriteRule ^(?:health\.php|status\.php|api/v1/(?:health|status|calls))$ index.php [END]
+<FilesMatch "(?i)\.(?:sqlite3?|db|ogg|opus|log|jsonl|zip|bak|ini|md|txt|sql)$">
+  Require all denied
+</FilesMatch>
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
