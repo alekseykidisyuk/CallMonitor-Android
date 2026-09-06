@@ -23,6 +23,7 @@ class UploadSettings(context: Context) {
         prefs.getString("origin", "")!!, prefs.getString("tenant", "")!!,
         prefs.getString("device", "")!!, prefs.getString("operator", "")!!)
     fun enabled() = prefs.getBoolean("enabled", false)
+    fun revision() = prefs.getString("revision", "")!!
     fun authBlocked() = prefs.getString("blocked_revision", null) == prefs.getString("revision", "unconfigured")
     fun configuredAt() = prefs.getLong("configured_at", 0)
     fun queueError(): Boolean = prefs.getBoolean("queue_error", false)

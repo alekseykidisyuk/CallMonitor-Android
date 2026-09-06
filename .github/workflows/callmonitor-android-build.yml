@@ -139,3 +139,18 @@ jobs:
           name: CallMonitor-Android-build20
           path: CallMonitor-Android-build20.apk
           if-no-files-found: error
+
+  windows-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse Windows PowerShell 5.1 update installer
+        shell: powershell
+        run: |
+          $Tokens = $null
+          $Errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $PWD 'tools/callmonitor-build20/INSTALL_UPDATE.ps1'),
+            [ref]$Tokens, [ref]$Errors) | Out-Null
+          if ($Errors.Count -gt 0) { throw ($Errors | Out-String) }
+          Write-Host 'PASS: Windows PowerShell 5.1 installer syntax'

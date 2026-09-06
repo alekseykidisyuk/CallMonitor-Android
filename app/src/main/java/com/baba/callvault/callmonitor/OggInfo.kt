@@ -80,7 +80,7 @@ data class OggInfo(val durationMs: Long, val eos: Boolean) {
             }
             if(audio == 0 || packet.size() != 0 || granule <= preskip) fail("incomplete_ogg")
             if(!eos && lastPageGranule <= preskip) fail("invalid_ogg_granule")
-            val duration = ((granule-preskip)/48.0).let { kotlin.math.round(it).toLong() }
+            val duration = (granule-preskip+24)/48 // nearest millisecond, matching receiver round-half-up
             if(duration !in 1..86400000) fail("audio_duration")
             OggInfo(duration, eos)
         }

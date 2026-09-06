@@ -9,10 +9,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.ConscryptMode
 import java.io.ByteArrayOutputStream
 import java.io.File
 import javax.net.ssl.HttpsURLConnection
 
+@ConscryptMode(ConscryptMode.Mode.OFF)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[34],application=Application::class)
 class UploadTransportTest {

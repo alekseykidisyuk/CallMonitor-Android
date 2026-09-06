@@ -11,11 +11,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.ConscryptMode
 import java.io.File
 import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.Callable
 
+@ConscryptMode(ConscryptMode.Mode.OFF)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[34],application=Application::class)
 class UploadQueueTest {

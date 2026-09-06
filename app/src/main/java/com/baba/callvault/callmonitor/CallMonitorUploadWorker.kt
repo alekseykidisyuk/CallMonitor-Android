@@ -12,6 +12,21 @@ class CallMonitorUploadWorker(context: Context, params: WorkerParameters) : Work
     override fun onStopped() { transport.cancel(); super.onStopped() }
     override fun doWork(): Result {
         val id = inputData.getString("call_id") ?: return Result.failure()
+        if(!Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").matches(id)) return Result.failure()
+        // Constraint cancellation can overlap a rescheduled worker briefly. OS locks are released
+        // on process death and keep the snapshot immutable even in that overlap.
+        val file = UploadSnapshot.file(applicationContext,id)
+        file.parentFile!!.mkdirs()
+        return try {
+            java.io.RandomAccessFile(file.path+".lock","rw").use { handle ->
+                val lock = try { handle.channel.tryLock() }
+                    catch (_: java.nio.channels.OverlappingFileLockException) { null }
+                if(lock == null) return Result.retry()
+                lock.use { perform(id) }
+            }
+        } catch (_: IOException) { Result.retry() }
+    }
+    private fun perform(id: String): Result {
         val queue = UploadQueue.get(applicationContext)
         val initial = queue.get(id) ?: return Result.success()
         if(initial.state == "uploaded") { UploadSnapshot.file(applicationContext,id).delete(); return Result.success() }
@@ -27,9 +42,9 @@ class CallMonitorUploadWorker(context: Context, params: WorkerParameters) : Work
         try {
             UploadContract.parseName(initial.name)
             queue.attempting(id)
-            val snapshot = UploadSnapshot.prepare(applicationContext,initial,queue) { isStopped }
+            val snapshot = UploadSnapshot.prepare(applicationContext,initial,queue) { isStopped || !settings.enabled() }
             val item = queue.get(id)!!
-            val result = transport.send(auth,item,snapshot) { isStopped }
+            val result = transport.send(auth,item,snapshot) { isStopped || !settings.enabled() }
             when(result.decision) {
                 UploadContract.Decision.ACK -> {
                     queue.ack(id,result.serverId!!)
@@ -37,6 +52,9 @@ class CallMonitorUploadWorker(context: Context, params: WorkerParameters) : Work
                     return Result.success()
                 }
                 UploadContract.Decision.AUTH -> {
+                    if(settings.revision() != auth.revision) {
+                        queue.state(id,"retry","credential_updated"); return Result.retry()
+                    }
                     settings.blockAuth(auth.revision)
                     queue.state(id,"auth_error",result.reason)
                     return Result.failure()
