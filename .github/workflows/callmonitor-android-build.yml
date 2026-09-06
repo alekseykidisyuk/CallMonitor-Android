@@ -63,13 +63,13 @@ jobs:
           fi
           keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey
 
-      - name: Apply build 15 HyperOS reboot recovery patch
-        run: python3 .github/scripts/build15_hyperos_recovery_patch.py
+      - name: Apply build 16 HyperOS UI recovery patch
+        run: python3 .github/scripts/build16_hyperos_ui_recovery_patch.py
 
       - name: Build test APK
         run: |
           chmod +x ./gradlew
-          PRODUCT_BUILD=15
+          PRODUCT_BUILD=16
           VERSION_CODE=$((220000 + PRODUCT_BUILD))
           VERSION_NAME="2.2.0-callmonitor.${PRODUCT_BUILD}"
           ./gradlew assembleDebug --stacktrace \
