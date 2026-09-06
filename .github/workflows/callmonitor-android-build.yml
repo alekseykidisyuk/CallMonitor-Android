@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    if: ${{ !contains(github.event.head_commit.message, '[signer-backup]') }}
+    if: ${{ !contains(github.event.head_commit.message, '[signer-backup]') && !contains(github.event.head_commit.message, '[skip android]') }}
     env:
       CALLMONITOR_BUILD19_CERT_SHA256: d7e12ebca805d06bc32931ee4dcada354c0ef1da36713998015b465e1fa547fc
     runs-on: ubuntu-latest
@@ -154,3 +154,6 @@ jobs:
             [ref]$Tokens, [ref]$Errors) | Out-Null
           if ($Errors.Count -gt 0) { throw ($Errors | Out-String) }
           Write-Host 'PASS: Windows PowerShell 5.1 installer syntax'
+      - name: Exercise update installer with a mock ADB executable
+        shell: powershell
+        run: .\tools\callmonitor-build20\test_installer.ps1
