@@ -87,8 +87,8 @@
             android:theme="@style/Theme.CallVault">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <action android:name="android.intent.action.APPLICATION_PREFERENCES" /> <!-- Show "Additional settings in the app" button in Settings App Info -->
-                <category android:name="android.intent.category.NOTIFICATION_PREFERENCES" /> <!-- Show "Additional settings in the app" button in Settings App Info -> notifications -->
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.NOTIFICATION_PREFERENCES" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -103,7 +103,24 @@
                 android:value="ADB wireless-debugging pairing." />
         </service>
 
-        <!-- Support different languages on Android 11 and 12 https://developer.android.com/guide/topics/resources/app-languages#api-implementation:~:text=Support%20Android%2012%20and%20lower -->
+        <!-- Optional HyperOS fallback. Android only binds this after the user explicitly enables
+             CallMonitor in Accessibility settings. It receives Settings-app events only and automates
+             the Wireless-debugging switch solely while post-boot recovery is pending. -->
+        <service
+            android:name=".integrations.adb.HyperOsWirelessDebugAccessibilityService"
+            android:enabled="true"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/callmonitor_accessibility_service" />
+        </service>
+
+        <!-- Support different languages on Android 11 and 12 -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"
@@ -117,11 +134,6 @@
             android:name=".services.recording.RecordingForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync|specialUse">
-            <!--
-                Required by Android 14+ FGS type enforcement.
-                Describes why this service uses the specialUse type (call recording).
-                See: https://developer.android.com/about/versions/14/changes/fgs-types-required#special-use
-            -->
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Call recording: captures audio during phone calls." />
@@ -136,7 +148,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- Re-anchors the daily retention sweep to local time on a time-zone/clock change (travel). -->
         <receiver
             android:name=".services.boot.RetentionTimezoneReceiver"
             android:enabled="true"
@@ -147,7 +158,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- In-app updater: PackageInstaller session status (confirm dialog + failures). -->
         <receiver
             android:name=".system.updates.UpdateInstallReceiver"
             android:enabled="true"
@@ -157,7 +167,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- In-app updater: reports "updated successfully" after this app was replaced. -->
         <receiver
             android:name=".system.updates.UpdatePackageReplacedReceiver"
             android:enabled="true"
@@ -167,7 +176,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- Boot receiver: re-enables Wireless debugging and reconnects ADB after reboot -->
         <receiver
             android:name=".services.boot.BootReceiver"
             android:enabled="true"
@@ -178,13 +186,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- CallVault Plan 5 (PRODUCTION): exported provider that RECEIVES the privileged recorder
-             daemon's IBinder. exported=true is REQUIRED so the non-app shell-uid daemon
-             (RecorderServer) can call("sendBinder", ...) — this mirrors Shizuku's ShizukuProvider,
-             which is likewise exported so the privileged server can deliver its binder. The provider
-             is a pure binder-delivery channel; no app data is exposed. -->
-        <!-- Shizuku's client-side provider: how the Shizuku API receives its binder in our process.
-             Ours (below) is the mirror image of it for our own daemon. -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -199,10 +200,6 @@
             android:enabled="true"
             android:exported="true" />
 
-
-        <!-- FileProvider used to share the diagnostic log report via the system share-sheet
-             (ACTION_SEND). Not exported; access is granted per-share via temporary read URI
-             permissions. Only the cache/logs sub-folder is exposed (see res/xml/file_paths.xml). -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -213,7 +210,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- Foreground service used by BootReceiver to reconnect ADB off the main thread -->
         <service
             android:name=".services.boot.AdbConnectionService"
             android:exported="false"
@@ -223,9 +219,6 @@
                 android:value="Re-establish ADB wireless-debugging connection after boot." />
         </service>
 
-        <!-- Post-boot foreground service that holds a LIVE telephony call-state listener for a bounded
-             window, so the first call(s) after a reboot are detected in real time instead of via the
-             post-boot-delayed PHONE_STATE broadcast. Stops itself after the window. -->
         <service
             android:name=".services.call.CallMonitorService"
             android:exported="false"
@@ -235,9 +228,6 @@
                 android:value="Call recording: listen for call state after reboot to record reliably." />
         </service>
 
-        <!-- Persistent keep-alive: anchors our process + watchdog-relaunches the privileged recorder
-             daemon so calls are captured instantly (over binder, no Wi-Fi needed) instead of paying a
-             cold-start. Our equivalent of Shizuku's always-on manager presence. -->
         <service
             android:name=".services.recording.DaemonKeepAliveService"
             android:exported="false"
@@ -247,19 +237,6 @@
                 android:value="Call recording: keep the privileged recorder daemon warm so calls are captured instantly." />
         </service>
 
-        <!--
-            WorkManager's own foreground service, given a type so transcription and summarisation can
-            promote themselves out of cached-process priority.
-
-            Without this the two workers ran a multi-minute, multi-gigabyte job at the priority Android
-            reclaims first - so the phone could kill a transcription halfway through precisely because
-            it was using memory. From Android 14 a foreground service must declare a type, and the
-            declaration has to be merged onto the library's service rather than added as a new one.
-
-            specialUse rather than dataSync: dataSync is capped at a few hours a day from Android 15,
-            and this is on-device computation rather than a data transfer. CallVault is not distributed
-            through Play, so the specialUse justification is not a review risk.
-        -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="specialUse"
