@@ -72,10 +72,13 @@ jobs:
       - name: Apply build 18 UI-cleanup patch
         run: python3 .github/scripts/build18_cleanup_ui_patch.py
 
+      - name: Apply build 19 stereo voice-call patch
+        run: python3 .github/scripts/build19_stereo_voicecall_patch.py
+
       - name: Build test APK
         run: |
           chmod +x ./gradlew
-          PRODUCT_BUILD=18
+          PRODUCT_BUILD=19
           VERSION_CODE=$((220000 + PRODUCT_BUILD))
           VERSION_NAME="2.2.0-callmonitor.${PRODUCT_BUILD}"
           ./gradlew assembleDebug --stacktrace \
