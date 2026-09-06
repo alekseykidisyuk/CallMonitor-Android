@@ -41,10 +41,6 @@ jobs:
             "ndk;27.2.12479018" \
             "cmake;3.22.1"
 
-      # Keep one non-production signing identity across CI runs. This is intentionally only the
-      # CallMonitor TEST signer; a production release key will live in GitHub secrets later.
-      # Stable signing matters during device development because uninstall/reinstall destroys the
-      # embedded ADB identity and privileged grants we are specifically trying to preserve/test.
       - name: Restore stable CallMonitor test signer
         uses: actions/cache@v4
         with:
@@ -70,12 +66,13 @@ jobs:
       - name: Build test APK
         run: |
           chmod +x ./gradlew
-          VERSION_CODE=$((220000 + GITHUB_RUN_NUMBER))
-          VERSION_NAME="2.2.0-callmonitor.${GITHUB_RUN_NUMBER}"
+          PRODUCT_BUILD=14
+          VERSION_CODE=$((220000 + PRODUCT_BUILD))
+          VERSION_NAME="2.2.0-callmonitor.${PRODUCT_BUILD}"
           ./gradlew assembleDebug --stacktrace \
             -PversionCode="$VERSION_CODE" \
             -PversionName="$VERSION_NAME" \
-            -PciBuildNumber="$GITHUB_RUN_NUMBER"
+            -PciBuildNumber="$PRODUCT_BUILD"
 
       - name: Re-sign and verify artifact with stable test signer
         run: |
