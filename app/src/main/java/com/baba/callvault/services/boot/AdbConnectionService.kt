@@ -28,6 +28,7 @@ import android.provider.Settings
 import com.baba.callvault.R
 import com.baba.callvault.data.AppPreferences
 import com.baba.callvault.integrations.adb.AdbShell
+import com.baba.callvault.integrations.adb.HyperOsWirelessDebugAccessibilityService
 import com.baba.callvault.server.RecorderBackend
 import com.baba.callvault.system.health.SilentFailureNotifier
 import com.baba.callvault.utils.AppLogger
@@ -42,14 +43,13 @@ import kotlinx.coroutines.launch
  *
  * A reboot clears CallVault's classic tcpip loopback listener. On ROMs that allow
  * WRITE_SECURE_SETTINGS the service can bootstrap Wireless debugging itself and re-arm loopback.
- * Xiaomi/HyperOS can deliberately deny that permission even to shell. In that case there is no
- * programmatic API left that can turn Wireless debugging on, so the service stays alive and watches
- * for the user's one manual Wireless-debugging toggle. The instant that toggle appears it retries the
- * recorder bootstrap automatically; the user no longer has to return to CallMonitor or tap reconnect.
+ * Xiaomi/HyperOS can deliberately deny that permission even to shell. In that case #14 optionally
+ * asks the narrow Settings-only accessibility service to flip the exact Wireless-debugging switch the
+ * user otherwise has to toggle by hand. If that service has not been enabled yet, this service remains
+ * alive and still supports the previous manual-toggle fallback.
  *
  * The service also watches Wi-Fi availability. This fixes the other common boot ordering: the phone
- * boots before Wi-Fi is associated, the first recovery fails, and previously nothing retried when Wi-Fi
- * appeared later.
+ * boots before Wi-Fi is associated, the first recovery fails, and recovery retries when Wi-Fi appears.
  */
 class AdbConnectionService : Service() {
 
@@ -107,8 +107,6 @@ class AdbConnectionService : Service() {
         }
 
         attemptRecovery("service-start")
-        // Stay alive while recovery is pending. On HyperOS this is what lets a later manual WD toggle
-        // recover immediately instead of requiring the user to reopen CallMonitor.
         return START_STICKY
     }
 
@@ -138,14 +136,25 @@ class AdbConnectionService : Service() {
                         !AdbShell.isWirelessDebuggingEnabled(applicationContext) &&
                         !AdbShell.hasWriteSecureSettings(applicationContext)
                     if (needsManualWd) {
-                        AppLogger.w(
-                            TAG,
-                            "Recorder cannot bootstrap automatically on this ROM: loopback was cleared by reboot and " +
-                                "WRITE_SECURE_SETTINGS is denied. Waiting for one manual Wireless-debugging toggle.",
-                        )
+                        val accessibilityEnabled =
+                            HyperOsWirelessDebugAccessibilityService.requestWirelessDebugging(applicationContext)
+                        if (accessibilityEnabled) {
+                            AppLogger.w(
+                                TAG,
+                                "Recorder cannot bootstrap through WRITE_SECURE_SETTINGS on this ROM; " +
+                                    "requested HyperOS accessibility fallback for Wireless debugging.",
+                            )
+                        } else {
+                            AppLogger.w(
+                                TAG,
+                                "Recorder cannot bootstrap automatically on this ROM: loopback was cleared by reboot and " +
+                                    "WRITE_SECURE_SETTINGS is denied. Accessibility fallback is not enabled; waiting for " +
+                                    "one manual Wireless-debugging toggle.",
+                            )
+                        }
                     }
-                    // Deliberately do NOT stop. Wi-Fi or the user's WD toggle may arrive later and the
-                    // registered observers will retry immediately.
+                    // Deliberately do NOT stop. Wi-Fi, the accessibility fallback, or the user's manual
+                    // WD toggle may arrive later and the registered observers will retry immediately.
                 }
             } finally {
                 recoveryInFlight.set(false)
