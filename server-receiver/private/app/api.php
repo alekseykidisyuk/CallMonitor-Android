@@ -23,7 +23,8 @@ function receive_call(PDO $db, array $device): array {
     if($dt->getTimestamp()<946684800 || $dt->getTimestamp()>time()+86400) fail(400,'invalid_started_at');
     $duration=integer_field('duration_ms',1,86400000);
     $build=integer_field('app_build',1,2147483647);
-    $bytes=integer_field('audio_bytes',1,$max);
+    $bytes=integer_field('audio_bytes',1,999999999999999999);
+    if($bytes>$max) fail(413,'audio_too_large');
     $sha=strtolower(field('audio_sha256',64)); if(!preg_match('/^[a-f0-9]{64}$/D',$sha)) fail(400,'invalid_audio_sha256');
     if(field('codec',10)!=='opus' || field('channel_layout',10)!=='stereo' || integer_field('channels',1,2)!==2 || integer_field('sample_rate',1,192000)!==48000) fail(400,'unsupported_audio_profile');
     foreach(['left_role','right_role'] as $role) { $v=field($role,30,true); if($v!==null && $v!==$device[$role]) fail(400,'channel_role_mismatch'); }

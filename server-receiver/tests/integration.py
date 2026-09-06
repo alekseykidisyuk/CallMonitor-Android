@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """Black-box PHP HTTP acceptance tests; synthetic audio, no production secrets."""
-import base64, concurrent.futures, hashlib, json, os, pathlib, shutil, signal, socket, sqlite3, subprocess, tempfile, time, urllib.error, urllib.parse, urllib.request, uuid
+import base64, concurrent.futures, hashlib, json, os, pathlib, shutil, signal, socket, sqlite3, subprocess, tempfile, time, urllib.error, urllib.parse, urllib.request, uuid, zipfile, sys
 
 SRC=pathlib.Path(__file__).resolve().parents[1]
 ROOT=pathlib.Path(tempfile.mkdtemp(prefix='cm-test-'))
 PR=ROOT/'callmonitor_private'; PUB=ROOT/'callmonitor.sensera.online'
-shutil.copytree(SRC/'private',PR); PUB.mkdir()
-shutil.copytree(SRC/'public',PR/'templates')
-shutil.copy(SRC/'public/callmonitor_install_v010.php',PUB)
-(PR/'config').mkdir()
+subprocess.run([sys.executable,str(SRC/'tools/build_package.py'),'--output',str(ROOT/'test.zip')],check=True)
+with zipfile.ZipFile(ROOT/'test.zip') as package: package.extractall(ROOT)
 KEY='test-only-'+uuid.uuid4().hex
 (PR/'config/setup.php').write_text("<?php return ['setup_key_hash'=>'"+hashlib.sha256(KEY.encode()).hexdigest()+"'];")
 router=ROOT/'router.php'
@@ -126,7 +124,7 @@ try:
     with sqlite3.connect(backup) as b: check(b.execute('PRAGMA integrity_check').fetchone()[0]=='ok','online database backup valid')
     # Test policy without allocating a 100 MiB request.
     config=PR/'config/config.php'; saved=config.read_text(); config.write_text(saved.replace(str(100*1024*1024),'1024'))
-    c,_=upload(meta()); check(c in (400,413),'configured file-size policy enforced'); config.write_text(saved)
+    c,_=upload(meta()); check(c==413,'configured file-size policy enforced'); config.write_text(saved)
     # secure_transport must reject unencrypted production requests regardless of proxy header.
     php="require "+repr(str(PR/'app/core.php'))+"; $_SERVER['HTTP_X_FORWARDED_PROTO']='https'; try{secure_transport();exit(2);}catch(ApiError $e){exit($e->status===426?0:3);}"
     check(subprocess.run(['php','-r',php]).returncode==0,'untrusted forwarded header cannot bypass HTTPS requirement')
