@@ -1,17 +1,43 @@
-# CallMonitor build 21: update only. Never uninstall or clear application data.
+# CallMonitor build 21 installer I1: update only. Never uninstall or clear application data.
 param([string]$AdbPath)
 $ErrorActionPreference = 'Stop'
 function Invoke-AdbCheckedOutput {
     param([string[]]$Arguments)
-    $SavedPreference = $ErrorActionPreference
+    # Keep the executable separate from argv. Do not use PowerShell native-command
+    # splatting/redirection: Windows PowerShell 5.1 and ADB stderr differ by host.
+    if (!$Arguments -or $Arguments.Count -eq 0) { throw 'Missing ADB command.' }
+    $Quoted = foreach ($Argument in $Arguments) {
+        if ([string]::IsNullOrEmpty($Argument) -or $Argument -match '["\r\n\x00]' -or $Argument.EndsWith('\')) {
+            throw 'Invalid ADB argument. No command was executed.'
+        }
+        '"' + $Argument + '"'
+    }
+    $StartInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $StartInfo.FileName = $script:Adb
+    $StartInfo.Arguments = $Quoted -join ' '
+    $StartInfo.UseShellExecute = $false
+    $StartInfo.CreateNoWindow = $true
+    $StartInfo.RedirectStandardOutput = $true
+    $StartInfo.RedirectStandardError = $true
+    Write-Host ('ADB arguments: ' + $StartInfo.Arguments)
+    $Process = New-Object System.Diagnostics.Process
+    $Process.StartInfo = $StartInfo
     try {
-        # Windows PowerShell 5.1 wraps native stderr as ErrorRecord. ADB writes
-        # harmless daemon-start/progress messages there; use its exit code.
-        $ErrorActionPreference = 'Continue'
-        $Lines = @(& $script:Adb @Arguments 2>&1)
-        $Code = $LASTEXITCODE
-    } finally { $ErrorActionPreference = $SavedPreference }
-    return [pscustomobject]@{ Lines = $Lines; ExitCode = $Code }
+        if (!$Process.Start()) { throw 'ADB process did not start.' }
+        # Drain both pipes concurrently; progress on stderr must not block stdout.
+        $StdoutTask = $Process.StandardOutput.ReadToEndAsync()
+        $StderrTask = $Process.StandardError.ReadToEndAsync()
+        if (!$Process.WaitForExit(300000)) {
+            $Process.Kill()
+            throw 'ADB timed out. Keep the app installed and send this output.'
+        }
+        $Stdout = $StdoutTask.GetAwaiter().GetResult()
+        $Stderr = $StderrTask.GetAwaiter().GetResult()
+        $Code = $Process.ExitCode
+        # Device/package/Success parsing uses stdout only; stderr remains diagnostic.
+        if ($Stderr) { Write-Host $Stderr.TrimEnd() }
+        return [pscustomobject]@{ Lines = @($Stdout -split '\r?\n'); ExitCode = $Code }
+    } finally { $Process.Dispose() }
 }
 try {
     $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -33,7 +59,7 @@ try {
     $Call = Invoke-AdbCheckedOutput -Arguments @('devices')
     $Listing = $Call.Lines
     if ($Call.ExitCode -ne 0) { throw 'ADB could not list devices.' }
-    $Devices = @($Listing | ForEach-Object { if ("$_" -match '^(\S+)\s+device$') { $Matches[1] } })
+    $Devices = @($Listing | ForEach-Object { if ("$_" -match '^([A-Za-z0-9._:-]+)\s+device\s*$') { $Matches[1] } })
     if ($Devices.Count -ne 1) { throw 'Connect exactly one phone with USB debugging authorized, then run this installer again.' }
     $Serial = $Devices[0]
     $Call = Invoke-AdbCheckedOutput -Arguments @('-s', $Serial, 'shell', 'pm', 'path', 'com.baba.callvault')
