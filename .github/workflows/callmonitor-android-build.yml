@@ -81,24 +81,27 @@ jobs:
       - name: Apply build 19 stereo voice-call patch
         run: python3 .github/scripts/build19_stereo_voicecall_patch.py
 
-      - name: Test CallMonitor durable delivery
+      - name: Apply build 21 quiet bounded recovery patch
+        run: python3 .github/scripts/build21_quiet_recovery_patch.py
+
+      - name: Test CallMonitor delivery and quiet recovery
         run: |
           chmod +x ./gradlew
           ./gradlew :app:testDebugUnitTest --tests 'com.baba.callvault.callmonitor.*' --stacktrace \
-            -PversionCode=220020 -PversionName=2.2.0-callmonitor.20 -PciBuildNumber=20
+            -PversionCode=220021 -PversionName=2.2.0-callmonitor.21 -PciBuildNumber=21
 
       - name: Upload delivery test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: CallMonitor-build20-tests
+          name: CallMonitor-build21-tests
           path: app/build/test-results/testDebugUnitTest/
           if-no-files-found: warn
 
       - name: Build test APK
         run: |
           chmod +x ./gradlew
-          PRODUCT_BUILD=20
+          PRODUCT_BUILD=21
           VERSION_CODE=$((220000 + PRODUCT_BUILD))
           VERSION_NAME="2.2.0-callmonitor.${PRODUCT_BUILD}"
           ./gradlew assembleDebug --stacktrace \
@@ -110,7 +113,7 @@ jobs:
         run: |
           APKSIGNER="${ANDROID_HOME}/build-tools/36.0.0/apksigner"
           INPUT_APK="app/build/outputs/apk/debug/app-debug.apk"
-          OUTPUT_APK="CallMonitor-Android-build20.apk"
+          OUTPUT_APK="CallMonitor-Android-build21.apk"
 
           "$APKSIGNER" sign \
             --ks "$HOME/.android/debug.keystore" \
@@ -136,8 +139,8 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: CallMonitor-Android-build20
-          path: CallMonitor-Android-build20.apk
+          name: CallMonitor-Android-build21
+          path: CallMonitor-Android-build21.apk
           if-no-files-found: error
 
   windows-installer:
@@ -150,10 +153,10 @@ jobs:
           $Tokens = $null
           $Errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile(
-            (Join-Path $PWD 'tools/callmonitor-build20/INSTALL_UPDATE.ps1'),
+            (Join-Path $PWD 'tools/callmonitor-build21/INSTALL_UPDATE.ps1'),
             [ref]$Tokens, [ref]$Errors) | Out-Null
           if ($Errors.Count -gt 0) { throw ($Errors | Out-String) }
           Write-Host 'PASS: Windows PowerShell 5.1 installer syntax'
       - name: Exercise update installer with a mock ADB executable
         shell: powershell
-        run: .\tools\callmonitor-build20\test_installer.ps1
+        run: .\tools\callmonitor-build21\test_installer.ps1

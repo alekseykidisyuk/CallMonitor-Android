@@ -11,7 +11,7 @@ import java.util.Locale
 /** Receiver 0.1.1 contract. No credential or response body enters diagnostics. */
 object UploadContract {
     const val MAX_BYTES = 100L * 1024 * 1024
-    const val BUILD = 20
+    const val BUILD = 21
     private val namePattern = Regex("^(\\d{8}_\\d{6}\\.\\d{3}[+-]\\d{4})_(in|out)_(.*)\\.ogg$")
     private val nameDate = DateTimeFormatter.ofPattern("uuuuMMdd_HHmmss.SSSxx", Locale.ROOT)
         .withResolverStyle(ResolverStyle.STRICT)

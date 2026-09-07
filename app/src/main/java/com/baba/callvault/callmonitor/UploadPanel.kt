@@ -61,7 +61,7 @@ fun UploadPanel() {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp),verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("CallMonitor · отправка записей",style = MaterialTheme.typography.titleMedium)
-            Text(if(configured) "${settings.profile()?.device} · build #20" else "Подключите устройство к своему серверу")
+            Text(if(configured) "${settings.profile()?.device} · build #21" else "Подключите устройство к своему серверу")
             Row(Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Автоматическая отправка",Modifier.weight(1f))
                 Switch(checked = enabled,enabled = configured,onCheckedChange = { value ->
