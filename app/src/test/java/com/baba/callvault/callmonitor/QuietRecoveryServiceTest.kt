@@ -32,6 +32,12 @@ class QuietRecoveryServiceTest {
             Settings.Global.putInt(service.contentResolver, "adb_wifi_enabled", 0)
             Settings.Global.putInt(service.contentResolver, Settings.Global.BOOT_COUNT, 20)
             shadowOf(service.getSystemService(ConnectivityManager::class.java)).clearAllNetworks()
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2))
+            // Reproduce callbacks already queued by the old implementation. Calling the action
+            // entry directly ensures this regression fails even without a real Settings window.
+            for (entry in listOf("openQuickSettings", "driveSettingsUi", "driveSystemUi")) {
+                service.javaClass.getDeclaredMethod(entry).apply { isAccessible = true }.invoke(service)
+            }
             repeat(120) { i ->
                 val event = AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)
                 event.packageName = if (i % 2 == 0) "com.android.settings" else "com.android.systemui"
